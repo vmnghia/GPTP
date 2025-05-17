@@ -19,13 +19,13 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -190,7 +190,7 @@
     <ClCompile Include="hooks\orders\doodad_orders.cpp" />
     <ClCompile Include="hooks\orders\doodad_orders_inject.cpp" />
     <ClCompile Include="hooks\orders\critter_order.cpp" />
-    <ClCompile Include="hooks\orders\critter_order_inject.cpp" />    
+    <ClCompile Include="hooks\orders\critter_order_inject.cpp" />
     <ClCompile Include="hooks\orders\rescuable_order.cpp" />
     <ClCompile Include="hooks\orders\rescuable_order_inject.cpp" />
     <ClCompile Include="hooks\orders\base_orders\patrol_order.cpp" />
@@ -216,13 +216,13 @@
     <ClCompile Include="hooks\orders\powerup.cpp" />
     <ClCompile Include="hooks\orders\powerup_inject.cpp" />
     <ClCompile Include="hooks\orders\shield_recharge_orders.cpp" />
-    <ClCompile Include="hooks\orders\shield_recharge_orders_inject.cpp" />    
+    <ClCompile Include="hooks\orders\shield_recharge_orders_inject.cpp" />
     <ClCompile Include="hooks\orders\base_orders\attack_orders.cpp" />
     <ClCompile Include="hooks\orders\base_orders\attack_orders_inject.cpp" />
     <ClCompile Include="hooks\orders\base_orders\die_orders.cpp" />
     <ClCompile Include="hooks\orders\base_orders\die_orders_inject.cpp" />
     <ClCompile Include="hooks\orders\base_orders\move_orders.cpp" />
-    <ClCompile Include="hooks\orders\base_orders\move_orders_inject.cpp" />    
+    <ClCompile Include="hooks\orders\base_orders\move_orders_inject.cpp" />
     <ClCompile Include="hooks\orders\base_orders\stopholdpos_orders.cpp" />
     <ClCompile Include="hooks\orders\base_orders\stopholdpos_orders_inject.cpp" />
     <ClCompile Include="hooks\orders\building_making\building_morph.cpp" />
@@ -248,7 +248,7 @@
     <ClCompile Include="hooks\orders\merge_units.cpp" />
     <ClCompile Include="hooks\orders\merge_units_inject.cpp" />
     <ClCompile Include="hooks\orders\shrouded_order.cpp" />
-    <ClCompile Include="hooks\orders\shrouded_order_inject.cpp" />    
+    <ClCompile Include="hooks\orders\shrouded_order_inject.cpp" />
     <ClCompile Include="hooks\orders\repair_order.cpp" />
     <ClCompile Include="hooks\orders\repair_order_inject.cpp" />
     <ClCompile Include="hooks\orders\research_upgrade_orders.cpp" />
@@ -268,7 +268,7 @@
     <ClCompile Include="hooks\orders\spells\recall_spell.cpp" />
     <ClCompile Include="hooks\orders\spells\recall_spell_inject.cpp" />
     <ClCompile Include="hooks\orders\reset_collision.cpp" />
-    <ClCompile Include="hooks\orders\reset_collision_inject.cpp" />    
+    <ClCompile Include="hooks\orders\reset_collision_inject.cpp" />
     <ClCompile Include="hooks\orders\unit_making\unit_morph.cpp" />
     <ClCompile Include="hooks\orders\unit_making\unit_morph_inject.cpp" />
     <ClCompile Include="hooks\orders\unit_making\unit_train.cpp" />
@@ -298,7 +298,7 @@
     <ClCompile Include="hooks\recv_commands\CMDRECV_Morph.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_Morph_inject.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_QueuedOrder.cpp" />
-    <ClCompile Include="hooks\recv_commands\CMDRECV_QueuedOrder_inject.cpp" />    
+    <ClCompile Include="hooks\recv_commands\CMDRECV_QueuedOrder_inject.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_SiegeTank.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_SiegeTank_inject.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_Stop.cpp" />
@@ -314,7 +314,7 @@
     <ClCompile Include="hooks\recv_commands\CMDRECV_RightClick.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_RightClick_inject.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_Cloak_Decloak.cpp" />
-    <ClCompile Include="hooks\recv_commands\CMDRECV_Cloak_Decloak_inject.cpp" />    
+    <ClCompile Include="hooks\recv_commands\CMDRECV_Cloak_Decloak_inject.cpp" />
     <ClCompile Include="hooks\recv_commands\train_cmd_receive.cpp" />
     <ClCompile Include="hooks\recv_commands\train_cmd_receive_inject.cpp" />
     <ClCompile Include="hooks\orders\spidermine.cpp" />
@@ -324,7 +324,7 @@
     <ClCompile Include="hooks\tech_target_check.cpp" />
     <ClCompile Include="hooks\tech_target_check_inject.cpp" />
     <ClCompile Include="hooks\right_click_CMDACT.cpp" />
-    <ClCompile Include="hooks\right_click_CMDACT_inject.cpp" />  
+    <ClCompile Include="hooks\right_click_CMDACT_inject.cpp" />
     <ClCompile Include="hooks\attack_and_cooldown.cpp" />
     <ClCompile Include="hooks\attack_and_cooldown_inject.cpp" />
     <ClCompile Include="hooks\cheat_codes.cpp" />
@@ -355,7 +355,7 @@
     <ClCompile Include="hooks\weapons\wpnsplash.cpp" />
     <ClCompile Include="hooks\weapons\wpnsplash_inject.cpp" />
     <ClCompile Include="hooks\weapons\weapon_impact.cpp" />
-    <ClCompile Include="hooks\weapons\weapon_impact_inject.cpp" />    
+    <ClCompile Include="hooks\weapons\weapon_impact_inject.cpp" />
     <ClCompile Include="hooks\weapons\weapon_cooldown.cpp" />
     <ClCompile Include="hooks\weapons\weapon_cooldown_inject.cpp" />
     <ClCompile Include="hooks\weapons\weapon_damage.cpp" />
@@ -422,23 +422,23 @@
     <ClInclude Include="hooks\orders\junkyarddog_order.h" />
     <ClInclude Include="hooks\orders\warpin.h" />
     <ClInclude Include="hooks\orders\doodad_orders.h" />
-    <ClInclude Include="hooks\orders\critter_order.h" />    
+    <ClInclude Include="hooks\orders\critter_order.h" />
     <ClInclude Include="hooks\orders\rescuable_order.h" />
     <ClInclude Include="hooks\orders\base_orders\patrol_order.h" />
     <ClInclude Include="hooks\orders\spells\defense_matrix.h" />
     <ClInclude Include="hooks\orders\spells\scanner_orders.h" />
     <ClInclude Include="hooks\orders\base_orders\rightclick_order.h" />
-    <ClInclude Include="hooks\orders\cloak_nearby_units_order.h" />    
+    <ClInclude Include="hooks\orders\cloak_nearby_units_order.h" />
     <ClInclude Include="hooks\orders\burrow_orders.h" />
     <ClInclude Include="hooks\orders\harvest_orders.h" />
     <ClInclude Include="hooks\orders\larva_order.h" />
-    <ClInclude Include="hooks\orders\interceptor_return_order.h" />    
+    <ClInclude Include="hooks\orders\interceptor_return_order.h" />
     <ClInclude Include="hooks\orders\0_orders\orders_root.h" />
     <ClInclude Include="hooks\orders\powerup.h" />
-    <ClInclude Include="hooks\orders\shield_recharge_orders.h" />    
+    <ClInclude Include="hooks\orders\shield_recharge_orders.h" />
     <ClInclude Include="hooks\orders\base_orders\attack_orders.h" />
     <ClInclude Include="hooks\orders\base_orders\die_orders.h" />
-    <ClInclude Include="hooks\orders\base_orders\move_orders.h" />    
+    <ClInclude Include="hooks\orders\base_orders\move_orders.h" />
     <ClInclude Include="hooks\orders\base_orders\stopholdpos_orders.h" />
     <ClInclude Include="hooks\orders\building_making\building_morph.h" />
     <ClInclude Include="hooks\orders\building_making\building_protoss.h" />
@@ -461,7 +461,7 @@
     <ClInclude Include="hooks\orders\spells\mindcontrol_spell.h" />
     <ClInclude Include="hooks\orders\spells\nuke_orders.h" />
     <ClInclude Include="hooks\orders\spells\recall_spell.h" />
-    <ClInclude Include="hooks\orders\reset_collision.h" />    
+    <ClInclude Include="hooks\orders\reset_collision.h" />
     <ClInclude Include="hooks\orders\unit_making\unit_morph.h" />
     <ClInclude Include="hooks\orders\unit_making\unit_train.h" />
     <ClInclude Include="hooks\psi_field.h" />
@@ -473,7 +473,7 @@
     <ClInclude Include="hooks\recv_commands\CMDRECV_LiftOff.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_MergeArchon.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_Morph.h" />
-    <ClInclude Include="hooks\recv_commands\CMDRECV_QueuedOrder.h" />    
+    <ClInclude Include="hooks\recv_commands\CMDRECV_QueuedOrder.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_SiegeTank.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_Stop.h" />
     <ClInclude Include="hooks\recv_commands\receive_command.h" />
@@ -481,7 +481,7 @@
     <ClInclude Include="hooks\recv_commands\CMDRECV_ResearchUpgrade.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_Stimpack.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_RightClick.h" />
-    <ClInclude Include="hooks\recv_commands\CMDRECV_Cloak_Decloak.h" />    
+    <ClInclude Include="hooks\recv_commands\CMDRECV_Cloak_Decloak.h" />
     <ClInclude Include="hooks\recv_commands\train_cmd_receive.h" />
     <ClInclude Include="hooks\orders\spidermine.h" />
     <ClInclude Include="hooks\stim_packs.h" />
@@ -503,7 +503,7 @@
     <ClInclude Include="hooks\utils\replace_unit.h" />
     <ClInclude Include="hooks\utils\utils.h" />
     <ClInclude Include="hooks\weapons\wpnsplash.h" />
-    <ClInclude Include="hooks\weapons\weapon_impact.h" />    
+    <ClInclude Include="hooks\weapons\weapon_impact.h" />
     <ClInclude Include="hooks\weapons\weapon_cooldown.h" />
     <ClInclude Include="hooks\weapons\weapon_damage.h" />
     <ClInclude Include="hooks\weapons\weapon_fire.h" />
