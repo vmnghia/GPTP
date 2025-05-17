@@ -30,7 +30,7 @@ char ( &_ArraySizeHelper( T (&array)[N] ))[N];
 #define PLUGIN_ID 0x1B4D69B6
 
 //What is the plugin's name (and version)?
-#define PLUGIN_NAME "General Plugin Template Project for Starcraft"
+#define PLUGIN_NAME "Starcraft: Manifold"
 
 //If defined, will enable the events system (not native of SC)
 //#define EVENTS_SYSTEM
