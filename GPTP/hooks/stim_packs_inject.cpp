@@ -25,23 +25,23 @@ void __declspec(naked) CMDACT_StimpackWrapper() {
 
 ;
 
-void __declspec(naked) useStimPacksAIWrapper() {
-
-	static CUnit* unit;
-
-	__asm {
-		MOV unit, EAX
-		PUSHAD
-	}
-
-	hooks::useStimPacksAIHook(unit);
-
-	__asm {
-		POPAD
-		RETN
-	}
-
-}
+//void __declspec(naked) useStimPacksAIWrapper() {
+//
+//	static CUnit* unit;
+//
+//	__asm {
+//		MOV unit, EAX
+//		PUSHAD
+//	}
+//
+//	hooks::useStimPacksAIHook(unit);
+//
+//	__asm {
+//		POPAD
+//		RETN
+//	}
+//
+//}
 
 ;
 
@@ -51,7 +51,7 @@ namespace hooks {
 
 void injectStimPacksHooks() {
 	jmpPatch(CMDACT_StimpackWrapper,	0x004234D0, 4);
-	jmpPatch(useStimPacksAIWrapper,		0x004554A0, 5);
+	//jmpPatch(useStimPacksAIWrapper,		0x004554A0, 5);
 }
 
 } //hooks

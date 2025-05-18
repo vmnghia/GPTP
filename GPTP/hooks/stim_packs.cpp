@@ -92,6 +92,7 @@ void CMDACT_Stimpack() {
 
 ;
 
+#ifdef EVENTS_SYSTEM
 //Identical to StimpackSFXRand @ 004554A0
 //code used by the AI (no questions about sync between players in that case)
 void useStimPacksAIHook(CUnit* unit) {
@@ -124,6 +125,7 @@ void useStimPacksAIHook(CUnit* unit) {
 	}
 
 }
+#endif
 
 ;
 
