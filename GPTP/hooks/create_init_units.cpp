@@ -130,92 +130,30 @@ void CreateInitialMeleeUnits() {
 				u8 unitId;
 				CUnit* created_unit;
 
-				if(current_player.race == RaceId::Zerg)
-					unitId = UnitId::ZergDrone;
-				else
-				if(current_player.race == RaceId::Terran)
-					unitId = UnitId::TerranSCV;
-				else
-				if(current_player.race == RaceId::Protoss)
-					unitId = UnitId::ProtossProbe;
-				else
-					unitId = UnitId::None;
-
-				created_unit = createUnit(unitId,startPositions[playerId].x,startPositions[playerId].y,playerId);
-
-				if(created_unit != NULL) {
-
-					function_004A01F0(created_unit);
-
-					if(function_0049EC30(created_unit) != 0)
-						updateUnitStrength(created_unit);
-
+				switch (current_player.race) {
+					case RaceId::Zerg:
+						unitId = UnitId::ZergDrone; break;
+					case RaceId::Terran:
+						unitId = UnitId::TerranSCV; break;
+					case RaceId::Protoss:
+						unitId = UnitId::ProtossProbe; break;
+					default:
+						unitId = UnitId::None; break;
 				}
 
-				if(current_player.race == RaceId::Zerg)
-					unitId = UnitId::ZergDrone;
-				else
-				if(current_player.race == RaceId::Terran)
-					unitId = UnitId::TerranSCV;
-				else
-				if(current_player.race == RaceId::Protoss)
-					unitId = UnitId::ProtossProbe;
-				else
-					unitId = UnitId::None;
+				const int INITIAL_WORKER_AMOUNT = 12;
+				for (int current = 0; current < INITIAL_WORKER_AMOUNT; current++) {
 
-				created_unit = createUnit(unitId,startPositions[playerId].x,startPositions[playerId].y,playerId);
+					created_unit = createUnit(unitId, startPositions[playerId].x, startPositions[playerId].y, playerId);
 
-				if(created_unit != NULL) {
+					if (created_unit != NULL) {
 
-					function_004A01F0(created_unit);
+						function_004A01F0(created_unit);
 
-					if(function_0049EC30(created_unit) != 0)
-						updateUnitStrength(created_unit);
+						if (function_0049EC30(created_unit) != 0)
+							updateUnitStrength(created_unit);
 
-				}
-
-				if(current_player.race == RaceId::Zerg)
-					unitId = UnitId::ZergDrone;
-				else
-				if(current_player.race == RaceId::Terran)
-					unitId = UnitId::TerranSCV;
-				else
-				if(current_player.race == RaceId::Protoss)
-					unitId = UnitId::ProtossProbe;
-				else
-					unitId = UnitId::None;
-
-				created_unit = createUnit(unitId,startPositions[playerId].x,startPositions[playerId].y,playerId);
-
-				if(created_unit != NULL) {
-
-					function_004A01F0(created_unit);
-
-					if(function_0049EC30(created_unit) != 0)
-						updateUnitStrength(created_unit);
-
-				}
-
-				if(current_player.race == RaceId::Zerg)
-					unitId = UnitId::ZergDrone;
-				else
-				if(current_player.race == RaceId::Terran)
-					unitId = UnitId::TerranSCV;
-				else
-				if(current_player.race == RaceId::Protoss)
-					unitId = UnitId::ProtossProbe;
-				else
-					unitId = UnitId::None;
-
-				created_unit = createUnit(unitId,startPositions[playerId].x,startPositions[playerId].y,playerId);
-
-				if(created_unit != NULL) {
-
-					function_004A01F0(created_unit);
-
-					if(function_0049EC30(created_unit) != 0)
-						updateUnitStrength(created_unit);
-
+					}
 				}
 
 			}
