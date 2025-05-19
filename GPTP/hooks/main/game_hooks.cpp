@@ -5,6 +5,7 @@
 #include <graphics/graphics.h>
 
 #include <SCBW/api.h>
+#include <SCBW/UnitFinder.h>
 
 #include "../psi_field.h"
 
@@ -17,9 +18,62 @@ namespace utils {
 			callback(unit);
         }
 	}
+
+    bool isMineral(const CUnit* resource) {
+        return UnitId::ResourceMineralField <= resource->id && resource->id <= UnitId::ResourceMineralFieldType3;
+    }
 }
 
 namespace plugins {
+    class HarvestTargetFinder : public scbw::UnitFinderCallbackMatchInterface {
+        CUnit* mainHarvester;
+    public:
+        void setMainHarvester(CUnit* mainHarvester) { this->mainHarvester = mainHarvester; }
+        bool match(CUnit* unit) {
+            if (!unit)
+                return false;
+
+            if (mainHarvester->getDistanceToTarget(unit) > (16 << 5)) //Harvest distance
+                return false;
+
+            if (!(utils::isMineral(unit)))
+                return false;
+
+            return true;
+        }
+    };
+    HarvestTargetFinder harvestTargetFinder;
+
+    void executeFirstFrameRoutine() {
+        if (*elapsedTimeFrames == 0) {
+            scbw::printText(PLUGIN_NAME ": Hello, world!");
+
+            if (*GAME_TYPE != GameType::UseMapSettings) {
+                //exploreMap();
+                CUnit* firstMineral[8];
+                for (CUnit* base = *firstVisibleUnit; base; base = base->link.next) {
+                    if (units_dat::BaseProperty[base->id] & UnitProperty::ResourceDepot)
+                    {
+                        harvestTargetFinder.setMainHarvester(base);
+                        firstMineral[base->playerId] = scbw::UnitFinder::getNearestTarget(
+                            base->getX() - 512, base->getY() - 512,
+                            base->getX() + 512, base->getY() + 512,
+                            base,
+                            harvestTargetFinder);
+                    }
+                }
+
+                for (CUnit* worker = *firstVisibleUnit; worker; worker = worker->link.next) {
+                    //KYSXD Send all units to harvest on first run
+                    if (units_dat::BaseProperty[worker->id] & UnitProperty::Worker) {
+                        if (firstMineral[worker->playerId]) {
+                            worker->orderTo(OrderId::Harvest1, firstMineral[worker->playerId]);
+                        }
+                    }
+                }
+            }
+        }
+	}
 }
 
 namespace hooks {
@@ -32,12 +86,7 @@ namespace hooks {
             scbw::setInGameLoopState(true); //Needed for scbw::random() to work
             graphics::resetAllGraphics();
             hooks::updatePsiFieldProviders();
-
-            //This block is executed once every game.
-            if (*elapsedTimeFrames == 0) {
-                //Write your code here
-                scbw::printText(PLUGIN_NAME ": Hello, world!");
-            }
+			plugins::executeFirstFrameRoutine();
 
             utils::loopThroughVisibleUnits([](CUnit* unit) {
                 switch (unit->id) {
