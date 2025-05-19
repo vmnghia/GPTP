@@ -20,7 +20,7 @@ namespace utils {
 	}
 
     bool isMineral(const CUnit* resource) {
-        return UnitId::ResourceMineralField <= resource->id && resource->id <= UnitId::ResourceMineralFieldType3;
+        return  resource->id >= UnitId::ResourceMineralField && resource->id <= UnitId::ResourceMineralFieldType3;
     }
 }
 
@@ -44,12 +44,34 @@ namespace plugins {
     };
     HarvestTargetFinder harvestTargetFinder;
 
+    void exploreMap() {
+        for (int x = 0; x < mapTileSize->width; x++) {
+            for (int y = 0; y < mapTileSize->height; y++) {
+
+                if ((x + y) % 2) {
+                    ActiveTile* currentTile = &(*activeTileArray)[(x)+mapTileSize->width * (y)];
+                    currentTile->exploredFlags = 0;
+
+                }
+
+            }
+        }
+        //By RavenWolf:
+        //if vespene geyser or a mineral field, reveal it to all players
+        for (CUnit* unit = *firstVisibleUnit; unit; unit = unit->link.next) {
+            if (utils::isMineral(unit)
+                || unit->id == UnitId::ResourceVespeneGeyser) {
+                unit->sprite->visibilityFlags = 0xFF;
+            }
+        }
+    }
+
     void executeFirstFrameRoutine() {
         if (*elapsedTimeFrames == 0) {
             scbw::printText(PLUGIN_NAME ": Hello, world!");
 
             if (*GAME_TYPE != GameType::UseMapSettings) {
-                //exploreMap();
+                exploreMap();
                 CUnit* firstMineral[8];
                 for (CUnit* base = *firstVisibleUnit; base; base = base->link.next) {
                     if (units_dat::BaseProperty[base->id] & UnitProperty::ResourceDepot)
