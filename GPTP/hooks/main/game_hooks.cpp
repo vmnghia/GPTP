@@ -83,7 +83,6 @@ namespace plugins {
 				}
 
 				for (CUnit *worker = *firstVisibleUnit; worker; worker = worker->link.next) {
-					// KYSXD Send all units to harvest on first run
 					if (units_dat::BaseProperty[worker->id] & UnitProperty::Worker) {
 						if (firstMineral[worker->playerId]) {
 							worker->orderTo(OrderId::Harvest1, firstMineral[worker->playerId]);
@@ -107,13 +106,30 @@ namespace hooks {
 			hooks::updatePsiFieldProviders();
 			plugins::executeFirstFrameRoutine();
 
-			utils::loopThroughVisibleUnits([](CUnit *unit) {
+			u32 idleWorkerCount = 0;
+
+			for (CUnit *unit = *firstVisibleUnit; unit; unit = unit->link.next) {
+				if ((unit->playerId == *LOCAL_NATION_ID || scbw::isInReplay()) &&
+				    units_dat::BaseProperty[unit->id] & UnitProperty::Worker &&
+				    unit->mainOrderId == OrderId::PlayerGuard) {
+					++idleWorkerCount;
+				}
+
 				switch (unit->id) {
 					case UnitId::TerranSCV:
-						unit->id;
 						break;
 				}
-			});
+			}
+
+			/*utils::loopThroughVisibleUnits([](CUnit *unit) {
+
+			});*/
+
+			if (idleWorkerCount != 0) {
+				char idleworkers[64];
+				sprintf_s(idleworkers, "Idle Workers: %d", idleWorkerCount);
+				graphics::drawText(5, 5, idleworkers, graphics::FONT_MEDIUM, graphics::ON_SCREEN);
+			}
 
 			scbw::setInGameLoopState(false);
 		}
