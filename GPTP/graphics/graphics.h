@@ -20,6 +20,9 @@ const ColorId GREEN   = 117;  //Player 7 color for Ice tilesets	(0x75)
 const ColorId CYAN    = 128;  //Neutral player color			(0x80)
 const ColorId BLACK   = 0;	  //								(0x00)
 const ColorId GREY    = 74;	  //								(0x4A)
+const ColorId AQUA    = 128;  //                                (0x80)
+const ColorId COBALT  = 122;  //                                (0x7A)
+const ColorId CHARCOAL = 145; //                                (0x90)
 
 /// For use with getFactionColor() functions, max index is PLAYER_COUNT-1
 const static ColorId standardColors[] = { RED , BLUE, TEAL, PURPLE, ORANGE, BROWN, WHITE, YELLOW, GREEN, CYAN, BLACK, GREY };
