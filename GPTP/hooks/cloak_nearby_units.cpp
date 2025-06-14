@@ -107,7 +107,7 @@ void secondaryOrder_Cloak(CUnit* unit) {
 
 	static CUnit** const firstBurrowedUnit = (CUnit**) 0x0063FF5C;
 
-	unit->isCloaked++;
+	unit->isCloaked+=1;
 
 	if (
 		unit->isCloaked == 1 &&
