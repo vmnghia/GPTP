@@ -68,6 +68,8 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <DisableSpecificWarnings>6011</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>version.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -95,6 +97,8 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat />
       <MinimalRebuild />
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>version.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -525,6 +529,7 @@
     <ClInclude Include="SCBW\enumerations\UnitId.h" />
     <ClInclude Include="SCBW\enumerations\UpgradeId.h" />
     <ClInclude Include="SCBW\enumerations\WeaponId.h" />
+    <ClInclude Include="SCBW\fgdata.h" />
     <ClInclude Include="SCBW\scbwdata.h" />
     <ClInclude Include="SCBW\structures.h" />
     <ClInclude Include="SCBW\structures\CBullet.h" />
