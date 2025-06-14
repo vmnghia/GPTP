@@ -205,25 +205,25 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	hooks::injectDrawHook();
 
 	// in order of creation
-	hooks::injectInfestationHooks();
-	hooks::injectSiegeTransformHooks();
+	//hooks::injectInfestationHooks();
+	//hooks::injectSiegeTransformHooks();
 	hooks::injectButtonSetHooks();
-	hooks::injectSelectMod();
-	hooks::injectMergeUnitsHooks();
-	hooks::injectLarvaCreepSpawnHooks();
-	hooks::injectLiftLandHooks();
-	hooks::injectAttackOrdersHooks();
-	hooks::injectStopHoldPosOrdersHooks();
-	hooks::injectRecallSpellHooks();
-	hooks::injectEnterNydusHooks();
-	hooks::injectCastOrderHooks();
-	hooks::injectWpnSpellHitHooks();
-	hooks::injectBuildingMorphHooks();
-	hooks::injectMakeNydusExitHook();
-	hooks::injectUnitMorphHooks();
-	hooks::injectWireframeHook();
-	hooks::injectDieOrdersHook();
-	hooks::injectBuildingTerranHook();
+	//hooks::injectSelectMod();
+	//hooks::injectMergeUnitsHooks();
+	//hooks::injectLarvaCreepSpawnHooks();
+	//hooks::injectLiftLandHooks();
+	//hooks::injectAttackOrdersHooks();
+	//hooks::injectStopHoldPosOrdersHooks();
+	//hooks::injectRecallSpellHooks();
+	//hooks::injectEnterNydusHooks();
+	//hooks::injectCastOrderHooks();
+	//hooks::injectWpnSpellHitHooks();
+	//hooks::injectBuildingMorphHooks();
+	//hooks::injectMakeNydusExitHook();
+	//hooks::injectUnitMorphHooks();
+	//hooks::injectWireframeHook();
+	//hooks::injectDieOrdersHook();
+	/*hooks::injectBuildingTerranHook();
 	hooks::injectBuildingProtossHooks();
 	hooks::injectUnitTrainHooks();
 	hooks::injectLoadUnloadProcHooks();
@@ -243,8 +243,8 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	hooks::injectCMDRECV_MergeArchonHooks();
 	hooks::injectCMDRECV_MorphHooks();
 	hooks::injectCMDRECV_StopHooks();
-	hooks::injectCMDRECV_CancelHooks();
-	hooks::injectSelectLarvaHooks();
+	hooks::injectCMDRECV_CancelHooks();*/
+	hooks::injectSelectLarvaHooks();/*
 	hooks::injectRepairOrderHook();
 	hooks::injectStatsPanelDisplayHook();
 	hooks::injectUtilsHooks();
@@ -297,9 +297,9 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	hooks::injectWpnSplashHooks();
 	hooks::injectAttackAndCooldownHook();
 	hooks::injectCheatCodesHooks();
-	hooks::injectCMDRECV_SaveLoadWrappersHooks();
+	hooks::injectCMDRECV_SaveLoadWrappersHooks();*/
 
-	hooks::injectApplyUpgradeFlags();
+	/*hooks::injectApplyUpgradeFlags();
 	hooks::injectAttackPriorityHooks();
 	hooks::injectBunkerHooks();
 	hooks::injectCloakNearbyUnits();
@@ -326,7 +326,7 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	hooks::injectUnitMaxEnergyHook();
 	hooks::injectWeaponRangeHooks();
 
-	hooks::injectUnitTooltipHook();
+	hooks::injectUnitTooltipHook();*/
 
 	// fix to make sc1 campaign playable from firegraft/mpqgraft self-executables
 	jmpPatch((void *)0x15017960,
