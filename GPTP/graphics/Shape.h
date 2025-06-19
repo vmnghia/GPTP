@@ -13,6 +13,7 @@ class Shape {
     void setText(int x, int y, int stringIndex, FontSize fontSize, CoordType coordType);
     void setDot(int x, int y, ColorId color, CoordType coordType);
     void setLine(int x1, int y1, int x2, int y2, ColorId color, CoordType coordType);
+	void setArrowLine(int x1, int y1, int x2, int y2, ColorId color, CoordType coordType);
     void setBox(int left, int top, int right, int bottom, ColorId color, CoordType coordType);
     void setCircle(int x, int y, int radius, ColorId color, CoordType coordType);
     void setFilledBox(int left, int top, int right, int bottom, ColorId color, CoordType coordType);
@@ -21,7 +22,9 @@ class Shape {
 	void setDottedLine(int x1, int y1, int x2, int y2, ColorId color, CoordType coordType);
 	void setDottedLine2(int x1, int y1, int x2, int y2, ColorId color1, ColorId color2, CoordType coordType);
 	void setDottedEllipse(int left, int top, int right, int bottom, ColorId color, CoordType coordType);
-	void setDottedEllipse2(int left, int top, int right, int bottom, ColorId color1, ColorId color2, CoordType coordType);
+	void setDottedEllipse2(int left, int top, int right, int bottom, ColorId color1, ColorId color2,
+		                   CoordType coordType);
+	void setChevronLine(int x1, int y1, int x2, int y2, ColorId color, CoordType coordType, int dashLen, int gapLen);
     void draw() const;
 
   private:
@@ -30,12 +33,14 @@ class Shape {
       TEXT,
       DOT,
       LINE,
+	  ARROW_LINE,
       BOX,
       CIRCLE,
       FILLED_BOX,
       FILLED_CIRCLE,
 	  ELLIPSE,
 	  DOTTED_LINE,
+	  DOTTED_ARROW_LINE,
 	  DOTTED_LINE2,
 	  DOTTED_ELLIPSE,
 	  DOTTED_ELLIPSE2
