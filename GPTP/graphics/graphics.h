@@ -67,7 +67,7 @@ namespace graphics {
 
 	void drawDottedLine(int x1, int y1, int x2, int y2, ColorId color, CoordType ct = ON_SCREEN);
 
-	void drawChevronLine(int x1, int y1, int x2, int y2, ColorId color, CoordType ct = ON_SCREEN, int dashLen = 12,
+	void drawChevronLine(int x1, int y1, int x2, int y2, ColorId color, CoordType ct = ON_SCREEN, int dashLen = 10,
 	                     int gapLen = 3);
 
 	void drawDottedLine2(int x1, int y1, int x2, int y2, ColorId color1, ColorId color2, CoordType ct = ON_SCREEN);
@@ -76,5 +76,6 @@ namespace graphics {
 
 	void drawDottedEllipse2(int left, int top, int right, int bottom, ColorId color1, ColorId color2,
 	                        CoordType ct = ON_SCREEN);
+	void drawDiamondWithSideGaps(int x, int y, int radius, ColorId color, CoordType ct = ON_SCREEN);
 
 } // namespace graphics

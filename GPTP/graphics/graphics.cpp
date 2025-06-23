@@ -145,6 +145,14 @@ void drawChevronLine(int x1, int y1, int x2, int y2, ColorId color, CoordType ct
 	shapes[shapeCount++].setChevronLine(x1, y1, x2, y2, color, ct, dashLen, gapLen);
 }
 
+void drawDiamondWithSideGaps(int x, int y, int radius, ColorId color, CoordType ct) {
+	if (shapeCount >= MAX_SHAPES) {
+		setError(ERR_TOO_MANY_SHAPES);
+		return;
+	}
+	shapes[shapeCount++].setDiamondWithSideGaps(x, y, radius, color, ct);
+}
+
 const std::string& getStringFromIndex(int stringIndex) {
   assert(0 <= stringIndex && stringIndex < MAX_STRINGS);
   return strings[stringIndex];

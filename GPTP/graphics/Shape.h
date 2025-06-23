@@ -25,6 +25,7 @@ class Shape {
 	void setDottedEllipse2(int left, int top, int right, int bottom, ColorId color1, ColorId color2,
 		                   CoordType coordType);
 	void setChevronLine(int x1, int y1, int x2, int y2, ColorId color, CoordType coordType, int dashLen, int gapLen);
+	void setDiamondWithSideGaps(int x, int y, int radius, ColorId color, CoordType coordType);
     void draw() const;
 
   private:
@@ -43,7 +44,8 @@ class Shape {
 	  DOTTED_ARROW_LINE,
 	  DOTTED_LINE2,
 	  DOTTED_ELLIPSE,
-	  DOTTED_ELLIPSE2
+	  DOTTED_ELLIPSE2,
+	  DIAMOND_WITH_SIDE_GAPS,
     } type;
     CoordType coordType;
     Point32 p1;

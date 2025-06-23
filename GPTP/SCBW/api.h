@@ -225,6 +225,10 @@ void refreshUnitAfterMove(CUnit* unit);
 /// @return           The created unit or NULL if the unit cannot be created.
 CUnit* createUnitAtPos(u16 unitType, u16 playerId, u32 x, u32 y);
 
+void setThingyVisibilityFlags(CThingy *thingy);
+CThingy *createThingy(u16 spriteId, s16 x, s16 y, u8 playerId);
+void setImageDirection(CImage *image, s8 direction);
+
 /// Calculates the images.dat overlay adjustment for the given unit.
 /// This piece of code is used throughout StarCraft.exe for various status
 /// effects, such as Ensnare, Plague, and Defensive Matrix.
