@@ -147,6 +147,15 @@ namespace graphics {
 		this->coordType = coordType;
 	};
 
+	void Shape::setDiamondWithSideGaps(int x, int y, int radius, ColorId color, CoordType coordType) {
+		this->type = DIAMOND_WITH_SIDE_GAPS;
+		this->p1.x = x;
+		this->p1.y = y;
+		this->radius = radius;
+		this->color = color;
+		this->coordType = coordType;
+	};
+
 	//-------- Drawing --------//
 
 	void Shape::draw() const {
@@ -229,6 +238,8 @@ namespace graphics {
 			case DOTTED_ELLIPSE2:
 				gameScreenBuffer->drawDottedEllipse2(p1.x, p1.y, p2.x, p2.y, this->color, this->color2);
 				break;
+			case DIAMOND_WITH_SIDE_GAPS:
+				gameScreenBuffer->drawDiamondWithSideGaps(p1.x, p1.y, this->radius, 3, this->color);
 
 			default:
 				setError(ERR_UNKNOWN_SHAPE);

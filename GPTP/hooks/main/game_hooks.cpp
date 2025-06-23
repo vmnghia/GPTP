@@ -25,6 +25,17 @@ namespace utils {
 } // namespace utils
 
 namespace plugins {
+	void createGRP() {
+		uint16_t numberOfFrames = 1;
+		uint16_t maxImageWidth = 255;
+		uint16_t maxImageHeight = 255;
+		int offsetX = 0;
+		int offsetY = 0;
+		int width = 0;
+		int height = 0;
+		int dataOffset = 0;
+	}
+
 	class HarvestTargetFinder : public scbw::UnitFinderCallbackMatchInterface {
 		CUnit *mainHarvester;
 
@@ -136,9 +147,10 @@ namespace plugins {
 		if (isTraining) {
 			for (int i = 0; i < 5; i++) {
 				// draw empty boxes border and background
-				graphics::drawBox(left + 8 * i, top + 6, left + 8 * i + 8, bottom + 4, graphics::COBALT, graphics::ON_MAP);
-				graphics::drawFilledBox(left + 8 * i + 1, innerTop + 5, left + 8 * i + 7, innerBottom + 3, graphics::CHARCOAL,
-				                        graphics::ON_MAP);
+				graphics::drawBox(left + 8 * i, top + 6, left + 8 * i + 8, bottom + 4, graphics::COBALT,
+				                  graphics::ON_MAP);
+				graphics::drawFilledBox(left + 8 * i + 1, innerTop + 5, left + 8 * i + 7, innerBottom + 3,
+				                        graphics::CHARCOAL, graphics::ON_MAP);
 
 				// draw filled boxes
 				if (queueLength > 0 && i < queueLength) {
@@ -191,6 +203,88 @@ namespace plugins {
 			                        graphics::ON_MAP);
 		}
 	}
+
+	void drawRallyPoint(CUnit *unit) {
+		u16 rallyX, rallyY;
+		CUnit *rallyTarget = unit->rally.unit;
+		graphics::ColorId color = 83;
+
+		if (rallyTarget != NULL && units_dat::BaseProperty[rallyTarget->id] & UnitProperty::ResourceContainer) {
+			color = graphics::YELLOW;
+		}
+
+		if (unit->rally.pt.x == 0 && unit->rally.pt.y == 0) { // If the rally point is not set
+			rallyX = unit->position.x;
+			rallyY = unit->position.y;
+		} else { // If the rally point is set
+			rallyX = unit->rally.pt.x;
+			rallyY = unit->rally.pt.y;
+		}
+
+		graphics::drawChevronLine(unit->position.x, unit->position.y, rallyX, rallyY, color, graphics::ON_MAP);
+		graphics::drawDottedEllipse(rallyX - 8, rallyY - 4, rallyX + 8, rallyY + 4, color, graphics::ON_MAP);
+		graphics::drawDot(rallyX, rallyY, color, graphics::ON_MAP);
+	}
+
+	void drawOrderQueue(CUnit *unit) {
+		COrder *currentOrder = unit->orderQueueHead;
+		graphics::ColorId color = graphics::GREEN;
+
+		if (currentOrder != NULL) {
+			// SCV destination while constructing
+			if (currentOrder->target.pt.x == 0 && currentOrder->target.pt.y == 0) {
+				if (unit->orderQueueTail != NULL)
+					graphics::drawDottedLine(unit->position.x, unit->position.y, unit->orderQueueTail->target.pt.x,
+					                         unit->orderQueueTail->target.pt.y, unit->getColor(),
+					                         graphics::CoordType::ON_MAP);
+			} else {
+				switch (currentOrder->orderId) {
+					case OrderId::AttackMove:
+					case OrderId::AttackUnit:
+						color = graphics::RED;
+						break;
+					case OrderId::Patrol:
+						color = graphics::BLUE;
+						break;
+					default:
+						color = graphics::GREEN;
+						break;
+				}
+				graphics::drawChevronLine(unit->position.x, unit->position.y, unit->orderTarget.pt.x,
+				                          unit->orderTarget.pt.y, color, graphics::CoordType::ON_MAP);
+				graphics::drawDottedEllipse(unit->orderTarget.pt.x - 8, unit->orderTarget.pt.y - 4,
+				                            unit->orderTarget.pt.x + 8,
+				                            unit->orderTarget.pt.y + 4, color,
+				                            graphics::ON_MAP);
+
+				graphics::drawChevronLine(unit->orderTarget.pt.x, unit->orderTarget.pt.y, currentOrder->target.pt.x,
+				                          currentOrder->target.pt.y, color, graphics::CoordType::ON_MAP);
+				graphics::drawDottedEllipse(currentOrder->target.pt.x - 8, currentOrder->target.pt.y - 4,
+				                            currentOrder->target.pt.x + 8, currentOrder->target.pt.y + 4, color,
+				                            graphics::ON_MAP);
+
+				currentOrder = currentOrder->next;
+
+				while (currentOrder != NULL && (currentOrder->target.pt.x != 0 && currentOrder->target.pt.y != 0)) {
+					if (currentOrder->orderId == OrderId::AttackMove || currentOrder->orderId == OrderId::AttackUnit) {
+						color = graphics::RED;
+					} else {
+						color = graphics::GREEN;
+					}
+
+					graphics::drawChevronLine(currentOrder->prev->target.pt.x, currentOrder->prev->target.pt.y,
+					                              currentOrder->target.pt.x, currentOrder->target.pt.y, color,
+					                          graphics::CoordType::ON_MAP);
+					graphics::drawDottedEllipse(currentOrder->target.pt.x - 8, currentOrder->target.pt.y - 4,
+					                            currentOrder->target.pt.x + 8, currentOrder->target.pt.y + 4, color,
+					                            graphics::ON_MAP);
+
+					currentOrder = currentOrder->next;
+				}
+			}
+		}
+	}
+
 } // namespace plugins
 
 namespace hooks {
@@ -216,10 +310,40 @@ namespace hooks {
 
 				switch (unit->id) {
 					case UnitId::TerranSCV:
+						/*int x1 = unit->position.x;
+						int y1 = unit->position.y;
+
+						int length = 50;
+
+						for (int i = 0; i < 34; i++) {
+							double pi = 3.14159265358979323846;
+							float angle = pi * i / 16 - pi / 2;
+							int x2 = x1 + (length * cos(angle));
+							int y2 = y1 + (length * sin(angle));
+							graphics::drawLine(x1, y1, x2, y2, graphics::GREEN, graphics::ON_MAP);
+						}*/
+
 						break;
 				}
 
 				plugins::drawBuildProgress(unit);
+			}
+
+			for (int i = 0; i < SELECTION_ARRAY_LENGTH; ++i) {
+				CUnit *selUnit = clientSelectionGroup->unit[i];
+
+				if (selUnit == nullptr)
+					continue;
+
+				if (selUnit->playerId == *LOCAL_NATION_ID || !scbw::isInReplay()) {
+					if (units_dat::GroupFlags[selUnit->id].isFactory) {
+						plugins::drawRallyPoint(selUnit);
+					}
+
+					if (selUnit != NULL) {
+						plugins::drawOrderQueue(selUnit);
+					}
+				}
 			}
 
 			/*utils::loopThroughVisibleUnits([](CUnit *unit) {
@@ -265,3 +389,24 @@ namespace hooks {
 } // namespace hooks
 
 namespace plugins {}
+
+namespace helpers {
+
+	const u32 Helper_CreateBullet = 0x0048C260;
+	void createBullet(u8 weaponId, const CUnit *source, s16 x, s16 y, u8 attackingPlayer, u8 direction) {
+		u32 attackingPlayer_ = attackingPlayer, direction_ = direction;
+		s32 x_ = x, y_ = y;
+
+		__asm {
+    PUSHAD
+    PUSH direction_
+    PUSH attackingPlayer_
+    PUSH y_
+    PUSH x_
+    MOV EAX, source
+    MOVZX ECX, weaponId
+    CALL Helper_CreateBullet
+    POPAD
+		}
+	}
+} // namespace

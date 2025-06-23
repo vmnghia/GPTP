@@ -337,17 +337,10 @@ namespace graphics {
 			}
 		}
 
-		const double arrowAngle = 3.14159265358979323846264338327950288 / 4; // 45 degrees
-		const int arrowLength = 4;
+		const int arrowLength = 3;
 
 		double lineAngle = atan2(y2 - y1, x2 - x1);
-		int arrowX1 = x2 - arrowLength * cos(lineAngle + arrowAngle);
-		int arrowY1 = y2 - arrowLength * sin(lineAngle + arrowAngle);
-		int arrowX2 = x2 - arrowLength * cos(lineAngle - arrowAngle);
-		int arrowY2 = y2 - arrowLength * sin(lineAngle - arrowAngle);
-
-		this->drawLine(x2, y2, arrowX1, arrowY1, color);
-		this->drawLine(x2, y2, arrowX2, arrowY2, color);
+		this->drawArrow(x2, y2, arrowLength, lineAngle * 180 / 3.14159265358979323846264338327950288, color);
 	}
 
 	void Bitmap::drawHorizontalLine(int x1, int x2, int y, ColorId color) {
@@ -572,9 +565,7 @@ namespace graphics {
 	}
 
 	void Bitmap::drawChevronLine(int x1, int y1, int x2, int y2, ColorId color, int dash, int gap, int direction,
-	                                 int speed, bool hideDashes) {
-
-		const double arrowAngle = 3.14159265358979323846264338327950288 / 4; // 45 degrees
+	                             int speed, bool hideDashes) {
 		const int arrowLength = 3;
 		double lineAngle = atan2(y2 - y1, x2 - x1);
 
@@ -820,6 +811,72 @@ namespace graphics {
 				else
 					current_color = color1;
 			}
+		}
+	}
+	/*------------------------------------------------------------
+  Draw a 45-degree “diamond” (a square rotated π/4) where each
+  of the four sides has a centred gap of length gapLen pixels.
+
+  ┌──────── r ────────┐      vertices (clockwise)
+	    (cx,cy-r)              p0 ‑- top
+ (cx-r,cy)      (cx+r,cy)      p1 ‑- right
+	    (cx,cy+r)              p2 ‑- bottom
+	                            p3 ‑- left
+  ------------------------------------------------------------*/
+
+	/* Generic integer Bresenham that can “skip” an arbitrary
+	   span on the current segment. */
+	void Bitmap::bresenhamWithGap(int x0, int y0, int x1, int y1, int gapStart, int gapEnd, ColorId color) {
+		int dx = abs(x1 - x0), sx = (x0 < x1 ? 1 : -1);
+		int dy = abs(y1 - y0), sy = (y0 < y1 ? 1 : -1);
+		int err = dx - dy;
+		int step = 0; // progress along the edge
+
+		while (true) {
+			//   draw only outside the [gapStart,gapEnd) span
+			if (step < gapStart || step >= gapEnd)
+				this->drawDot(x0, y0, color);
+
+			if (x0 == x1 && y0 == y1)
+				break;
+
+			int e2 = err * 2;
+			if (e2 > -dy) {
+				err -= dy;
+				x0 += sx;
+			}
+			if (e2 < dx) {
+				err += dx;
+				y0 += sy;
+			}
+
+			++step;
+		}
+	}
+
+	/*------------------------------------------------------------
+	  High-level helper:  draw a diamond with a centred gap
+	  on each side.
+	------------------------------------------------------------*/
+	void Bitmap::drawDiamondWithSideGaps(int cx, int cy, int r, int gapLen, ColorId color) {
+		struct Pt {
+			int x, y;
+		};
+		Pt p[4] = {{cx, cy - r}, {cx + r, cy}, {cx, cy + r}, {cx - r, cy}};
+
+		for (int i = 0; i < 4; ++i) {
+			Pt a = p[i];
+			Pt b = p[(i + 1) & 3];
+
+			// pixel length of current edge (Chebyshev distance)
+			int L = std::max(abs(b.x - a.x), abs(b.y - a.y));
+
+			int gapHalf = gapLen / 2;
+			int mid = L / 2;                         // midpoint index
+			int gs = std::max(0, mid - gapHalf);     // inclusive
+			int ge = std::min(L + 1, mid + gapHalf); // exclusive
+
+			bresenhamWithGap(a.x, a.y, b.x, b.y, gs, ge, color);
 		}
 	}
 

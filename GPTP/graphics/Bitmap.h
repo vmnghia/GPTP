@@ -26,8 +26,10 @@ namespace graphics {
 		// arrows
 		void drawArrow(int x, int y, int length, int angle, ColorId color);
 		void drawArrowLine(int x1, int y1, int x2, int y2, ColorId color);
-		void drawChevronLine(int x1, int y1, int x2, int y2, ColorId color, int dash = 12, int gap = 3,
+		void drawChevronLine(int x1, int y1, int x2, int y2, ColorId color, int dash = 10, int gap = 3,
 		                     int direction = -1, int speed = 50, bool hideDashes = false);
+		void bresenhamWithGap(int x0, int y0, int x1, int y1, int gapStart, int gapEnd, ColorId color);
+		void drawDiamondWithSideGaps(int x, int y, int radius, int gapLen, ColorId color);
 
 	  private:
 		u16 width, height;
