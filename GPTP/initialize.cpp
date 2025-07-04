@@ -208,7 +208,7 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	//hooks::injectInfestationHooks();
 	//hooks::injectSiegeTransformHooks();
 	hooks::injectButtonSetHooks();
-	//hooks::injectSelectMod();
+	hooks::injectSelectMod();
 	//hooks::injectMergeUnitsHooks();
 	//hooks::injectLarvaCreepSpawnHooks();
 	//hooks::injectLiftLandHooks();
