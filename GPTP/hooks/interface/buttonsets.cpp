@@ -1,5 +1,4 @@
 #include "buttonsets.h"
-
 //Helper functions
 
 namespace {
@@ -176,7 +175,7 @@ BUTTON_SET* getCustomButtonSet(BUTTON_SET* base_buttonset) {
 
 	//since it's a copy of the marine set, it would have the same amount of buttons
 	//this need to be modded according to what you expected selected due to hardcoded marine in example
-	customButtonSet.buttonsInSet = buttonSetTable[UnitId::TerranMarine].buttonsInSet;
+	customButtonSet.buttonsInSet = buttonSetTable[UnitId::TerranMarine].buttonsInSet + 1;
 	//customButtonSet.buttonsInSet = base_buttonset->buttonsInSet; //to use buttonset passed
 
 	//connectedUnit should usually be init at 0xFFFF.Almost unused (maybe not fully implemented).
@@ -191,14 +190,34 @@ BUTTON_SET* getCustomButtonSet(BUTTON_SET* base_buttonset) {
 	for(u32 i = 0; i < customButtonSet.buttonsInSet; i++) {
 		//note: for each line, could also be:
 		//customButtonsArray[i].something = base_buttonset->firstButton[i].something;
-		customButtonsArray[i].actFunc = buttonSetTable[UnitId::TerranMarine].firstButton[i].actFunc;
-		customButtonsArray[i].actStringID = buttonSetTable[UnitId::TerranMarine].firstButton[i].actStringID;
-		customButtonsArray[i].actVar = buttonSetTable[UnitId::TerranMarine].firstButton[i].actVar;
-		customButtonsArray[i].iconID = buttonSetTable[UnitId::TerranMarine].firstButton[i].iconID;
-		customButtonsArray[i].position = buttonSetTable[UnitId::TerranMarine].firstButton[i].position;
-		customButtonsArray[i].reqFunc = buttonSetTable[UnitId::TerranMarine].firstButton[i].reqFunc;
-		customButtonsArray[i].reqStringID = buttonSetTable[UnitId::TerranMarine].firstButton[i].reqStringID;
-		customButtonsArray[i].reqVar = buttonSetTable[UnitId::TerranMarine].firstButton[i].reqVar;
+		if (i == customButtonSet.buttonsInSet - 1) {
+			customButtonsArray[i].actFunc = buttonSetTable[UnitId::TerranMedic].firstButton[5].actFunc;
+			customButtonsArray[i].actStringID = buttonSetTable[UnitId::TerranMedic].firstButton[5].actStringID;
+			customButtonsArray[i].actVar = buttonSetTable[UnitId::TerranMedic].firstButton[5].actVar;
+			customButtonsArray[i].iconID = buttonSetTable[UnitId::TerranMedic].firstButton[5].iconID;
+			customButtonsArray[i].position = buttonSetTable[UnitId::TerranMedic].firstButton[5].position;
+			customButtonsArray[i].reqFunc = buttonSetTable[UnitId::TerranMedic].firstButton[5].reqFunc;
+			customButtonsArray[i].reqStringID = buttonSetTable[UnitId::TerranMedic].firstButton[5].reqStringID;
+			customButtonsArray[i].reqVar = buttonSetTable[UnitId::TerranMedic].firstButton[5].reqVar;
+
+			/*customButtonsArray[i].actFunc = buttonSetTable[UnitId::TerranMarine].firstButton[i].actFunc;
+			customButtonsArray[i].actStringID = 1247;
+			customButtonsArray[i].actVar = 34;
+			customButtonsArray[i].iconID = 365;
+			customButtonsArray[i].position = i;
+			customButtonsArray[i].reqFunc = buttonSetTable[UnitId::TerranMarine].firstButton[i].reqFunc;
+			customButtonsArray[i].reqStringID = 1247;
+			customButtonsArray[i].reqVar = 34;*/
+		} else {
+			customButtonsArray[i].actFunc = buttonSetTable[UnitId::TerranMarine].firstButton[i].actFunc;
+			customButtonsArray[i].actStringID = buttonSetTable[UnitId::TerranMarine].firstButton[i].actStringID;
+			customButtonsArray[i].actVar = buttonSetTable[UnitId::TerranMarine].firstButton[i].actVar;
+			customButtonsArray[i].iconID = i == 2 ? 20 : buttonSetTable[UnitId::TerranMarine].firstButton[i].iconID;
+			customButtonsArray[i].position = buttonSetTable[UnitId::TerranMarine].firstButton[i].position;
+			customButtonsArray[i].reqFunc = buttonSetTable[UnitId::TerranMarine].firstButton[i].reqFunc;
+			customButtonsArray[i].reqStringID = buttonSetTable[UnitId::TerranMarine].firstButton[i].reqStringID;
+			customButtonsArray[i].reqVar = buttonSetTable[UnitId::TerranMarine].firstButton[i].reqVar;
+		}
 	}
 
 	return &customButtonSet;
@@ -457,7 +476,11 @@ namespace hooks {
 	//you can disable the injection of this
 	//function in the _inject.cpp file.
 	BUTTON_SET* getButtonSet(int index) {
+		/*if (index == UnitId::TerranSCV) {
+			return getCustomButtonSet(&buttonSetTable[index]);
+		}*/
 		return &(buttonSetTable[index]);
+		//return getCustomButtonSet(&buttonSetTable[index], index);
 		//if using custom button set, call it with return getCustomButtonSet(&buttonSetTable[index]);
 	}
 
@@ -863,12 +886,27 @@ void updateButtonSet_Sub4591D0() {
 		0x00459890
 	};
 
+	const u32 Extended_Btn_fxnInteractFuncs[] =
+	{
+		0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0,
+		0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0,
+		0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0
+	};
+
 	//Using a local array instead of the original may allow to go past
 	//the 9 buttons limitations
 	//May need a special case using the original array adress and size
 	//when in replay if modified
 	void statbtn_BIN_CustomCtrlID(BinDlg* dialog) {
 		registerUserDialogAction(dialog,(u32)&Btn_fxnInteractFuncs,sizeof(Btn_fxnInteractFuncs));
+		if (scbw::isInReplay()) {
+			// Check for replay
+			registerUserDialogAction(dialog, (u32)&Btn_fxnInteractFuncs, sizeof(Btn_fxnInteractFuncs));
+		} else {
+			// Link to our extended array
+			registerUserDialogAction(dialog, (u32)&Extended_Btn_fxnInteractFuncs,
+			                         sizeof(Extended_Btn_fxnInteractFuncs));
+		}
 		BINDLG_BlitSurface(dialog);
 	}
 

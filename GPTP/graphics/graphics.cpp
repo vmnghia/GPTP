@@ -7,7 +7,7 @@
 namespace graphics {
 
 const int MAX_SHAPES  = 10000;
-const int MAX_STRINGS = 2000;
+const int MAX_STRINGS = 10000;
 
 //Static arrays for fast drawing
 Shape shapes[MAX_SHAPES];

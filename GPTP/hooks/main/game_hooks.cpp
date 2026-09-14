@@ -6,7 +6,46 @@
 #include <SCBW/UnitFinder.h>
 #include <SCBW/api.h>
 
+#include "../../Beam.h"
+#include "../../Grp.h"
 #include "../psi_field.h"
+
+uint32_t grpSize = 0;
+GrpHead *hasBeamGrp;
+
+std::vector<Grp *> grps;
+// Beam *beam = new Beam(127, 127, 125, 0.0f);
+int16_t *beam = nullptr;
+
+int16_t *createBeamGrp(int frames, float angle = 0.0f, int length = 125, int16_t *beam = nullptr)
+{
+    int width = 255;
+    int height = 255;
+    int size = frames * width * height * 2;
+
+    if (beam != nullptr)
+    {
+        delete[] beam;
+		beam = nullptr;
+    }
+
+    beam = new int16_t[size];
+    std::fill(beam, beam + size, -1);
+
+    for (int i = 0; i < frames; ++i)
+    {
+        generateBeamAngle(127, 127, angle, length, 16, beam + (i * width * height), frames - i - 1);
+        // generateBeamAngle(127, 127, angle, length, 16, beam + (i * width * height), 10);
+    }
+
+    // uint8_t *grpData = generateGrp(beam, frames, width, height, false, &grpSize);
+
+    return beam;
+}
+
+//int16_t *grpData = createBeamGrp(9, 0, 125, beam);
+//GrpHead *beamGrp = reinterpret_cast<GrpHead *>(generateGrp(grpData, 9, 255, 255, false, &grpSize));
+GrpHead *beamGrp = nullptr;
 
 namespace utils
 {
@@ -217,7 +256,7 @@ void drawBuildProgress(CUnit *unit)
 
     // draw progress
     progress = (float)elapsedBuildTime / timeCost;
-    progressWidth = progress * (innerRight - innerLeft);
+    progressWidth = (int)std::round(progress * (innerRight - innerLeft));
     if (isTraining || isUpgradingOrResearching || isBuildingSelf)
     {
         graphics::drawFilledBox(innerLeft, innerTop, innerLeft + progressWidth, innerBottom - 1, graphics::AQUA,
@@ -349,10 +388,35 @@ bool nextFrame()
 
             switch (unit->id)
             {
-            case UnitId::TerranSCV:
+            case UnitId::TerranSiegeTankTankMode:
+
+                if (unit->subunit->mainOrderId == OrderId::AttackFixedRange && unit->subunit->orderTarget.unit &&
+                    *elapsedTimeFrames % 4 == 0)
+                {
+                    CImage *overlay = unit->sprite->createTopOverlay(ImageId::Explosion2_Small);
+                    float angle = atan2(unit->subunit->orderTarget.pt.y - unit->position.y,
+                                        unit->subunit->orderTarget.pt.x - unit->position.x);
+                    int length =
+                        scbw::getDistanceFast(unit->position.x, unit->position.y, unit->subunit->orderTarget.pt.x,
+                                              unit->subunit->orderTarget.pt.y);
+
+                    // beam->Update(length, angle);
+					if (beamGrp != nullptr) {
+						delete[] beamGrp;
+						beamGrp = nullptr;
+                    }
+
+					createBeamGrp(9, angle, length, beam);
+					beamGrp = reinterpret_cast<GrpHead *>(generateGrp(beam, 9, 255, 255, false, &grpSize));
+
+                    overlay->grpOffset = beamGrp;
+                }
 
                 break;
             }
+
+
+
 
             plugins::drawBuildProgress(unit);
         }

@@ -115,6 +115,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Beam.cpp" />
+    <ClCompile Include="BeamManager.cpp" />
+    <ClCompile Include="Canvas.cpp" />
     <ClCompile Include="configure.cpp" />
     <ClCompile Include="Events\Events.cpp" />
     <ClCompile Include="graphics\Bitmap.cpp" />
@@ -123,6 +126,7 @@
     <ClCompile Include="graphics\graphics.cpp" />
     <ClCompile Include="graphics\graphics_errors.cpp" />
     <ClCompile Include="graphics\Shape.cpp" />
+    <ClCompile Include="Grp.cpp" />
     <ClCompile Include="hooks\apply_upgrade_flags.cpp" />
     <ClCompile Include="hooks\apply_upgrade_flags_inject.cpp" />
     <ClCompile Include="hooks\attack_priority.cpp" />
@@ -382,6 +386,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AI\spells\defensive_matrix.h" />
+    <ClInclude Include="Beam.h" />
+    <ClInclude Include="BeamManager.h" />
+    <ClInclude Include="Canvas.h" />
     <ClInclude Include="definitions.h" />
     <ClInclude Include="Events\Events.h" />
     <ClInclude Include="graphics\Bitmap.h" />
@@ -391,6 +398,7 @@
     <ClInclude Include="graphics\graphics_errors.h" />
     <ClInclude Include="graphics\graphics_misc.h" />
     <ClInclude Include="graphics\Shape.h" />
+    <ClInclude Include="Grp.h" />
     <ClInclude Include="hooks\apply_upgrade_flags.h" />
     <ClInclude Include="hooks\attack_priority.h" />
     <ClInclude Include="hooks\bunker_hooks.h" />
