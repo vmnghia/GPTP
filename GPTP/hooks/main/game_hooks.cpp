@@ -84,7 +84,11 @@ void initializeGame()
 {
     if (*elapsedTimeFrames == 0)
     {
-        scbw::printText(PLUGIN_NAME ": Hello, world!");
+        // __DATE__/__TIME__ are baked in when this file is compiled, so a stamp
+        // older than your last edit means the loaded plugin is stale. Note this
+        // only refreshes when game_hooks.cpp itself is recompiled - do a full
+        // rebuild when you need the stamp to be authoritative.
+        scbw::printText(PLUGIN_NAME " build " __DATE__ " " __TIME__);
 
         if (*GAME_TYPE != GameType::UseMapSettings)
         {

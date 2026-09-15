@@ -1,5 +1,7 @@
 #include "Beam.h"
 
+#include "logger.h"
+
 #include <SCBW/api.h>
 #include <SCBW/enumerations.h>
 #include <SCBW/structures/CImage.h>
@@ -1308,6 +1310,20 @@ void Beam::EncodeFrameData(vector<s16> imageData, uint16_t frame, GRPHeader *grp
 
 //-------- Beam overlay: per-unit buffers, spawned on weapon fire --------//
 
+// Debug switches - set both to 0 for normal behaviour.
+//
+// BEAM_DEBUG_FIXED_AIM draws a fixed due-east beam with a hardcoded endpoint,
+// bypassing both the unit's aim and Brood War's angle table. It isolates the
+// rasterize -> GRP -> overlay path: if the forced beam appears, rendering works
+// and the problem is upstream in the aiming; if it does not, the break is in
+// the rendering path itself.
+//
+// BEAM_DEBUG_LOG writes the aim inputs, what the angle table returns, and the
+// resulting GRP frame size on every shot. Requires a Debug build - GPTP's
+// logger compiles out entirely in Release.
+#define BEAM_DEBUG_FIXED_AIM 1
+#define BEAM_DEBUG_LOG 1
+
 namespace
 {
 
@@ -1345,7 +1361,9 @@ struct BeamState
 
 std::unordered_map<CUnit *, BeamState> beamStates;
 
-int16_t *rasterizeBeamFrames(u8 direction, int length, int16_t *buffer)
+// Draws kBeamFrames copies of the beam from the canvas origin out to
+// (endX, endY), each one step dimmer than the last.
+int16_t *rasterizeBeamFrames(int endX, int endY, int16_t *buffer)
 {
     const int size = kBeamFrames * kBeamCanvas * kBeamCanvas;
 
@@ -1354,15 +1372,6 @@ int16_t *rasterizeBeamFrames(u8 direction, int length, int16_t *buffer)
 
     buffer = new int16_t[size];
     std::fill(buffer, buffer + size, -1);
-
-    // Endpoint comes from Brood War's own angleDistance table rather than from
-    // sin/cos over a radian conversion. This is the same call fireWeaponHook
-    // uses to place the bullet, so the beam lines up with the turret by
-    // construction instead of depending on which way a compass convention runs
-    // - converting the direction byte to radians by hand still landed 90
-    // degrees off in testing, for reasons the convention alone doesn't explain.
-    const int endX = kBeamOrigin + scbw::getPolarX(length, direction);
-    const int endY = kBeamOrigin + scbw::getPolarY(length, direction);
 
     for (int i = 0; i < kBeamFrames; ++i)
     {
@@ -1399,6 +1408,22 @@ void spawnBeamOverlay(CUnit *unit)
                                             unit->orderTarget.pt.y);
     length = min(length, kBeamOrigin);
 
+#if BEAM_DEBUG_FIXED_AIM
+    // Straight east from the origin, with the endpoint written out literally so
+    // this path holds up even if the angle table itself is what's broken.
+    const int endX = kBeamOrigin + 96;
+    const int endY = kBeamOrigin;
+#else
+    // Endpoint comes from Brood War's own angleDistance table rather than from
+    // sin/cos over a radian conversion. This is the same call fireWeaponHook
+    // uses to place the bullet, so the beam lines up with the turret by
+    // construction instead of depending on which way a compass convention runs
+    // - converting the direction byte to radians by hand still landed 90
+    // degrees off in testing, for reasons the convention alone doesn't explain.
+    const int endX = kBeamOrigin + scbw::getPolarX(length, direction);
+    const int endY = kBeamOrigin + scbw::getPolarY(length, direction);
+#endif
+
     BeamState &state = beamStates[unit];
     BeamRingSlot &slot = state.ring[state.nextSlot];
     state.nextSlot = (state.nextSlot + 1) % kBeamRingDepth;
@@ -1409,11 +1434,24 @@ void spawnBeamOverlay(CUnit *unit)
         slot.grp = NULL;
     }
 
-    slot.rasterBuffer = rasterizeBeamFrames(direction, length, slot.rasterBuffer);
+    slot.rasterBuffer = rasterizeBeamFrames(endX, endY, slot.rasterBuffer);
 
     uint32_t grpSize = 0; // out-param only, value unused
     slot.grp = reinterpret_cast<GrpHead *>(
         generateGrp(slot.rasterBuffer, kBeamFrames, kBeamCanvas, kBeamCanvas, false, &grpSize));
+
+#if BEAM_DEBUG_LOG
+    // frame0 of 0x0 means the rasterizer drew nothing, so the beam is blank
+    // before the GRP encoder is even involved. polar=0,0 for a non-zero length
+    // means the angle table lookup is the culprit.
+    GPTP::logger << "beam: dir=" << (int)direction << " len=" << length << " end=" << endX << "," << endY
+                 << " polar=" << scbw::getPolarX(length, direction) << "," << scbw::getPolarY(length, direction)
+                 << " grpSize=" << grpSize;
+    if (slot.grp != NULL)
+        GPTP::logger << " frame0=" << (int)(uint8_t)slot.grp->frames[0].width << "x"
+                     << (int)(uint8_t)slot.grp->frames[0].height;
+    GPTP::logger << std::endl;
+#endif
 
     overlay->grpOffset = slot.grp;
 }
