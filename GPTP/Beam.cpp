@@ -1345,7 +1345,7 @@ struct BeamState
 
 std::unordered_map<CUnit *, BeamState> beamStates;
 
-int16_t *rasterizeBeamFrames(float angle, int length, int16_t *buffer)
+int16_t *rasterizeBeamFrames(u8 direction, int length, int16_t *buffer)
 {
     const int size = kBeamFrames * kBeamCanvas * kBeamCanvas;
 
@@ -1355,14 +1355,23 @@ int16_t *rasterizeBeamFrames(float angle, int length, int16_t *buffer)
     buffer = new int16_t[size];
     std::fill(buffer, buffer + size, -1);
 
+    // Endpoint comes from Brood War's own angleDistance table rather than from
+    // sin/cos over a radian conversion. This is the same call fireWeaponHook
+    // uses to place the bullet, so the beam lines up with the turret by
+    // construction instead of depending on which way a compass convention runs
+    // - converting the direction byte to radians by hand still landed 90
+    // degrees off in testing, for reasons the convention alone doesn't explain.
+    const int endX = kBeamOrigin + scbw::getPolarX(length, direction);
+    const int endY = kBeamOrigin + scbw::getPolarY(length, direction);
+
     for (int i = 0; i < kBeamFrames; ++i)
     {
         // Intensity ramps kBeamFrames..1 over the animation and must never
         // reach 0: generateBeam() early-returns on nColors == 0, which used to
         // leave the final frame fully transparent and hand a degenerate frame
         // to the GRP encoder.
-        generateBeamAngle(kBeamOrigin, kBeamOrigin, angle, length, kBeamThickness,
-                          buffer + (i * kBeamCanvas * kBeamCanvas), kBeamFrames - i);
+        generateBeam(kBeamOrigin, kBeamOrigin, endX, endY, kBeamThickness,
+                     buffer + (i * kBeamCanvas * kBeamCanvas), kBeamFrames - i);
     }
 
     return buffer;
@@ -1381,12 +1390,10 @@ void spawnBeamOverlay(CUnit *unit)
     if (overlay == NULL)
         return;
 
-    // Aim from the unit's own facing rather than atan2 over the target vector.
-    // Brood War's direction byte runs 0 = north, 64 = east, clockwise, which is
-    // exactly the convention generateBeamAngle expects (x + L*sin, y - L*cos).
-    // The previous atan2(dy, dx) was 0 = east, counter-clockwise - 90 degrees
-    // out, which is why the beam rendered perpendicular to the turret.
-    const float angle = unit->currentDirection1 * (2.0f * (float)M_PI / 256.0f);
+    // Aim along the firing unit's own facing. For a siege tank that is the
+    // turret subunit, which is what fireWeaponHook hands us, so the beam tracks
+    // the turret rather than the hull.
+    const u8 direction = unit->currentDirection1;
 
     int length = (int)scbw::getDistanceFast(unit->position.x, unit->position.y, unit->orderTarget.pt.x,
                                             unit->orderTarget.pt.y);
@@ -1402,7 +1409,7 @@ void spawnBeamOverlay(CUnit *unit)
         slot.grp = NULL;
     }
 
-    slot.rasterBuffer = rasterizeBeamFrames(angle, length, slot.rasterBuffer);
+    slot.rasterBuffer = rasterizeBeamFrames(direction, length, slot.rasterBuffer);
 
     uint32_t grpSize = 0; // out-param only, value unused
     slot.grp = reinterpret_cast<GrpHead *>(
