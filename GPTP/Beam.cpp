@@ -1,13 +1,12 @@
 #include "Beam.h"
 
-#include "logger.h"
-
 #include <SCBW/api.h>
 #include <SCBW/enumerations.h>
 #include <SCBW/structures/CImage.h>
 #include <SCBW/structures/CSprite.h>
 #include <SCBW/structures/CUnit.h>
 
+#include <cstdio>
 #include <unordered_map>
 
 using std::max;
@@ -1426,17 +1425,22 @@ void spawnBeamOverlay(CUnit *unit)
     slot.grp = reinterpret_cast<GrpHead *>(
         generateGrp(slot.rasterBuffer, kBeamFrames, kBeamCanvas, kBeamCanvas, false, &grpSize));
 
-#if BEAM_DEBUG_LOG
-    // frame0 of 0x0 means the rasterizer drew nothing, so the beam is blank
-    // before the GRP encoder is even involved. polar=0,0 for a non-zero length
-    // means the angle table lookup is the culprit.
-    GPTP::logger << "beam: dir=" << (int)direction << " len=" << length << " end=" << endX << "," << endY
-                 << " polar=" << scbw::getPolarX(length, direction) << "," << scbw::getPolarY(length, direction)
-                 << " grpSize=" << grpSize;
-    if (slot.grp != NULL)
-        GPTP::logger << " frame0=" << (int)(uint8_t)slot.grp->frames[0].width << "x"
-                     << (int)(uint8_t)slot.grp->frames[0].height;
-    GPTP::logger << std::endl;
+#if BEAM_DEBUG_PRINT
+    // end == the origin (127,127) for a non-zero len means the angle table
+    // lookup returned nothing, which would leave a zero-length beam. f0 of 0x0
+    // means the rasterizer drew nothing, so the GRP encoder had nothing to
+    // encode. Capped so a screen full of tanks doesn't bury the message area.
+    static int debugPrintsLeft = 8;
+    if (debugPrintsLeft > 0)
+    {
+        --debugPrintsLeft;
+
+        char msg[160];
+        sprintf_s(msg, sizeof(msg), "beam dir=%u len=%d end=%d,%d f0=%dx%d", (unsigned)direction, length, endX, endY,
+                  slot.grp ? (int)(uint8_t)slot.grp->frames[0].width : -1,
+                  slot.grp ? (int)(uint8_t)slot.grp->frames[0].height : -1);
+        scbw::printText(msg);
+    }
 #endif
 
     overlay->grpOffset = slot.grp;
