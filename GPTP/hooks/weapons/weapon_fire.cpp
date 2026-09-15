@@ -4,6 +4,7 @@
 #include <SCBW/api.h>
 
 #include "../../Beam.h"
+#include "../../logger.h"
 
 
 //-------- Helper function declarations. Do NOT modify! ---------//
@@ -53,6 +54,12 @@ void fireWeaponHook(CUnit* unit, u8 weaponId) {
 
 	if (!bStopThere && weapons_dat::FlingyId[weaponId] != 0)
 		createBullet(unit, weaponId, x, y, unit->playerId, unit->currentDirection1);
+
+#if BEAM_DEBUG_LOG
+	//Every shot in the game comes through here, so this also confirms the hook
+	//is actually installed and shows which weapon id the tank really fires.
+	GPTP::logger << "fireWeapon: weaponId=" << (int)weaponId << " unitId=" << (int)unit->id << std::endl;
+#endif
 
 	//Cosmetic beam overlay for the siege tank's tank-mode cannon. Spawned here
 	//rather than polled from nextFrame() so it fires with the shot instead of

@@ -237,6 +237,10 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	hooks::injectControlGroupHooks();
 	hooks::injectCommandCardHooks();
 	hooks::injectSmartBuildHooks();
+	//The beam overlay is spawned from fireWeaponHook (Beam.h), which never runs
+	//unless this is installed. It swaps GPTP's C++ reimplementation in for the
+	//game's weapon fire routine at 0x479C90, so it affects every weapon.
+	hooks::injectWeaponFireHooks();
 
 	//======== DISABLED HOOKS ========//
 	//Written but not in use. To turn one on, move it up into the enabled list.
@@ -345,7 +349,6 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	//OFF hooks::injectUpdateUnitState();
 	//OFF hooks::injectWeaponCooldownHook();
 	//OFF hooks::injectWeaponDamageHook();
-	//OFF hooks::injectWeaponFireHooks();
 	//OFF hooks::injectUnitDestructorSpecial();
 	//OFF hooks::injectPsiFieldHooks();
 	//OFF hooks::injectArmorBonusHook();

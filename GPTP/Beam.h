@@ -55,6 +55,20 @@ GrpHead *createGRP(int16_t *imageData, uint16_t frames, uint16_t maxWidth, uint1
 uint8_t *generateGrp(int16_t *imageData, uint16_t frames, uint16_t maxWidth, uint16_t maxHeight, bool noCompress,
                      uint32_t *grpSize);
 
+// Debug switches - set both to 0 for normal behaviour.
+//
+// BEAM_DEBUG_FIXED_AIM draws a fixed due-east beam with a hardcoded endpoint,
+// bypassing both the unit's aim and Brood War's angle table. It isolates the
+// rasterize -> GRP -> overlay path: if the forced beam appears, rendering works
+// and the problem is upstream in the aiming; if it does not, the break is in
+// the rendering path itself.
+//
+// BEAM_DEBUG_LOG logs the weapon id of every shot fired, plus the aim inputs,
+// what the angle table returns, and the resulting GRP frame size. Requires a
+// Debug build - GPTP's logger compiles out entirely in Release.
+#define BEAM_DEBUG_FIXED_AIM 1
+#define BEAM_DEBUG_LOG 1
+
 struct CUnit;
 
 /// Rasterizes a beam along @p unit's current facing, out to its order target,
