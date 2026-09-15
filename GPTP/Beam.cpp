@@ -1,12 +1,26 @@
 #include "Beam.h"
 
+#include <SCBW/api.h>
+#include <SCBW/enumerations.h>
+#include <SCBW/structures/CImage.h>
+#include <SCBW/structures/CSprite.h>
+#include <SCBW/structures/CUnit.h>
+
+#include <unordered_map>
+
 using std::max;
 using std::min;
 using std::vector;
 
-vector<Point16> getThickLineRect(int x1, int y1, int x2, int y2, int thickness)
+// Returns the four corners of the beam quad. Point32 (signed) rather than
+// Point16 (u16): a beam pointing left or up from the canvas origin, or a
+// thickness offset that pushes a corner past an edge, produces negative
+// coordinates. Wrapping those through u16 turned them into ~65535, which fed
+// garbage edges to the scanline fill below and painted a full-canvas rectangle
+// instead of a beam.
+vector<Point32> getThickLineRect(int x1, int y1, int x2, int y2, int thickness)
 {
-    vector<Point16> rect;
+    vector<Point32> rect;
 
     // Compute the directional vector.
     float dx = static_cast<float>(x2 - x1);
@@ -28,10 +42,10 @@ vector<Point16> getThickLineRect(int x1, int y1, int x2, int y2, int thickness)
     // Compute the four vertices.
     // Offset one endpoint by the unit normal times half thickness for one side,
     // and by the negative of that for the other side.
-    Point16 p1 = {static_cast<u16>(round(x1 + nx * half)), static_cast<u16>(round(y1 + ny * half))};
-    Point16 p2 = {static_cast<u16>(round(x1 - nx * half)), static_cast<u16>(round(y1 - ny * half))};
-    Point16 p3 = {static_cast<u16>(round(x2 - nx * half)), static_cast<u16>(round(y2 - ny * half))};
-    Point16 p4 = {static_cast<u16>(round(x2 + nx * half)), static_cast<u16>(round(y2 + ny * half))};
+    Point32 p1 = {static_cast<int>(round(x1 + nx * half)), static_cast<int>(round(y1 + ny * half))};
+    Point32 p2 = {static_cast<int>(round(x1 - nx * half)), static_cast<int>(round(y1 - ny * half))};
+    Point32 p3 = {static_cast<int>(round(x2 - nx * half)), static_cast<int>(round(y2 - ny * half))};
+    Point32 p4 = {static_cast<int>(round(x2 + nx * half)), static_cast<int>(round(y2 + ny * half))};
 
     // Return the vertices in order.
     // The order here is p1, p2, p3, p4 which (for many cases) forms a clockwise polygon.
@@ -56,7 +70,7 @@ int16_t *generateBeam(int x1, int y1, int x2, int y2, int thickness, int16_t *bu
     int width = 255;
     int height = 255;
     vector<GradientStop> stops = {{0.0f, nColors - 1}, {0.5f, 0}, {1.0f, nColors - 1}};
-    vector<Point16> rect = getThickLineRect(x1, y1, x2, y2, thickness);
+    vector<Point32> rect = getThickLineRect(x1, y1, x2, y2, thickness);
     double lineAngle = atan2(y2 - y1, x2 - x1);
 
     int rowSize = ((width + 3) / 4) * 4; // row size in bytes
@@ -76,15 +90,17 @@ int16_t *generateBeam(int x1, int y1, int x2, int y2, int thickness, int16_t *bu
         maxProj = max(maxProj, proj);
     }
 
-    // Determine the vertical extent (bounding box) of the polygon.
-    u16 ymin = height, ymax = 0;
+    // Determine the vertical extent (bounding box) of the polygon, then clamp
+    // it to the canvas. Signed throughout: a quad that starts above the canvas
+    // has negative y, and clamping that as unsigned inverts the range.
+    int ymin = height, ymax = -1;
     for (const auto &p : rect)
     {
         ymin = min(ymin, p.y);
         ymax = max(ymax, p.y);
     }
-    ymin = max(ymin, (u16)0);
-    ymax = min(ymax, (u16)(height - 1));
+    ymin = max(ymin, 0);
+    ymax = min(ymax, height - 1);
 
     // Process each scanline within the polygon's vertical bounds.
     for (int y = ymin; y <= ymax; y++)
@@ -658,15 +674,28 @@ uint8_t *generateGrp(int16_t *imageData, uint16_t frames, uint16_t maxWidth, uin
                 }
             }
         }
-        x2 = x2 - x1 + 1;
-        y2 = y2 - y1 + 1;
-        if ((uint16_t)x1 > 255)
+        // An all-transparent frame never updates the sentinels (x1 stays at
+        // 0x10000, x2 stays at -1). The old clamps cast to uint16_t first,
+        // which wraps 0x10000 and -65536 both to 0, so they never fired and the
+        // garbage bounds truncated into the u8 frame header fields below.
+        // Collapse that case to an honest 0x0 frame, and compare as signed.
+        if (x2 < x1 || y2 < y1)
+        {
+            x1 = y1 = x2 = y2 = 0;
+        }
+        else
+        {
+            x2 = x2 - x1 + 1;
+            y2 = y2 - y1 + 1;
+        }
+
+        if (x1 > 255)
             x1 = 255;
-        if ((uint16_t)y1 > 255)
+        if (y1 > 255)
             y1 = 255;
-        if ((uint16_t)x2 > 255)
+        if (x2 > 255)
             x2 = 255;
-        if ((uint16_t)y2 > 255)
+        if (y2 > 255)
             y2 = 255;
         frameHeaders[i].left = x1;
         frameHeaders[i].top = y1;
@@ -850,7 +879,7 @@ void Beam::GenerateFramesData(int nColors)
     int width = 255;
     int height = 255;
     vector<GradientStop> stops = {{0.0f, nColors - 1}, {0.5f, 0}, {1.0f, nColors - 1}};
-    vector<Point16> rect = getThickLineRect(x1, y1, x2, y2, thickness);
+    vector<Point32> rect = getThickLineRect(x1, y1, x2, y2, thickness);
     double lineAngle = atan2(y2 - y1, x2 - x1);
 
     int rowSize = ((width + 3) / 4) * 4; // row size in bytes
@@ -870,15 +899,17 @@ void Beam::GenerateFramesData(int nColors)
         maxProj = max(maxProj, proj);
     }
 
-    // Determine the vertical extent (bounding box) of the polygon.
-    u16 ymin = height, ymax = 0;
+    // Determine the vertical extent (bounding box) of the polygon, then clamp
+    // it to the canvas. Signed throughout: a quad that starts above the canvas
+    // has negative y, and clamping that as unsigned inverts the range.
+    int ymin = height, ymax = -1;
     for (const auto &p : rect)
     {
         ymin = min(ymin, p.y);
         ymax = max(ymax, p.y);
     }
-    ymin = max(ymin, (u16)0);
-    ymax = min(ymax, (u16)(height - 1));
+    ymin = max(ymin, 0);
+    ymax = min(ymax, height - 1);
 
     // Process each scanline within the polygon's vertical bounds.
     for (int y = ymin; y <= ymax; y++)
@@ -1274,3 +1305,108 @@ void Beam::EncodeFrameData(vector<s16> imageData, uint16_t frame, GRPHeader *grp
 // int16_t *beam = createBeamGrp(85);
 // uint32_t grpSize = 0;
 // GrpHead *beamGrp = createGRP(beam, 85, 255, 255, false, &grpSize);
+
+//-------- Beam overlay: per-unit buffers, spawned on weapon fire --------//
+
+namespace
+{
+
+constexpr int kBeamFrames = 9;
+constexpr int kBeamCanvas = 255;
+constexpr int kBeamThickness = 16;
+
+// The beam is rasterized outward from the middle of the canvas, so only half
+// the canvas is reachable in any one direction. A GRP frame's width/height are
+// byte fields, so 255 is the hard ceiling and ~127 the practical reach; a siege
+// tank outranges that (~224px), so long shots render short. Drawing into a
+// tight bounding box and positioning it with the frame's own x/y offsets is
+// what lifts this - see the bounding-box-limited encode in the handoff notes.
+constexpr int kBeamOrigin = kBeamCanvas / 2;
+
+// A slot's buffer is only freed once this many later shots have been fired,
+// giving any overlay still animating off that slot time to finish. The overlay
+// lifetime belongs to its iscript, not to us, so this is a safety margin rather
+// than a guarantee - widen it first if beams ever flicker under sustained fire.
+constexpr int kBeamRingDepth = 6;
+
+struct BeamRingSlot
+{
+    int16_t *rasterBuffer = nullptr;
+    GrpHead *grp = nullptr;
+};
+
+// One ring per firing unit, so simultaneous beams never share - and race on -
+// the same buffer.
+struct BeamState
+{
+    BeamRingSlot ring[kBeamRingDepth];
+    int nextSlot = 0;
+};
+
+std::unordered_map<CUnit *, BeamState> beamStates;
+
+int16_t *rasterizeBeamFrames(float angle, int length, int16_t *buffer)
+{
+    const int size = kBeamFrames * kBeamCanvas * kBeamCanvas;
+
+    if (buffer != nullptr)
+        delete[] buffer;
+
+    buffer = new int16_t[size];
+    std::fill(buffer, buffer + size, -1);
+
+    for (int i = 0; i < kBeamFrames; ++i)
+    {
+        // Intensity ramps kBeamFrames..1 over the animation and must never
+        // reach 0: generateBeam() early-returns on nColors == 0, which used to
+        // leave the final frame fully transparent and hand a degenerate frame
+        // to the GRP encoder.
+        generateBeamAngle(kBeamOrigin, kBeamOrigin, angle, length, kBeamThickness,
+                          buffer + (i * kBeamCanvas * kBeamCanvas), kBeamFrames - i);
+    }
+
+    return buffer;
+}
+
+} // namespace
+
+void spawnBeamOverlay(CUnit *unit)
+{
+    if (unit == NULL || unit->sprite == NULL)
+        return;
+
+    // The image pool can run dry under enough simultaneous effects, in which
+    // case createTopOverlay hands back null rather than an image.
+    CImage *overlay = unit->sprite->createTopOverlay(ImageId::Explosion2_Small);
+    if (overlay == NULL)
+        return;
+
+    // Aim from the unit's own facing rather than atan2 over the target vector.
+    // Brood War's direction byte runs 0 = north, 64 = east, clockwise, which is
+    // exactly the convention generateBeamAngle expects (x + L*sin, y - L*cos).
+    // The previous atan2(dy, dx) was 0 = east, counter-clockwise - 90 degrees
+    // out, which is why the beam rendered perpendicular to the turret.
+    const float angle = unit->currentDirection1 * (2.0f * (float)M_PI / 256.0f);
+
+    int length = (int)scbw::getDistanceFast(unit->position.x, unit->position.y, unit->orderTarget.pt.x,
+                                            unit->orderTarget.pt.y);
+    length = min(length, kBeamOrigin);
+
+    BeamState &state = beamStates[unit];
+    BeamRingSlot &slot = state.ring[state.nextSlot];
+    state.nextSlot = (state.nextSlot + 1) % kBeamRingDepth;
+
+    if (slot.grp != NULL)
+    {
+        delete[] reinterpret_cast<uint8_t *>(slot.grp);
+        slot.grp = NULL;
+    }
+
+    slot.rasterBuffer = rasterizeBeamFrames(angle, length, slot.rasterBuffer);
+
+    uint32_t grpSize = 0; // out-param only, value unused
+    slot.grp = reinterpret_cast<GrpHead *>(
+        generateGrp(slot.rasterBuffer, kBeamFrames, kBeamCanvas, kBeamCanvas, false, &grpSize));
+
+    overlay->grpOffset = slot.grp;
+}
