@@ -60,14 +60,16 @@ uint8_t *generateGrp(int16_t *imageData, uint16_t frames, uint16_t maxWidth, uin
 // BEAM_DEBUG_FIXED_AIM draws a fixed due-east beam with a hardcoded endpoint,
 // bypassing both the unit's aim and Brood War's angle table. It isolates the
 // rasterize -> GRP -> overlay path: if the forced beam appears, rendering works
-// and the problem is upstream in the aiming; if it does not, the break is in
-// the rendering path itself.
+// and the problem is upstream in the aiming. Confirmed working, so it is off by
+// default now - turn it back on to re-isolate the renderer.
 //
-// BEAM_DEBUG_LOG logs the weapon id of every shot fired, plus the aim inputs,
-// what the angle table returns, and the resulting GRP frame size. Requires a
-// Debug build - GPTP's logger compiles out entirely in Release.
-#define BEAM_DEBUG_FIXED_AIM 1
-#define BEAM_DEBUG_LOG 1
+// BEAM_DEBUG_PRINT shows the weapon id of each shot and the aim values on the
+// in-game message area, capped at a few messages so it does not flood the
+// screen. Deliberately not GPTP::logger: that compiles out unless _DEBUG is
+// defined, and writes to StarCraft's working directory rather than anywhere
+// obvious. printText works in every configuration.
+#define BEAM_DEBUG_FIXED_AIM 0
+#define BEAM_DEBUG_PRINT 1
 
 struct CUnit;
 
