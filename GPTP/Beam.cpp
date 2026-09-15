@@ -755,8 +755,8 @@ uint8_t *generateGrp(int16_t *imageData, uint16_t frames, uint16_t maxWidth, uin
         }
     }
 
-    free(frameHeaders);
-    free(frameData);
+    delete[] frameHeaders;
+    delete[] frameData;
 
     *grpSize = lastOffset;
     return lpGrpData;
