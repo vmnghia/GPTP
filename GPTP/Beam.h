@@ -55,6 +55,16 @@ GrpHead *createGRP(int16_t *imageData, uint16_t frames, uint16_t maxWidth, uint1
 uint8_t *generateGrp(int16_t *imageData, uint16_t frames, uint16_t maxWidth, uint16_t maxHeight, bool noCompress,
                      uint32_t *grpSize);
 
+struct CUnit;
+
+/// Rasterizes a beam along @p unit's current facing, out to its order target,
+/// and hands it to a fresh top overlay on the unit's sprite.
+///
+/// Purely cosmetic: this reads unit state but never writes any, so it stays
+/// sync-safe by construction. Call it from the weapon fire path so the beam
+/// appears on the shot itself rather than for the duration of an attack order.
+void spawnBeamOverlay(CUnit *unit);
+
 class Beam
 {
   private:

@@ -6,70 +6,10 @@
 #include <SCBW/UnitFinder.h>
 #include <SCBW/api.h>
 
-#include "../../Beam.h"
-#include "../../Grp.h"
 #include "../psi_field.h"
 
-#include <unordered_map>
-
-int16_t *createBeamGrp(int frames, float angle = 0.0f, int length = 125, int16_t *beam = nullptr)
-{
-    int width = 255;
-    int height = 255;
-    int size = frames * width * height * 2;
-
-    if (beam != nullptr)
-    {
-        delete[] beam;
-		beam = nullptr;
-    }
-
-    beam = new int16_t[size];
-    std::fill(beam, beam + size, -1);
-
-    for (int i = 0; i < frames; ++i)
-    {
-        generateBeamAngle(127, 127, angle, length, 16, beam + (i * width * height), frames - i - 1);
-    }
-
-    return beam;
-}
-
-namespace
-{
-
-constexpr int kBeamFrames = 9;
-constexpr int kBeamCanvas = 255;
-
-// A beam's raster buffer/GRP must stay valid for as long as the overlay
-// rendering it is still alive. createTopOverlay() always spawns a brand new
-// CImage rather than reusing one, and the overlay's own lifetime is driven
-// by its iscript (ImageId::Explosion2_Small's built-in animation) - not
-// something this code controls or can query. Freeing a slot's buffer only
-// after kBeamRingDepth more attack ticks (each 4 frames apart, see below)
-// have passed gives any still-animating overlay from that slot roughly
-// kBeamRingDepth*4 frames to finish before its backing memory is freed.
-// This is a heuristic safety margin, not a proof: if beams ever flicker or
-// show corrupted frames under sustained fire, raise this first.
-constexpr int kBeamRingDepth = 6;
-
-struct BeamRingSlot
-{
-    int16_t *rasterBuffer = nullptr;
-    GrpHead *grp = nullptr;
-};
-
-// One ring per attacking unit, so simultaneous beams (e.g. several siege
-// tanks) never share - and race on - the same buffer.
-struct BeamState
-{
-    BeamRingSlot ring[kBeamRingDepth];
-    int nextSlot = 0;
-};
-
-std::unordered_map<CUnit *, BeamState> beamStates;
-
-} // namespace
+#include <algorithm>
+#include <cmath>
 
 namespace utils
 {
@@ -409,55 +349,6 @@ bool nextFrame()
             {
                 ++idleWorkerCount;
             }
-
-            switch (unit->id)
-            {
-            case UnitId::TerranSiegeTankTankMode:
-
-                if (unit->subunit->mainOrderId == OrderId::AttackFixedRange && unit->subunit->orderTarget.unit &&
-                    *elapsedTimeFrames % 4 == 0)
-                {
-                    CImage *overlay = unit->sprite->createTopOverlay(ImageId::Explosion2_Small);
-
-                    // The image pool can run dry under enough simultaneous effects
-                    // (see handoff doc note on image pool pressure) - don't dereference null.
-                    if (overlay != nullptr)
-                    {
-                        float angle = atan2(unit->subunit->orderTarget.pt.y - unit->position.y,
-                                            unit->subunit->orderTarget.pt.x - unit->position.x);
-                        int length =
-                            scbw::getDistanceFast(unit->position.x, unit->position.y, unit->subunit->orderTarget.pt.x,
-                                                  unit->subunit->orderTarget.pt.y);
-
-                        // Own buffer per attacking unit, rotated through a small ring rather
-                        // than a single shared/global one - see kBeamRingDepth above for why.
-                        BeamState &state = beamStates[unit];
-                        BeamRingSlot &slot = state.ring[state.nextSlot];
-                        state.nextSlot = (state.nextSlot + 1) % kBeamRingDepth;
-
-                        if (slot.grp != nullptr)
-                        {
-                            delete[] reinterpret_cast<uint8_t *>(slot.grp);
-                            slot.grp = nullptr;
-                        }
-
-                        // Captures the return value this time - the old code discarded it,
-                        // which leaked the buffer createBeamGrp had just allocated and left
-                        // generateGrp() reading from a pointer that was never updated.
-                        slot.rasterBuffer = createBeamGrp(kBeamFrames, angle, length, slot.rasterBuffer);
-
-                        uint32_t grpSize = 0; // out-param only, value unused past this call
-                        slot.grp = reinterpret_cast<GrpHead *>(generateGrp(
-                            slot.rasterBuffer, kBeamFrames, kBeamCanvas, kBeamCanvas, false, &grpSize));
-
-                        overlay->grpOffset = slot.grp;
-                    }
-                }
-
-                break;
-            }
-
-
 
             plugins::drawBuildProgress(unit);
         }

@@ -3,6 +3,8 @@
 #include "weapon_fire.h"
 #include <SCBW/api.h>
 
+#include "../../Beam.h"
+
 
 //-------- Helper function declarations. Do NOT modify! ---------//
 
@@ -51,6 +53,12 @@ void fireWeaponHook(CUnit* unit, u8 weaponId) {
 
 	if (!bStopThere && weapons_dat::FlingyId[weaponId] != 0)
 		createBullet(unit, weaponId, x, y, unit->playerId, unit->currentDirection1);
+
+	//Cosmetic beam overlay for the siege tank's tank-mode cannon. Spawned here
+	//rather than polled from nextFrame() so it fires with the shot instead of
+	//showing for the whole duration of an attack order.
+	if (weaponId == WeaponId::ArcliteCannon || weaponId == WeaponId::ArcliteCannon_EdmundDuke)
+		spawnBeamOverlay(unit);
 }
 
 ;
