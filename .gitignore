@@ -1,6 +1,33 @@
-﻿################################################################################
+################################################################################
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/GPTP/.vs/GPTP
-/GPTP/Debug
+# Visual Studio IDE state (per-machine, never share)
+/GPTP/.vs/
+*.suo
+*.user
+
+# Build output
+/GPTP/Debug/
+/GPTP/Release/
+/GPTP/x64/
+/GPTP/x86/
+
+# MSBuild intermediates / logs
+*.obj
+*.iobj
+*.ipdb
+*.pdb
+*.idb
+*.ilk
+*.tlog
+*.recipe
+*.lastbuildstate
+*.qdp
+
+# Machine-specific debug-attach solutions (e.g. auto-generated "StarCraft.sln")
+# that hardcode a local game install path - keep only GPTP.sln under source control.
+/GPTP/StarCraft.sln
+
+# StarCraft runtime logs dropped next to the project by the game itself
+/GPTP/Game *.log
