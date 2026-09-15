@@ -9,6 +9,7 @@
 
 #include "../psi_field.h"
 
+#include <cmath>
 #include <cstdio>
 
 namespace utils {
@@ -197,7 +198,7 @@ namespace plugins {
 
 		// draw progress
 		progress = (float)elapsedBuildTime / timeCost;
-		progressWidth = progress * (innerRight - innerLeft);
+		progressWidth = (int)std::round(progress * (innerRight - innerLeft));
 		if (isTraining || isUpgradingOrResearching || isBuildingSelf) {
 			graphics::drawFilledBox(innerLeft, innerTop, innerLeft + progressWidth, innerBottom - 1, graphics::AQUA,
 			                        graphics::ON_MAP);
