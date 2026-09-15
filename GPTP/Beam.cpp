@@ -1310,20 +1310,6 @@ void Beam::EncodeFrameData(vector<s16> imageData, uint16_t frame, GRPHeader *grp
 
 //-------- Beam overlay: per-unit buffers, spawned on weapon fire --------//
 
-// Debug switches - set both to 0 for normal behaviour.
-//
-// BEAM_DEBUG_FIXED_AIM draws a fixed due-east beam with a hardcoded endpoint,
-// bypassing both the unit's aim and Brood War's angle table. It isolates the
-// rasterize -> GRP -> overlay path: if the forced beam appears, rendering works
-// and the problem is upstream in the aiming; if it does not, the break is in
-// the rendering path itself.
-//
-// BEAM_DEBUG_LOG writes the aim inputs, what the angle table returns, and the
-// resulting GRP frame size on every shot. Requires a Debug build - GPTP's
-// logger compiles out entirely in Release.
-#define BEAM_DEBUG_FIXED_AIM 1
-#define BEAM_DEBUG_LOG 1
-
 namespace
 {
 

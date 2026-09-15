@@ -316,7 +316,6 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	hooks::injectUpdateUnitState();
 	hooks::injectWeaponCooldownHook();
 	hooks::injectWeaponDamageHook();
-	hooks::injectWeaponFireHooks();
 
 	hooks::injectUnitDestructorSpecial();
 	hooks::injectPsiFieldHooks();
@@ -327,6 +326,12 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	hooks::injectWeaponRangeHooks();
 
 	hooks::injectUnitTooltipHook();*/
+
+	// Lifted out of the disabled block above: the beam overlay is spawned from
+	// fireWeaponHook, which never runs unless this is injected. Note this swaps
+	// GPTP's C++ reimplementation in for the game's own weapon fire routine at
+	// 0x479C90, so it affects every weapon in the game, not just the tank.
+	hooks::injectWeaponFireHooks();
 
 	// fix to make sc1 campaign playable from firegraft/mpqgraft self-executables
 	jmpPatch((void *)0x15017960,
