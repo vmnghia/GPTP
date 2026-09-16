@@ -1383,13 +1383,27 @@ namespace
 // replace it so the probe can hand control back.
 u32 originalRenderFunction = 0;
 
-// Captured on entry before anything can clobber them. The calling convention is
-// exactly what this probe exists to establish, so record every register that
-// could plausibly carry an argument, plus the stack pointer so the stack slots
-// can be read too.
-u32 probeEax, probeEcx, probeEdx, probeEbx, probeEsi, probeEdi, probeEsp;
+// The single image the probe is attached to. Kept so the capture can read that
+// image's own screenPosition at the exact instant the engine calls the render
+// function, which is what turns "ECX looks like an x" into a yes/no answer.
+// Only one image carries the probe at a time, so this can never point at a
+// different image than the one calling in.
+CImage *probeImage = NULL;
 
+// Written unconditionally by the naked thunk on every call - it has nowhere else
+// to put them before it can call into C. Never report these directly: by the
+// time reporting happens they hold the *last* call's values, not the captured
+// one. That mismatch is why the first probe run reported a register set and a
+// stack snapshot that came from different calls.
+u32 rawEax, rawEcx, rawEdx, rawEbx, rawEsi, rawEdi, rawEsp;
+
+// One coherent snapshot: registers, stack and the image's own state, all copied
+// in the same call.
+u32 probeEax, probeEcx, probeEdx, probeEbx, probeEsi, probeEdi, probeEsp;
 u32 probeStack[6];
+int probeImgX, probeImgY;
+u32 probeImgFrame, probeImgGrp;
+u8 probeRetBytes[8];
 bool probePending = false;
 
 // Runs inside the game's draw loop, so it does nothing but copy memory - no
@@ -1402,9 +1416,39 @@ void captureRenderProbe()
         return;
     --capturesLeft;
 
+    probeEax = rawEax;
+    probeEcx = rawEcx;
+    probeEdx = rawEdx;
+    probeEbx = rawEbx;
+    probeEsi = rawEsi;
+    probeEdi = rawEdi;
+    probeEsp = rawEsp;
+
     const u32 *stack = (const u32 *)probeEsp;
     for (int i = 0; i < 6; ++i)
         probeStack[i] = stack[i];
+
+    // The bytes the caller executes on return. If it cleans the arguments off
+    // itself the first instruction is an ADD ESP, imm (83 C4 xx); if the callee
+    // is expected to clean - __fastcall / __stdcall - it is anything else. That
+    // settles the half of the convention register values cannot show.
+    const u8 *ret = (const u8 *)probeStack[0];
+    for (int i = 0; i < 8; ++i)
+        probeRetBytes[i] = ret[i];
+
+    // Ground truth for the two register arguments, read at the same instant the
+    // engine passed them. Point16 stores these unsigned; screen positions go
+    // negative for a partly off-screen image, so widen through s16.
+    probeImgX = probeImgY = -32768;
+    probeImgFrame = probeImgGrp = 0;
+    if (probeImage != NULL)
+    {
+        probeImgX = (s16)probeImage->screenPosition.x;
+        probeImgY = (s16)probeImage->screenPosition.y;
+        probeImgGrp = (u32)probeImage->grpOffset;
+        if (probeImage->grpOffset != NULL)
+            probeImgFrame = (u32)&probeImage->grpOffset->frames[probeImage->frameIndex];
+    }
 
     probePending = true;
 }
@@ -1418,13 +1462,23 @@ void reportRenderProbe()
     probePending = false;
 
     char msg[200];
-    sprintf_s(msg, sizeof(msg), "rfn reg ax=%X cx=%X dx=%X bx=%X si=%X di=%X", probeEax, probeEcx, probeEdx,
-              probeEbx, probeEsi, probeEdi);
+
+    // The two candidate register arguments against what the image actually held
+    // at that instant. Equal on both -> args 1 and 2 are screenPosition.x/y,
+    // passed in registers, and the __fastcall half of the convention is settled.
+    sprintf_s(msg, sizeof(msg), "rfn reg cx=%X dx=%X img=%d,%d", probeEcx, probeEdx, probeImgX, probeImgY);
     scbw::printText(msg);
 
     // probeStack[0] is the return address; anything past it is a stack argument.
-    sprintf_s(msg, sizeof(msg), "rfn stk ret=%X a=%X b=%X c=%X d=%X e=%X", probeStack[0], probeStack[1],
-              probeStack[2], probeStack[3], probeStack[4], probeStack[5]);
+    sprintf_s(msg, sizeof(msg), "rfn stk a=%X b=%X c=%X d=%X", probeStack[1], probeStack[2], probeStack[3],
+              probeStack[4]);
+    scbw::printText(msg);
+
+    sprintf_s(msg, sizeof(msg), "rfn img frm=%X grp=%X ax=%X", probeImgFrame, probeImgGrp, probeEax);
+    scbw::printText(msg);
+
+    sprintf_s(msg, sizeof(msg), "rfn ret %X: %02X %02X %02X %02X %02X %02X", probeStack[0], probeRetBytes[0],
+              probeRetBytes[1], probeRetBytes[2], probeRetBytes[3], probeRetBytes[4], probeRetBytes[5]);
     scbw::printText(msg);
 }
 
@@ -1436,13 +1490,13 @@ void reportRenderProbe()
 void __declspec(naked) beamRenderProbe()
 {
     __asm {
-        MOV probeEax, EAX
-        MOV probeEcx, ECX
-        MOV probeEdx, EDX
-        MOV probeEbx, EBX
-        MOV probeEsi, ESI
-        MOV probeEdi, EDI
-        MOV probeEsp, ESP
+        MOV rawEax, EAX
+        MOV rawEcx, ECX
+        MOV rawEdx, EDX
+        MOV rawEbx, EBX
+        MOV rawEsi, ESI
+        MOV rawEdi, EDI
+        MOV rawEsp, ESP
         PUSHAD
         PUSHFD
     }
@@ -1465,7 +1519,8 @@ void __declspec(naked) beamRenderProbe()
 // so nothing but the marker appears. Bitmap's public draw methods clip against
 // the surface (the unclipped variants are the private *Unsafe ones), so a wrong
 // guess about x/y should put the marker somewhere visibly wrong rather than
-// corrupt memory.
+// corrupt memory. A wrong guess about the *convention*, though, unbalances the
+// stack - so only turn this on once the probe above has confirmed both halves.
 void __fastcall beamRenderMarker(int x, int y, void *frame, void *drawRect, int coloringData)
 {
     gameScreenBuffer->drawFilledBox(x - 3, y - 3, x + 3, y + 3, graphics::WHITE);
@@ -1482,6 +1537,16 @@ void attachRenderProbe(CImage *overlay)
     if (overlay->renderFunction == (void *)&beamRenderProbe)
         return;
 
+    // One probed image at a time. Two at once would share a single
+    // originalRenderFunction global - and, worse, would make probeImage a coin
+    // flip, which is the whole basis of the x/y comparison. A CImage is
+    // recycled rather than destroyed, so once the probed one is reused the
+    // engine overwrites renderFunction; that is the signal that a later shot
+    // may take the probe over.
+    if (probeImage != NULL && probeImage->renderFunction == (void *)&beamRenderProbe)
+        return;
+    probeImage = overlay;
+
     originalRenderFunction = (u32)overlay->renderFunction;
 
 #if BEAM_DEBUG_RENDERFN_MARKER
@@ -1490,14 +1555,17 @@ void attachRenderProbe(CImage *overlay)
     overlay->renderFunction = (void *)&beamRenderProbe;
 #endif
 
-    static int printsLeft = 2;
+    static int printsLeft = 3;
     if (printsLeft > 0)
     {
         --printsLeft;
 
         char msg[200];
-        sprintf_s(msg, sizeof(msg), "rfn set color=%X grp=%X orig=%X", (u32)overlay->coloringData,
-                  (u32)overlay->grpOffset, originalRenderFunction);
+        // pal is images_dat::RLE_Function for this image id - the engine picks
+        // the render function from it, so it is what a differing orig would
+        // have to be explained by.
+        sprintf_s(msg, sizeof(msg), "rfn set color=%X grp=%X orig=%X pal=%d", (u32)overlay->coloringData,
+                  (u32)overlay->grpOffset, originalRenderFunction, (int)overlay->paletteType);
         scbw::printText(msg);
     }
 }

@@ -209,25 +209,62 @@ Established:
 
 - **The engine does call the per-instance pointer**, and replacing it is survivable. The
   approach is viable.
-- **The convention is `__fastcall`:** args 1-2 in `ECX`/`EDX`, args 3-5 on the stack.
+- **Three of the five arguments are on the stack, in the header's order.** That accounts for
+  args 3-5, leaving args 1-2 to arrive in registers — the shape of `__fastcall`. Which
+  registers, and who cleans the stack, round 2 settles.
 - **`coloringData` - the remap table - arrives at `stack[3]`.** Confirmed by exact match
   against the value logged at spawn, constant across captures. This is the whole reason the
   path is worth taking: the bfire/ofire blending table is handed to us as an argument.
 - **`&rctDraw` is `stack[2]`** - a stack address, constant across captures.
 - **The frame/GRP pointer is `stack[1]`** - one capture matched the overlay's `grpOffset`
   exactly.
-- Every call arrives from the same site, `0x00497D4A`, and the engine's own render function
-  for this image is `0x0040B5D6`.
+- Every call arrives from the same site, `0x00497D4A`. The engine's own render function for
+  the overlay read `0x0040B5D6` in one run and `0x0040B596` in another - see below.
 - The surface to draw into is already mapped: `gameScreenBuffer` (`scbwdata.h:377`), a
   `graphics::Bitmap*` at `0x006CEFF0`, used exactly this way by `Shape.cpp`.
 
+#### Probe round 1, corrected
+
+The first run's `rfn reg` and `rfn stk` lines **did not come from the same call**. The naked
+thunk writes the registers to globals on *every* call — it has nowhere else to put them before
+it can call into C — while the stack snapshot was taken once and then frozen behind a
+`probePending` flag. So the registers reported were whatever the last call before reporting
+happened to hold, and the stack was from some earlier call. That is the whole of the
+`ECX = 0x42A` anomaly: it was never paired with the stack values it was printed beside.
+
+The stack findings stand (they were one coherent snapshot). The register findings do not.
+
+Two other observations from the runs, for the record:
+
+- `coloringData` differs between runs (`0x039F008C`, `0x0A0C008C`) but keeps the same low 16
+  bits. That is what a heap pointer looks like across runs: Windows hands out reservations on
+  64 KiB granularity, so an offset within a block is stable while the block's base moves.
+  Consistent with `coloringData` being `colorShift[...].data`, as `CImage.cpp:52` says.
+- The engine's own render function for the overlay differed between runs too: `0x0040B5D6`
+  and `0x0040B596`, 0x40 apart — two entries in the same table, not one function. The engine
+  selects it from `images_dat::RLE_Function[imageId]` (`CImage.cpp:78-82` reads the same field
+  for `coloringData`), which is constant for a constant image id, so **this is not yet
+  explained**. StarCraft.exe is not rebased — every hardcoded address in this project depends
+  on that — so both are real, distinct code addresses. The probe now logs `pal=` alongside
+  `orig=` to test the obvious hypothesis. It does not block the blitter, which replaces the
+  function outright rather than chaining to it.
+
+#### Probe round 2
+
+Fixes the non-atomic capture and adds ground truth, so one sample settles the rest:
+
+- Registers, stack, and the probed image's own state are copied in the same call.
+- The capture reads `probeImage->screenPosition` *at that instant* and reports it next to
+  `ECX`/`EDX`. Equal on both → args 1 and 2 are screen x/y in registers, which is the
+  register half of `__fastcall`. Only one image carries the probe at a time, so the
+  comparison can never be against the wrong image.
+- The capture also copies the first bytes at the return address. `83 C4 xx` (`ADD ESP, imm`)
+  there means the **caller** cleans the stack arguments; anything else means the callee does.
+  That settles the half of the convention register values cannot show — and it is the half
+  that crashes rather than misbehaves when guessed wrong.
+
 Still open:
 
-- **[VERIFY]** Whether `ECX`/`EDX` are precisely screen x/y. One capture read `(208, 184)`,
-  comfortable for a 640x480 screen; another read `ECX = 0x42A` (1066), too wide to be a screen
-  x. Either that argument is not x, or the anchor of a 255x255 GRP pushes `screenPosition`
-  off-screen. `BEAM_DEBUG_RENDERFN_MARKER` settles this by drawing a marker at the reported
-  position - if it lands where the beam starts, the signature is confirmed.
 - **[VERIFY]** The layout of `rctDraw`, needed for clipping.
 - **[VERIFY]** The remap table's row stride, needed for `dst = table[intensity * stride + dst]`.
 
