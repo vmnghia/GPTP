@@ -6,6 +6,7 @@
 #include <SCBW/UnitFinder.h>
 #include <SCBW/api.h>
 
+#include "../../Beam.h"
 #include "../psi_field.h"
 
 #include <algorithm>
@@ -341,6 +342,11 @@ bool nextFrame()
 
         scbw::setInGameLoopState(true); // Needed for scbw::random() to work
         graphics::resetAllGraphics();
+
+        // Queued shapes are cleared by the reset above, so beams have to be
+        // re-queued every frame they should be visible.
+        drawActiveBeams();
+
         hooks::updatePsiFieldProviders();
         plugins::initializeGame();
 

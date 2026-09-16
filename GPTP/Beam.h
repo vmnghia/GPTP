@@ -71,14 +71,37 @@ uint8_t *generateGrp(int16_t *imageData, uint16_t frames, uint16_t maxWidth, uin
 #define BEAM_DEBUG_FIXED_AIM 0
 #define BEAM_DEBUG_PRINT 1
 
+// Which rendering path to use.
+//
+// 0 (default) queues the beam with the graphics module, which draws through the
+// BWAPI-derived draw hook after the game has drawn. No GRP, no overlay image,
+// and no length ceiling - a GRP frame's width/height are byte fields, so the
+// GRP path can never draw a beam longer than 255px, which siege mode alone
+// exceeds.
+//
+// 1 falls back to the GRP path, kept for visual comparison. It renders a nicer
+// beam (real remap blending against the background) but is capped at ~127px and
+// costs a rasterize/encode/decode round trip per shot.
+#define BEAM_USE_GRP_PATH 0
+
 struct CUnit;
 
-/// Rasterizes a beam along @p unit's current facing, out to its order target,
-/// and hands it to a fresh top overlay on the unit's sprite.
+/// Records a beam shot from @p unit along its current facing, out to its order
+/// target. Call from the weapon fire path so the beam appears on the shot
+/// rather than for the duration of an attack order.
 ///
-/// Purely cosmetic: this reads unit state but never writes any, so it stays
-/// sync-safe by construction. Call it from the weapon fire path so the beam
-/// appears on the shot itself rather than for the duration of an attack order.
+/// Purely cosmetic: reads unit state, never writes any, so it is sync-safe by
+/// construction.
+void fireBeam(CUnit *unit);
+
+/// Draws every beam still inside its visible window, and retires the rest.
+/// Call once per frame from nextFrame(), after graphics::resetAllGraphics() -
+/// queued shapes are cleared every frame, so a beam must be re-queued for each
+/// frame it should appear.
+void drawActiveBeams();
+
+/// GRP path (see BEAM_USE_GRP_PATH): rasterizes the beam and hands it to a
+/// fresh top overlay on the unit's sprite.
 void spawnBeamOverlay(CUnit *unit);
 
 class Beam

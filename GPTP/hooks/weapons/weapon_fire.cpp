@@ -72,11 +72,16 @@ void fireWeaponHook(CUnit* unit, u8 weaponId) {
 	}
 #endif
 
-	//Cosmetic beam overlay for the siege tank's tank-mode cannon. Spawned here
-	//rather than polled from nextFrame() so it fires with the shot instead of
-	//showing for the whole duration of an attack order.
-	if (weaponId == WeaponId::ArcliteCannon || weaponId == WeaponId::ArcliteCannon_EdmundDuke)
+	//Cosmetic beam for the siege tank's tank-mode cannon. Fired from here rather
+	//than polled from nextFrame() so it appears on the shot itself instead of
+	//for the whole duration of an attack order.
+	if (weaponId == WeaponId::ArcliteCannon || weaponId == WeaponId::ArcliteCannon_EdmundDuke) {
+#if BEAM_USE_GRP_PATH
 		spawnBeamOverlay(unit);
+#else
+		fireBeam(unit);
+#endif
+	}
 }
 
 ;
