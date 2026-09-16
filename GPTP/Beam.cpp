@@ -1566,9 +1566,18 @@ struct ScreenSurface
 static_assert(sizeof(ScreenSurface) == sizeof(graphics::Bitmap),
               "ScreenSurface must mirror graphics::Bitmap's layout");
 
-// Brightest at the core, falling off to the edges. Same palette entries the GRP
-// rasterizer works from, so the custom path reads like the one it replaces.
-const u8 kBeamCoreRamp[] = {47, 45, 27, 27, 17, 11, 10, 10, 5, 5};
+// Placeholder colours, and the reason the beam currently reads green rather
+// than like fire.
+//
+// generateBeam()'s {47, 45, 27, ...} are not palette entries at all: under
+// PaletteType::RLE_EFFECT the engine treats a GRP pixel as a *shift level* and
+// looks the real colour up in coloringData. Writing those numbers straight to
+// the surface writes whatever the palette happens to hold at index 47.
+//
+// Until the remap table's shape is known (see reportBeamRenderDebug), write a
+// fire-ish ramp of flat entries instead, so the beam at least reads as a beam.
+// Replacing this with dst = remap[...] is the next step.
+const u8 kBeamCoreRamp[] = {255, 255, 135, 135, 179, 179, 111, 111, 19, 19};
 constexpr int kBeamCoreRampLen = sizeof(kBeamCoreRamp) / sizeof(kBeamCoreRamp[0]);
 
 // Every slot that has ever held a beam GRP. Bounded by (firing units x
@@ -1603,57 +1612,28 @@ const BeamRingSlot *findBeamForFrame(const void *frame)
     return NULL;
 }
 
-// rctDraw's layout is the one thing the probe did not settle - it reported the
-// pointer, not the bytes behind it. Rather than spend a build round trip on it,
-// try both plausible layouts and take whichever describes a sane rectangle
-// inside the surface. The bytes are dumped either way (see
-// reportBeamRenderDebug), so the next edit can replace this with a fact.
+// rctDraw is NOT a screen clip rectangle. Measured: for a beam whose frame
+// bounding box works out to 125x59, it read {0, 0, 125, 59} - the frame's own
+// extent, in frame-local coordinates, which is what a source rect for the blit
+// looks like when nothing is clipped off. Using it to clip screen coordinates
+// confined the beam to a 125x59 box in the screen's top-left corner.
 //
-// The fallback is the whole surface. Drawing over the console is a visible bug;
-// clipping against a misread rectangle is a write off the end of the surface,
-// so erring wide is the safe direction.
-bool decodeClipRect(const void *rect, int surfW, int surfH, int &left, int &top, int &right, int &bottom)
+// So the clip is the surface. That is safe for the whole 640x480: this runs in
+// the sprite pass, and the console is composited over the game afterwards, so
+// pixels under it are covered rather than left showing.
+void beamClipRect(const ScreenSurface *surface, int &left, int &top, int &right, int &bottom)
 {
-    if (rect != NULL)
-    {
-        const s32 *as32 = (const s32 *)rect;
-        if (as32[0] >= 0 && as32[1] >= 0 && as32[2] > as32[0] && as32[3] > as32[1] && as32[2] <= surfW &&
-            as32[3] <= surfH)
-        {
-            left = as32[0];
-            top = as32[1];
-            right = as32[2];
-            bottom = as32[3];
-            return true;
-        }
-
-        const s16 *as16 = (const s16 *)rect;
-        if (as16[0] >= 0 && as16[1] >= 0 && as16[2] > as16[0] && as16[3] > as16[1] && as16[2] <= surfW &&
-            as16[3] <= surfH)
-        {
-            left = as16[0];
-            top = as16[1];
-            right = as16[2];
-            bottom = as16[3];
-            return true;
-        }
-    }
-
     left = 0;
     top = 0;
-    right = surfW;
-    bottom = surfH;
-    return false;
+    right = surface->width;
+    bottom = surface->height;
 }
 
 #if BEAM_DEBUG_PRINT
-// Captured on the first call and reported from spawnBeamOverlay, the same way
-// the probe reports: this runs mid-frame, so it copies and nothing more.
-bool rectDumpPending = false;
-u32 rectDumpAddr = 0;
-s32 rectDump32[4];
-bool rectDumpDecoded = false;
-int rectDumpL, rectDumpT, rectDumpR, rectDumpB;
+// Captured on the first call and reported from spawnBeamOverlay: this runs
+// mid-frame, so it takes a pointer and nothing more.
+const u8 *remapDumpTable = NULL;
+bool remapDumpPending = false;
 #endif
 
 // Writes one beam pixel, clipped. Flat palette entries for now: coloringData is
@@ -1683,10 +1663,6 @@ void __fastcall beamRenderFunction(int imageScreenX, int imageScreenY, GrpFrame 
     (void)imageScreenX;
     (void)imageScreenY;
 
-    // The remap table. Not used yet; blending is the next step (see
-    // docs/beam-weapons.md), and this is the argument it will come from.
-    (void)coloringData;
-
     const BeamRingSlot *slot = findBeamForFrame(frame);
     if (slot == NULL || slot->grp == NULL)
         return;
@@ -1695,24 +1671,19 @@ void __fastcall beamRenderFunction(int imageScreenX, int imageScreenY, GrpFrame 
     if (surface == NULL || surface->data == NULL)
         return;
 
+    // rctDraw is the frame's own extent, not a screen rectangle - see
+    // beamClipRect. It is deliberately unused.
+    (void)rctDraw;
+
     int left, top, right, bottom;
-    const bool decoded = decodeClipRect(rctDraw, surface->width, surface->height, left, top, right, bottom);
+    beamClipRect(surface, left, top, right, bottom);
 
 #if BEAM_DEBUG_PRINT
-    if (!rectDumpPending && rctDraw != NULL)
+    if (remapDumpTable == NULL && coloringData != NULL)
     {
-        rectDumpAddr = (u32)rctDraw;
-        for (int i = 0; i < 4; ++i)
-            rectDump32[i] = ((const s32 *)rctDraw)[i];
-        rectDumpDecoded = decoded;
-        rectDumpL = left;
-        rectDumpT = top;
-        rectDumpR = right;
-        rectDumpB = bottom;
-        rectDumpPending = true;
+        remapDumpTable = (const u8 *)coloringData;
+        remapDumpPending = true;
     }
-#else
-    (void)decoded;
 #endif
 
     // Which step of the fade this is. The engine hands us the frame it would
@@ -1773,33 +1744,77 @@ void __fastcall beamRenderFunction(int imageScreenX, int imageScreenY, GrpFrame 
 
 #if BEAM_DEBUG_PRINT
 // Called from ordinary game logic, not mid-frame.
+//
+// What this is after is the shape of the remap table, which is the last thing
+// standing between the blitter and real blending. Two orientations are
+// plausible and they are distinguishable:
+//
+//   A. table[shift * stride + dst] - one row per shift level. Row 0 is "no
+//      shift", so the first 256 bytes read 0, 1, 2, ... identity.
+//   B. table[dst * stride + shift] - one row per destination colour. Column 0
+//      is "no shift", so table[d * stride] == d for every d.
+//
+// B also yields the stride: the invariant only holds for the right one. The
+// candidates are bounded below by 48, because generateBeam() emits shift levels
+// up to 47 and the engine blitted those through this table for weeks without
+// reading off the end of it.
 void reportBeamRenderDebug()
 {
-    static int printsLeft = 2;
+    static int printsLeft = 1;
 
-    if (!rectDumpPending || printsLeft <= 0)
+    if (!remapDumpPending || remapDumpTable == NULL || printsLeft <= 0)
         return;
-    rectDumpPending = false;
+    remapDumpPending = false;
     --printsLeft;
 
+    const u8 *t = remapDumpTable;
     char msg[200];
 
-    // Printed both ways: a Box32 reads as four plausible coordinates, a Box16
-    // packed into the same bytes reads as two huge numbers and two zeros.
-    sprintf_s(msg, sizeof(msg), "rct %X 32:%d,%d,%d,%d", rectDumpAddr, rectDump32[0], rectDump32[1], rectDump32[2],
-              rectDump32[3]);
+    sprintf_s(msg, sizeof(msg), "tbl %X: %d %d %d %d %d %d %d %d", (u32)t, t[0], t[1], t[2], t[3], t[4], t[5], t[6],
+              t[7]);
     scbw::printText(msg);
 
-    const s16 *as16 = (const s16 *)rectDump32;
-    sprintf_s(msg, sizeof(msg), "rct 16:%d,%d,%d,%d use %d,%d,%d,%d %s", as16[0], as16[1], as16[2], as16[3],
-              rectDumpL, rectDumpT, rectDumpR, rectDumpB, rectDumpDecoded ? "ok" : "FALLBACK");
+    // Orientation A: is the first row the identity?
+    bool rowIdentity = true;
+    for (int d = 0; d < 16; ++d)
+    {
+        if (t[d] != d)
+        {
+            rowIdentity = false;
+            break;
+        }
+    }
+
+    // Orientation B: which stride makes column 0 the identity? Reads at most
+    // 15 * 256 bytes in, well inside a table that already has to hold 48
+    // shift levels.
+    const int candidates[] = {48, 64, 128, 256};
+    int hits[4];
+    int hitCount = 0;
+
+    for (int c = 0; c < 4; ++c)
+    {
+        bool ok = true;
+        for (int d = 0; d < 16; ++d)
+        {
+            if (t[d * candidates[c]] != d)
+            {
+                ok = false;
+                break;
+            }
+        }
+        if (ok)
+            hits[hitCount++] = candidates[c];
+    }
+
+    sprintf_s(msg, sizeof(msg), "tbl rowId=%d strides %d %d %d", rowIdentity ? 1 : 0, hitCount > 0 ? hits[0] : 0,
+              hitCount > 1 ? hits[1] : 0, hitCount > 2 ? hits[2] : 0);
     scbw::printText(msg);
 
-    // Shape of the remap tables, so blending can be added against facts rather
-    // than against an assumed 256-byte stride.
-    sprintf_s(msg, sizeof(msg), "shift bfire i=%u d=%X ofire i=%u d=%X", colorShift[ColorRemapping::BFire].index,
-              (u32)colorShift[ColorRemapping::BFire].data, colorShift[ColorRemapping::OFire].index,
-              (u32)colorShift[ColorRemapping::OFire].data);
+    // The tables themselves, for the record. index turned out to be the
+    // ColorRemapping enum value rather than anything about the table's shape.
+    sprintf_s(msg, sizeof(msg), "shift ofire=%X bfire=%X", (u32)colorShift[ColorRemapping::OFire].data,
+              (u32)colorShift[ColorRemapping::BFire].data);
     scbw::printText(msg);
 }
 #endif

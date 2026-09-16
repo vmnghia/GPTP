@@ -329,19 +329,52 @@ Three details worth knowing before editing it:
 - **The fade still comes from the iscript.** The frame index is read off the frame pointer the
   engine passed, so the animation is still the engine's; only the pixels are ours.
 
+#### What the first run of the blitter established
+
+**[BUILT]** — measured, from the `rct` and `shift` dumps.
+
+**`rctDraw` is not a screen clip rectangle.** For a shot whose frame bounding box works out to
+125×59, it read `{0, 0, 125, 59}` as four `s32` — the frame's own extent, in frame-local
+coordinates, which is what an unclipped source rect for the blit looks like. Using it to clip
+*screen* coordinates confined the beam to a 125×59 box in the screen's top-left corner, which
+is exactly what the first build did.
+
+So the blitter clips to the surface instead. That is safe across the whole 640×480: the render
+function runs in the sprite pass and the console is composited over the game afterwards, so
+pixels underneath it are covered rather than left showing.
+
+**`ColorShiftData::index` is just the `ColorRemapping` enum value** (`ofire` → 1, `bfire` → 3),
+not anything about the table's shape. It says nothing about the stride.
+
+**`coloringData` is `colorShift[OFire].data`, exactly.** The dump read
+`color=394008C` and `ofire d=394008C` in the same frame — which is what
+`images_dat::Remapping[Explosion2_Small]` should produce, and closes out any doubt about which
+argument is the remap table.
+
+#### The colour problem
+
+`generateBeam()` fills the beam with `{47, 45, 27, 27, 17, 11, 10, 10, 5, 5}`, and those are
+**not palette entries**. Under `PaletteType::RLE_EFFECT` the engine reads a GRP pixel as a
+*shift level* and looks the real colour up in `coloringData`. The fire look the GRP path had
+was the engine's blending, not the numbers.
+
+Writing those numbers straight to the surface writes whatever the palette holds at index 47,
+which is why the first blitter build drew a green beam. It now writes a flat fire-ish ramp as
+a placeholder. Restoring the real look means `dst = remap[...]`, and that needs the table's
+shape.
+
 Still open:
 
-- **[VERIFY]** The layout of `rctDraw`. The probe reported the pointer, not the bytes behind
-  it. `decodeClipRect` tries `Box32` then `Box16`, takes whichever describes a sane rectangle
-  inside the surface, and falls back to the whole surface — and dumps the bytes either way
-  (`rct` lines), so this can be replaced with a fact rather than another build round trip.
-  The fallback errs wide on purpose: drawing over the console is a visible bug, while clipping
-  against a misread rectangle is a write off the end of the surface.
-- **[VERIFY]** The remap table's row stride, needed for `dst = table[intensity * stride + dst]`.
-  Until it is known the blitter writes flat palette entries, because indexing a remap table by
-  a guessed stride reads outside it. The `shift` line dumps `colorShift[BFire]` and
-  `colorShift[OFire]` — both the `data` pointer and the undocumented `index` field, which may
-  well be the row count.
+- **[VERIFY]** The remap table's orientation and stride. Two forms are plausible and they are
+  distinguishable, which is what `reportBeamRenderDebug` now tests in game:
+  - `table[shift * stride + dst]`, one row per shift level. Row 0 is "no shift", so the first
+    256 bytes read as the identity.
+  - `table[dst * stride + shift]`, one row per destination colour. Column 0 is "no shift", so
+    `table[d * stride] == d` for every `d` — an invariant that only holds for the right
+    stride, so it yields the stride as well as the orientation.
+
+  Candidates start at 48 because `generateBeam` emits shift levels up to 47 and the engine
+  blitted those through this table for weeks without reading off the end of it.
 
 Incidental finding: on the current GRP path, `overlay->setRemapping(ColorRemapping::BFire)`
 after `createTopOverlay` switches the glow table. Without it the beam inherits whatever
