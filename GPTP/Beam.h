@@ -90,6 +90,20 @@ uint8_t *generateGrp(int16_t *imageData, uint16_t frames, uint16_t maxWidth, uin
 // model. See docs/beam-weapons.md for where this goes next.
 #define BEAM_USE_GRP_PATH 1
 
+// Probe for the custom render function path (docs/beam-weapons.md).
+//
+// Replaces the beam overlay's CImage::renderFunction with a naked thunk that
+// records every register that could be carrying an argument plus the top of the
+// stack, then chains to the engine's own function so the image still draws
+// normally. The point is to establish the calling convention by observation
+// rather than by guessing it - a wrong guess crashes rather than misbehaves.
+//
+// Correlate the reported values against the "rfn set" line, which prints the
+// overlay's coloringData and grpOffset at spawn: whichever slot carries those
+// identifies the remap table argument and (via getCurrentFrame, which returns a
+// pointer just inside the GRP) the frame argument.
+#define BEAM_DEBUG_RENDERFN_PROBE 1
+
 struct CUnit;
 
 /// Records a beam shot from @p unit along its current facing, out to its order
