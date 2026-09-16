@@ -48,12 +48,20 @@ frame is expensive, and the cost scales with the number of simultaneous beams. K
   share a buffer.
 - Rasterization is a thickness-swept quad, scanline-filled, with an intensity ramp across 9
   frames. Colors index a fire remap table (`ofire` in use).
+- The overlay's `renderFunction` points at our own blitter (`BEAM_USE_CUSTOM_RENDER`), so the
+  beam drawn on screen is not the GRP's pixels and is not capped at 255px. The GRP still
+  supplies the image's bounds, the frame count, and a short-but-valid fallback. See
+  "Custom render function" below.
 
 **Debug switches** live at the top of `Beam.h`:
 
+- `BEAM_USE_CUSTOM_RENDER` — draw the beam ourselves rather than letting the engine blit the
+  GRP. 0 reverts to the engine blitting the GRP, 255px ceiling and all.
 - `BEAM_DEBUG_FIXED_AIM` — draw a fixed due-east beam from a literal endpoint, bypassing both
   the unit's aim and the angle table. Isolates the render path from the aiming.
 - `BEAM_DEBUG_PRINT` — print weapon id and aim values via `printText`, capped per session.
+- `BEAM_DEBUG_RENDERFN_PROBE` / `_MARKER` — the render function probes. Both off; their
+  findings are recorded below.
 
 ### Bugs fixed, worth not regressing
 
@@ -249,24 +257,91 @@ Two other observations from the runs, for the record:
   `orig=` to test the obvious hypothesis. It does not block the blitter, which replaces the
   function outright rather than chaining to it.
 
-#### Probe round 2
+#### Probe round 2 — the signature, confirmed
 
-Fixes the non-atomic capture and adds ground truth, so one sample settles the rest:
+Round 2 made the capture atomic (registers, stack and image state copied in the same call) and
+added ground truth. One sample settled everything:
 
-- Registers, stack, and the probed image's own state are copied in the same call.
-- The capture reads `probeImage->screenPosition` *at that instant* and reports it next to
-  `ECX`/`EDX`. Equal on both → args 1 and 2 are screen x/y in registers, which is the
-  register half of `__fastcall`. Only one image carries the probe at a time, so the
-  comparison can never be against the wrong image.
-- The capture also copies the first bytes at the return address. `83 C4 xx` (`ADD ESP, imm`)
-  there means the **caller** cleans the stack arguments; anything else means the callee does.
-  That settles the half of the convention register values cannot show — and it is the half
-  that crashes rather than misbehaves when guessed wrong.
+```
+rfn reg cx=7A dx=4E img=122,78
+rfn stk a=866006E b=1AFCAC c=A0C008C d=1AFDB4
+rfn img frm=866006E grp=8660058 ax=0
+rfn ret 497D4A: 5F 5B 80 66 0C FE
+```
+
+| argument | evidence |
+| --- | --- |
+| 1 — screen x, in `ECX` | `cx=7A` = 122 against the image's own `screenPosition` `122,78`, read at that instant |
+| 2 — screen y, in `EDX` | `dx=4E` = 78, same |
+| 3 — `GrpFrame*`, `stack[1]` | `866006E` equals `&grpOffset->frames[frameIndex]`; 0x16 past `grp=8660058` is the 6-byte header plus two 8-byte frames, i.e. frame 2 |
+| 4 — `&rctDraw`, `stack[2]` | `1AFCAC`, a stack address |
+| 5 — `coloringData`, `stack[3]` | `A0C008C`, the value logged at spawn |
+
+`stack[4]` is past the fifth argument, so there are five and no more.
+
+The return site decides who cleans the stack: `5F 5B 80 66 0C FE` is `POP EDI` / `POP EBX` /
+`AND BYTE PTR [ESI+0Ch], 0FEh`. No `ADD ESP, imm`, so the **callee** cleans. Two register
+arguments plus callee-cleaned stack arguments is `__fastcall`:
+
+```cpp
+void __fastcall render(int screenX, int screenY, GrpFrame *frame, void *rctDraw, void *coloringData);
+```
+
+That third instruction is a free corroboration: `CImage + 0x0C` is `flags` and bit 0 is
+`CImage_Flags::Redraw`, so the caller holds the `CImage*` in `ESI` and clears its redraw flag
+on return. We are in the right function.
+
+`pal=9` is `PaletteType::RLE_EFFECT`, which is why `coloringData` is a `colorShift[...].data`
+pointer at all (`CImage.cpp:81`). It stayed constant across attaches within a run, as a remap
+table should.
+
+### Custom render function
+
+**[BUILT]** — `BEAM_USE_CUSTOM_RENDER` in `Beam.h`, on by default. First version; blending is
+not in it yet.
+
+The beam overlay's `renderFunction` now points at `beamRenderFunction` in `Beam.cpp`, which
+draws the beam directly into `gameScreenBuffer` instead of letting the engine blit the
+generated GRP. What that buys, and what it costs:
+
+- **The 255px ceiling is gone.** The beam no longer travels through a GRP frame's byte-sized
+  width/height on its way to the screen. `spawnBeamOverlay` now keeps two lengths: `reach`,
+  the real distance to the target, which is what gets drawn; and `length`, clamped to the
+  canvas, which is what still gets rasterized into the GRP.
+- **The GRP is still generated**, and still owns the image's bounds, the frame count the
+  iscript animates through, and a valid — if short — fallback if our function is ever not
+  attached. It is no longer what appears on screen.
+- **Depth, culling and the image budget are unchanged**, because it is still one real `CImage`
+  on a real `CSprite`. That was the whole point of preferring this over shapes.
+
+Three details worth knowing before editing it:
+
+- **Finding the beam from a `GrpFrame*`.** The render function is handed no image pointer, so
+  the frame's *address* is the key: it points inside the GRP allocation that beam owns, and
+  `findBeamForFrame` scans the ring slots for the one whose allocation contains it. The
+  alternative — reading `ESI`, which the return-site disassembly shows holds the `CImage` — is
+  an artifact of the caller's register allocation, not a contract, so it is not relied on.
+  A frame that matches nothing simply is not drawn.
+- **Map coordinates, not the arguments.** `screenX`/`screenY` arrive as arguments and are
+  deliberately ignored. The endpoints are stored in map space and converted with
+  `*screenX` / `*screenY` (`scbwdata.h:79-80`), the same globals `Shape.cpp:167` uses, so
+  nothing depends on what a 255px canvas anchors its `screenPosition` to.
+- **The fade still comes from the iscript.** The frame index is read off the frame pointer the
+  engine passed, so the animation is still the engine's; only the pixels are ours.
 
 Still open:
 
-- **[VERIFY]** The layout of `rctDraw`, needed for clipping.
+- **[VERIFY]** The layout of `rctDraw`. The probe reported the pointer, not the bytes behind
+  it. `decodeClipRect` tries `Box32` then `Box16`, takes whichever describes a sane rectangle
+  inside the surface, and falls back to the whole surface — and dumps the bytes either way
+  (`rct` lines), so this can be replaced with a fact rather than another build round trip.
+  The fallback errs wide on purpose: drawing over the console is a visible bug, while clipping
+  against a misread rectangle is a write off the end of the surface.
 - **[VERIFY]** The remap table's row stride, needed for `dst = table[intensity * stride + dst]`.
+  Until it is known the blitter writes flat palette entries, because indexing a remap table by
+  a guessed stride reads outside it. The `shift` line dumps `colorShift[BFire]` and
+  `colorShift[OFire]` — both the `data` pointer and the undocumented `index` field, which may
+  well be the row count.
 
 Incidental finding: on the current GRP path, `overlay->setRemapping(ColorRemapping::BFire)`
 after `createTopOverlay` switches the glow table. Without it the beam inherits whatever
@@ -309,28 +384,20 @@ prerequisite for anything. Both are kept for reference in case the GRP path is e
 
 ### Superseded ordering
 
-Ordered. 4.1 and 4.2 are code-only and independent; 4.3 is where data editing enters.
+Ordered when the GRP was still what got drawn. 4.1 is superseded; 4.2 is the live next step,
+and 4.3 is where data editing enters.
 
-### 4.1 Bounding-box-relative rendering — **next**
+### 4.1 Bounding-box-relative rendering — **superseded**
 
-**[PROPOSED]** Fixes reach and the dominant CPU costs in one change.
+**[PROPOSED]**, and no longer the way out of §3.1. It aimed at reach by rasterizing the beam's
+tight bounding box and positioning it with the frame's own x/y offset, buying ~360px on a
+diagonal. The custom render function takes the beam out of the GRP entirely, so reach is no
+longer bounded at all and this buys nothing toward it.
 
-The beam is currently rasterized outward from the **center** of a fixed 255×255 canvas, so it
-can only reach ~127px in any direction — but a siege tank outranges that at ~224px, so long
-shots render short.
-
-A GRP frame carries its own x/y offset, so the frame need not be centered. Rasterize the
-beam's tight bounding box and use the frame offset to position it:
-
-- Axis-aligned beam → a ~255×16 box, so a full 255px beam fits.
-- 45° beam of length L → an L/√2 × L/√2 box, so L can reach ~360 before a dimension hits 255.
-
-That covers every BW weapon range. It also removes the §3.3 costs: clear and encode only the
-bbox instead of the whole canvas.
-
-Also here: **[PROPOSED]** track the previous frame's bbox and clear only that region, and
-skip regeneration entirely when the endpoints have not moved (a dirty flag). A stationary
-beam should cost nothing.
+One idea in it is still live and applies to the GRP that remains (bounds and fallback only):
+clear and encode only the bbox rather than the whole 255×255 canvas, and skip regeneration
+when the endpoints have not moved. That is §3.3's cost, not §3.1's ceiling — worth doing when
+the per-shot allocation shows up in practice, not before.
 
 ### 4.2 Weapon-id → beam config table
 
