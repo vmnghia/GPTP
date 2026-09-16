@@ -1760,7 +1760,11 @@ void __fastcall beamRenderFunction(int imageScreenX, int imageScreenY, GrpFrame 
 // reading off the end of it.
 void reportBeamRenderDebug()
 {
-    static int printsLeft = 1;
+    // Capped, not one-shot: at 1, this fired once per game launch and could
+    // easily scroll off the message area before it was read, since it only
+    // ever prints alongside a shot's own "beam"/"fire"/"rfn set" lines. A few
+    // more chances make it likely to survive on screen without flooding.
+    static int printsLeft = 5;
 
     if (!remapDumpPending || remapDumpTable == NULL || printsLeft <= 0)
         return;
@@ -1774,9 +1778,11 @@ void reportBeamRenderDebug()
               t[7]);
     scbw::printText(msg);
 
-    // Orientation A: is the first row the identity?
+    // Orientation A: is the first row the identity? 8 points is enough to be
+    // confident without reading further than the table's size actually
+    // justifies - see the note on Orientation B below.
     bool rowIdentity = true;
-    for (int d = 0; d < 16; ++d)
+    for (int d = 0; d < 8; ++d)
     {
         if (t[d] != d)
         {
@@ -1785,9 +1791,12 @@ void reportBeamRenderDebug()
         }
     }
 
-    // Orientation B: which stride makes column 0 the identity? Reads at most
-    // 15 * 256 bytes in, well inside a table that already has to hold 48
-    // shift levels.
+    // Orientation B: which stride makes column 0 the identity? The table's
+    // real size is not known - only that it holds at least 48 shift levels,
+    // since generateBeam() emits up to 47 and the engine has blitted those
+    // through it without complaint. Capping at d < 8 keeps the furthest read
+    // at 7 * 256 = 1792 bytes in, rather than the 15 * 256 a fuller check
+    // would need - comfortably inside even a table sized just past 48 rows.
     const int candidates[] = {48, 64, 128, 256};
     int hits[4];
     int hitCount = 0;
@@ -1795,7 +1804,7 @@ void reportBeamRenderDebug()
     for (int c = 0; c < 4; ++c)
     {
         bool ok = true;
-        for (int d = 0; d < 16; ++d)
+        for (int d = 0; d < 8; ++d)
         {
             if (t[d * candidates[c]] != d)
             {
