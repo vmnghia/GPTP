@@ -1335,6 +1335,18 @@ struct BeamRingSlot
 {
     int16_t *rasterBuffer = nullptr;
     GrpHead *grp = nullptr;
+
+    // Size of the GRP allocation. The custom render function is handed a
+    // GrpFrame* and nothing else, so this range is how it works out which beam
+    // that frame belongs to.
+    uint32_t grpSize = 0;
+
+    // Endpoints in map coordinates, and uncapped - unlike the rasterized GRP,
+    // which has to fit inside a 255px canvas. The blitter converts to screen
+    // space itself via screenX/screenY, so it never has to know what the
+    // image's screenPosition is anchored to.
+    int mapStartX = 0, mapStartY = 0;
+    int mapEndX = 0, mapEndY = 0;
 };
 
 // One ring per firing unit, so simultaneous beams never share - and race on -
@@ -1527,10 +1539,298 @@ void __fastcall beamRenderMarker(int x, int y, void *frame, void *drawRect, int 
 }
 #endif
 
-void attachRenderProbe(CImage *overlay)
+} // namespace
+
+#endif // BEAM_DEBUG_RENDERFN_PROBE
+
+//-------- Custom render function: we own the blit --------//
+
+#if BEAM_USE_CUSTOM_RENDER
+
+namespace
+{
+
+// graphics::Bitmap keeps these private and exposes only clipped, flat-color
+// drawing. Blending against the destination pixel needs the raw surface, so
+// mirror the layout rather than widen upstream's class. Asserted against
+// sizeof(graphics::Bitmap) below so a change upstream breaks the build rather
+// than the game.
+struct ScreenSurface
+{
+    u16 width;
+    u16 height;
+    u8 *data;
+};
+
+static_assert(sizeof(ScreenSurface) == sizeof(graphics::Bitmap),
+              "ScreenSurface must mirror graphics::Bitmap's layout");
+
+// Brightest at the core, falling off to the edges. Same palette entries the GRP
+// rasterizer works from, so the custom path reads like the one it replaces.
+const u8 kBeamCoreRamp[] = {47, 45, 27, 27, 17, 11, 10, 10, 5, 5};
+constexpr int kBeamCoreRampLen = sizeof(kBeamCoreRamp) / sizeof(kBeamCoreRamp[0]);
+
+// Every slot that has ever held a beam GRP. Bounded by (firing units x
+// kBeamRingDepth), and never erased - std::unordered_map keeps pointers to its
+// mapped values valid across rehashing, so these stay good for the process.
+vector<const BeamRingSlot *> beamSlotRegistry;
+
+void registerBeamSlot(const BeamRingSlot *slot)
+{
+    for (size_t i = 0; i < beamSlotRegistry.size(); ++i)
+        if (beamSlotRegistry[i] == slot)
+            return;
+    beamSlotRegistry.push_back(slot);
+}
+
+// The render function is handed a GrpFrame* and nothing else that identifies
+// the image, so the frame's address is the key: it points inside the GRP
+// allocation the beam owns.
+const BeamRingSlot *findBeamForFrame(const void *frame)
+{
+    const u8 *p = (const u8 *)frame;
+
+    for (size_t i = 0; i < beamSlotRegistry.size(); ++i)
+    {
+        const BeamRingSlot *slot = beamSlotRegistry[i];
+        const u8 *base = (const u8 *)slot->grp;
+
+        if (base != NULL && p >= base && p < base + slot->grpSize)
+            return slot;
+    }
+
+    return NULL;
+}
+
+// rctDraw's layout is the one thing the probe did not settle - it reported the
+// pointer, not the bytes behind it. Rather than spend a build round trip on it,
+// try both plausible layouts and take whichever describes a sane rectangle
+// inside the surface. The bytes are dumped either way (see
+// reportBeamRenderDebug), so the next edit can replace this with a fact.
+//
+// The fallback is the whole surface. Drawing over the console is a visible bug;
+// clipping against a misread rectangle is a write off the end of the surface,
+// so erring wide is the safe direction.
+bool decodeClipRect(const void *rect, int surfW, int surfH, int &left, int &top, int &right, int &bottom)
+{
+    if (rect != NULL)
+    {
+        const s32 *as32 = (const s32 *)rect;
+        if (as32[0] >= 0 && as32[1] >= 0 && as32[2] > as32[0] && as32[3] > as32[1] && as32[2] <= surfW &&
+            as32[3] <= surfH)
+        {
+            left = as32[0];
+            top = as32[1];
+            right = as32[2];
+            bottom = as32[3];
+            return true;
+        }
+
+        const s16 *as16 = (const s16 *)rect;
+        if (as16[0] >= 0 && as16[1] >= 0 && as16[2] > as16[0] && as16[3] > as16[1] && as16[2] <= surfW &&
+            as16[3] <= surfH)
+        {
+            left = as16[0];
+            top = as16[1];
+            right = as16[2];
+            bottom = as16[3];
+            return true;
+        }
+    }
+
+    left = 0;
+    top = 0;
+    right = surfW;
+    bottom = surfH;
+    return false;
+}
+
+#if BEAM_DEBUG_PRINT
+// Captured on the first call and reported from spawnBeamOverlay, the same way
+// the probe reports: this runs mid-frame, so it copies and nothing more.
+bool rectDumpPending = false;
+u32 rectDumpAddr = 0;
+s32 rectDump32[4];
+bool rectDumpDecoded = false;
+int rectDumpL, rectDumpT, rectDumpR, rectDumpB;
+#endif
+
+// Writes one beam pixel, clipped. Flat palette entries for now: coloringData is
+// handed to us and is the remap table (the probe confirmed that), but the
+// table's row stride is still unverified, and indexing a remap table by a
+// guessed stride reads outside it. Blending is the next step, once the
+// colorShift dump below says how the table is shaped.
+inline void plotBeamPixel(ScreenSurface *surface, int x, int y, int left, int top, int right, int bottom, u8 color)
+{
+    if (x < left || x >= right || y < top || y >= bottom)
+        return;
+
+    surface->data[y * surface->width + x] = color;
+}
+
+// Signature established by the probe, not assumed: args 1-2 in ECX/EDX, args
+// 3-5 on the stack, callee cleans (the return site at 0x00497D4A carries no
+// ADD ESP). See docs/beam-weapons.md.
+//
+// screenX/screenY are the image's own screenPosition. They are deliberately
+// unused: the beam's endpoints are kept in map coordinates and converted here,
+// so nothing depends on what a 255px canvas anchors its position to.
+void __fastcall beamRenderFunction(int imageScreenX, int imageScreenY, GrpFrame *frame, void *rctDraw,
+                                   void *coloringData)
+{
+    // Deliberately unused - see the note above on working in map coordinates.
+    (void)imageScreenX;
+    (void)imageScreenY;
+
+    // The remap table. Not used yet; blending is the next step (see
+    // docs/beam-weapons.md), and this is the argument it will come from.
+    (void)coloringData;
+
+    const BeamRingSlot *slot = findBeamForFrame(frame);
+    if (slot == NULL || slot->grp == NULL)
+        return;
+
+    ScreenSurface *surface = (ScreenSurface *)gameScreenBuffer;
+    if (surface == NULL || surface->data == NULL)
+        return;
+
+    int left, top, right, bottom;
+    const bool decoded = decodeClipRect(rctDraw, surface->width, surface->height, left, top, right, bottom);
+
+#if BEAM_DEBUG_PRINT
+    if (!rectDumpPending && rctDraw != NULL)
+    {
+        rectDumpAddr = (u32)rctDraw;
+        for (int i = 0; i < 4; ++i)
+            rectDump32[i] = ((const s32 *)rctDraw)[i];
+        rectDumpDecoded = decoded;
+        rectDumpL = left;
+        rectDumpT = top;
+        rectDumpR = right;
+        rectDumpB = bottom;
+        rectDumpPending = true;
+    }
+#else
+    (void)decoded;
+#endif
+
+    // Which step of the fade this is. The engine hands us the frame it would
+    // have drawn, so the iscript still drives the animation - we just read the
+    // index off it instead of blitting its pixels.
+    const int frameIndex = (int)(frame - slot->grp->frames);
+    if (frameIndex < 0 || frameIndex >= kBeamFrames)
+        return;
+
+    const int sx = slot->mapStartX - *screenX;
+    const int sy = slot->mapStartY - *screenY;
+    const int ex = slot->mapEndX - *screenX;
+    const int ey = slot->mapEndY - *screenY;
+
+    const int dx = ex - sx;
+    const int dy = ey - sy;
+
+    const double len = sqrt((double)dx * dx + (double)dy * dy);
+    if (len < 1.0)
+        return;
+
+    // Unit perpendicular, for stepping across the beam's width.
+    const double px = -dy / len;
+    const double py = dx / len;
+
+    // The beam thins and dims as the frame index rises, which is the pulse the
+    // rasterized frames produce by dropping a colour per frame.
+    const int half = max(1, (kBeamThickness * (kBeamFrames - frameIndex)) / (2 * kBeamFrames));
+    const int fade = frameIndex;
+
+    // One pixel per unit of length, which is what the scanline rasterizer this
+    // replaces effectively did. Cost is proportional to the beam's length on
+    // screen rather than to a fixed canvas.
+    const int steps = (int)len;
+
+    for (int t = -half; t <= half; ++t)
+    {
+        // Ramp index from the core outwards, then pushed further along by the
+        // fade so later frames are dimmer as well as thinner.
+        const int across = (t < 0) ? -t : t;
+        int shade = (across * kBeamCoreRampLen) / (half + 1) + fade;
+        if (shade >= kBeamCoreRampLen)
+            continue;
+
+        const u8 color = kBeamCoreRamp[shade];
+
+        const int ox = (int)(px * t);
+        const int oy = (int)(py * t);
+
+        for (int i = 0; i <= steps; ++i)
+        {
+            const int x = sx + (dx * i) / steps + ox;
+            const int y = sy + (dy * i) / steps + oy;
+            plotBeamPixel(surface, x, y, left, top, right, bottom, color);
+        }
+    }
+}
+
+#if BEAM_DEBUG_PRINT
+// Called from ordinary game logic, not mid-frame.
+void reportBeamRenderDebug()
+{
+    static int printsLeft = 2;
+
+    if (!rectDumpPending || printsLeft <= 0)
+        return;
+    rectDumpPending = false;
+    --printsLeft;
+
+    char msg[200];
+
+    // Printed both ways: a Box32 reads as four plausible coordinates, a Box16
+    // packed into the same bytes reads as two huge numbers and two zeros.
+    sprintf_s(msg, sizeof(msg), "rct %X 32:%d,%d,%d,%d", rectDumpAddr, rectDump32[0], rectDump32[1], rectDump32[2],
+              rectDump32[3]);
+    scbw::printText(msg);
+
+    const s16 *as16 = (const s16 *)rectDump32;
+    sprintf_s(msg, sizeof(msg), "rct 16:%d,%d,%d,%d use %d,%d,%d,%d %s", as16[0], as16[1], as16[2], as16[3],
+              rectDumpL, rectDumpT, rectDumpR, rectDumpB, rectDumpDecoded ? "ok" : "FALLBACK");
+    scbw::printText(msg);
+
+    // Shape of the remap tables, so blending can be added against facts rather
+    // than against an assumed 256-byte stride.
+    sprintf_s(msg, sizeof(msg), "shift bfire i=%u d=%X ofire i=%u d=%X", colorShift[ColorRemapping::BFire].index,
+              (u32)colorShift[ColorRemapping::BFire].data, colorShift[ColorRemapping::OFire].index,
+              (u32)colorShift[ColorRemapping::OFire].data);
+    scbw::printText(msg);
+}
+#endif
+
+} // namespace
+
+#endif // BEAM_USE_CUSTOM_RENDER
+
+//-------- Attaching a render function to the overlay --------//
+
+namespace
+{
+
+// Points the overlay's per-instance render function at ours. Which "ours" is
+// depends on the switches in Beam.h, in order of precedence: the real blitter,
+// the position marker, then the register/stack probe.
+void attachBeamRenderFunction(CImage *overlay)
 {
     if (overlay == NULL || overlay->renderFunction == NULL)
         return;
+
+#if BEAM_USE_CUSTOM_RENDER
+
+    // Idempotent: the same overlay can be handed here more than once, and
+    // chaining our own function into itself would recurse.
+    if (overlay->renderFunction == (void *)&beamRenderFunction)
+        return;
+
+    const u32 engineRenderFunction = (u32)overlay->renderFunction;
+    overlay->renderFunction = (void *)&beamRenderFunction;
+
+#elif BEAM_DEBUG_RENDERFN_PROBE
 
     // A freshly created overlay always carries the engine's function, but guard
     // anyway: capturing our own probe here would chain it to itself.
@@ -1548,6 +1848,7 @@ void attachRenderProbe(CImage *overlay)
     probeImage = overlay;
 
     originalRenderFunction = (u32)overlay->renderFunction;
+    const u32 engineRenderFunction = originalRenderFunction;
 
 #if BEAM_DEBUG_RENDERFN_MARKER
     overlay->renderFunction = (void *)&beamRenderMarker;
@@ -1555,6 +1856,14 @@ void attachRenderProbe(CImage *overlay)
     overlay->renderFunction = (void *)&beamRenderProbe;
 #endif
 
+#else
+
+    // Nothing of ours to attach: the engine draws the generated GRP.
+    return;
+
+#endif // BEAM_USE_CUSTOM_RENDER
+
+#if BEAM_DEBUG_PRINT
     static int printsLeft = 3;
     if (printsLeft > 0)
     {
@@ -1565,14 +1874,16 @@ void attachRenderProbe(CImage *overlay)
         // the render function from it, so it is what a differing orig would
         // have to be explained by.
         sprintf_s(msg, sizeof(msg), "rfn set color=%X grp=%X orig=%X pal=%d", (u32)overlay->coloringData,
-                  (u32)overlay->grpOffset, originalRenderFunction, (int)overlay->paletteType);
+                  (u32)overlay->grpOffset, engineRenderFunction, (int)overlay->paletteType);
         scbw::printText(msg);
     }
+#else
+    (void)engineRenderFunction;
+#endif
 }
 
 } // namespace
 
-#endif // BEAM_DEBUG_RENDERFN_PROBE
 
 void spawnBeamOverlay(CUnit *unit)
 {
@@ -1596,9 +1907,19 @@ void spawnBeamOverlay(CUnit *unit)
     // the turret rather than the hull.
     const u8 direction = unit->currentDirection1;
 
-    int length = (int)scbw::getDistanceFast(unit->position.x, unit->position.y, unit->orderTarget.pt.x,
-                                            unit->orderTarget.pt.y);
-    length = min(length, kBeamOrigin);
+    // The full shot, uncapped. Siege mode alone is 12 tiles (~384px) and a
+    // mod-defined weapon can reach further still, so this is the number the
+    // beam should actually be drawn at.
+    const int reach = (int)scbw::getDistanceFast(unit->position.x, unit->position.y, unit->orderTarget.pt.x,
+                                                 unit->orderTarget.pt.y);
+
+    // What fits in the GRP. A frame's width and height are byte fields, so the
+    // rasterized copy cannot leave the 255px canvas however far the shot goes.
+    // With BEAM_USE_CUSTOM_RENDER on, the GRP is no longer what gets drawn - it
+    // supplies the image's bounds, the frame count the iscript animates
+    // through, and a degraded but valid fallback if our function is ever not
+    // attached.
+    const int length = min(reach, kBeamOrigin);
 
 #if BEAM_DEBUG_FIXED_AIM
     // Straight east from the origin, with the endpoint written out literally so
@@ -1628,9 +1949,23 @@ void spawnBeamOverlay(CUnit *unit)
 
     slot.rasterBuffer = rasterizeBeamFrames(endX, endY, slot.rasterBuffer);
 
-    uint32_t grpSize = 0; // out-param only, value unused
+    uint32_t grpSize = 0;
     slot.grp = reinterpret_cast<GrpHead *>(
         generateGrp(slot.rasterBuffer, kBeamFrames, kBeamCanvas, kBeamCanvas, false, &grpSize));
+    slot.grpSize = grpSize;
+
+    // Map coordinates, at full reach. The render function converts to screen
+    // space itself, so the beam it draws is independent of both the 255px
+    // canvas and whatever the image's screenPosition is anchored to.
+    slot.mapStartX = unit->position.x;
+    slot.mapStartY = unit->position.y;
+#if BEAM_DEBUG_FIXED_AIM
+    slot.mapEndX = slot.mapStartX + 96;
+    slot.mapEndY = slot.mapStartY;
+#else
+    slot.mapEndX = slot.mapStartX + scbw::getPolarX(reach, direction);
+    slot.mapEndY = slot.mapStartY + scbw::getPolarY(reach, direction);
+#endif
 
 #if BEAM_DEBUG_PRINT
     // end == the origin (127,127) for a non-zero len means the angle table
@@ -1643,19 +1978,29 @@ void spawnBeamOverlay(CUnit *unit)
         --debugPrintsLeft;
 
         char msg[160];
-        sprintf_s(msg, sizeof(msg), "beam dir=%u len=%d end=%d,%d f0=%dx%d", (unsigned)direction, length, endX, endY,
-                  slot.grp ? (int)(uint8_t)slot.grp->frames[0].width : -1,
-                  slot.grp ? (int)(uint8_t)slot.grp->frames[0].height : -1);
+        sprintf_s(msg, sizeof(msg), "beam dir=%u reach=%d len=%d map=%d,%d->%d,%d", (unsigned)direction, reach,
+                  length, slot.mapStartX, slot.mapStartY, slot.mapEndX, slot.mapEndY);
         scbw::printText(msg);
     }
 #endif
 
     overlay->grpOffset = slot.grp;
 
-#if BEAM_DEBUG_RENDERFN_PROBE
+#if BEAM_USE_CUSTOM_RENDER
+    // Registered before the render function is attached: the first call can
+    // come as early as the next frame, and a beam the registry does not know
+    // about simply is not drawn.
+    registerBeamSlot(&slot);
+#endif
+
     // Attached last, so coloringData and grpOffset are already set and get
     // reported alongside the engine's original render function pointer.
-    attachRenderProbe(overlay);
+    attachBeamRenderFunction(overlay);
+
+#if BEAM_USE_CUSTOM_RENDER && BEAM_DEBUG_PRINT
+    // What the render function saw of rctDraw last frame, reported now that we
+    // are back in ordinary game logic.
+    reportBeamRenderDebug();
 #endif
 }
 

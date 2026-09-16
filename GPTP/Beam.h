@@ -102,20 +102,38 @@ uint8_t *generateGrp(int16_t *imageData, uint16_t frames, uint16_t maxWidth, uin
 // overlay's coloringData and grpOffset at spawn: whichever slot carries those
 // identifies the remap table argument and (via getCurrentFrame, which returns a
 // pointer just inside the GRP) the frame argument.
-#define BEAM_DEBUG_RENDERFN_PROBE 1
+// Settled - the contract it established is recorded in docs/beam-weapons.md and
+// is what BEAM_USE_CUSTOM_RENDER's function is written against. Left in place
+// because it is the tool to reach for if the engine is ever seen calling that
+// pointer differently; set it to 1 (and BEAM_USE_CUSTOM_RENDER to 0) to run it
+// again.
+#define BEAM_DEBUG_RENDERFN_PROBE 0
 
-// Follow-up to the probe above, off by default. The probe established the
-// convention as __fastcall with the remap table at stack[3], but left one thing
-// open: whether the two register arguments really are screen x/y. One capture
-// read (208, 184), fine for a 640x480 screen; another read ECX = 0x42A = 1066,
-// too wide to be one.
+// Draw the beam ourselves instead of letting the engine blit our generated GRP.
 //
-// Setting this to 1 swaps in a render function that draws only a marker at the
-// reported position and does NOT chain to the engine's - so the beam itself
-// will not draw while this is on. If the marker lands where the beam should
-// start, the signature is confirmed and a real blitter can be written against
-// it. If it lands somewhere else, the offset tells us what those arguments
-// actually are.
+// The probe established the per-instance render function's contract by
+// observation (see docs/beam-weapons.md):
+//
+//   void __fastcall render(int screenX, int screenY, GrpFrame *frame,
+//                          void *rctDraw, void *coloringData);
+//
+// Pointing that at our own blitter removes the 255px ceiling for good: the beam
+// stops travelling through a GRP frame's byte-sized width/height on its way to
+// the screen. It is still a real CImage on a real CSprite, so depth, culling and
+// the image budget are unchanged.
+//
+// The GRP is still generated and still owns the image's bounds, which is what
+// keeps the engine's culling and refresh bookkeeping honest - and what the
+// engine falls back to drawing if our function is ever not attached. Setting
+// this to 0 goes back to exactly that.
+#define BEAM_USE_CUSTOM_RENDER 1
+
+// Follow-up to the probe, and no longer needed: a capture read ECX/EDX as
+// exactly the image's own screenPosition at that instant, so the two register
+// arguments are screen x/y and the marker has nothing left to settle. Kept as a
+// way to see where the engine thinks an image is. Only meaningful with
+// BEAM_DEBUG_RENDERFN_PROBE on, and it does not chain to the engine's function,
+// so the beam itself will not draw while it is 1.
 #define BEAM_DEBUG_RENDERFN_MARKER 0
 
 struct CUnit;
