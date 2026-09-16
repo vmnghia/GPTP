@@ -200,11 +200,36 @@ Relevant data, all already mapped in the repo:
 - `ColorRemapping::{None, OFire, GFire, BFire, BExpl, Trans50, ...}` — `enumerations.h:338`
 - `PaletteType::RLE_FIRE = 17` — the engine's own fire blitter, `CImage.h:36`
 
-Unknowns to settle before committing to it: the render function's **calling convention** (the
-engine calls it, so it must match exactly, and getting it wrong crashes), the precise
-semantics of `rctDraw`, and whether the engine is willing to call a custom function for an
-image whose GRP we have substituted. These want a small probe rather than a full
-implementation.
+#### Probe results
+
+**[BUILT]** — measured in game, not inferred. The probe replaced `renderFunction` with a naked
+thunk that recorded registers and stack, then chained to the engine's function.
+
+Established:
+
+- **The engine does call the per-instance pointer**, and replacing it is survivable. The
+  approach is viable.
+- **The convention is `__fastcall`:** args 1-2 in `ECX`/`EDX`, args 3-5 on the stack.
+- **`coloringData` - the remap table - arrives at `stack[3]`.** Confirmed by exact match
+  against the value logged at spawn, constant across captures. This is the whole reason the
+  path is worth taking: the bfire/ofire blending table is handed to us as an argument.
+- **`&rctDraw` is `stack[2]`** - a stack address, constant across captures.
+- **The frame/GRP pointer is `stack[1]`** - one capture matched the overlay's `grpOffset`
+  exactly.
+- Every call arrives from the same site, `0x00497D4A`, and the engine's own render function
+  for this image is `0x0040B5D6`.
+- The surface to draw into is already mapped: `gameScreenBuffer` (`scbwdata.h:377`), a
+  `graphics::Bitmap*` at `0x006CEFF0`, used exactly this way by `Shape.cpp`.
+
+Still open:
+
+- **[VERIFY]** Whether `ECX`/`EDX` are precisely screen x/y. One capture read `(208, 184)`,
+  comfortable for a 640x480 screen; another read `ECX = 0x42A` (1066), too wide to be a screen
+  x. Either that argument is not x, or the anchor of a 255x255 GRP pushes `screenPosition`
+  off-screen. `BEAM_DEBUG_RENDERFN_MARKER` settles this by drawing a marker at the reported
+  position - if it lands where the beam starts, the signature is confirmed.
+- **[VERIFY]** The layout of `rctDraw`, needed for clipping.
+- **[VERIFY]** The remap table's row stride, needed for `dst = table[intensity * stride + dst]`.
 
 Incidental finding: on the current GRP path, `overlay->setRemapping(ColorRemapping::BFire)`
 after `createTopOverlay` switches the glow table. Without it the beam inherits whatever

@@ -1457,6 +1457,21 @@ void __declspec(naked) beamRenderProbe()
     }
 }
 
+#if BEAM_DEBUG_RENDERFN_MARKER
+// Signature per the probe's findings: __fastcall puts the first two arguments in
+// ECX/EDX and the rest on the stack, with coloringData last.
+//
+// This replaces the engine's drawing for the image rather than chaining to it,
+// so nothing but the marker appears. Bitmap's public draw methods clip against
+// the surface (the unclipped variants are the private *Unsafe ones), so a wrong
+// guess about x/y should put the marker somewhere visibly wrong rather than
+// corrupt memory.
+void __fastcall beamRenderMarker(int x, int y, void *frame, void *drawRect, int coloringData)
+{
+    gameScreenBuffer->drawFilledBox(x - 3, y - 3, x + 3, y + 3, graphics::WHITE);
+}
+#endif
+
 void attachRenderProbe(CImage *overlay)
 {
     if (overlay == NULL || overlay->renderFunction == NULL)
@@ -1468,7 +1483,12 @@ void attachRenderProbe(CImage *overlay)
         return;
 
     originalRenderFunction = (u32)overlay->renderFunction;
+
+#if BEAM_DEBUG_RENDERFN_MARKER
+    overlay->renderFunction = (void *)&beamRenderMarker;
+#else
     overlay->renderFunction = (void *)&beamRenderProbe;
+#endif
 
     static int printsLeft = 2;
     if (printsLeft > 0)
