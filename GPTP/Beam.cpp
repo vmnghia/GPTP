@@ -5,6 +5,7 @@
 #include <SCBW/structures/CImage.h>
 #include <SCBW/structures/CSprite.h>
 #include <SCBW/structures/CUnit.h>
+#include <graphics/graphics.h>
 
 #include <cstdio>
 #include <unordered_map>
@@ -1444,4 +1445,106 @@ void spawnBeamOverlay(CUnit *unit)
 #endif
 
     overlay->grpOffset = slot.grp;
+}
+
+//-------- Beam shapes: queued per frame through the draw hook --------//
+
+namespace
+{
+
+// How long an instantaneous beam stays visible. Queued shapes are cleared every
+// frame, so this is just how many frames the beam gets re-queued for.
+constexpr int kBeamVisibleFrames = 6;
+
+// Most simultaneous beams tracked. Each costs kBeamThickness+1 shapes out of
+// the graphics module's 10000 per frame, so neither limit is close.
+constexpr int kMaxActiveBeams = 64;
+
+// Brightest at the core, falling off to the edges. Same palette entries the GRP
+// rasterizer uses, so the two paths read broadly alike - though this writes flat
+// colors rather than blending against the background the way a remap does.
+const graphics::ColorId kBeamRamp[] = {47, 45, 27, 27, 17, 11, 10, 10, 5, 5};
+constexpr int kBeamRampLen = sizeof(kBeamRamp) / sizeof(kBeamRamp[0]);
+
+struct ActiveBeam
+{
+    int startX, startY; // map coordinates
+    int endX, endY;     // map coordinates
+    int expiryFrame;
+};
+
+ActiveBeam activeBeams[kMaxActiveBeams];
+int activeBeamCount = 0;
+
+} // namespace
+
+void fireBeam(CUnit *unit)
+{
+    if (unit == NULL || activeBeamCount >= kMaxActiveBeams)
+        return;
+
+    // Not clamped: the shape path has no length ceiling, so the beam reaches the
+    // target however far off it is.
+    const int length = (int)scbw::getDistanceFast(unit->position.x, unit->position.y, unit->orderTarget.pt.x,
+                                                  unit->orderTarget.pt.y);
+    const u8 direction = unit->currentDirection1;
+
+    ActiveBeam &beam = activeBeams[activeBeamCount++];
+    beam.startX = unit->position.x;
+    beam.startY = unit->position.y;
+    beam.endX = beam.startX + scbw::getPolarX(length, direction);
+    beam.endY = beam.startY + scbw::getPolarY(length, direction);
+    beam.expiryFrame = (int)*elapsedTimeFrames + kBeamVisibleFrames;
+}
+
+void drawActiveBeams()
+{
+    const int now = (int)*elapsedTimeFrames;
+
+    // A new game restarts the frame counter, which would otherwise leave beams
+    // from the previous one sitting at stale map coordinates until their expiry
+    // frame came around again.
+    static int lastSeenFrame = 0;
+    if (now < lastSeenFrame)
+        activeBeamCount = 0;
+    lastSeenFrame = now;
+
+    int live = 0;
+
+    for (int i = 0; i < activeBeamCount; ++i)
+    {
+        const ActiveBeam beam = activeBeams[i];
+
+        if (now >= beam.expiryFrame)
+            continue;
+
+        activeBeams[live++] = beam; // still alive - keep it for next frame
+
+        const int dx = beam.endX - beam.startX;
+        const int dy = beam.endY - beam.startY;
+        const float len = sqrtf((float)(dx * dx + dy * dy));
+
+        if (len < 1.0f)
+            continue;
+
+        // Walk the perpendicular to give the beam thickness. Coordinates stay in
+        // map space and the graphics module converts them, so an off-screen beam
+        // is rejected by the Bitmap's own clipping rather than by us.
+        const float nx = -dy / len;
+        const float ny = dx / len;
+        const int half = kBeamThickness / 2;
+
+        for (int w = -half; w <= half; ++w)
+        {
+            const int offsetX = (int)(nx * w);
+            const int offsetY = (int)(ny * w);
+            const int distanceFromCore = (w < 0) ? -w : w;
+            const int rampIndex = (half > 0) ? (distanceFromCore * (kBeamRampLen - 1)) / half : 0;
+
+            graphics::drawLine(beam.startX + offsetX, beam.startY + offsetY, beam.endX + offsetX,
+                               beam.endY + offsetY, kBeamRamp[rampIndex], graphics::ON_MAP);
+        }
+    }
+
+    activeBeamCount = live;
 }

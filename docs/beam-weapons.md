@@ -151,6 +151,43 @@ persistent it is disqualifying, which makes §4.3 a prerequisite rather than a n
 
 ## 4. Roadmap
 
+### Architecture decision: draw as shapes, not as GRPs
+
+**[BUILT]** infrastructure, **[PROPOSED]** for beams.
+
+Range must be unbounded — siege mode alone is 12 tiles (~384px), and mod-defined weapons can
+go further, up to map length. A GRP frame's width and height are byte fields, so **a single
+frame physically cannot exceed 255px**. That is a wall, not a budget: no amount of
+bounding-box work gets past it. Tiling into 255px segments would, at one image entry and one
+iscript per segment (§3.6), and it would generate every segment whether on screen or not.
+
+The repo already carries the alternative. `hooks::injectDrawHook()` patches `0x004BD68D` with
+a BWAPI-derived hook that receives the screen `Bitmap*` each frame and calls
+`graphics::drawAllShapes()` after the game has drawn. Rally point lines already use it across
+arbitrary map distances. Queueing the beam as shapes gives:
+
+- **No length ceiling** — `Shape` holds `Point32` endpoints; nothing passes through a byte.
+- **No GRP, no overlay image, no images.dat entry, no iscript** — §3.7's borrowed lifetime
+  problem, the ring buffer, and the whole encode/decode round trip (§3.3 items 1-3) all
+  disappear rather than shrink.
+- **Per-frame redraw is free.** Shapes reset every frame and are re-queued, so continuous and
+  sweeping beams are a matter of varying the endpoints — no persistence to manage.
+- **Capacity is not a concern.** `MAX_SHAPES` is 10000 per frame.
+
+Costs and unknowns: shapes draw *after* the game, so beams render over everything and are
+never occluded (this sidesteps §3.5 rather than solving it, and may or may not be the look
+wanted). `Bitmap`'s public drawing methods take a flat `ColorId`, so the destination-indexed
+remap glow of §3.4 is not available without extending `Bitmap` — the first version
+approximates it with an intensity ramp across the beam's thickness using the same palette
+entries.
+
+This supersedes the ordering below. §4.1's bounding-box work targeted the GRP encoder, which
+the shape path removes entirely; §4.3's dedicated `images.dat` entry is no longer a
+prerequisite for anything. Both are kept for reference in case the GRP path is ever revived
+(it remains available behind `BEAM_USE_GRP_PATH`).
+
+### Superseded ordering
+
 Ordered. 4.1 and 4.2 are code-only and independent; 4.3 is where data editing enters.
 
 ### 4.1 Bounding-box-relative rendering — **next**
