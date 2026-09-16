@@ -151,7 +151,66 @@ persistent it is disqualifying, which makes §4.3 a prerequisite rather than a n
 
 ## 4. Roadmap
 
-### Architecture decision: draw as shapes, not as GRPs
+### Rejected: drawing as shapes through the draw hook
+
+**[BUILT]** and tried, then **rejected**. Kept behind `BEAM_USE_GRP_PATH 0` for reference.
+
+Queueing beams as `graphics::` shapes lifts the 255px cap and removes the GRP encode, the
+overlay image and its borrowed lifetime. It fails on three counts that matter more:
+
+1. **No depth.** `DrawHook` runs *after* `oldDrawGameProc`, so the frame is already composited
+   and everything drawn is on top. An air unit firing at a ground target should be occluded by
+   units between them. This is not tunable from the draw hook — by the time it runs, sorting
+   has happened.
+2. **Shape budget.** ~17 shapes per beam, scaling with thickness, out of a 10000 pool shared
+   with progress bars, rally lines and order queues. A few hundred beams exhausts it.
+3. **No remap blending.** `Bitmap`'s public methods take a flat `ColorId`, so §3.4's additive
+   glow would have to be reimplemented rather than inherited from the engine.
+
+The lesson: the engine's rendering model is where sorting and palette blending are already
+solved. Leaving it to escape the 255px cap trades three working things for one.
+
+### Architecture decision: custom render function on a real image
+
+**[PROPOSED]** — the synthesis. Keeps the engine's model, loses the byte fields.
+
+`CImage` carries a **per-instance** render function pointer, with its signature documented at
+`SCBW/structures/CImage.h:113`:
+
+```
+/*0x34*/ void* renderFunction;
+// renderFunction(screenPosition.x, screenPosition.y, getCurrentFrame(), &rctDraw, (int)coloringData)
+```
+
+Pointing that at our own blitter on our own overlay gives, all at once:
+
+- **Depth** — it is a real `CImage` on a real `CSprite`, so it sorts with everything else.
+- **One image per beam** — no shape pool, no tiling.
+- **No 255 ceiling** — we own the blit, so dimensions never pass through a byte field, and we
+  clip to `rctDraw`, making cost proportional to the *visible* span rather than beam length.
+- **Remap blending for free-ish** — the fifth argument *is* `coloringData`, which
+  `CImage::setRemapping()` sets to `colorShift[remapping].data` (`CImage.cpp:52`). So the
+  remap table arrives as a parameter, and §6.2's `dst = table[intensity * 256 + dst]` is
+  directly implementable.
+
+Relevant data, all already mapped in the repo:
+
+- `SCBW_DATA(const ColorShiftData*, colorShift, 0x005128F8)` — `scbwdata.h:415`
+- `struct ColorShiftData { u32 index; void* data; char name[12]; }` — `structures.h:197`
+- `ColorRemapping::{None, OFire, GFire, BFire, BExpl, Trans50, ...}` — `enumerations.h:338`
+- `PaletteType::RLE_FIRE = 17` — the engine's own fire blitter, `CImage.h:36`
+
+Unknowns to settle before committing to it: the render function's **calling convention** (the
+engine calls it, so it must match exactly, and getting it wrong crashes), the precise
+semantics of `rctDraw`, and whether the engine is willing to call a custom function for an
+image whose GRP we have substituted. These want a small probe rather than a full
+implementation.
+
+Incidental finding: on the current GRP path, `overlay->setRemapping(ColorRemapping::BFire)`
+after `createTopOverlay` switches the glow table. Without it the beam inherits whatever
+`images_dat::Remapping[Explosion2_Small]` specifies.
+
+### Superseded framing: shapes
 
 **[BUILT]** infrastructure, **[PROPOSED]** for beams.
 

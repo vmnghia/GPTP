@@ -71,18 +71,24 @@ uint8_t *generateGrp(int16_t *imageData, uint16_t frames, uint16_t maxWidth, uin
 #define BEAM_DEBUG_FIXED_AIM 0
 #define BEAM_DEBUG_PRINT 1
 
-// Which rendering path to use.
+// Which rendering path to use. 1 (the GRP path) is the working default.
 //
-// 0 (default) queues the beam with the graphics module, which draws through the
-// BWAPI-derived draw hook after the game has drawn. No GRP, no overlay image,
-// and no length ceiling - a GRP frame's width/height are byte fields, so the
-// GRP path can never draw a beam longer than 255px, which siege mode alone
-// exceeds.
+// 0 queues the beam with the graphics module instead, drawing through the
+// BWAPI-derived draw hook. It lifts the 255px cap, but it was tried and found
+// wanting on three counts and is kept only for reference:
 //
-// 1 falls back to the GRP path, kept for visual comparison. It renders a nicer
-// beam (real remap blending against the background) but is capped at ~127px and
-// costs a rasterize/encode/decode round trip per shot.
-#define BEAM_USE_GRP_PATH 0
+//  - No depth. The draw hook runs after the game has composited the frame, so
+//    beams always paint over everything. An air unit firing at a ground target
+//    should be drawn under the units between them, and from there it cannot be.
+//  - Shape budget. ~17 shapes per beam out of a pool of 10000 that progress
+//    bars, rally lines and order queues also draw from, and it scales with beam
+//    thickness.
+//  - No remap blending. Bitmap's public methods take a flat ColorId, so the
+//    additive glow has to be reimplemented rather than inherited.
+//
+// The GRP path keeps all three because it stays inside the engine's rendering
+// model. See docs/beam-weapons.md for where this goes next.
+#define BEAM_USE_GRP_PATH 1
 
 struct CUnit;
 
