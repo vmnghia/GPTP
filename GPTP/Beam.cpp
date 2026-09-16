@@ -1374,8 +1374,126 @@ int16_t *rasterizeBeamFrames(int endX, int endY, int16_t *buffer)
 
 } // namespace
 
+#if BEAM_DEBUG_RENDERFN_PROBE
+
+namespace
+{
+
+// The engine's own render function for our overlay's image, captured before we
+// replace it so the probe can hand control back.
+u32 originalRenderFunction = 0;
+
+// Captured on entry before anything can clobber them. The calling convention is
+// exactly what this probe exists to establish, so record every register that
+// could plausibly carry an argument, plus the stack pointer so the stack slots
+// can be read too.
+u32 probeEax, probeEcx, probeEdx, probeEbx, probeEsi, probeEdi, probeEsp;
+
+u32 probeStack[6];
+bool probePending = false;
+
+// Runs inside the game's draw loop, so it does nothing but copy memory - no
+// game API calls, no allocation, nothing re-entrant. Reporting happens later
+// from a safe context.
+void captureRenderProbe()
+{
+    static int capturesLeft = 4;
+    if (capturesLeft <= 0 || probePending)
+        return;
+    --capturesLeft;
+
+    const u32 *stack = (const u32 *)probeEsp;
+    for (int i = 0; i < 6; ++i)
+        probeStack[i] = stack[i];
+
+    probePending = true;
+}
+
+// Called from the weapon fire path, which is ordinary game logic rather than
+// the middle of a frame being drawn.
+void reportRenderProbe()
+{
+    if (!probePending)
+        return;
+    probePending = false;
+
+    char msg[200];
+    sprintf_s(msg, sizeof(msg), "rfn reg ax=%X cx=%X dx=%X bx=%X si=%X di=%X", probeEax, probeEcx, probeEdx,
+              probeEbx, probeEsi, probeEdi);
+    scbw::printText(msg);
+
+    // probeStack[0] is the return address; anything past it is a stack argument.
+    sprintf_s(msg, sizeof(msg), "rfn stk ret=%X a=%X b=%X c=%X d=%X e=%X", probeStack[0], probeStack[1],
+              probeStack[2], probeStack[3], probeStack[4], probeStack[5]);
+    scbw::printText(msg);
+}
+
+// Naked so no prologue runs before the registers are captured, and so nothing
+// assumes a convention we have not established yet. Chains to the engine's
+// function via push/ret (the idiom the *_inject.cpp thunks use), which leaves
+// the stack exactly as it was on entry - so whatever convention the caller
+// used, the original function still sees what it expects.
+void __declspec(naked) beamRenderProbe()
+{
+    __asm {
+        MOV probeEax, EAX
+        MOV probeEcx, ECX
+        MOV probeEdx, EDX
+        MOV probeEbx, EBX
+        MOV probeEsi, ESI
+        MOV probeEdi, EDI
+        MOV probeEsp, ESP
+        PUSHAD
+        PUSHFD
+    }
+
+    captureRenderProbe();
+
+    __asm {
+        POPFD
+        POPAD
+        PUSH originalRenderFunction
+        RET
+    }
+}
+
+void attachRenderProbe(CImage *overlay)
+{
+    if (overlay == NULL || overlay->renderFunction == NULL)
+        return;
+
+    // A freshly created overlay always carries the engine's function, but guard
+    // anyway: capturing our own probe here would chain it to itself.
+    if (overlay->renderFunction == (void *)&beamRenderProbe)
+        return;
+
+    originalRenderFunction = (u32)overlay->renderFunction;
+    overlay->renderFunction = (void *)&beamRenderProbe;
+
+    static int printsLeft = 2;
+    if (printsLeft > 0)
+    {
+        --printsLeft;
+
+        char msg[200];
+        sprintf_s(msg, sizeof(msg), "rfn set color=%X grp=%X orig=%X", (u32)overlay->coloringData,
+                  (u32)overlay->grpOffset, originalRenderFunction);
+        scbw::printText(msg);
+    }
+}
+
+} // namespace
+
+#endif // BEAM_DEBUG_RENDERFN_PROBE
+
 void spawnBeamOverlay(CUnit *unit)
 {
+#if BEAM_DEBUG_RENDERFN_PROBE
+    // Whatever the probe captured during the last frame's drawing, reported now
+    // that we are back in ordinary game logic rather than mid-frame.
+    reportRenderProbe();
+#endif
+
     if (unit == NULL || unit->sprite == NULL)
         return;
 
@@ -1445,6 +1563,12 @@ void spawnBeamOverlay(CUnit *unit)
 #endif
 
     overlay->grpOffset = slot.grp;
+
+#if BEAM_DEBUG_RENDERFN_PROBE
+    // Attached last, so coloringData and grpOffset are already set and get
+    // reported alongside the engine's original render function pointer.
+    attachRenderProbe(overlay);
+#endif
 }
 
 //-------- Beam shapes: queued per frame through the draw hook --------//
