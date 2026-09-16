@@ -104,6 +104,20 @@ uint8_t *generateGrp(int16_t *imageData, uint16_t frames, uint16_t maxWidth, uin
 // pointer just inside the GRP) the frame argument.
 #define BEAM_DEBUG_RENDERFN_PROBE 1
 
+// Follow-up to the probe above, off by default. The probe established the
+// convention as __fastcall with the remap table at stack[3], but left one thing
+// open: whether the two register arguments really are screen x/y. One capture
+// read (208, 184), fine for a 640x480 screen; another read ECX = 0x42A = 1066,
+// too wide to be one.
+//
+// Setting this to 1 swaps in a render function that draws only a marker at the
+// reported position and does NOT chain to the engine's - so the beam itself
+// will not draw while this is on. If the marker lands where the beam should
+// start, the signature is confirmed and a real blitter can be written against
+// it. If it lands somewhere else, the offset tells us what those arguments
+// actually are.
+#define BEAM_DEBUG_RENDERFN_MARKER 0
+
 struct CUnit;
 
 /// Records a beam shot from @p unit along its current facing, out to its order
