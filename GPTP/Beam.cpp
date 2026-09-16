@@ -5,6 +5,7 @@
 #include <SCBW/structures/CImage.h>
 #include <SCBW/structures/CSprite.h>
 #include <SCBW/structures/CUnit.h>
+#include <graphics/Bitmap.h>
 #include <graphics/graphics.h>
 
 #include <cstdio>
