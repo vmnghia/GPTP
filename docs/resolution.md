@@ -138,7 +138,7 @@ Where it deliberately differs from the Expander:
 - **Dropped:** the +/- resolution switching, the Expander's crash reporter, and every hook
   that only served the relocated console.
 
-Not done yet: the multiplayer host-resolution command.
+Not done yet: see §6.
 
 ## 5. Stage 2: the console at the bottom centre `[BUILT]`
 
@@ -197,7 +197,57 @@ Input and positions fixed to match:
 `RESOLUTION_DEBUG` in `resolution.h` prints a layout report at game frames 48 and 480: which
 panels were placed, the console image size, the screen limits and every dialog's position.
 
-## 6. Testing the trial
+## 6. Remaining and future work
+
+State on 2026-09-28: `feature/resolution` at `fd13ec1` builds and plays at 1280×720 with
+the console at the bottom centre. Nothing below has been started.
+
+**Next up: check what stage 2 didn't touch.**
+1. **In-game dialogs** `[VERIFY]`: the F10 menu and its sub-menus, mission objectives,
+   victory/defeat, the save/load dialogs, the chat-target dialog. They are expected to open in the
+   top-left 640×480 area. The likely fix is to offset each one when its `.bin` loads, as
+   for the panels, but by `(res_dx/2, res_dy/2)` so it opens in the screen centre. Watch for
+   code that clamps them to 640×480.
+2. **StatLB** (the transport/queue/selection list inside StatData) `[VERIFY]`: click and
+   tooltip positions.
+3. **Chat and message lines** `[VERIFY]`: 0x48CB80 and 0x4B22E9 turn the message area's
+   y (`[0x64096C] + 0x127` or `+ 0x18`) into dirty rows and clamp it to 479. The messages
+   may be drawn in the vanilla area, over the view, rather than above the moved console.
+4. **Sound range** `[VERIFY]`: 0x413DB0 builds a tile rect of ±320 × ±200 around a point,
+   probably whether a sound is audible on screen. Sounds from the new edge areas may play
+   muffled.
+5. **`GetCursorPos` reads** at 0x42164A, 0x44D8EA, 0x4D12AA and 0x4D1783 bypass the
+   window-procedure mouse shift. Nothing wrong has shown up in testing; confirm, or offset
+   them like the `SetCursorPos` calls.
+6. **Left alone on purpose:** the per-frame layer paint loop (0x41E2F2–0x41E344) still
+   gives each layer a 640×480 rect. Changing it might break the menus, and nothing visibly
+   needs it.
+
+**Then the planned features.**
+- **Multiplayer host resolution** (§1): the host sends its view size as a command on the
+  first game frame; every client applies it in the same frame; replays record it. Today the
+  size is a compile-time constant (`RESOLUTION_WIDTH/HEIGHT`), so this first needs:
+  - buffers allocated for the largest supported size;
+  - the view size switchable at game start: the dirty grid, terrain cache, fog grids, the
+    patched immediates, the console offsets and the console image all depend on it.
+- **Resolution choice without rebuilding:** read the size from an ini and allow a few
+  presets. The same work as the switch above.
+- **Custom console art:** a full-width console. Put the panels in `panelPlacements`, build
+  the image in `widenConsoleImage()` from a wide `.pcx`, which must use the in-game palette
+  with index 0 transparent. Possibly one per race.
+- **Release build:** the plugin is built as Debug into `GPTP\Debug\`. Turn
+  `RESOLUTION_DEBUG` back on when changing the layout.
+
+**Working tips for the next session.**
+- Touch `hooks/main/game_hooks.cpp` before building, so the build stamp that prints in game
+  updates. The plugin must be repacked into `SCManifold.exe` before testing.
+- The game runs from `D:\Games\Starcraft 1.16.1\Starcraft.exe`, and cnc-ddraw
+  (`fullscreen=true`, `maintas=true`) goes next to it.
+- To find a leftover 640×480 assumption, grep a full disassembly listing for the
+  constants: `0x280`/`0x27F`, `0x1E0`/`0x1DF`, `0x190`, `0x140`/`0xC8`, and `0xA`/`6` in tiles
+  (§8).
+
+## 7. Testing the trial
 
 1. Put cnc-ddraw's `ddraw.dll` and `ddraw.ini` next to the exe that runs the mod. Either
    fullscreen-upscaled or windowed works, since cnc-ddraw accepts whatever mode the game sets.
@@ -212,13 +262,20 @@ panels were placed, the console image size, the screen limits and every dialog's
    - leaving the game back to the menus.
 4. For an A/B comparison, set `RESOLUTION_HACK_ENABLED` to 0 and rebuild.
 
-## 7. Reproducing the analysis
+## 8. Reproducing the analysis
 
 The Expander zip is on ModDB (`Resolution_Expander_-_5.1.2.zip`, MD5
 `103c4abbd550ffb68ea8904b7fca4dd0`; it contains v6 as `ResExpander6.zip`). The DLL was only
 disassembled, never run. The working files (decoded tables, the per-site worksheet,
 disassembly dumps and scripts) are kept outside the repo in `D:\SC Modding\resexp-analysis\`.
-Tooling: Python 2.7 + `capstone==4.0.2` + `pefile`.
+Tooling: Python 2.7 + `capstone==4.0.2` + `pefile`, installed with
+`python -m pip install --target pylib capstone==4.0.2 pefile==2019.4.18` into a `pylib`
+folder next to the scripts, which add it to their path.
+
+For StarCraft.exe itself, `dumpall.py` writes a linear-sweep listing of `.text`
+(`exe_full.asm`, ~375k lines, one instruction per line) for grepping constants and
+callers. `bytes.py <hex addr>…` prints the raw bytes at each address, which you need to find the
+immediate's offset inside an instruction before patching it.
 
 Table format: `{u32 patternLen, ptr pattern, 6 × {u32 type, u32 value, u32 offset, ptr anchor,
 u32 anchorLen}}`. Zero bytes in a pattern are wildcards. Each entry acts at its anchor inside
