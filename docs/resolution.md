@@ -16,11 +16,15 @@ draw at 640×480 internally:
 - Mouse input is shifted back at the window procedure (0x4D2324).
 - The game's 7 `ClipCursor` and 4 `SetCursorPos` calls are offset too.
 
-In-game dialogs such as F10 stay at the top-left with the console.
+The console sits at the bottom centre `[BUILT]` (§5), tested 2026-09-28. The art,
+minimap, command card, portrait, selection info, resources, MENU button and every tooltip
+are drawn and respond in the right places. A 7-minute game ran with no crash. In-game
+dialogs such as the F10 menu still open in the top-left 640×480 area `[VERIFY]`.
 
 Found and fixed during testing:
 - BW's console hit test (0x4D1140) treated everything below the console's bottom line as
-  console, across the full width.
+  console, across the full width. Widening the console image (§5) fixed this at the
+  source.
 - Vanilla scrolls 24 px past the map's bottom edge, which showed as a black strip.
 - Cursor calls from the plugin must go through StarCraft.exe's import slots, or cnc-ddraw
   can't scale them.
@@ -32,11 +36,11 @@ Found and fixed during testing:
   small monitor can still run a large game view.
 - **A genuinely larger view in GPTP**, starting as a trial run behind a debug switch.
   As in the Expander, the display mode is the larger size from startup; the 640×480 menus
-  sit in its top-left corner. `[VERIFY]`
-- **Trial layout: the console stays where it is.** The Expander moved the console to the
-  bottom of the screen and split it at x = 400, which takes about a dozen coordinated hooks
-  on dialog drawing and input. The trial leaves every dialog at its vanilla place and makes
-  the game view the whole screen behind the console. Moving the console is stage 2.
+  are centred in it.
+- **The game view is the whole screen, with the console drawn over it.** The trial left
+  the console at its vanilla place. Stage 2 (§5) moves the vanilla 640×480 console, as one
+  piece, to the bottom centre. The Expander instead split it at x = 400 into corners.
+  Either layout can be built on the same mechanism later, because the layout is a table.
 - **Multiplayer uses the host's resolution.** A bigger view shows more of the map, so the
   host issues it as a command on the first game frame and every client applies it in the
   same frame; replays record it too. This keeps honest players on the same build equal —
@@ -114,13 +118,14 @@ skips the WMode prompt, so use cnc-ddraw instead.
 | `resolution_inject.cpp` | display mode; screen-to-surface blit; gameScreenBuffer swap; users of the grid; Storm's dirty blit; mouse clamps; edge scrolling; view rects; game layer size |
 | `resolution_terrain.cpp` | the terrain-cache routines, replaced at their entry points; tile counts; scroll limits; minimap view box; sprite-blitter target |
 | `resolution_fog.cpp` | fog buffer sizes and the fog routines, mostly by rewriting immediates in place |
+| `resolution_hud.cpp` | stage 2: panel placement, the widened console image, minimap input, tooltip clamps, the StatFluf tables (§5) |
 | `SCBW/api.cpp` | `refreshScreen()` uses the relocated grid |
 | `hooks/interface/selection.cpp` | ctrl-click "select all of type on screen" uses the view size |
 
 Where it deliberately differs from the Expander:
 
-- **The console stays in place** (see §1). The view is therefore the full screen height
-  rather than `h − 80`, and the cache and fog grids are sized from that.
+- **The view is the full screen height** rather than `h − 80`, with the console drawn over
+  it (see §1). The cache and fog grids are sized from that.
 - **Whole routines are replaced at their entry points** rather than patched per caller, so
   every caller sees the new geometry.
 - **Fog uses the game's own buffers, enlarged where they are allocated.** The Expander
@@ -133,25 +138,81 @@ Where it deliberately differs from the Expander:
 - **Dropped:** the +/- resolution switching, the Expander's crash reporter, and every hook
   that only served the relocated console.
 
-Not done yet: stage 2 (the console at the bottom) and the multiplayer host-resolution
-command.
+Not done yet: the multiplayer host-resolution command.
 
-## 5. Testing the trial
+## 5. Stage 2: the console at the bottom centre `[BUILT]`
+
+**How BW builds the console.** It is not one object:
+- **Panels.** Each is a separate dialog loaded from `rez\*.bin`: Minimap, StatData
+  (selection info), StatPort (portrait), StatBtn (command card), StatRes (resources),
+  Stat_F10 (the MENU button), TextBox (chat input), and StatFluf (decorative pieces).
+- **Art.** One 640×480 image, `game\<race>console.pcx`, loaded at 0x4C3950 and kept at
+  0x597240. It has no palette of its own: its pixels are indices into the in-game palette,
+  and 0 is transparent.
+- **Everything else comes from that image.** Each panel copies its background out of it
+  (0x4C35F0). The console's transparency mask is built from it (0x41D640), and so are the
+  lines the console hit test uses (0x4D11A0).
+
+**What the plugin does.** It works in two places, kept consistent:
+- **Panels.** Each panel dialog is moved as its `.bin` is read (0x4194E0), per the
+  `panelPlacements` table in `resolution_hud.cpp`. Resources go to the top-right corner and
+  everything else to the console offset.
+- **Art.** The console image is rebuilt at the full screen size right after it loads
+  (0x4C39F5), with the vanilla art placed at the console offset.
+
+The mask, hit test and panel backgrounds then follow by themselves. To change the layout
+later, edit the table, or build the full-size image from other art in
+`widenConsoleImage()`.
+
+`.bin` facts learned the hard way:
+- On disk, a root dialog stores width − 1 and height − 1 where right and bottom go, so only
+  left and top are moved.
+- Child rects are relative to the root, so only the root is moved.
+- StatFluf's pieces are placed from per-race tables (0x5152A8, 0x515300, 0x515348,
+  0x515388) that override the `.bin` positions, so those tables are offset instead.
+
+Drawing outside 640×480 needed:
+- **Dialog layer.** The dialog layer is widened to the whole screen (0x41A049).
+- **Screen buffer.** The screen buffer is allocated at the full size (0x41DDD0).
+- **Screen limits.** `ScrLimit`/`ScrSize` are widened, but only while in a game: widening
+  them for the menus crashed on starting a mission (0x4E1D6B). The limits must already be
+  wide when console setup begins (0x4C3BB2), or the panels' first redraws are clipped away
+  and never retried.
+- **Clipping.** Clipped rect fill and line routines (0x4E1D20, 0x41D810, 0x41D7D0).
+  Vanilla ones write past the buffer once the limits are wider.
+- **Storm.** Storm's dirty-cell geometry is set to the full size (0x41D52C).
+
+Input and positions fixed to match:
+- **Minimap.** Its rect assumes the panel's left is 0 and its top is 315 (0x4A4539,
+  0x4A456C). Its click-to-map conversion does too (0x4A3D77, 0x4A3DB2).
+- **Command card.** Its cursor rect is at 0x5136CC.
+- **Tooltips.** Tooltips clamp to the screen's right and bottom edges (0x4815E6, 0x481620).
+  The command-button tooltips have a separate right-edge clamp (0x458889).
+- **View centring.** Every routine that centres the view subtracts half of 640×400 before
+  calling `setScreenPos` (0x49C440). These are: portrait click / centre on a unit
+  (0x4E6040), the last alert (0x45EE52), a double-tapped group hotkey (0x49691B), trigger
+  CenterView and location centring (0x4C6E68, 0x4C6EF7), scroll by percent (0x4844BB),
+  and a tile-based centring (0x4BD4B0).
+
+`RESOLUTION_DEBUG` in `resolution.h` prints a layout report at game frames 48 and 480: which
+panels were placed, the console image size, the screen limits and every dialog's position.
+
+## 6. Testing the trial
 
 1. Put cnc-ddraw's `ddraw.dll` and `ddraw.ini` next to the exe that runs the mod. Either
    fullscreen-upscaled or windowed works, since cnc-ddraw accepts whatever mode the game sets.
 2. Use the `GPTP.qdp` built on `feature/resolution`. On this branch it lands in
    `GPTP\Debug\`, not the mod folder.
 3. One run should answer most questions:
-   - does it reach the menus (640×480 in the top-left, black elsewhere);
-   - in a skirmish, does terrain fill the whole screen, with the console at its old place;
+   - does it reach the menus (640×480 centred, black around them);
+   - in a skirmish, does terrain fill the whole screen, with the console at the bottom centre;
    - scrolling by the right and bottom screen edges, by the arrow keys and by minimap clicks;
    - fog-of-war shading across the whole screen, and creep spreading on screen;
    - selecting and commanding units in the new areas (right of x = 640, below y = 480);
    - leaving the game back to the menus.
 4. For an A/B comparison, set `RESOLUTION_HACK_ENABLED` to 0 and rebuild.
 
-## 6. Reproducing the analysis
+## 7. Reproducing the analysis
 
 The Expander zip is on ModDB (`Resolution_Expander_-_5.1.2.zip`, MD5
 `103c4abbd550ffb68ea8904b7fca4dd0`; it contains v6 as `ResExpander6.zip`). The DLL was only

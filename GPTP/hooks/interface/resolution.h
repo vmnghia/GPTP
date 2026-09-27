@@ -23,6 +23,9 @@
 //Debug switch. 0 builds the plugin with no resolution patches at all.
 #define RESOLUTION_HACK_ENABLED 1
 
+//Prints a layout report in the message area early in each game.
+#define RESOLUTION_DEBUG 0
+
 //Width must be a multiple of 32 and height a multiple of 16. Anything from
 //640x480 upward; the Expander's own list topped out at 1440x900.
 #define RESOLUTION_WIDTH  1280
@@ -109,9 +112,12 @@ void markDirty(s32 left, s32 top, s32 right, s32 bottom);
 bool isRectDirty(s32 left, s32 top, s32 right, s32 bottom);
 void buildHudMask(const u8* src);
 void onScreenUpdate();
+void setScreenLimits(bool wide);
 void clearSurface();
 void injectTerrainHooks();
 void injectFogHooks();
+void injectHudHooks();
+void debugReport();
 
 //Cursor calls routed through StarCraft.exe's own import slots, so a
 //DirectDraw wrapper that hooks them (cnc-ddraw scales mouse coordinates this

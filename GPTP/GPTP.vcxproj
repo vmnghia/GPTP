@@ -150,6 +150,7 @@
     <ClCompile Include="hooks\interface\buttonsets.cpp" />
     <ClCompile Include="hooks\interface\buttonsets_inject.cpp" />
     <ClCompile Include="hooks\interface\resolution.cpp" />
+    <ClCompile Include="hooks\interface\resolution_hud.cpp" />
     <ClCompile Include="hooks\interface\resolution_inject.cpp" />
     <ClCompile Include="hooks\interface\resolution_fog.cpp" />
     <ClCompile Include="hooks\interface\resolution_terrain.cpp" />

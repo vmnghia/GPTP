@@ -5,6 +5,7 @@
 
 #include <SCBW/UnitFinder.h>
 #include <SCBW/api.h>
+#include "../interface/resolution.h"
 
 #include "../psi_field.h"
 
@@ -336,6 +337,7 @@ bool nextFrame()
         graphics::resetAllGraphics();
         hooks::updatePsiFieldProviders();
         plugins::initializeGame();
+        resolution::debugReport();
 
         u32 idleWorkerCount = 0;
 

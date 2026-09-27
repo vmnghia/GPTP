@@ -174,9 +174,27 @@ bool clipIsForGame = true;  //Starts true so the first menu frame resets it.
 
 } //unnamed namespace
 
+//The screen limits the dialog layer clips its updates to (read in
+//0x0041C1xx..0x0041CAxx): ScrLimit (0,0)-(639,479) and ScrSize (0,0)-(640,480).
+//In a game, dialogs moved outside 640x480 (the console) stay queued for a
+//redraw that never happens unless these cover the whole screen. A dialog is
+//queued only once, so the limits must already be wide when the console is
+//created. Outside a game, menus and loading screens keep the vanilla limits.
+void setScreenLimits(bool wide) {
+  RECT* const scrLimit = (RECT*)0x0051A15C;
+  RECT* const scrSize = (RECT*)0x0051A16C;
+  const s32 w = wide ? res_w : 640;
+  const s32 h = wide ? res_h : 480;
+  SetRect(scrLimit, 0, 0, w - 1, h - 1);
+  SetRect(scrSize, 0, 0, w, h);
+}
+
 //Runs once per screen update (hooked at 0x0041CF1E). The game clips the
 //cursor to 640x480; while in a game, clip it to the whole larger screen.
 void onScreenUpdate() {
+  //Normally already set when the console is created (resolution_hud.cpp).
+  setScreenLimits(*gameLayerActive != 0);
+
   if (*gameLayerActive) {
     if (!clipIsForGame) {
       cursorClipRect->right = cursorClipRect->left + res_w;

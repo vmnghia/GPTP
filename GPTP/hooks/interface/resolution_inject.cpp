@@ -182,6 +182,18 @@ void __declspec(naked) swapScreenBuffer_41E2B9() {
   }
 }
 
+//0x0041DDFF: mov [0x6CEFF4], eax (5 bytes), in 0x0041DDD0, which allocates
+//gameScreenBuffer (0x006CEFF0). Its size and dimensions are patched to the full
+//screen, so this is the one screen buffer: record it for the code that draws
+//into it directly. It stays Storm-allocated, so the game frees it as usual.
+void __declspec(naked) screenBufferAllocated_41DDFF() {
+  __asm {
+    mov dword ptr ds:[0x006CEFF4], eax
+    mov res_screenBmp.data, eax
+    retn
+  }
+}
+
 //-------- Dirty-cell grid --------//
 
 //0x0041E0D0: the whole function. eax = left, ecx = top, [esp+4] = right,
@@ -304,8 +316,23 @@ bool hudMaskBuilt = false;
 
 //The object at [0x006D5E14] is Storm's transparency record for the console
 //layer: +8 is its run-length mask, and several fields hold its 640x480 size.
+//Width of the first row of a run-length mask (see buildHudMask).
+s32 maskRowWidth(const u8* mask) {
+  s32 width = 0;
+  while (*(const s16*)mask != 0) {
+    width += mask[0] + mask[1];
+    mask += 2;
+  }
+  return width;
+}
+
 void __cdecl prepareScreenTrans(u8* trans) {
   u8** mask = (u8**)(trans + 8);
+
+  //In a game the console image is already full size (resolution_hud.cpp), so
+  //the combined mask needs nothing. The 640x480 menus still get padded.
+  if (*mask != res_hudMask && *mask != NULL && maskRowWidth(*mask) >= res_w)
+    return;
 
   if (!hudMaskBuilt || *mask != res_hudMask) {
     if (*mask != res_hudMask)
@@ -375,29 +402,6 @@ void __declspec(naked) fillCellsAtStart_4BD64C() {
     mov edi, res_cells
     rep stosd
     mov ecx, 0x12C
-    retn
-  }
-}
-
-//-------- Console hit test --------//
-
-const u32 Ret_ConsoleHitTest = 0x004D1146;
-
-//0x004D1140: cmp eax, [0x596B6C] (6 bytes), the start of "is (ecx, eax) on the
-//console?". It answers "no" above the console's top line and "yes" below its
-//bottom line without looking at the mask; in vanilla everything below that
-//line is console across the full 640 width. With the console left at its
-//vanilla place, nothing right of x = 640 or below y = 480 is console.
-void __declspec(naked) consoleHitTest_4D1140() {
-  __asm {
-    cmp ecx, 640
-    jge NOT_CONSOLE
-    cmp eax, 480
-    jge NOT_CONSOLE
-    cmp eax, dword ptr ds:[0x00596B6C]
-    jmp Ret_ConsoleHitTest
-  NOT_CONSOLE:
-    xor eax, eax
     retn
   }
 }
@@ -478,6 +482,96 @@ void __declspec(naked) stormRows_1501AF9B() {
     mov ecx, res_cellRows
     inc dword ptr [esp]
     retn
+  }
+}
+
+//-------- Fill rect --------//
+
+//0x004E1D20: the whole function. Fills a rect of the current draw target
+//(0x006CF4A8) with the current colour (0x006CF4AC). The original doesn't clip;
+//this one clips to the target bitmap, so no caller can write past a buffer.
+//stdcall (s16 x, s16 y, u16 width, u16 height).
+static void __stdcall fillRect(s32 x, s32 y, u32 width, u32 height) {
+  const ResBitmap* target = *(const ResBitmap**)0x006CF4A8;
+  const u8 colour = *(const u8*)0x006CF4AC;
+  s32 left = (s16)x;
+  s32 top = (s16)y;
+  s32 right = left + (s32)(u16)width;
+  s32 bottom = top + (s32)(u16)height;
+  if (left < 0) left = 0;
+  if (top < 0) top = 0;
+  if (right > target->width) right = target->width;
+  if (bottom > target->height) bottom = target->height;
+  if (right <= left)
+    return;
+  for (s32 row = top; row < bottom; ++row)
+    memset(target->data + row * target->width + left, colour, right - left);
+}
+
+void __declspec(naked) fillRect_4E1D20() {
+  __asm {
+    push ecx
+    push edx
+    //After the two pushes the arguments start at [esp+0x0C]; each push below
+    //shifts them by 4, so [esp+0x18] is height, width, y, then x in turn.
+    push dword ptr [esp+0x18]
+    push dword ptr [esp+0x18]
+    push dword ptr [esp+0x18]
+    push dword ptr [esp+0x18]
+    call fillRect
+    pop edx
+    pop ecx
+    retn 0x10
+  }
+}
+
+//0x0041D810 (horizontal) and 0x0041D7D0 (vertical): single-pixel lines in
+//the current draw target and colour, also unclipped in the original. x and y
+//are on the stack (RET 8); the length is in cx (horizontal) or dx (vertical).
+static void __cdecl drawHLine(s32 x, s32 y, u32 length) {
+  const ResBitmap* target = *(const ResBitmap**)0x006CF4A8;
+  const u8 colour = *(const u8*)0x006CF4AC;
+  s32 left = (s16)x;
+  const s32 row = (s16)y;
+  s32 right = left + (s32)(u16)length;
+  if (row < 0 || row >= target->height) return;
+  if (left < 0) left = 0;
+  if (right > target->width) right = target->width;
+  if (right > left)
+    memset(target->data + row * target->width + left, colour, right - left);
+}
+
+static void __cdecl drawVLine(s32 x, s32 y, u32 length) {
+  const ResBitmap* target = *(const ResBitmap**)0x006CF4A8;
+  const u8 colour = *(const u8*)0x006CF4AC;
+  const s32 column = (s16)x;
+  s32 top = (s32)(u16)y;
+  s32 bottom = top + (s32)(u16)length;
+  if (column < 0 || column >= target->width) return;
+  if (bottom > target->height) bottom = target->height;
+  for (s32 row = top; row < bottom; ++row)
+    target->data[row * target->width + column] = colour;
+}
+
+void __declspec(naked) drawHLine_41D810() {
+  __asm {
+    push ecx
+    push dword ptr [esp+0x0C]
+    push dword ptr [esp+0x0C]
+    call drawHLine
+    add esp, 0x0C
+    retn 8
+  }
+}
+
+void __declspec(naked) drawVLine_41D7D0() {
+  __asm {
+    push edx
+    push dword ptr [esp+0x0C]
+    push dword ptr [esp+0x0C]
+    call drawVLine
+    add esp, 0x0C
+    retn 8
   }
 }
 
@@ -622,6 +716,11 @@ void patchScreenConstants() {
   patchValue<s16>(0x0048D663 + 2, (s16)res_w);              //cmp ax, 0x280
   patchValue<s16>(0x0048D66D + 3, (s16)res_viewH);          //cmp cx, 0x190
 
+  //The dialog layer (screenLayers[2], set up at 0x0041A030) covers the whole
+  //screen, or dialogs moved outside 640x480 (the console) are never redrawn.
+  patchValue<s16>(0x0041A049 + 7, (s16)res_w);              //width 0x280
+  patchValue<s16>(0x0041A052 + 7, (s16)res_h);              //height 0x1E0
+
   //Full-redraw rect in 0x0041E280, passed to 0x0041D3A0
   patchValue<s32>(0x0041E2D5 + 3, res_w);                   //mov [ebp-0xC], 0x280
   patchValue<s32>(0x0041E2DC + 3, res_h);                   //mov [ebp-8], 0x1E0
@@ -631,6 +730,29 @@ void patchScreenConstants() {
   patchValue<s32>(0x004BD638 + 1, res_wm1);
   patchValue<s16>(0x004BD675 + 7, (s16)res_w);              //game layer width
   patchValue<s16>(0x004BD67E + 7, (s16)res_viewH);          //game layer height
+
+  //Centring the view on a point subtracts half of 640x400 before calling
+  //setScreenPos (0x0049C440).
+  const s32 halfW = res_w / 2, halfH = res_viewH / 2;
+  const s8 halfWTiles = (s8)(res_w / 64), halfHTiles = (s8)(res_viewH / 64);
+  patchValue<s32>(0x0045EE52 + 2, -halfW);                  //last alert: lea eax, [edi-0x140]
+  patchValue<s32>(0x0045EE65 + 1, -halfH);                  //add eax, -0xC8
+  patchValue<s32>(0x0049691B + 2, halfH);                   //selected group: sub ecx, 0xC8
+  patchValue<s32>(0x00496924 + 1, halfW);                   //sub eax, 0x140
+  patchValue<s32>(0x004C6E68 + 2, halfH);                   //CenterView trigger: sub ecx, 0xC8
+  patchValue<s32>(0x004C6E6E + 1, halfW);                   //sub eax, 0x140
+  patchValue<s32>(0x004C6EF7 + 2, halfW);                   //location centre: sub ecx, 0x140
+  patchValue<s32>(0x004C6EFD + 1, halfH);                   //sub eax, 0xC8
+  patchValue<s32>(0x004C6F11 + 2, res_w);                   //lea esi, [ecx+0x280]
+  patchValue<s32>(0x004C6F1B + 2, -(res_w + 1));            //lea ecx, [edx-0x281]
+  patchValue<s32>(0x004C6F30 + 2, res_viewH);               //lea esi, [eax+0x190]
+  patchValue<s32>(0x004C6F3A + 2, -(res_viewH + 1));        //lea eax, [edx-0x191]
+  patchValue<s32>(0x004844BB + 2, res_viewH);               //scroll by percent: sub ecx, 0x190
+  patchValue<s32>(0x004844DC + 2, res_w);                   //sub edx, 0x280
+  patchValue<s8>(0x004BD4B0 + 2, -halfHTiles);              //tile centre: add ecx, -6
+  patchValue<s8>(0x004BD4B3 + 2, -halfWTiles);              //add eax, -0xA
+  patchValue<s8>(0x004E6040 + 2, halfHTiles);               //unit (portrait click): sub ecx, 6
+  patchValue<s8>(0x004E6043 + 2, halfWTiles);               //sub eax, 0xA
 }
 
 } //unnamed namespace
@@ -647,7 +769,14 @@ void injectResolutionHooks() {
     return;
   }
 
-  //Display and screen buffer
+  //Display and screen buffer: the game allocates it at the full size itself
+  //(0x0041DDD0), and resets its dimensions at 0x0041E050.
+  memoryPatch(0x0041DDD9 + 1, (s32)(res_w * res_h));        //push 0x4B000
+  memoryPatch(0x0041DDDE + 7, (s16)res_w);                  //width 0x280
+  memoryPatch(0x0041DDE7 + 7, (s16)res_h);                  //height 0x1E0
+  memoryPatch(0x0041E07B + 7, (s16)res_w);
+  memoryPatch(0x0041E084 + 7, (s16)res_h);
+  callPatch(screenBufferAllocated_41DDFF, 0x0041DDFF);
   jmpPatch(setDisplayMode_41DA3D,   0x0041DA3D);
   callPatch(blitScreen_41D44D,      0x0041D44D);
   callPatch(swapScreenBuffer_41E2B9, 0x0041E2B9);
@@ -666,11 +795,13 @@ void injectResolutionHooks() {
   callPatch(screenUpdate_41CF1E,    0x0041CF1E);
   jmpPatch(cursorClipRect_42163B,   0x0042163B);
   jmpPatch(clipCursor_4216DB,       0x004216DB);
-  jmpPatch(consoleHitTest_4D1140,   0x004D1140, 1);
 
   //Menus, centred
   jmpPatch(blitRect_41D3A0,         0x0041D3A0);
   jmpPatch(dialogBlitSurface_417354, 0x00417354);
+  jmpPatch(fillRect_4E1D20,          0x004E1D20);
+  jmpPatch(drawHLine_41D810,         0x0041D810);
+  jmpPatch(drawVLine_41D7D0,         0x0041D7D0);
   callPatch(menuMouse_4D2324,       0x004D2324, 1);
   for (u32 site : clipCursorSites)
     callPatch(clipCursorForMenu, site, 1);
@@ -685,6 +816,7 @@ void injectResolutionHooks() {
   callPatch(stormScratch_1501AEDB,  0x1501AEDB, 1);
   callPatch(stormRows_1501AF9B,     0x1501AF9B, 1);
 
+  resolution::injectHudHooks();
   resolution::injectTerrainHooks();
   resolution::injectFogHooks();
 }
