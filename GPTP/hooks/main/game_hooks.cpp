@@ -81,7 +81,7 @@ void initializeGame()
 {
     if (*elapsedTimeFrames == 0)
     {
-        scbw::printText(PLUGIN_NAME ": Hello, world!");
+        scbw::printText(PLUGIN_NAME ": built " __DATE__ " " __TIME__);
 
         if (*GAME_TYPE != GameType::UseMapSettings)
         {

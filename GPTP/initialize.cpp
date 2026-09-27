@@ -43,6 +43,7 @@ using namespace dll;
 #include "hooks/give_unit.h"
 #include "hooks/interface/btns_cond.h"
 #include "hooks/interface/buttonsets.h"
+#include "hooks/interface/resolution.h"
 #include "hooks/interface/select_larva.h"
 #include "hooks/interface/selection.h"
 #include "hooks/interface/status_display/advanced/status_base_text.h"
@@ -150,7 +151,10 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	if (!checkStarCraftExeVersion(exePath))
 		return FALSE;
 
-	switch (MessageBox(NULL, "Do you want to use window mode?", "StarCraft: Manifold", MB_YESNOCANCEL)) {
+	// WMode assumes 640x480, so it isn't offered with the larger view; use a
+	// DirectDraw wrapper such as cnc-ddraw for windowed play instead.
+	switch (resolution::enabled() ? IDNO
+	        : MessageBox(NULL, "Do you want to use window mode?", "StarCraft: Manifold", MB_YESNOCANCEL)) {
 		case IDYES:
 			{
 				char dll0Path[260]; // WMode.dll
@@ -203,6 +207,7 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 
 	hooks::injectGameHooks();
 	hooks::injectDrawHook();
+	hooks::injectResolutionHooks();
 
 	// in order of creation
 	//hooks::injectInfestationHooks();

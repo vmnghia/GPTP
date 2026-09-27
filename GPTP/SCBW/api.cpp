@@ -1,5 +1,6 @@
 #include "api.h"
 #include <SCBW/UnitFinder.h>
+#include <hooks/interface/resolution.h>
 #include <algorithm>
 #include <cassert>
 
@@ -566,6 +567,11 @@ namespace scbw {
 			return 0;
 	}
 
+	// The larger view relocates the dirty-cell grid (see hooks/interface/resolution.h).
+	static u8* dirtyCells() { return resolution::enabled() ? res_cells : refreshRegions; }
+	static int dirtyCols() { return resolution::enabled() ? res_cellCols : 40; }
+	static int dirtyRows() { return resolution::enabled() ? res_h / 16 : 30; }
+
 	void refreshScreen(int left, int top, int right, int bottom) {
 
 		left >>= 4;
@@ -578,21 +584,24 @@ namespace scbw {
 		if (top > bottom)
 			std::swap(top, bottom);
 
+		const int cols = dirtyCols();
+		const int rows = dirtyRows();
+
 		// Rect out of bounds
-		if (left >= 40 || right < 0 || top >= 30 || bottom < 0)
+		if (left >= cols || right < 0 || top >= rows || bottom < 0)
 			return;
 
 		left = std::max(left, 0);
-		right = std::min(right, 40 - 1);
+		right = std::min(right, cols - 1);
 		top = std::max(top, 0);
-		bottom = std::min(bottom, 30 - 1);
+		bottom = std::min(bottom, rows - 1);
 
 		for (int y = top; y <= bottom; ++y)
-			memset(&refreshRegions[40 * y + left], 1, right - left + 1);
+			memset(&dirtyCells()[cols * y + left], 1, right - left + 1);
 	}
 
 	void refreshScreen() {
-		memset(refreshRegions, 1, 1200);
+		memset(dirtyCells(), 1, dirtyCols() * dirtyRows());
 	}
 
 	/* /!\ Not working like 004DC550	RandBetween /!\ */

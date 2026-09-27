@@ -1,5 +1,6 @@
 #include "selection.h"
 #include <SCBW/api.h>
+#include "resolution.h"
 
 //Helper functions declaration
 namespace {
@@ -493,8 +494,8 @@ namespace hooks {
 					//locate surrounding units for selection
 					local_temp_box16_structure.left = *MoveToX;
 					local_temp_box16_structure.top = *MoveToY;
-					local_temp_box16_structure.right = *MoveToX + 640;
-					local_temp_box16_structure.bottom = *MoveToY + 400;
+					local_temp_box16_structure.right = *MoveToX + resolution::viewWidth();
+					local_temp_box16_structure.bottom = *MoveToY + resolution::viewHeight();
 
 					units_in_bounds = getAllUnitsInBounds(&local_temp_box16_structure);
 						sorted_list_length = SortAllUnits_Helper(clicked_unit, local_temp_array_1, units_in_bounds);
@@ -542,8 +543,8 @@ namespace hooks {
 					//prepare to locate surrounding units for selection
 					local_temp_box16_structure.left = *MoveToX;
 					local_temp_box16_structure.top = *MoveToY;
-					local_temp_box16_structure.right = *MoveToX + 640;
-					local_temp_box16_structure.bottom = *MoveToY + 400;
+					local_temp_box16_structure.right = *MoveToX + resolution::viewWidth();
+					local_temp_box16_structure.bottom = *MoveToY + resolution::viewHeight();
 
 					//save existing selection to a temporary array
 					for(int i = 0; i < SELECTION_ARRAY_LENGTH; i++)

@@ -149,6 +149,10 @@
     <ClCompile Include="hooks\interface\btns_cond_inject.cpp" />
     <ClCompile Include="hooks\interface\buttonsets.cpp" />
     <ClCompile Include="hooks\interface\buttonsets_inject.cpp" />
+    <ClCompile Include="hooks\interface\resolution.cpp" />
+    <ClCompile Include="hooks\interface\resolution_inject.cpp" />
+    <ClCompile Include="hooks\interface\resolution_fog.cpp" />
+    <ClCompile Include="hooks\interface\resolution_terrain.cpp" />
     <ClCompile Include="hooks\interface\selection.cpp" />
     <ClCompile Include="hooks\interface\selection_inject.cpp" />
     <ClCompile Include="hooks\interface\select_larva.cpp" />
@@ -404,6 +408,7 @@
     <ClInclude Include="hooks\harvest.h" />
     <ClInclude Include="hooks\interface\btns_cond.h" />
     <ClInclude Include="hooks\interface\buttonsets.h" />
+    <ClInclude Include="hooks\interface\resolution.h" />
     <ClInclude Include="hooks\interface\selection.h" />
     <ClInclude Include="hooks\interface\select_larva.h" />
     <ClInclude Include="hooks\interface\status_display\advanced\status_base_text.h" />
