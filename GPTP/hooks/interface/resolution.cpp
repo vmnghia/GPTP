@@ -11,6 +11,7 @@ extern "C" {
 
 s32 res_w, res_h, res_wm1, res_hm1, res_wHalf, res_hHalf;
 s32 res_dx, res_dy, res_viewH, res_viewHm1, res_w64;
+s32 res_menuX, res_menuY;
 
 s32 res_cellCols, res_cellDwords;
 u8* res_cells;
@@ -60,6 +61,8 @@ bool init() {
   res_dx = w - 640;
   res_dy = h - 480;
   res_w64 = w + 64;
+  res_menuX = res_dx / 2;
+  res_menuY = res_dy / 2;
 
   //Trial layout: the console stays at its vanilla place (the top-left 640x480)
   //and the game view is the whole screen behind it. (The Expander moved the
@@ -176,21 +179,25 @@ bool clipIsForGame = true;  //Starts true so the first menu frame resets it.
 void onScreenUpdate() {
   if (*gameLayerActive) {
     if (!clipIsForGame) {
-      cursorClipRect->right = res_w;
-      cursorClipRect->bottom = res_h;
+      cursorClipRect->right = cursorClipRect->left + res_w;
+      cursorClipRect->bottom = cursorClipRect->top + res_h;
       setCursorPos(res_wHalf, res_hHalf);
       clipCursor(cursorClipRect);
       clipIsForGame = true;
     }
   }
   else if (clipIsForGame) {
-    //Leaving a game: blank the buffer so the menus don't sit on top of the
-    //last game frame. (The Expander cleared the DirectDraw surface through a
-    //pointer saved while it was locked; clearing our buffer and redrawing
-    //everything avoids touching an unlocked surface.)
+    //Leaving a game: back to the 640x480 menu area, which is shown centred.
+    //(The menu blit clears the rest of the screen, so the last game frame
+    //doesn't linger around the menu.)
     memset(res_screenBmp.data, 0, res_w * res_h);
     memset(res_cells, 1, res_cellCols * (res_h / 16));
-    clipCursor(cursorClipRect);
+    clearSurface();
+    cursorClipRect->right = cursorClipRect->left + 640;
+    cursorClipRect->bottom = cursorClipRect->top + 480;
+    RECT menu = *cursorClipRect;
+    OffsetRect(&menu, res_menuX, res_menuY);
+    clipCursor(&menu);
     clipIsForGame = false;
   }
 }

@@ -50,8 +50,46 @@ static u8* screenBlitSource(u8* original) {
   return original == *(u8**)0x006CEFF4 ? res_screenBmp.data : original;
 }
 
+//Outside a game, the menus draw into the top-left 640x480 of the screen
+//buffer. Show that block centred and clear everything around it, which also
+//removes the last game frame after quitting to the menu. The whole screen is
+//copied every time; at this size that is cheap.
+static void drawMenuCentred(u8* surface, s32 pitch) {
+  const u8* src = *(u8**)0x006CEFF4;          //gameScreenBuffer pixels
+  const s32 srcPitch = *(u16*)0x006CEFF0;     //and its width
+  for (s32 y = 0; y < res_h; ++y) {
+    u8* row = surface + y * pitch;
+    const s32 menuRow = y - res_menuY;
+    if (menuRow < 0 || menuRow >= 480) {
+      memset(row, 0, res_w);
+      continue;
+    }
+    memset(row, 0, res_menuX);
+    memcpy(row + res_menuX, src + menuRow * srcPitch, 640);
+    memset(row + res_menuX + 640, 0, res_w - res_menuX - 640);
+  }
+}
+
+static u32 __cdecl blitMenu(u8* surface, s32 pitch) {
+  if (resolution::inGame())
+    return 0;
+  drawMenuCentred(surface, pitch);
+  return 1;
+}
+
 void __declspec(naked) blitScreen_41D44D() {
   __asm {
+    push eax
+    push ecx
+    push eax                //destination pitch
+    push dword ptr [ebp-4]  //destination
+    call blitMenu
+    add esp, 8
+    test eax, eax
+    pop ecx
+    pop eax
+    jne DONE
+
     push eax
     push ecx
     push ecx
@@ -68,8 +106,57 @@ void __declspec(naked) blitScreen_41D44D() {
     push dword ptr [ebp-4]  //destination
     call Func_StormBlitScreen
 
+  DONE:
     add dword ptr [esp], 0x0B
     retn 4
+  }
+}
+
+//0x0041D3A0: the whole function. Blits the rect at esi straight from the
+//screen buffer to the surface, used for full redraws. Its source stride is
+//hardcoded to 640. Outside a game, draws the centred menu instead.
+typedef BOOL (__stdcall *SDrawLockSurfaceFn)(int surface, RECT* rect, u8** bits, s32* pitch, int flags);
+typedef BOOL (__stdcall *SDrawUnlockSurfaceFn)(int surface, u8* bits, int rectCount, RECT* rects);
+typedef BOOL (__stdcall *SBltROP3Fn)(u8* dest, const u8* src, s32 width, s32 height,
+                                     s32 destPitch, s32 srcPitch, int pattern, u32 rop);
+const SDrawLockSurfaceFn   stormLockSurface   = (SDrawLockSurfaceFn)0x00411E4E;
+const SDrawUnlockSurfaceFn stormUnlockSurface = (SDrawUnlockSurfaceFn)0x00411E48;
+const SBltROP3Fn           stormBltROP3       = (SBltROP3Fn)0x004100E2;
+
+static void __cdecl blitRect(RECT* rect) {
+  u8* surface;
+  s32 pitch;
+  if (!stormLockSurface(0, NULL, &surface, &pitch, 0))
+    return;
+
+  if (!resolution::inGame()) {
+    drawMenuCentred(surface, pitch);
+    RECT whole = { 0, 0, res_w, res_h };
+    stormUnlockSurface(0, surface, 1, &whole);
+    return;
+  }
+
+  const u8* src = *(u8**)0x006CEFF4;
+  const s32 srcPitch = *(u16*)0x006CEFF0;
+  stormBltROP3(surface + rect->top * pitch + rect->left,
+               src + rect->top * srcPitch + rect->left,
+               rect->right - rect->left, rect->bottom - rect->top,
+               pitch, srcPitch, 0, 0x00CC0020);  //SRCCOPY
+  stormUnlockSurface(0, surface, 1, rect);
+}
+
+void __declspec(naked) blitRect_41D3A0() {
+  __asm {
+    push eax
+    push ecx
+    push edx
+    push esi
+    call blitRect
+    add esp, 4
+    pop edx
+    pop ecx
+    pop eax
+    retn
   }
 }
 
@@ -226,8 +313,10 @@ void __cdecl prepareScreenTrans(u8* trans) {
     else
       *mask = originalHudMask;
 
-    RECT whole = { 0, 0, res_w, res_h };
-    resolution::clipCursor(&whole);
+    if (resolution::inGame()) {
+      RECT whole = { 0, 0, res_w, res_h };
+      resolution::clipCursor(&whole);
+    }
     resolution::buildHudMask(*mask);
     hudMaskBuilt = true;
   }
@@ -321,8 +410,8 @@ const u8* const gameLayerFlags = (const u8*)0x006CEFB4;
 
 void __cdecl adjustCursorClip(RECT* clip) {
   if (*gameLayerFlags) {
-    clip->right = res_w;
-    clip->bottom = res_h;
+    clip->right = clip->left + res_w;
+    clip->bottom = clip->top + res_h;
   }
 }
 
@@ -392,6 +481,112 @@ void __declspec(naked) stormRows_1501AF9B() {
   }
 }
 
+//-------- Menus: output --------//
+
+//0x00417354: mov eax, [ebp-0x10]; jmp 0x417365 (5 bytes), in the dialog blit
+//at 0x004172F0. When [0x006D05A0] is set, as on the menu screens, dialogs are
+//blitted straight onto the locked surface at their 640x480 position, bypassing
+//the screen buffer. Outside a game, move that onto the centred menu area.
+//ecx holds the surface pitch.
+const u32 Ret_DialogBlitSurface = 0x00417365;
+
+void __declspec(naked) dialogBlitSurface_417354() {
+  __asm {
+    mov eax, [ebp-0x10]
+    cmp byte ptr ds:[0x006CEFB4], 0
+    jne DONE
+    push edx
+    mov edx, res_menuY
+    imul edx, ecx
+    add eax, edx
+    add eax, res_menuX
+    pop edx
+  DONE:
+    jmp Ret_DialogBlitSurface
+  }
+}
+
+namespace resolution {
+
+//Blanks the whole surface: the menus only ever redraw their own 640x480, so
+//whatever was on screen before (the last game frame) would stay around them.
+void clearSurface() {
+  u8* surface;
+  s32 pitch;
+  if (!stormLockSurface(0, NULL, &surface, &pitch, 0))
+    return;
+  for (s32 y = 0; y < res_h; ++y)
+    memset(surface + y * pitch, 0, res_w);
+  RECT whole = { 0, 0, res_w, res_h };
+  stormUnlockSurface(0, surface, 1, &whole);
+}
+
+}
+
+//-------- Menus: input --------//
+
+//0x004D2324: cmp ebx, 0x215 (6 bytes) in the window procedure, just before
+//the mouse messages are dispatched (ebx = message, [ebp+0x14] = lParam).
+//Outside a game, move the mouse from screen coordinates into the centred
+//640x480 menu. (WM_MOUSEWHEEL, 0x20A, carries screen coordinates and is left
+//alone.)
+static u32 __cdecl menuMouse(u32 message, u32 lParam) {
+  if (message < 0x200 || message > 0x209 || resolution::inGame())
+    return lParam;
+  s32 x = (s16)(lParam & 0xFFFF) - res_menuX;
+  s32 y = (s16)(lParam >> 16) - res_menuY;
+  x = x < 0 ? 0 : (x > 639 ? 639 : x);
+  y = y < 0 ? 0 : (y > 479 ? 479 : y);
+  return ((u32)y << 16) | (u32)x;
+}
+
+void __declspec(naked) menuMouse_4D2324() {
+  __asm {
+    pushad
+    push dword ptr [ebp+0x14]
+    push ebx
+    call menuMouse
+    add esp, 8
+    mov [ebp+0x14], eax
+    popad
+    cmp ebx, 0x215
+    retn
+  }
+}
+
+//The game's ClipCursor and SetCursorPos calls use 640x480 client coordinates.
+//Outside a game, offset them to the centred menu. Each replaces a
+//call [import] (6 bytes) and keeps its stdcall signature.
+static BOOL WINAPI clipCursorForMenu(const RECT* rect) {
+  if (rect && !resolution::inGame()) {
+    RECT menu = *rect;
+    OffsetRect(&menu, res_menuX, res_menuY);
+    return resolution::clipCursor(&menu);
+  }
+  return resolution::clipCursor(rect);
+}
+
+static BOOL WINAPI setCursorPosForMenu(int x, int y) {
+  if (!resolution::inGame()) {
+    x += res_menuX;
+    y += res_menuY;
+  }
+  else if (x == 320 && y == 200) {
+    //Centre of the vanilla 640x400 view: use the centre of the larger one.
+    x = res_wHalf;
+    y = res_viewH / 2;
+  }
+  return resolution::setCursorPos(x, y);
+}
+
+const u32 clipCursorSites[7] = {
+  0x004216E0, 0x0042171E, 0x0042175E, 0x004A3ED2, 0x004A4D57, 0x004D3032, 0x004E45AF,
+};
+//0x004D1791 is left out: it re-sets the cursor to where GetCursorPos found it.
+const u32 setCursorPosSites[4] = {
+  0x00421678, 0x0047EB4A, 0x004C58AB, 0x004E0884,
+};
+
 namespace {
 
 template <typename T>
@@ -426,6 +621,10 @@ void patchScreenConstants() {
   patchValue<s32>(0x0048D5FC + 2, res_viewH);               //lea edi, [eax+0x190]
   patchValue<s16>(0x0048D663 + 2, (s16)res_w);              //cmp ax, 0x280
   patchValue<s16>(0x0048D66D + 3, (s16)res_viewH);          //cmp cx, 0x190
+
+  //Full-redraw rect in 0x0041E280, passed to 0x0041D3A0
+  patchValue<s32>(0x0041E2D5 + 3, res_w);                   //mov [ebp-0xC], 0x280
+  patchValue<s32>(0x0041E2DC + 3, res_h);                   //mov [ebp-8], 0x1E0
 
   //Game layer and view rect at game start (0x004BD630)
   patchValue<s32>(0x004BD633 + 1, res_viewHm1);             //SetRect(0x5993B0, 0, 0, 639, 399)
@@ -468,6 +667,15 @@ void injectResolutionHooks() {
   jmpPatch(cursorClipRect_42163B,   0x0042163B);
   jmpPatch(clipCursor_4216DB,       0x004216DB);
   jmpPatch(consoleHitTest_4D1140,   0x004D1140, 1);
+
+  //Menus, centred
+  jmpPatch(blitRect_41D3A0,         0x0041D3A0);
+  jmpPatch(dialogBlitSurface_417354, 0x00417354);
+  callPatch(menuMouse_4D2324,       0x004D2324, 1);
+  for (u32 site : clipCursorSites)
+    callPatch(clipCursorForMenu, site, 1);
+  for (u32 site : setCursorPosSites)
+    callPatch(setCursorPosForMenu, site, 1);
 
   //Game layer, mouse, scrolling
   callPatch(fillCellsAtStart_4BD64C, 0x004BD64C);

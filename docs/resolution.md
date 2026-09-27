@@ -5,8 +5,18 @@ Goal: show more of the battlefield than 1.16.1's 640×480. Tags as in `beam-weap
 The trial build (§4) was tested in game on 2026-09-27 at 1280×720, through cnc-ddraw
 upscaled to a 1920×1080 monitor. `[BUILT]`, confirmed: terrain, fog, sprites and the
 minimap view box across the whole view; mouse hover, clicks and select-all everywhere;
-edge scrolling on all four sides; Alt+Tab. Known bug: quitting to the menu leaves the last
-game frame around the 640×480 menu.
+edge scrolling on all four sides; Alt+Tab.
+
+Menus are centred `[BUILT]`, tested 2026-09-27: the menu screens, the cursor clip, briefings
+and loading screens, and quitting to the menu with no leftover game frame. The menus still
+draw at 640×480 internally:
+- Output is moved when it reaches the surface. Menu dialogs are blitted straight onto the
+  surface by 0x4172F0, so its surface pointer is offset (0x417354). The buffer-to-surface
+  blits (0x41D44D, 0x41D3A0) copy the buffer's 640×480 block to the centre.
+- Mouse input is shifted back at the window procedure (0x4D2324).
+- The game's 7 `ClipCursor` and 4 `SetCursorPos` calls are offset too.
+
+In-game dialogs such as F10 stay at the top-left with the console.
 
 Found and fixed during testing:
 - BW's console hit test (0x4D1140) treated everything below the console's bottom line as

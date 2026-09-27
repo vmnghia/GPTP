@@ -56,6 +56,10 @@ extern s32 res_viewH;         //400  game view height (the whole screen in the t
 extern s32 res_viewHm1;       //399
 extern s32 res_w64;           //704
 
+//Where the 640x480 menus are drawn on the larger screen: centred.
+extern s32 res_menuX;         //0
+extern s32 res_menuY;         //0
+
 
 //16x16 dirty-cell grid (vanilla: 40 x 30 bytes at 0x006CEFF8).
 extern s32 res_cellCols;      //40
@@ -105,6 +109,7 @@ void markDirty(s32 left, s32 top, s32 right, s32 bottom);
 bool isRectDirty(s32 left, s32 top, s32 right, s32 bottom);
 void buildHudMask(const u8* src);
 void onScreenUpdate();
+void clearSurface();
 void injectTerrainHooks();
 void injectFogHooks();
 
@@ -117,6 +122,12 @@ inline BOOL clipCursor(const RECT* rect) {
 }
 inline BOOL setCursorPos(int x, int y) {
   return (*(BOOL (WINAPI**)(int, int))0x004FE2CC)(x, y);
+}
+
+//Whether a game is running (the game layer, screenLayers[5], is active).
+//Outside a game the 640x480 menus are shown centred.
+inline bool inGame() {
+  return *(const u8*)0x006CEFB4 != 0;
 }
 
 //True when the larger view is compiled in.
