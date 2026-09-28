@@ -16,9 +16,10 @@ draw at 640×480 internally:
 - Mouse input is shifted back at the window procedure (0x4D2324).
 - The game's 7 `ClipCursor` and 4 `SetCursorPos` calls are offset too.
 
-The console sits at the bottom centre `[BUILT]` (§5), tested 2026-09-28. The art,
-minimap, command card, portrait, selection info, resources, MENU button and every tooltip
-are drawn and respond in the right places. A 7-minute game ran with no crash.
+The console runs the full width of the bottom `[BUILT]` (§5), tested 2026-09-29 for all
+three races, replays, and 1920×1072. Minimap and selection info are at the left, portrait,
+MENU button and command card at the right, and the selection box stretches between them.
+(Stage 2 first moved the whole 640×480 console to the bottom centre, in fd13ec1.)
 
 In-game popups, chat lines and the Space Platform starfield `[BUILT]` (§5), tested
 2026-09-28.
@@ -27,7 +28,10 @@ Found and fixed during testing:
 - BW's console hit test (0x4D1140) treated everything below the console's bottom line as
   console, across the full width. Widening the console image (§5) fixed this at the
   source.
-- Vanilla scrolls 24 px past the map's bottom edge, which showed as a black strip.
+- The bottom scroll limit. Vanilla stops the map's bottom edge at screen y = 376, with the
+  104 rows below behind the console. The trial showed that as a black strip, so it scrolled
+  the map's bottom to the screen's bottom instead. With the console at the bottom again,
+  the vanilla relation is back (`mapH × 32 − (h − 104)`, 0x49BBCD).
 - Cursor calls from the plugin must go through StarCraft.exe's import slots, or cnc-ddraw
   can't scale them.
 
@@ -40,9 +44,9 @@ Found and fixed during testing:
   As in the Expander, the display mode is the larger size from startup; the 640×480 menus
   are centred in it.
 - **The game view is the whole screen, with the console drawn over it.** The trial left
-  the console at its vanilla place. Stage 2 (§5) moves the vanilla 640×480 console, as one
-  piece, to the bottom centre. The Expander instead split it at x = 400 into corners.
-  Either layout can be built on the same mechanism later, because the layout is a table.
+  the console at its vanilla place. Stage 2 (§5) moved it, as one piece, to the bottom
+  centre. It now runs the full width, split inside the selection box (the user's choice,
+  2026-09-28). The Expander split it at x = 400 into corners.
 - **Multiplayer uses the host's resolution.** A bigger view shows more of the map, so the
   host issues it as a command on the first game frame and every client applies it in the
   same frame; replays record it too. This keeps honest players on the same build equal —
@@ -149,7 +153,7 @@ Where it deliberately differs from the Expander:
 
 Not done yet: see §6.
 
-## 5. Stage 2: the console at the bottom centre `[BUILT]`
+## 5. Stage 2: the full-width console `[BUILT]`
 
 **How BW builds the console.** It is not one object:
 - **Panels.** Each is a separate dialog loaded from `rez\*.bin`: Minimap, StatData
@@ -162,23 +166,40 @@ Not done yet: see §6.
   (0x4C35F0). The console's transparency mask is built from it (0x41D640), and so are the
   lines the console hit test uses (0x4D11A0).
 
+**The layout.** The vanilla art is split at a column inside the selection box: 270 for
+Zerg, Terran and replays, 210 for Protoss, whose box has gold bumps further right. Everything
+left of the split stays at the bottom-left corner. Everything right of it moves to the
+bottom-right corner. The gap between them, `w − 640` wide, is filled from a 40 px strip of
+the box's art starting at the split, as pairs of one copy followed by a mirrored copy. The
+pairs are narrowed slightly so a whole number fits. Every pair then ends on the split
+column, where the right part continues, so there is no cut-off copy at any width. The
+selection box itself gets wider, and the extra room is kept for extended selection. The
+split per race is `consoleStretch` in `resolution_hud.cpp`, and the race index is
+`[0x6D0F14] ? 3 : [0x57F1E2]`, as the console loader uses it.
+
 **What the plugin does.** It works in two places, kept consistent:
 - **Panels.** Each panel dialog is moved as its `.bin` is read (0x4194E0), per the
-  `panelPlacements` table in `resolution_hud.cpp`. Resources go to the top-right corner and
-  everything else to the console offset.
+  `panelPlacements` table in `resolution_hud.cpp`. Minimap, StatData and TextBox stay left.
+  StatPort, StatBtn and Stat_F10 move right. StatRes goes to the top-right corner.
+  StatData is also widened by the gap, so it paints the whole widened box.
+- **Decorative pieces.** StatFluf pieces left of the race's split stay left, pieces right
+  of it move right, and pieces across it (the top of the selection box) are widened.
 - **Art.** The console image is rebuilt at the full screen size right after it loads
-  (0x4C39F5), with the vanilla art placed at the console offset.
+  (0x4C39F5), in `widenConsoleImage()`.
 
-The mask, hit test and panel backgrounds then follow by themselves. To change the layout
-later, edit the table, or build the full-size image from other art in
+The mask, hit test and panel backgrounds then follow by themselves. To change the layout,
+edit the table and the splits, or build the full-size image from other art in
 `widenConsoleImage()`.
 
 `.bin` facts learned the hard way:
 - On disk, a root dialog stores width − 1 and height − 1 where right and bottom go, so only
-  left and top are moved.
+  left and top are moved. The width is stored a second time at +0x36 (height at +0x38),
+  which is what the panel background is allocated from (0x4C35F0). A width change goes
+  into both.
 - Child rects are relative to the root, so only the root is moved.
 - StatFluf's pieces are placed from per-race tables (0x5152A8, 0x515300, 0x515348,
-  0x515388) that override the `.bin` positions, so those tables are offset instead.
+  0x515388) that override the `.bin` positions and sizes, so those tables are changed
+  instead. They are indexed by the same race index as the art (pointer table 0x5153E8).
 
 Drawing outside 640×480 needed:
 - **Dialog layer.** The dialog layer is widened to the whole screen (0x41A049).
@@ -190,6 +211,10 @@ Drawing outside 640×480 needed:
 - **Clipping.** Clipped rect fill and line routines (0x4E1D20, 0x41D810, 0x41D7D0).
   Vanilla ones write past the buffer once the limits are wider.
 - **Storm.** Storm's dirty-cell geometry is set to the full size (0x41D52C).
+- **Dialog blitters.** BW compiles its dialog blitters once at startup with Storm's
+  `SCodeCompile` (0x417D70, 0x417DA3) for at most 0xA0 iterations of 4 pixels, which is
+  640 px. A wider dialog ran past the compiled code, and EIP ended up in unknown memory
+  (0x417D48 and 0x417D92 now push `w / 4`).
 
 Input and positions fixed to match:
 - **Minimap.** Its rect assumes the panel's left is 0 and its top is 315 (0x4A4539,
@@ -210,7 +235,9 @@ Also moved or fixed:
   relocated (0x4F5912), so it opens in the screen centre. This only happens in a game.
 - **Message lines.** The message area (0x48CF60) draws 11 chat lines from y = 0x70 at
   x 10–630, the error/cheat line at y = 0x127, and a line at x 420–620, y 24, under the
-  resources. The first two move with the console and the third with the resources.
+  resources. Chat stays at the left edge, just above the console. The error line
+  ("Not enough minerals", "Cheat enabled") is centred in its rect, which is widened to the
+  screen, so it is centred on the screen. The third line follows the resources.
   Their redraw marks (0x48CB80, an inlined copy at 0x4B22DB, and GPTP's
   `cheat_codes.cpp`) wrote into BW's old 40-column dirty grid. They now use the new one.
 - **Space Platform starfield.** 0x47EBF0 (dirty cells) and 0x47EE20 (full redraw) draw
@@ -226,8 +253,9 @@ panels were placed, the console image size, the screen limits and every dialog's
 
 ## 6. Remaining and future work
 
-State on 2026-09-28: `feature/resolution` builds and plays at 1280×720, with the console
-at the bottom centre and the in-game popups, chat lines and starfield handled (§5).
+State on 2026-09-29: `feature/resolution` builds and plays at any size set in
+`Manifold.ini`, with the full-width console, and with the in-game popups, message lines and
+starfield handled (§5). Features 1 and 2 below are done.
 
 **Checked and done:** in-game dialogs, StatLB, chat and message lines (§5).
 
@@ -240,21 +268,20 @@ at the bottom centre and the in-game popups, chat lines and starfield handled (�
   window-procedure mouse shift. Nothing wrong has shown up in testing.
 - **The per-frame layer paint loop** (0x41E2F2–0x41E344) still gives each layer a 640×480
   rect. Changing it might break the menus, and nothing visibly needs it.
-
-**Wanted with the stretched console:** the user wants the message lines (chat, errors,
-the plugin's own text) at the left edge of the screen, not over the minimap. The draw and
-redraw positions are the `0x48CF60` patches and `markMessageLine()` in
-`resolution_hud.cpp`.
+- **A vanilla crash after a game** (0x4BDB81, reading 0x1). After a game BW deletes an old
+  auto-saved replay in `maps\replays\` (0x4DFAB0). If that fails, it shows an Ok box
+  (0x4F5EE0) before the menu's colour table (`[0x6D125C]`) exists, and the box crashes. It
+  was seen once, when `LastReplay.rep` was probably still held open after watching it.
+  Not caused by the plugin.
 
 **Then the planned features, in this order** (set by the user on 2026-09-28):
 1. **Resolution choice without rebuilding** `[BUILT]`, tested 2026-09-28 at 1024×576,
    1280×720, 1920×1072 and 640×480 (see §4). The size is fixed for the whole run, because
    the dirty grid, terrain cache, fog grids, patched immediates, console offsets and
    console image all follow it.
-2. **Stretched full-width console:** custom console art. Put the panels in
-   `panelPlacements` and build the image in `widenConsoleImage()` from a wide `.pcx`. The
-   `.pcx` must use the in-game palette, with index 0 transparent. Possibly one per race.
-   Move the message lines to the screen's left edge at the same time (see above).
+2. **Stretched full-width console** `[BUILT]`, tested 2026-09-29 (§5). It is built from
+   the vanilla art. Custom wide art could replace it in `widenConsoleImage()`. That art must
+   use the in-game palette with index 0 transparent, and each race's `.pcx` can differ.
 3. **Extended button set** `[PROPOSED]`: a larger command card than the vanilla 3×3, using
    the room the wide console gives. Scope to be defined.
 4. **Extended unit selection** `[PROPOSED]`: more than 12 selected units. Scope to be
@@ -285,7 +312,7 @@ redraw positions are the `0x48CF60` patches and `markMessageLine()` in
    `GPTP\Debug\`, not the mod folder.
 3. One run should answer most questions:
    - does it reach the menus (640×480 centred, black around them);
-   - in a skirmish, does terrain fill the whole screen, with the console at the bottom centre;
+   - in a skirmish, does terrain fill the whole screen, with the full-width console at the bottom;
    - scrolling by the right and bottom screen edges, by the arrow keys and by minimap clicks;
    - fog-of-war shading across the whole screen, and creep spreading on screen;
    - selecting and commanding units in the new areas (right of x = 640, below y = 480);

@@ -1110,16 +1110,17 @@ void __declspec(naked) inCacheY_49C554() {
 }
 
 //0x0049BBCD: add eax, 8; movzx ecx, dx (6 bytes). At map load, the largest
-//screen top: (mapH - 12) * 32 + 8, i.e. mapH * 32 - 400 + 24. Vanilla lets
-//the view run 24 pixels past the map's bottom edge because those rows are
-//behind the console; with the console out of the way they would show as a
-//black strip, so the limit becomes mapH * 32 - res_viewH.
-//si holds the map height in tiles.
+//screen top: (mapH - 12) * 32 + 8, i.e. mapH * 32 - 376. That stops the
+//map's bottom edge at screen y = 376, just above the console's selection box,
+//with the 104 rows below it behind the console. The console sits at the bottom
+//of the larger screen the same way, so the limit becomes mapH * 32 - (res_h -
+//104). si holds the map height in tiles.
 void __declspec(naked) maxScrollY_49BBCD() {
   __asm {
     movzx eax, si
     shl eax, 5
-    sub eax, res_viewH
+    sub eax, res_h
+    add eax, 104
     movzx ecx, dx
     inc dword ptr [esp]
     retn
