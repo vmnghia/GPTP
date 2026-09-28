@@ -161,6 +161,12 @@ void __declspec(naked) getButtonSetPatch_For_Sub4591D0() {
 
 namespace hooks {
 
+//The hotkey scan (0x004588C0) only looks at command card controls up to this:
+//cmp ax, 9.
+void setHotkeyScanLimit(u16 lastControl) {
+	memoryPatch(0x004588C4 + 2, lastControl);
+}
+
 void injectButtonSetHooks() {
 	//jmpPatch(getButtonSetPatch_For_Sub4591D0,	Func_Sub_4591ED, 2);
 	jmpPatch(updateButtonSetExWrapper,			0x00458BC0, 1);

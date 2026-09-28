@@ -205,6 +205,15 @@ BUTTON_SET* getCustomButtonSet(BUTTON_SET* base_buttonset) {
 
 }
 
+//The command card of each race (rez\statbtn[tpz].bin) is extended to 5x3:
+//buttons are controls 1-15, left to right and top to bottom, and a button's
+//position picks its control directly. Control 16 is a spare slot. Replays use
+//the vanilla rez\statbtnn.bin, with 9 buttons and the progress bar as
+//control 10. statbtn_BIN_CustomCtrlID sets this when a card is loaded.
+const u16 EXTENDED_BUTTON_CONTROLS = 16;
+const u16 VANILLA_BUTTON_CONTROLS = 9;
+static u16 buttonControls = VANILLA_BUTTON_CONTROLS;
+
 namespace hooks {
 
 	; //458BC0 
@@ -713,7 +722,7 @@ void updateButtonSet_Sub4591D0() {
 		if(current_dialog->index < 1)
 			bStopThere = true;
 		else
-		if(current_dialog->index > 9)
+		if(current_dialog->index > buttonControls)
 			jumpto5934E = true;
 		else { //loop to ignore the first unused/disabled buttons
 
@@ -863,12 +872,27 @@ void updateButtonSet_Sub4591D0() {
 		0x00459890
 	};
 
-	//Using a local array instead of the original may allow to go past
-	//the 9 buttons limitations
-	//May need a special case using the original array adress and size
-	//when in replay if modified
+	//For the extended cards: one entry per control, all buttons.
+	//registerUserDialogAction does not check the array's size, so it must
+	//cover every control id in the .bin.
+	const u32 Extended_Btn_fxnInteractFuncs[EXTENDED_BUTTON_CONTROLS] =
+	{
+		0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0,
+		0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0,
+		0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0,
+		0x004598D0
+	};
+
 	void statbtn_BIN_CustomCtrlID(BinDlg* dialog) {
-		registerUserDialogAction(dialog,(u32)&Btn_fxnInteractFuncs,sizeof(Btn_fxnInteractFuncs));
+		if(scbw::isInReplay()) {
+			buttonControls = VANILLA_BUTTON_CONTROLS;
+			registerUserDialogAction(dialog,(u32)&Btn_fxnInteractFuncs,sizeof(Btn_fxnInteractFuncs));
+		}
+		else {
+			buttonControls = EXTENDED_BUTTON_CONTROLS;
+			registerUserDialogAction(dialog,(u32)&Extended_Btn_fxnInteractFuncs,sizeof(Extended_Btn_fxnInteractFuncs));
+		}
+		setHotkeyScanLimit(buttonControls);
 		BINDLG_BlitSurface(dialog);
 	}
 

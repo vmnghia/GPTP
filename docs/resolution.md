@@ -248,6 +248,35 @@ Also moved or fixed:
   repeat every 648 px was not noticeable in testing.
 - **StatLB** is the UMS leaderboard, pinned at 0,0. It needs no change.
 
+### 5a. The 5×3 command card
+
+Following KYSXD's "[Plugin] Extended buttonset" tutorial (GPTP-For-VS2008 wiki), with
+fixes:
+- **The cards.** `rez\statbtn[tpz].bin` have 15 buttons as controls 1–15, left to right and
+  top to bottom, plus a spare control 16. The user made `statbtnt.bin` (root at (453, 333),
+  189×148, a 36 px pitch). `statbtnp.bin` is a copy (vanilla Protoss and Terran cards are
+  identical), and `statbtnz.bin` is shifted by (−5, +3), as vanilla Zerg's buttons are.
+  The files are in `SCManifold\to-repack\rez\`, outside the repo.
+- **Positions.** A button's position picks its control directly. Positions are not
+  remapped from 3×3, so a vanilla set flows 1–5 on the top row.
+- **Replays** use `rez\statbtnn.bin`: the vanilla 3×3 with the progress bar as control 10.
+  So `statbtn_BIN_CustomCtrlID` (`buttonsets.cpp`) keeps the vanilla interact table and a
+  limit of 9 there, and uses a 16-entry table and a limit of 16 otherwise.
+  `registerUserDialogAction` (0x418100) does not bounds-check the table, so it must cover
+  every control id.
+- **Limits.** The draw loop's `index > 9` in `updateButtonSet_Sub4591D0`, and the hotkey
+  scan's `cmp ax, 9` (0x4588C4, imm16 at +2). The tutorial's patch bytes there
+  (`66 3D F8 0C`) make it `cmp ax, 0xCF8`, which works only by accident. Hotkeys come from
+  the first character of each button's enabled string, as in vanilla.
+- **Layout** (`resolution_hud.cpp`). The card is 189 px wide, more than the 144 px right of
+  the portrait. So the portrait and MENU move 45 px left, and the card is kept on screen
+  (2 px left of its `.bin` position). The gap left by the portrait is filled with the
+  start of the card frame's art (the user's choice).
+- **Decorative pieces.** The StatFluf tables are replaced (pointer table 0x5153E8) by
+  plugin-built ones. Each vanilla piece is mapped like the art, and the card's rect is cut
+  out of it, splitting it into up to four pieces. A piece over the buttons repainted the
+  art over them, which made buttons 1 and 2 flicker in the user's earlier attempt.
+
 `RESOLUTION_DEBUG` in `resolution.h` prints a layout report at game frames 48 and 480: which
 panels were placed, the console image size, the screen limits and every dialog's position.
 
@@ -282,8 +311,9 @@ starfield handled (§5). Features 1 and 2 below are done.
 2. **Stretched full-width console** `[BUILT]`, tested 2026-09-29 (§5). It is built from
    the vanilla art. Custom wide art could replace it in `widenConsoleImage()`. That art must
    use the in-game palette with index 0 transparent, and each race's `.pcx` can differ.
-3. **Extended button set** `[PROPOSED]`: a larger command card than the vanilla 3×3, using
-   the room the wide console gives. Scope to be defined.
+3. **Extended button set** `[BUILT]`, tested 2026-09-29 for all three races and replays
+   (§5a). The card is 5×3. The buttons are to be rearranged later, following SC2's
+   layouts.
 4. **Extended unit selection** `[PROPOSED]`: more than 12 selected units. Scope to be
    defined. Unlike the view, selections are sent as network commands and recorded in
    replays, so this touches synced game state, unlike everything above.

@@ -49,13 +49,25 @@ s32 noOffset = 0;
 struct ConsoleStretch {
   s32 split;       //first column of the right part; also the strip's start
   s32 stripWidth;  //the widest strip used
+  s32 cardFrame;   //first column of the command card's frame
 };
 const ConsoleStretch consoleStretch[4] = {
-  { 270, 40 },  //Zerg
-  { 270, 40 },  //Terran
-  { 210, 40 },  //Protoss: its box has gold bumps further right
-  { 270, 40 },  //replays (nconsole.pcx)
+  { 270, 40, 466 },  //Zerg
+  { 270, 40, 466 },  //Terran
+  { 210, 40, 488 },  //Protoss: its box has gold bumps further right
+  { 270, 40, 466 },  //replays (nconsole.pcx)
 };
+
+//The races' command cards (rez\statbtn[tpz].bin) are 5x3, wider than the
+//vanilla 3x3: this is their root rect in vanilla coordinates. The portrait and
+//the MENU button move left to make room, and the start of the card frame's
+//art is copied into the gap they leave. The card is kept on screen (it would
+//end 2 px past the right edge). Replays keep the vanilla card (statbtnn.bin)
+//and layout.
+const s32 CARD_LEFT = 453, CARD_TOP = 333, CARD_WIDTH = 189, CARD_HEIGHT = 148;
+const s32 CARD_OVERHANG = CARD_LEFT + CARD_WIDTH > 640 ? CARD_LEFT + CARD_WIDTH - 640 : 0;
+const s32 VANILLA_CARD_LEFT = 496;  //also where the portrait panel ends
+const s32 PORTRAIT_SHIFT = VANILLA_CARD_LEFT - (CARD_LEFT - CARD_OVERHANG);
 //The console art in use: 0 Zerg, 1 Terran, 2 Protoss, 3 replays, as chosen by
 //the console loader (0x004C3950) and the StatFluf setup (0x004F4DC0).
 u32 consoleRace() {
@@ -67,6 +79,111 @@ u32 consoleRace() {
 
 s32 consoleGap;  //consoleRightX - consoleLeftX: how much wider the console is
 
+bool usesExtendedCard(u32 race) {
+  return race != 3;
+}
+
+//How far left the portrait part moves for a race's console.
+s32 portraitShift(u32 race) {
+  if (!usesExtendedCard(race))
+    return 0;
+  return PORTRAIT_SHIFT < consoleGap ? PORTRAIT_SHIFT : consoleGap;
+}
+
+//The layout of the console being set up, from consoleSetupStarting().
+u32 layoutRace = 1;
+s32 consolePortraitX;  //the portrait and the MENU button
+s32 consoleCardX;      //the command card
+s32 statDataGrowth;    //how much wider the selection box is
+
+//Where a column of the vanilla art goes on the screen.
+s32 mapConsoleX(s32 x, u32 race) {
+  const ConsoleStretch& stretch = consoleStretch[race];
+  if (x < stretch.split)
+    return consoleLeftX + x;
+  if (x < stretch.cardFrame)
+    return consoleRightX - portraitShift(race) + x;
+  return consoleRightX + x;
+}
+
+//At console setup: the layout for the console art and card in use.
+void setConsoleLayout() {
+  layoutRace = consoleRace();
+  const s32 shift = portraitShift(layoutRace);
+  consolePortraitX = consoleRightX - shift;
+  consoleCardX = usesExtendedCard(layoutRace) ? consoleRightX - CARD_OVERHANG : consoleRightX;
+  statDataGrowth = consoleGap - shift;
+
+  //The command card's rect (0x005136CC, vanilla (496,354)-(639,479)), used for
+  //the cursor.
+  RECT card;
+  if (usesExtendedCard(layoutRace))
+    SetRect(&card, consoleCardX + CARD_LEFT, consoleY + CARD_TOP,
+            consoleCardX + CARD_LEFT + CARD_WIDTH - 1, consoleY + CARD_TOP + CARD_HEIGHT - 1);
+  else
+    SetRect(&card, consoleRightX + 496, consoleY + 354, consoleRightX + 639, consoleY + 479);
+  memoryPatch(0x005136CC, card);
+}
+
+//-------- Decorative pieces (StatFluf) --------//
+
+//One .bin, copied once per entry of a per-race table whose position and size
+//override the .bin's. The game finds each race's table through a pointer
+//table, so the plugin gives it its own: each vanilla piece mapped like the art
+//(mapConsoleX), and, for the extended command card, with the card's rect cut
+//out, since a piece over the buttons repaints the art over them. A piece can
+//split into up to four around the card.
+struct FlufEntry {
+  u16 x, y, width, height;
+  u32 dialog;  //set by the game
+};
+static_assert(sizeof(FlufEntry) == 12, "StatFluf table entries are 12 bytes");
+
+const u32 flufVanillaTables[4] = { 0x005152A8, 0x00515300, 0x00515348, 0x00515388 };
+const u32 FLUF_TABLE_POINTERS = 0x005153E8;
+const u32 MAX_FLUF_PIECES = 31;
+FlufEntry flufTables[4][MAX_FLUF_PIECES + 1];
+
+void addFluf(FlufEntry*& out, const FlufEntry* end, s32 left, s32 top, s32 right, s32 bottom) {
+  if (left >= right || top >= bottom || out == end)
+    return;
+  out->x = (u16)left;
+  out->y = (u16)top;
+  out->width = (u16)(right - left);
+  out->height = (u16)(bottom - top);
+  out->dialog = 0;
+  ++out;
+}
+
+void buildFlufTable(u32 race) {
+  FlufEntry* out = flufTables[race];
+  const FlufEntry* const end = out + MAX_FLUF_PIECES;
+  const bool cutCard = usesExtendedCard(race);
+  const s32 cardLeft = consoleRightX - CARD_OVERHANG + CARD_LEFT;
+  const s32 cardTop = consoleY + CARD_TOP;
+  const s32 cardRight = cardLeft + CARD_WIDTH;
+  const s32 cardBottom = cardTop + CARD_HEIGHT;
+
+  for (const FlufEntry* piece = (const FlufEntry*)flufVanillaTables[race]; piece->x != 0xFFFF; ++piece) {
+    const s32 left = mapConsoleX(piece->x, race);
+    const s32 right = mapConsoleX(piece->x + piece->width - 1, race) + 1;
+    const s32 top = piece->y + consoleY;
+    const s32 bottom = top + piece->height;
+    if (!cutCard || right <= cardLeft || left >= cardRight || bottom <= cardTop || top >= cardBottom) {
+      addFluf(out, end, left, top, right, bottom);
+      continue;
+    }
+    const s32 midTop = top > cardTop ? top : cardTop;
+    const s32 midBottom = bottom < cardBottom ? bottom : cardBottom;
+    addFluf(out, end, left, top, right, cardTop);          //above the card
+    addFluf(out, end, left, cardBottom, right, bottom);    //below it
+    addFluf(out, end, left, midTop, cardLeft, midBottom);  //left of it
+    addFluf(out, end, cardRight, midTop, right, midBottom);//right of it
+  }
+  out->x = 0xFFFF;
+  memoryPatch(FLUF_TABLE_POINTERS + race * 4, (u32)flufTables[race]);
+}
+
 struct PanelPlacement {
   const char* name;  //the dialog's root name in its .bin
   const s32* dx;
@@ -76,11 +193,11 @@ struct PanelPlacement {
 
 const PanelPlacement panelPlacements[] = {
   { "Minimap",  &consoleLeftX,  &consoleY, &noOffset },
-  { "StatData", &consoleLeftX,  &consoleY, &consoleGap },  //selected unit's info; covers the widened box
-  { "StatPort", &consoleRightX, &consoleY, &noOffset },  //portrait
-  { "StatBtn",  &consoleRightX, &consoleY, &noOffset },  //command card
+  { "StatData", &consoleLeftX,  &consoleY, &statDataGrowth },  //selected unit's info; covers the widened box
+  { "StatPort", &consolePortraitX, &consoleY, &noOffset },  //portrait
+  { "StatBtn",  &consoleCardX,  &consoleY, &noOffset },  //command card
   { "StatRes",  &resourcesX,    &noOffset, &noOffset },  //minerals, gas, supply
-  { "Stat_F10", &consoleRightX, &consoleY, &noOffset },  //the MENU button
+  { "Stat_F10", &consolePortraitX, &consoleY, &noOffset },  //the MENU button
   { "TextBox",  &consoleLeftX,  &consoleY, &noOffset },  //chat input
 };
 
@@ -142,8 +259,9 @@ void __cdecl centrePopup(u8* root) {
 //console's left part: 11 chat lines from y = 0x70 at x 10-630, the error/cheat
 //line at y = 0x127 just above the console (centred in its rect), and one line
 //at x 420-620, y 24 under the resources. The error line's rect is widened to
-//the screen, so it is centred on the screen. Their redraw marks (0x0048CB80 and an inlined copy at 0x004B22DB)
-//wrote into BW's 40-column grid, which the larger screen no longer uses.
+//the screen, so it is centred on the screen. Their redraw marks (0x0048CB80
+//and an inlined copy at 0x004B22DB) wrote into BW's 40-column grid, which the
+//larger screen no longer uses.
 const u16* const messageLineHeight = (const u16*)0x0064096C;
 const u16* const chatLineSpacing = (const u16*)0x00640B20;
 const u8* const chatNextLine = (const u8*)0x00640B58;
@@ -187,7 +305,8 @@ void copyColumn(u8* wide, const u8* art, s32 fromX, s32 toX) {
 
 //After the console image loads (0x004C3950): rebuild it at the full screen
 //size. The vanilla art left of the split goes to the bottom-left corner, the
-//rest to the bottom-right one, and the gap is filled with pairs of the strip,
+//rest to the bottom-right one (the portrait part shifted left for the wider
+//command card, per mapConsoleX()), and the gap is filled with pairs of the strip,
 //each one copy followed by a mirrored copy. The pairs are narrowed slightly
 //so a whole number of them fits: every pair then ends on the split column,
 //where the right part continues, and no copy is cut off at any width. Storm's
@@ -202,12 +321,14 @@ void __cdecl widenConsoleImage() {
   memset(wide, 0, res_w * res_h);
 
   const u8* art = consoleImage->pixels;
-  const ConsoleStretch& stretch = consoleStretch[consoleRace()];
-  const s32 gap = consoleRightX - consoleLeftX;
-  for (s32 x = 0; x < stretch.split; ++x)
-    copyColumn(wide, art, x, consoleLeftX + x);
-  for (s32 x = stretch.split; x < 640; ++x)
-    copyColumn(wide, art, x, consoleRightX + x);
+  const ConsoleStretch& stretch = consoleStretch[layoutRace];
+  const s32 shift = portraitShift(layoutRace);
+  const s32 gap = consoleRightX - consoleLeftX - shift;
+  for (s32 x = 0; x < 640; ++x)
+    copyColumn(wide, art, x, mapConsoleX(x, layoutRace));
+  //The gap the portrait leaves before the card frame: the frame's start again.
+  for (s32 i = 0; i < shift; ++i)
+    copyColumn(wide, art, stretch.cardFrame + i, consoleRightX + stretch.cardFrame - shift + i);
 
   if (gap > 0) {
     const s32 halves = gap / 2;  //gap is even: widths are multiples of 32
@@ -236,6 +357,7 @@ const u32 Func_LoadConsoleImage = 0x004C3950;
 
 static void __cdecl consoleSetupStarting() {
   resolution::setScreenLimits(true);
+  setConsoleLayout();
 }
 
 //0x004C3BB2: call 0x4C3950 (5 bytes), the first step of console setup at
@@ -438,32 +560,9 @@ void injectHudHooks() {
   jmpPatch(markMessageLine_48CB80, 0x0048CB80);
   jmpPatch(markErrorLine_4B22DB, 0x004B22DB, 2);
 
-  //The command card area rect (496,354)-(639,479), used for the cursor.
-  RECT* const commandCardRect = (RECT*)0x005136CC;
-  RECT moved = *commandCardRect;
-  OffsetRect(&moved, consoleRightX, consoleY);
-  memoryPatch(0x005136CC, moved);
-
-  //The decorative console pieces (StatFluf): one .bin, copied once per entry of
-  //a per-race table {u16 x, y, width, height; BinDlg*} ending in x = 0xFFFF,
-  //whose position and size override the .bin's. Indexed like consoleStretch.
-  //Pieces left of the race's split stay left, pieces right of it move right,
-  //and pieces across it (the top of the selection box) widen with the gap.
-  const u32 flufTables[4] = { 0x005152A8, 0x00515300, 0x00515348, 0x00515388 };
-  for (u32 race = 0; race < 4; ++race) {
-    const s32 split = consoleStretch[race].split;
-    for (u32 entry = flufTables[race]; *(u16*)entry != 0xFFFF; entry += 12) {
-      const s32 x = *(u16*)entry;
-      const s32 width = *(u16*)(entry + 4);
-      if (x >= split)
-        memoryPatch(entry, (u16)(x + consoleRightX));
-      else if (x + width > split)
-        memoryPatch(entry + 4, (u16)(width + consoleRightX - consoleLeftX));
-      else
-        memoryPatch(entry, (u16)(x + consoleLeftX));
-      memoryPatch(entry + 2, (u16)(*(u16*)(entry + 2) + consoleY));
-    }
-  }
+  //The decorative console pieces, per race.
+  for (u32 race = 0; race < 4; ++race)
+    buildFlufTable(race);
 
   //The dialog blitters are compiled once at startup with SCodeCompile
   //(0x00417D70, 0x00417DA3) for at most 0xA0 iterations of 4 pixels, i.e. 640

@@ -10,6 +10,7 @@ void updateButtonSet_Sub4591D0();				//591D0
 void updateCurrentButtonset();					//599A0
 
 void statbtn_BIN_CustomCtrlID(BinDlg* dialog);	//59AD0
+void setHotkeyScanLimit(u16 lastControl);	//588C4
 
 BUTTON_SET* getButtonSet(int index);
 
