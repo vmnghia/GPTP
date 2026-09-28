@@ -91,6 +91,42 @@ void __cdecl placeDialog(u8* root, u8* base) {
   }
 }
 
+//In-game popups (the F10 menu and its sub-menus, objectives, victory and
+//defeat, save/load, the chat-target dialogs, Ok boxes) are all opened by
+//0x004F57A0 at their 640x480 positions. Move them to the screen centre.
+void __cdecl centrePopup(u8* root) {
+  if (resolution::inGame())
+    offsetBounds(root, res_dx / 2, res_dy / 2);
+}
+
+//-------- Message lines --------//
+
+//The message area is drawn by 0x0048CF60 at vanilla positions relative to the
+//console: 11 chat lines from y = 0x70 at x 10-630, the error/cheat line at
+//y = 0x127 just above the console, and one line at x 420-620, y 24 under the
+//resources. Their redraw marks (0x0048CB80 and an inlined copy at 0x004B22DB)
+//wrote into BW's 40-column grid, which the larger screen no longer uses.
+const u16* const messageLineHeight = (const u16*)0x0064096C;
+const u16* const chatLineSpacing = (const u16*)0x00640B20;
+const u8* const chatNextLine = (const u8*)0x00640B58;
+
+//Replaces 0x0048CB80: marks one message line for redraw. 0-10 are chat lines,
+//11 the line under the resources, 12 the error line.
+void __cdecl markMessageLine(s32 line) {
+  const s32 height = *messageLineHeight;
+  if (line == 12) {
+    resolution::markDirty(consoleX, 288 + consoleY, consoleX + 639, 295 + height + consoleY);
+  }
+  else if (line >= 11) {
+    resolution::markDirty(416 + resourcesX, 16, 623 + resourcesX, 24 + height);
+  }
+  else {
+    const s32 slot = (line - *chatNextLine + 11) % 11;
+    const s32 top = slot * *chatLineSpacing + 0x70 + consoleY;
+    resolution::markDirty(10 + consoleX, top, 0x276 + consoleX, top + height);
+  }
+}
+
 //-------- Console image --------//
 
 struct ConsoleImage {
@@ -148,6 +184,8 @@ void __declspec(naked) consoleSetup_4C3BB2() {
   }
 }
 const u32 Ret_RelocateBin = 0x004194E6;
+const u32 Func_RelocateBin = 0x004194E0;
+const u32 Ret_MarkErrorLine = 0x004B2322;
 
 //0x004C39F5: call 0x4D11A0 (5 bytes), right after the console image is stored.
 //eax = 0x00597240.
@@ -175,6 +213,44 @@ void __declspec(naked) relocateBin_4194E0() {
     push esi
     mov esi, eax
     jmp Ret_RelocateBin
+  }
+}
+
+//0x004F5912: call 0x4194E0, the popup loader relocating the .bin it just read.
+//eax = the dialog.
+void __declspec(naked) popupLoaded_4F5912() {
+  __asm {
+    pushad
+    push eax
+    call centrePopup
+    add esp, 4
+    popad
+    jmp Func_RelocateBin
+  }
+}
+
+//0x0048CB80: the whole function. eax = the message line.
+void __declspec(naked) markMessageLine_48CB80() {
+  __asm {
+    pushad
+    push eax
+    call markMessageLine
+    add esp, 4
+    popad
+    retn
+  }
+}
+
+//0x004B22DB: the error line's redraw mark, inlined when a cheat is toggled.
+//Runs to 0x004B2322.
+void __declspec(naked) markErrorLine_4B22DB() {
+  __asm {
+    pushad
+    push 12
+    call markMessageLine
+    add esp, 4
+    popad
+    jmp Ret_MarkErrorLine
   }
 }
 
@@ -276,6 +352,23 @@ void injectHudHooks() {
   memoryPatch(0x00481620 + 1, (s32)res_hm1);
   //Command button tooltips (0x00458850) have their own right-edge clamp.
   memoryPatch(0x00458889 + 1, (s32)res_wm1);
+
+  //In-game popups open in the screen centre.
+  callPatch(popupLoaded_4F5912, 0x004F5912);
+
+  //Message lines (0x0048CF60) keep their vanilla places relative to the
+  //console, and the line under the resources follows the resources.
+  memoryPatch(0x0048CF79 + 1, (s32)(0x70 + consoleY));      //chat: mov edi, 0x70
+  memoryPatch(0x0048CF85 + 1, (s32)(0x0A + consoleX));      //mov esi, 0xA (also the error line's left)
+  memoryPatch(0x0048CFCA + 7, (s16)(0x276 + consoleX));     //right edge
+  memoryPatch(0x0048D019 + 2, (s32)(0x127 + consoleY));     //error line: add edx, 0x127
+  memoryPatch(0x0048D01F + 1, (s32)(0x127 + consoleY));     //push 0x127
+  memoryPatch(0x0048D037 + 7, (s16)(0x276 + consoleX));
+  memoryPatch(0x0048D040 + 7, (s16)(0x127 + consoleY));
+  memoryPatch(0x0048D070 + 1, (s32)(0x1A4 + resourcesX));   //top line: mov esi, 0x1A4
+  memoryPatch(0x0048D090 + 7, (s16)(0x26C + resourcesX));
+  jmpPatch(markMessageLine_48CB80, 0x0048CB80);
+  jmpPatch(markErrorLine_4B22DB, 0x004B22DB, 2);
 
   //The command card area rect (496,354)-(639,479), used for the cursor.
   RECT* const commandCardRect = (RECT*)0x005136CC;

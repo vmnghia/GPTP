@@ -18,8 +18,10 @@ draw at 640×480 internally:
 
 The console sits at the bottom centre `[BUILT]` (§5), tested 2026-09-28. The art,
 minimap, command card, portrait, selection info, resources, MENU button and every tooltip
-are drawn and respond in the right places. A 7-minute game ran with no crash. In-game
-dialogs such as the F10 menu still open in the top-left 640×480 area `[VERIFY]`.
+are drawn and respond in the right places. A 7-minute game ran with no crash.
+
+In-game popups, chat lines and the Space Platform starfield `[BUILT]` (§5), tested
+2026-09-28.
 
 Found and fixed during testing:
 - BW's console hit test (0x4D1140) treated everything below the console's bottom line as
@@ -116,9 +118,9 @@ skips the WMode prompt, so use cnc-ddraw instead.
 |---|---|
 | `resolution.cpp` | sizes and buffers; the dirty-cell grid (0x41E0D0, 0x41DE20); the console mask; cursor clip on entering and leaving a game |
 | `resolution_inject.cpp` | display mode; screen-to-surface blit; gameScreenBuffer swap; users of the grid; Storm's dirty blit; mouse clamps; edge scrolling; view rects; game layer size |
-| `resolution_terrain.cpp` | the terrain-cache routines, replaced at their entry points; tile counts; scroll limits; minimap view box; sprite-blitter target |
+| `resolution_terrain.cpp` | the terrain-cache routines, replaced at their entry points; tile counts; scroll limits; minimap view box; sprite-blitter target; the Space Platform starfield |
 | `resolution_fog.cpp` | fog buffer sizes and the fog routines, mostly by rewriting immediates in place |
-| `resolution_hud.cpp` | stage 2: panel placement, the widened console image, minimap input, tooltip clamps, the StatFluf tables (§5) |
+| `resolution_hud.cpp` | stage 2: panel placement, the widened console image, minimap input, tooltip clamps, the StatFluf tables, in-game popups, message lines (§5) |
 | `SCBW/api.cpp` | `refreshScreen()` uses the relocated grid |
 | `hooks/interface/selection.cpp` | ctrl-click "select all of type on screen" uses the view size |
 
@@ -194,34 +196,48 @@ Input and positions fixed to match:
   CenterView and location centring (0x4C6E68, 0x4C6EF7), scroll by percent (0x4844BB),
   and a tile-based centring (0x4BD4B0).
 
+Also moved or fixed:
+- **In-game popups.** Every in-game popup is opened by 0x4F57A0 (53 callers): the F10
+  menu and its sub-menus, objectives, help, save/load, the chat-target dialogs, victory
+  and defeat, Ok boxes. Its `.bin` is moved by half the extra screen size before it is
+  relocated (0x4F5912), so it opens in the screen centre. This only happens in a game.
+- **Message lines.** The message area (0x48CF60) draws 11 chat lines from y = 0x70 at
+  x 10–630, the error/cheat line at y = 0x127, and a line at x 420–620, y 24, under the
+  resources. The first two move with the console and the third with the resources.
+  Their redraw marks (0x48CB80, an inlined copy at 0x4B22DB, and GPTP's
+  `cheat_codes.cpp`) wrote into BW's old 40-column dirty grid. They now use the new one.
+- **Space Platform starfield.** 0x47EBF0 (dirty cells) and 0x47EE20 (full redraw) draw
+  5 parallax layers of stars onto the empty pixels of the view. The stars sit on a
+  648×488 field that wraps (`{u16 x, y; image*}` at `[0x658AA8]`). The originals clip to
+  640×400 and write with a 640-byte pitch (the blitter, 0x47EA60, too). Both are
+  replaced in `resolution_terrain.cpp`, which repeats the field across the view. The
+  repeat every 648 px was not noticeable in testing.
+- **StatLB** is the UMS leaderboard, pinned at 0,0. It needs no change.
+
 `RESOLUTION_DEBUG` in `resolution.h` prints a layout report at game frames 48 and 480: which
 panels were placed, the console image size, the screen limits and every dialog's position.
 
 ## 6. Remaining and future work
 
-State on 2026-09-28: `feature/resolution` at `fd13ec1` builds and plays at 1280×720 with
-the console at the bottom centre. Nothing below has been started.
+State on 2026-09-28: `feature/resolution` builds and plays at 1280×720, with the console
+at the bottom centre and the in-game popups, chat lines and starfield handled (§5).
 
-**Next up: check what stage 2 didn't touch.**
-1. **In-game dialogs** `[VERIFY]`: the F10 menu and its sub-menus, mission objectives,
-   victory/defeat, the save/load dialogs, the chat-target dialog. They are expected to open in the
-   top-left 640×480 area. The likely fix is to offset each one when its `.bin` loads, as
-   for the panels, but by `(res_dx/2, res_dy/2)` so it opens in the screen centre. Watch for
-   code that clamps them to 640×480.
-2. **StatLB** (the transport/queue/selection list inside StatData) `[VERIFY]`: click and
-   tooltip positions.
-3. **Chat and message lines** `[VERIFY]`: 0x48CB80 and 0x4B22E9 turn the message area's
-   y (`[0x64096C] + 0x127` or `+ 0x18`) into dirty rows and clamp it to 479. The messages
-   may be drawn in the vanilla area, over the view, rather than above the moved console.
-4. **Sound range** `[VERIFY]`: 0x413DB0 builds a tile rect of ±320 × ±200 around a point,
-   probably whether a sound is audible on screen. Sounds from the new edge areas may play
-   muffled.
-5. **`GetCursorPos` reads** at 0x42164A, 0x44D8EA, 0x4D12AA and 0x4D1783 bypass the
-   window-procedure mouse shift. Nothing wrong has shown up in testing; confirm, or offset
-   them like the `SetCursorPos` calls.
-6. **Left alone on purpose:** the per-frame layer paint loop (0x41E2F2–0x41E344) still
-   gives each layer a 640×480 rect. Changing it might break the menus, and nothing visibly
-   needs it.
+**Checked and done:** in-game dialogs, StatLB, chat and message lines (§5).
+
+**Left alone on purpose:**
+- **Creep area.** 0x413DB0 builds a tile rect of ±320 × ±200 px around a building. The
+  doc used to guess it was the sound range, but its callers are the creep spread and
+  recede code (0x47D796, 0x47DE57): BW's creep size comes from the 640×400 screen. It is
+  synced game state, so it must stay vanilla.
+- **`GetCursorPos` reads** at 0x42164A, 0x44D8EA, 0x4D12AA and 0x4D1783 bypass the
+  window-procedure mouse shift. Nothing wrong has shown up in testing.
+- **The per-frame layer paint loop** (0x41E2F2–0x41E344) still gives each layer a 640×480
+  rect. Changing it might break the menus, and nothing visibly needs it.
+
+**Wanted with the stretched console:** the user wants the message lines (chat, errors,
+the plugin's own text) at the left edge of the screen, not over the minimap. The draw and
+redraw positions are the `0x48CF60` patches and `markMessageLine()` in
+`resolution_hud.cpp`.
 
 **Then the planned features.**
 - **Multiplayer host resolution** (§1): the host sends its view size as a command on the

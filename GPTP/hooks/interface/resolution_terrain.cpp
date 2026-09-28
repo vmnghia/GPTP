@@ -1179,6 +1179,97 @@ void __declspec(naked) blitterTarget() {
   }
 }
 
+//-------- Space Platform starfield --------//
+
+//On Space Platform maps, parallax stars are drawn onto the empty (index 0)
+//pixels of the view. There are 5 layers, each scrolled by its own offset,
+//of stars placed on a 648 x 488 field that wraps. The originals clip to
+//640 x 400, write with a 640-byte pitch and read BW's 40-column grid; the
+//replacement repeats the field across the whole view, keeping the density.
+
+namespace {
+
+struct StarImage {
+  u16 width;
+  u16 height;
+  u8 pixels[1];
+};
+
+struct Star {
+  u16 x;
+  u16 y;
+  const StarImage* image;
+};
+
+const Star* const* const starList = (const Star* const*)0x00658AA8;  //all layers, in order
+const s32 STAR_FIELD_W = 0x288;
+const s32 STAR_FIELD_H = 0x1E8;
+
+s32 wrapStar(s32 pos, s32 field) {
+  if (pos > field)
+    pos -= field;
+  else if (pos < 0)
+    pos += field;
+  return pos - 8;
+}
+
+//0x0047EA60: copies the star's pixels onto the screen's empty ones.
+void blitStar(const StarImage* image, s32 x, s32 y, bool onlyDirty) {
+  const ResBitmap* screen = (const ResBitmap*)0x006CEFF0;
+  const s32 left = x < 0 ? 0 : x;
+  const s32 top = y < 0 ? 0 : y;
+  const s32 right = x + image->width < res_w ? x + image->width : res_w;
+  const s32 bottom = y + image->height < res_viewH ? y + image->height : res_viewH;
+  if (left >= right || top >= bottom)
+    return;
+  if (onlyDirty && !resolution::isRectDirty(left, top, right, bottom))
+    return;
+
+  for (s32 row = top; row < bottom; ++row) {
+    const u8* src = image->pixels + (row - y) * image->width + (left - x);
+    u8* dst = screen->data + row * screen->width + left;
+    for (s32 col = left; col < right; ++col, ++src, ++dst) {
+      if (*dst == 0)
+        *dst = *src;
+    }
+  }
+}
+
+//The layer loop of both originals: layer j uses the scroll offsets at
+//0x0062846C - 4j (y) and 0x00628484 - 4j (x), 24.8 fixed point, and takes the
+//next [0x00658AD4 - 4j] stars from the list.
+void drawStars(bool onlyDirty) {
+  const Star* star = *starList;
+  if (star == NULL)
+    return;
+
+  for (s32 j = 0; j < 5; ++j) {
+    const s32 scrollY = *(const s32*)(0x0062846C - 4 * j) >> 8;
+    const s32 scrollX = *(const s32*)(0x00628484 - 4 * j) >> 8;
+    const s32 count = *(const s32*)(0x00658AD4 - 4 * j);
+    for (s32 i = 0; i < count; ++i, ++star) {
+      const s32 firstX = wrapStar(star->x + scrollX, STAR_FIELD_W);
+      const s32 firstY = wrapStar(star->y + scrollY, STAR_FIELD_H);
+      for (s32 y = firstY; y < res_viewH; y += STAR_FIELD_H) {
+        for (s32 x = firstX; x < res_w; x += STAR_FIELD_W)
+          blitStar(star->image, x, y, onlyDirty);
+      }
+    }
+  }
+}
+
+} //unnamed namespace
+
+//0x0047EBF0: stars over the dirty cells. No arguments.
+void __cdecl drawStarsDirty_47EBF0() {
+  drawStars(true);
+}
+
+//0x0047EE20: stars over the whole view. No arguments.
+void __cdecl drawStarsAll_47EE20() {
+  drawStars(false);
+}
+
 const u32 blitterSites[16] = {
   0x0040ABC4, 0x0040AD0A, 0x0040AE69, 0x0040AFDB, 0x0040B15B, 0x0040B2D9,
   0x0040B447, 0x0040B59C, 0x0040B6F6, 0x0040B82A, 0x0040B9AF, 0x0040BB34,
@@ -1222,6 +1313,10 @@ void injectTerrainHooks() {
   //Sprite blitters
   for (u32 site : blitterSites)
     callPatch(blitterTarget, site);
+
+  //Space Platform starfield
+  jmpPatch(drawStarsDirty_47EBF0,   0x0047EBF0);
+  jmpPatch(drawStarsAll_47EE20,     0x0047EE20);
 }
 
 } //resolution

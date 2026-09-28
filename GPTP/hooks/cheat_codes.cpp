@@ -159,6 +159,8 @@ Bool32 campaignTypeCheatStrings(char* code_entered, u32* newCheatState) {
 
 ;
 
+const u32 Func_MarkMessageLine = 0x0048CB80;
+
 //This is where the cheats (besides radiofreezerg) do take effect.
 //Another "custom example" is there to show how things can be
 //made to work.
@@ -168,11 +170,9 @@ void cheatActivation(u32 newCheatState, char* playerName) {
 
 	static u8*			u8_multiplayer_mode	= (u8*)			0x0057F0B4;		//0 is single player, 1 is multiplayer according to EUDBDB
 	static u32*			gwGameMode			= (u32*)		0x00596904;		//Determines the game's mode. In-Game, in-menu, battle.net, etc. according to EUDDB
-	static u16*			u16_0064096C		= (u16*)		0x0064096C;
 	static u32*			u32_00640B54		= (u32*)		0x00640B54;
 	static u32*			u32_00641598		= (u32*)		0x00641598;
 	static u8*			u8_00641680			= (u8*)			0x00641680;
-	static u32*			u32_006CF2C8		= (u32*)		0x006CF2C8;
 	static StringTbl*	strTbl_006D1220		= (StringTbl*)  0x006D1220;
 
 	if (*u8_multiplayer_mode == 0) {
@@ -332,32 +332,13 @@ void cheatActivation(u32 newCheatState, char* playerName) {
 			ticksCount = System_GetTickCount();
 			*u32_00640B54 = ticksCount + 7000;
 
-			//skipping a test on negativity because impossible
-			ticksCount = *u16_0064096C + 295;
-
-			if (ticksCount > 479)
-				ticksCount = 479;
-
-			//skipping more impossible stuff since negativity is still impossible
-			ticksCount /= 16;
-
-			ticksCount = (ticksCount * 5) - 85;
-
+			//Marks the error line for redraw. The original inlines 0x0048CB80
+			//with eax = 12; calling it keeps the larger view's hook in play.
 			__asm {
 
 				PUSHAD
-
-				MOV ECX, ticksCount
-				SHL ECX, 3
-				MOV EDX, ECX
-				SHR ECX, 2
-				MOV EAX, 0x01010101
-				MOV EDI, u32_006CF2C8
-				REPE STOSD
-				MOV ECX, EDX
-				AND ECX, 3
-				REPE STOSB
-
+				MOV EAX, 12
+				CALL Func_MarkMessageLine
 				POPAD
 
 			}
