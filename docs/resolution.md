@@ -239,20 +239,27 @@ the plugin's own text) at the left edge of the screen, not over the minimap. The
 redraw positions are the `0x48CF60` patches and `markMessageLine()` in
 `resolution_hud.cpp`.
 
-**Then the planned features.**
-- **Multiplayer host resolution** (§1): the host sends its view size as a command on the
-  first game frame; every client applies it in the same frame; replays record it. Today the
-  size is a compile-time constant (`RESOLUTION_WIDTH/HEIGHT`), so this first needs:
-  - buffers allocated for the largest supported size;
-  - the view size switchable at game start: the dirty grid, terrain cache, fog grids, the
-    patched immediates, the console offsets and the console image all depend on it.
-- **Resolution choice without rebuilding:** read the size from an ini and allow a few
-  presets. The same work as the switch above.
-- **Custom console art:** a full-width console. Put the panels in `panelPlacements`, build
-  the image in `widenConsoleImage()` from a wide `.pcx`, which must use the in-game palette
-  with index 0 transparent. Possibly one per race.
-- **Release build:** the plugin is built as Debug into `GPTP\Debug\`. Turn
-  `RESOLUTION_DEBUG` back on when changing the layout.
+**Then the planned features, in this order** (set by the user on 2026-09-28):
+1. **Resolution choice without rebuilding:** read the size from an ini and allow a few
+   presets. Today the size is a compile-time constant (`RESOLUTION_WIDTH/HEIGHT`), so this
+   needs buffers allocated for the largest supported size. The size must also be set
+   before the patches are applied, because the dirty grid, terrain cache, fog grids, the
+   patched immediates, the console offsets and the console image all depend on it. Item 5
+   builds on this.
+2. **Stretched full-width console:** custom console art. Put the panels in
+   `panelPlacements` and build the image in `widenConsoleImage()` from a wide `.pcx`. The
+   `.pcx` must use the in-game palette, with index 0 transparent. Possibly one per race.
+   Move the message lines to the screen's left edge at the same time (see above).
+3. **Extended button set** `[PROPOSED]`: a larger command card than the vanilla 3×3, using
+   the room the wide console gives. Scope to be defined.
+4. **Extended unit selection** `[PROPOSED]`: more than 12 selected units. Scope to be
+   defined. Unlike the view, selections are sent as network commands and recorded in
+   replays, so this touches synced game state, unlike everything above.
+5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
+   first game frame; every client applies it in the same frame; replays record it. This
+   needs the view size switchable at game start, on top of item 1.
+6. **Release build:** the plugin is built as Debug into `GPTP\Debug\`. Turn
+   `RESOLUTION_DEBUG` back on when changing the layout.
 
 **Working tips for the next session.**
 - Touch `hooks/main/game_hooks.cpp` before building, so the build stamp that prints in game
