@@ -3,7 +3,7 @@
 //Brood War 1.16.1 renders into a fixed 640x480 buffer, and the size is baked
 //into dozens of routines: the terrain cache, the 16x16 dirty-cell grid, fog
 //of war, cursor clipping, screen scrolling and the HUD. This module makes the
-//game run at RESOLUTION_WIDTH x RESOLUTION_HEIGHT instead.
+//game run at the size set in Manifold.ini, next to StarCraft.exe, instead.
 //
 //The patch set is a port of Hellinsect's Resolution Expander v6 (2009), worked
 //out by disassembling its DLL. See docs/resolution.md for how each site was
@@ -12,7 +12,8 @@
 //The view is cosmetic: nothing here feeds game state, so it cannot desync.
 //
 //Needs a DirectDraw wrapper that accepts arbitrary display modes, such as
-//cnc-ddraw. WMode assumes 640x480, so it is not offered while this is on.
+//cnc-ddraw. WMode assumes 640x480, so it is only offered when the ini asks
+//for 640x480, which also leaves every patch here out.
 
 #pragma once
 #include "../../types.h"
@@ -26,14 +27,19 @@
 //Prints a layout report in the message area early in each game.
 #define RESOLUTION_DEBUG 0
 
-//Width must be a multiple of 32 and height a multiple of 16. Anything from
-//640x480 upward; the Expander's own list topped out at 1440x900.
-#define RESOLUTION_WIDTH  1280
-#define RESOLUTION_HEIGHT 720
+//The size written to a new Manifold.ini. Width must be a multiple of 32 and
+//height a multiple of 16; the ini's values are rounded down to fit.
+#define RESOLUTION_DEFAULT_WIDTH  1280
+#define RESOLUTION_DEFAULT_HEIGHT 720
 
-static_assert(RESOLUTION_WIDTH % 32 == 0, "RESOLUTION_WIDTH must be a multiple of 32");
-static_assert(RESOLUTION_HEIGHT % 16 == 0, "RESOLUTION_HEIGHT must be a multiple of 16");
-static_assert(RESOLUTION_WIDTH >= 640 && RESOLUTION_HEIGHT >= 480, "Resolution must be at least 640x480");
+//The largest size accepted. The view must fit on the smallest maps (64 x 64
+//tiles); the Expander's own list topped out at 1440x900.
+#define RESOLUTION_MAX_WIDTH  2048
+#define RESOLUTION_MAX_HEIGHT 1536
+
+static_assert(RESOLUTION_DEFAULT_WIDTH % 32 == 0, "RESOLUTION_DEFAULT_WIDTH must be a multiple of 32");
+static_assert(RESOLUTION_DEFAULT_HEIGHT % 16 == 0, "RESOLUTION_DEFAULT_HEIGHT must be a multiple of 16");
+static_assert(RESOLUTION_DEFAULT_WIDTH >= 640 && RESOLUTION_DEFAULT_HEIGHT >= 480, "Resolution must be at least 640x480");
 
 //Everything below is read from inline asm, so it lives in plain globals.
 //Vanilla values are in the comments.
@@ -106,7 +112,15 @@ extern u8* res_hudMask;
 
 namespace resolution {
 
+//Reads the size from Manifold.ini in StarCraft.exe's folder, writing a default
+//one if there is none. Call once at plugin load, before enabled() is used.
+void loadSettings(const char* exePath);
+
+//Prints the size in use, and any correction made to the ini's values.
+void printSettings();
+
 //Internal to the resolution module (resolution*.cpp).
+extern bool active;
 bool init();
 void markDirty(s32 left, s32 top, s32 right, s32 bottom);
 bool isRectDirty(s32 left, s32 top, s32 right, s32 bottom);
@@ -136,8 +150,9 @@ inline bool inGame() {
   return *(const u8*)0x006CEFB4 != 0;
 }
 
-//True when the larger view is compiled in.
-constexpr bool enabled() { return RESOLUTION_HACK_ENABLED != 0; }
+//True when the larger view is compiled in, asked for by the ini, and its
+//buffers could be allocated.
+inline bool enabled() { return RESOLUTION_HACK_ENABLED != 0 && active; }
 
 //Game view size in pixels (the part above the console): 640x400 in vanilla.
 inline s32 viewWidth()  { return enabled() ? res_w : 640; }

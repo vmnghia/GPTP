@@ -151,9 +151,18 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	if (!checkStarCraftExeVersion(exePath))
 		return FALSE;
 
+	resolution::loadSettings(exePath);
+
 	// WMode assumes 640x480, so it isn't offered with the larger view; use a
-	// DirectDraw wrapper such as cnc-ddraw for windowed play instead.
-	switch (resolution::enabled() ? IDNO
+	// DirectDraw wrapper such as cnc-ddraw for windowed play instead. It isn't
+	// offered next to such a wrapper either: both replace DirectDraw, and the
+	// wrapper does the windowing itself.
+	char ddrawPath[300];
+	strncpy_s(ddrawPath, sizeof(ddrawPath), exePath, strrchr(exePath, '\\') - exePath + 1);
+	strcat_s(ddrawPath, sizeof(ddrawPath), "ddraw.dll");
+	const bool hasDdrawWrapper = GetFileAttributes(ddrawPath) != INVALID_FILE_ATTRIBUTES;
+
+	switch (resolution::enabled() || hasDdrawWrapper ? IDNO
 	        : MessageBox(NULL, "Do you want to use window mode?", "StarCraft: Manifold", MB_YESNOCANCEL)) {
 		case IDYES:
 			{

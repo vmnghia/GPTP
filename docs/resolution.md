@@ -109,10 +109,17 @@ terrain renderer. That's why so many hooks sit on the tile blitters.
 
 ## 4. Trial build `[BUILT]`
 
-The code is in `GPTP/hooks/interface/resolution*.{h,cpp}`. The switch and size are in
-`resolution.h`: `RESOLUTION_HACK_ENABLED`, and `RESOLUTION_WIDTH`/`HEIGHT` (default 1280×720;
-the width must be a multiple of 32 and the height of 16). With the switch on, the plugin
-skips the WMode prompt, so use cnc-ddraw instead.
+The code is in `GPTP/hooks/interface/resolution*.{h,cpp}`. The size is read at plugin load
+from `Manifold.ini` next to `StarCraft.exe` (`[Resolution] Width=`, `Height=`), which is
+written with 1280×720 and a list of presets if missing. Values are rounded down to a
+width that is a multiple of 32 and a height that is a multiple of 16, within
+640×480–2048×1536. The size in use prints in game under the build stamp. 640×480 leaves
+every patch out and plays vanilla. `RESOLUTION_HACK_ENABLED` in `resolution.h` compiles it
+all out.
+
+The WMode question is only asked at 640×480 with no `ddraw.dll` next to the exe. WMode
+assumes 640×480, and it breaks the display when combined with cnc-ddraw, since both
+replace DirectDraw.
 
 | File | Covers |
 |---|---|
@@ -240,12 +247,10 @@ redraw positions are the `0x48CF60` patches and `markMessageLine()` in
 `resolution_hud.cpp`.
 
 **Then the planned features, in this order** (set by the user on 2026-09-28):
-1. **Resolution choice without rebuilding:** read the size from an ini and allow a few
-   presets. Today the size is a compile-time constant (`RESOLUTION_WIDTH/HEIGHT`), so this
-   needs buffers allocated for the largest supported size. The size must also be set
-   before the patches are applied, because the dirty grid, terrain cache, fog grids, the
-   patched immediates, the console offsets and the console image all depend on it. Item 5
-   builds on this.
+1. **Resolution choice without rebuilding** `[BUILT]`, tested 2026-09-28 at 1024×576,
+   1280×720, 1920×1072 and 640×480 (see §4). The size is fixed for the whole run, because
+   the dirty grid, terrain cache, fog grids, patched immediates, console offsets and
+   console image all follow it.
 2. **Stretched full-width console:** custom console art. Put the panels in
    `panelPlacements` and build the image in `widenConsoleImage()` from a wide `.pcx`. The
    `.pcx` must use the in-game palette, with index 0 transparent. Possibly one per race.
@@ -257,7 +262,8 @@ redraw positions are the `0x48CF60` patches and `markMessageLine()` in
    replays, so this touches synced game state, unlike everything above.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
    first game frame; every client applies it in the same frame; replays record it. This
-   needs the view size switchable at game start, on top of item 1.
+   needs the view size switchable at game start. The buffers would be allocated for the
+   largest size, and everything item 1 sets once would be redone per game.
 6. **Release build:** the plugin is built as Debug into `GPTP\Debug\`. Turn
    `RESOLUTION_DEBUG` back on when changing the layout.
 
@@ -265,7 +271,8 @@ redraw positions are the `0x48CF60` patches and `markMessageLine()` in
 - Touch `hooks/main/game_hooks.cpp` before building, so the build stamp that prints in game
   updates. The plugin must be repacked into `SCManifold.exe` before testing.
 - The game runs from `D:\Games\Starcraft 1.16.1\Starcraft.exe`, and cnc-ddraw
-  (`fullscreen=true`, `maintas=true`) goes next to it.
+  (`windowed=true` with `fullscreen=true`, i.e. borderless, and `maintas=false`) goes next
+  to it.
 - To find a leftover 640×480 assumption, grep a full disassembly listing for the
   constants: `0x280`/`0x27F`, `0x1E0`/`0x1DF`, `0x190`, `0x140`/`0xC8`, and `0xA`/`6` in tiles
   (§8).
@@ -283,7 +290,7 @@ redraw positions are the `0x48CF60` patches and `markMessageLine()` in
    - fog-of-war shading across the whole screen, and creep spreading on screen;
    - selecting and commanding units in the new areas (right of x = 640, below y = 480);
    - leaving the game back to the menus.
-4. For an A/B comparison, set `RESOLUTION_HACK_ENABLED` to 0 and rebuild.
+4. For an A/B comparison, set the ini to 640×480.
 
 ## 8. Reproducing the analysis
 

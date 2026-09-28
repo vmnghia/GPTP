@@ -1,4 +1,6 @@
 #include "resolution.h"
+#include <SCBW/api.h>
+#include <cstdio>
 #include <cstring>
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
@@ -42,15 +44,94 @@ u8* allocBuffer(size_t size, size_t leadingGuard = 64) {
   return block ? block + leadingGuard : NULL;
 }
 
+//-------- Settings --------//
+
+const char* const iniName = "Manifold.ini";
+
+const char* const defaultIni =
+  "; StarCraft: Manifold settings.\r\n"
+  "\r\n"
+  "[Resolution]\r\n"
+  "; Size of the game screen in pixels. The 640x480 menus are shown centred.\r\n"
+  "; Width must be a multiple of 32 and height a multiple of 16 (other values\r\n"
+  "; are rounded down), from 640x480 up to 2048x1536.\r\n"
+  "; 640x480 plays at the vanilla size and offers window mode (WMode).\r\n"
+  "; Anything larger needs a DirectDraw wrapper such as cnc-ddraw.\r\n"
+  ";   16:9   1024x576  1280x720  1536x864  1920x1072\r\n"
+  ";   16:10  1280x800  1440x896  1920x1200\r\n"
+  ";   4:3    1024x768\r\n"
+  "Width=1280\r\n"
+  "Height=720\r\n";
+static_assert(RESOLUTION_DEFAULT_WIDTH == 1280 && RESOLUTION_DEFAULT_HEIGHT == 720,
+              "Update defaultIni with the new default size");
+
+s32 settingWidth = RESOLUTION_DEFAULT_WIDTH;
+s32 settingHeight = RESOLUTION_DEFAULT_HEIGHT;
+s32 askedWidth = RESOLUTION_DEFAULT_WIDTH;
+s32 askedHeight = RESOLUTION_DEFAULT_HEIGHT;
+bool iniCreated = false;
+
+s32 fitSize(s32 value, s32 minimum, s32 maximum, s32 multiple) {
+  if (value < minimum) value = minimum;
+  if (value > maximum) value = maximum;
+  return value / multiple * multiple;
+}
+
 } //unnamed namespace
 
 namespace resolution {
 
+bool active = false;
+
+void loadSettings(const char* exePath) {
+  char path[MAX_PATH];
+  strncpy_s(path, exePath, _TRUNCATE);
+  char* slash = strrchr(path, '\\');
+  if (slash == NULL || strlen(iniName) >= sizeof(path) - (slash + 1 - path))
+    return;
+  strcpy_s(slash + 1, sizeof(path) - (slash + 1 - path), iniName);
+
+  if (GetFileAttributes(path) == INVALID_FILE_ATTRIBUTES) {
+    HANDLE file = CreateFile(path, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file != INVALID_HANDLE_VALUE) {
+      DWORD written;
+      WriteFile(file, defaultIni, (DWORD)strlen(defaultIni), &written, NULL);
+      CloseHandle(file);
+      iniCreated = true;
+    }
+  }
+
+  askedWidth = (s32)GetPrivateProfileInt("Resolution", "Width", RESOLUTION_DEFAULT_WIDTH, path);
+  askedHeight = (s32)GetPrivateProfileInt("Resolution", "Height", RESOLUTION_DEFAULT_HEIGHT, path);
+  settingWidth = fitSize(askedWidth, 640, RESOLUTION_MAX_WIDTH, 32);
+  settingHeight = fitSize(askedHeight, 480, RESOLUTION_MAX_HEIGHT, 16);
+  active = settingWidth > 640 || settingHeight > 480;
+}
+
+void printSettings() {
+  char line[160];
+  if (!enabled())
+    sprintf_s(line, "Resolution: 640x480 (vanilla)");
+  else
+    sprintf_s(line, "Resolution: %dx%d", res_w, res_h);
+
+  if (askedWidth != settingWidth || askedHeight != settingHeight) {
+    char note[96];
+    sprintf_s(note, " - %s asked for %dx%d", iniName, askedWidth, askedHeight);
+    strcat_s(line, note);
+  }
+  else if (iniCreated) {
+    strcat_s(line, " - created ");
+    strcat_s(line, iniName);
+  }
+  scbw::printText(line);
+}
+
 //Computes every derived size and allocates the enlarged buffers. Must run
 //before the game creates its screen, i.e. at plugin load.
 bool init() {
-  const s32 w = RESOLUTION_WIDTH;
-  const s32 h = RESOLUTION_HEIGHT;
+  const s32 w = settingWidth;
+  const s32 h = settingHeight;
 
   res_w = w;
   res_h = h;

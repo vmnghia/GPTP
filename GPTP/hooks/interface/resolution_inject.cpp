@@ -764,6 +764,7 @@ void injectResolutionHooks() {
     return;
 
   if (!resolution::init()) {
+    resolution::active = false;
     MessageBox(NULL, "Could not allocate the larger screen buffers; running at 640x480.",
                "StarCraft: Manifold", MB_OK | MB_ICONWARNING);
     return;
