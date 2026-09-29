@@ -1,4 +1,5 @@
 #include "receive_command.h"
+#include "smart_cast.h"
 #include <SCBW/api.h>
 
 //Helper functions declaration
@@ -12,6 +13,7 @@ Bool32 function_0049A410(CUnit* unit, u8* orderId);												//9A410
 bool CanTargetSelf(CUnit* unit, u8 orderId);													//9A480
 void function_0049A500(CUnit* unit,	u8* array_of_data);											//9A500
 void function_0049A8C0(u8* array_of_data,Bool32 bCanBeObstructed);								//9A8C0
+bool takesOrder(CUnit* unit, CUnit* target, u32 order);
 
 } //unnamed namespace
 
@@ -45,6 +47,29 @@ namespace hooks {
 			CUnit* current_unit;
 			u32 current_order = bActionOrder;	//EBX
 
+			//Smart-cast spells go to one unit of the selection (smart_cast.h).
+			const bool smartCasting = smartCast::isSmartCastOrder(bActionOrder);
+			CUnit* smartCaster = NULL;
+
+			if(smartCasting) {
+
+				CUnit* selection[SELECTION_ARRAY_LENGTH];
+				CUnit* candidates[SELECTION_ARRAY_LENGTH];
+				u32 selectionCount = 0, candidateCount = 0;
+
+				*selectionIndexStart = 0;
+				for(CUnit* unit = getActivePlayerNextSelection(); unit != NULL; unit = getActivePlayerNextSelection()) {
+					if(selectionCount < SELECTION_ARRAY_LENGTH)
+						selection[selectionCount++] = unit;
+					if(candidateCount < SELECTION_ARRAY_LENGTH && takesOrder(unit, unitParam, bActionOrder))
+						candidates[candidateCount++] = unit;
+				}
+
+				smartCaster = smartCast::pickCaster(*ACTIVE_PLAYER_ID, bActionOrder, candidates, candidateCount,
+				                                    selection, selectionCount);
+
+			}
+
 			*selectionIndexStart = 0;
 			current_unit = getActivePlayerNextSelection();
 
@@ -55,6 +80,9 @@ namespace hooks {
 				bool jump_to_9AD7E = false;
 				bool bOrderAllowed;
 
+				if(smartCasting && current_unit != smartCaster)
+					bOrderAllowed = false;
+				else
 				if(orders_dat::TechUsed[current_order] != TechId::None)
 					bOrderAllowed = (current_unit->canUseTech(orders_dat::TechUsed[current_order],*ACTIVE_NATION_ID) == 1);
 				else
@@ -286,6 +314,30 @@ namespace hooks {
 //-------- Helper function definitions. Do NOT modify! --------//
 
 namespace {
+
+//Whether the loop in receive_command would give this unit the order: the same
+//tests, on a copy of the order since function_0049A410 may change it.
+bool takesOrder(CUnit* unit, CUnit* target, u32 order) {
+
+	bool allowed;
+
+	if(orders_dat::TechUsed[order] != TechId::None)
+		allowed = (unit->canUseTech(orders_dat::TechUsed[order],*ACTIVE_NATION_ID) == 1);
+	else
+		allowed = (OrderAllowed(unit,order,*ACTIVE_NATION_ID) == 1);
+
+	if(!allowed || (unit == target && !CanTargetSelf(unit,order)))
+		return false;
+
+	u8 rightClickOrder = (u8)order;
+	if(function_0049A410(unit,&rightClickOrder) == 0)
+		return false;
+
+	return unit->mainOrderId != OrderId::NukeLaunch || order == OrderId::Die;
+
+}
+
+;
 
 const u32 Func_OrderAllowed = 0x0046DC20;
 Bool32 OrderAllowed(CUnit* unit, u16 orderId, u32 nationID) {

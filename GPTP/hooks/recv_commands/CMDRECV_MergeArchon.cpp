@@ -1,4 +1,5 @@
 #include "CMDRECV_MergeArchon.h"
+#include "smart_cast.h"
 #include <SCBW/api.h>
 
 //Helper functions declaration
@@ -43,6 +44,10 @@ void CMDRECV_MergeDarkArchon() {
 			current_unit = getActivePlayerNextSelection();
 
 		}
+
+		//Smart-cast: only the closest pair merges (smart_cast.h).
+		if(smartCast::isSmartCastOrder(OrderId::WarpingDarkArchon))
+			templars_stored_count = smartCast::keepClosestPair(templars_stored, templars_stored_count, OrderId::WarpingDarkArchon);
 
 		templars_stored_iterator = &templars_stored[1];
 		templars_stored_count--;
@@ -171,6 +176,10 @@ void CMDRECV_MergeArchon() {
 			current_unit = getActivePlayerNextSelection();
 
 		}
+
+		//Smart-cast: only the closest pair merges (smart_cast.h).
+		if(smartCast::isSmartCastOrder(OrderId::WarpingArchon))
+			templars_stored_count = smartCast::keepClosestPair(templars_stored, templars_stored_count, OrderId::WarpingArchon);
 
 		templars_stored_iterator = &templars_stored[1];
 		templars_stored_count--;

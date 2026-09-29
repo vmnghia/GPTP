@@ -322,6 +322,7 @@
     <ClCompile Include="hooks\recv_commands\CMDRECV_Stop_inject.cpp" />
     <ClCompile Include="hooks\recv_commands\receive_command.cpp" />
     <ClCompile Include="hooks\recv_commands\receive_command_inject.cpp" />
+    <ClCompile Include="hooks\recv_commands\smart_cast.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_Selection.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_Selection_inject.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_ResearchUpgrade.cpp" />
@@ -495,6 +496,7 @@
     <ClInclude Include="hooks\recv_commands\CMDRECV_SiegeTank.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_Stop.h" />
     <ClInclude Include="hooks\recv_commands\receive_command.h" />
+    <ClInclude Include="hooks\recv_commands\smart_cast.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_Selection.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_ResearchUpgrade.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_Stimpack.h" />

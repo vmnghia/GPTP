@@ -224,12 +224,14 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	hooks::injectResolutionHooks();
 	hooks::injectButtonSetHooks();
 	hooks::injectSelectMod();
+	//Needed by smart-casting (hooks/recv_commands/smart_cast.h): the caster is
+	//picked in receive_command, and archon merges pair in CMDRECV_MergeArchon.
+	hooks::injectRecvCmdHook();
+	hooks::injectCMDRECV_MergeArchonHooks();
 	hooks::injectSelectLarvaHooks();
 
 	//======== DISABLED HOOKS ========//
 	//Written but not in use. To turn one on, move it up into the enabled list.
-	//OFF hooks::injectRecvCmdHook();
-	//OFF hooks::injectCMDRECV_MergeArchonHooks();
 	//OFF hooks::injectInfestationHooks();
 	//OFF hooks::injectSiegeTransformHooks();
 	//OFF hooks::injectMergeUnitsHooks();

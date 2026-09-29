@@ -6,6 +6,7 @@
 #include <SCBW/UnitFinder.h>
 #include <SCBW/api.h>
 #include "../interface/resolution.h"
+#include "../recv_commands/smart_cast.h"
 
 #include "../psi_field.h"
 
@@ -412,6 +413,7 @@ bool nextFrame()
 
 bool gameOn()
 {
+    smartCast::reset();
     return true;
 }
 
