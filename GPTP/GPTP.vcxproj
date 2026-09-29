@@ -82,6 +82,10 @@
       <TargetMachine>MachineX86</TargetMachine>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
+    <PostBuildEvent>
+      <Command>if exist "$(SolutionDir)..\..\SCManifold\" copy /y "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)..\..\SCManifold\"</Command>
+      <Message>Copy the plugin next to SCManifold.exe</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -113,6 +117,10 @@
       <TargetMachine>MachineX86</TargetMachine>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
+    <PostBuildEvent>
+      <Command>if exist "$(SolutionDir)..\..\SCManifold\" copy /y "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)..\..\SCManifold\"</Command>
+      <Message>Copy the plugin next to SCManifold.exe</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="configure.cpp" />
