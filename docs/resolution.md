@@ -28,6 +28,11 @@ Found and fixed during testing:
 - BW's console hit test (0x4D1140) treated everything below the console's bottom line as
   console, across the full width. Widening the console image (§5) fixed this at the
   source.
+- **Creep edges** (fixed 2026-09-29). They are tile overlays from the tileset's GRP,
+  drawn by 0x40AAE0 into the terrain cache. In its runs, `0x40 + n` repeats one byte n
+  times. The port's loop re-read the byte on every pass, garbling every edge that uses such
+  runs. On Ice's frame 12 it hit a zero-length run and read off the end of memory, which
+  crashed Zerg campaign mission 1 while its starting creep was set.
 - The bottom scroll limit. Vanilla stops the map's bottom edge at screen y = 376, with the
   104 rows below behind the console. The trial showed that as a black strip, so it scrolled
   the map's bottom to the screen's bottom instead. With the console at the bottom again,
@@ -252,30 +257,39 @@ Also moved or fixed:
 
 Following KYSXD's "[Plugin] Extended buttonset" tutorial (GPTP-For-VS2008 wiki), with
 fixes:
-- **The cards.** `rez\statbtn[tpz].bin` have 15 buttons as controls 1–15, left to right and
-  top to bottom, plus a spare control 16. The user made `statbtnt.bin` (root at (453, 333),
-  189×148, a 36 px pitch). `statbtnp.bin` is a copy (vanilla Protoss and Terran cards are
-  identical), and `statbtnz.bin` is shifted by (−5, +3), as vanilla Zerg's buttons are.
-  The files are in `SCManifold\to-repack\rez\`, outside the repo.
+- **The cards.** `rez\statbtn[tpz].bin` have 15 buttons (36×34) as controls 1–15, left to
+  right and top to bottom, touching each other (the user's choice, "dense"). The root is
+  (444, 366), 196×114, flush with the bottom-right corner. The first button sits where the
+  race's vanilla card has it: (9, 4) for Terran and Protoss, (4, 7) for Zerg. The files
+  and their generator `make_statbtn_5x3.py` are in `SCManifold\to-repack\`, outside the
+  repo. The user's first 5×3 card (36 px pitch plus a spare control 16) is kept there as
+  `statbtnt_36px_backup.bin`, and is the generator's template.
 - **Positions.** A button's position picks its control directly. Positions are not
   remapped from 3×3, so a vanilla set flows 1–5 on the top row.
 - **Replays** use `rez\statbtnn.bin`: the vanilla 3×3 with the progress bar as control 10.
   So `statbtn_BIN_CustomCtrlID` (`buttonsets.cpp`) keeps the vanilla interact table and a
-  limit of 9 there, and uses a 16-entry table and a limit of 16 otherwise.
+  limit of 9 there, and uses a 15-entry table and a limit of 15 otherwise.
   `registerUserDialogAction` (0x418100) does not bounds-check the table, so it must cover
   every control id.
 - **Limits.** The draw loop's `index > 9` in `updateButtonSet_Sub4591D0`, and the hotkey
   scan's `cmp ax, 9` (0x4588C4, imm16 at +2). The tutorial's patch bytes there
   (`66 3D F8 0C`) make it `cmp ax, 0xCF8`, which works only by accident. Hotkeys come from
   the first character of each button's enabled string, as in vanilla.
-- **Layout** (`resolution_hud.cpp`). The card is 189 px wide, more than the 144 px right of
-  the portrait. So the portrait and MENU move 45 px left, and the card is kept on screen
-  (2 px left of its `.bin` position). The gap left by the portrait is filled with the
-  start of the card frame's art (the user's choice).
+- **The frame** (`resolution_hud.cpp`, `cardSourceColumn`/`cardSourceRow`). It is rebuilt
+  from the vanilla 3×3 frame, whose cells are 46 × 40 apart: its left border, each cell's
+  36 px of screen (the middle cell three times) and its right border, then each row's
+  34 px of screen without the row gaps. Everything above the buttons in those columns
+  (the frame's top, Terran's red-light modules) moves down by the 12 rows removed. Earlier
+  tries, dropped: copying the start of the frame into the gap left by the portrait (left a
+  dark cell by button 1), and duplicating the middle cell column at vanilla spacing (the
+  user wanted it denser).
+- **Layout.** The card is 52 px wider than the vanilla one, so the portrait and MENU move
+  52 px left and end where the card starts.
 - **Decorative pieces.** The StatFluf tables are replaced (pointer table 0x5153E8) by
   plugin-built ones. Each vanilla piece is mapped like the art, and the card's rect is cut
   out of it, splitting it into up to four pieces. A piece over the buttons repainted the
-  art over them, which made buttons 1 and 2 flicker in the user's earlier attempt.
+  art over them, which made buttons 1 and 2 flicker in the user's earlier attempt. Pieces
+  reaching into the card's columns are extended down by the frame's 12-row drop.
 
 `RESOLUTION_DEBUG` in `resolution.h` prints a layout report at game frames 48 and 480: which
 panels were placed, the console image size, the screen limits and every dialog's position.
