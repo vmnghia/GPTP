@@ -346,7 +346,7 @@ void __declspec(naked) drawTileOverlay_40AAE0() {
     test dl, dl
     js SKIP
     test dl, 0x40
-    jne COPY2
+    jne REPEAT
     sub ebx, edx
   COPY1:
     mov al, [ecx]
@@ -358,16 +358,16 @@ void __declspec(naked) drawTileOverlay_40AAE0() {
     test ebx, ebx
     jg RUN
     jmp ROWDONE
-  COPY2:
+  REPEAT:                    //one byte, repeated
     and dl, 0xBF
     sub ebx, edx
-  COPY2LOOP:
     mov al, [ecx]
     inc ecx
+  REPEATLOOP:
     mov [edi], al
     dec edx
     lea edi, [edi+1]
-    jne COPY2LOOP
+    jne REPEATLOOP
     test ebx, ebx
     jg RUN
     jmp ROWDONE
