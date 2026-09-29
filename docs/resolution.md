@@ -338,8 +338,9 @@ starfield handled (§5). Features 1 and 2 below are done.
 
 1. Put cnc-ddraw's `ddraw.dll` and `ddraw.ini` next to the exe that runs the mod. Either
    fullscreen-upscaled or windowed works, since cnc-ddraw accepts whatever mode the game sets.
-2. Use the `GPTP.qdp` built on `feature/resolution`. On this branch it lands in
-   `GPTP\Debug\`, not the mod folder.
+2. Use the `GPTP.qdp` built on `feature/resolution`. It lands in `GPTP\Debug\`, and a
+   post-build step copies it next to `SCManifold.exe` (`..\..\SCManifold\` from the solution)
+   when that folder exists.
 3. One run should answer most questions:
    - does it reach the menus (640×480 centred, black around them);
    - in a skirmish, does terrain fill the whole screen, with the full-width console at the bottom;

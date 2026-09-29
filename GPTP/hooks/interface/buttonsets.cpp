@@ -207,10 +207,10 @@ BUTTON_SET* getCustomButtonSet(BUTTON_SET* base_buttonset) {
 
 //The command card of each race (rez\statbtn[tpz].bin) is extended to 5x3:
 //buttons are controls 1-15, left to right and top to bottom, and a button's
-//position picks its control directly. Control 16 is a spare slot. Replays use
-//the vanilla rez\statbtnn.bin, with 9 buttons and the progress bar as
-//control 10. statbtn_BIN_CustomCtrlID sets this when a card is loaded.
-const u16 EXTENDED_BUTTON_CONTROLS = 16;
+//position picks its control directly. Replays use the vanilla
+//rez\statbtnn.bin, with 9 buttons and the progress bar as control 10.
+//statbtn_BIN_CustomCtrlID sets this when a card is loaded.
+const u16 EXTENDED_BUTTON_CONTROLS = 15;
 const u16 VANILLA_BUTTON_CONTROLS = 9;
 static u16 buttonControls = VANILLA_BUTTON_CONTROLS;
 
@@ -879,8 +879,7 @@ void updateButtonSet_Sub4591D0() {
 	{
 		0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0,
 		0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0,
-		0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0,
-		0x004598D0
+		0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0, 0x004598D0
 	};
 
 	void statbtn_BIN_CustomCtrlID(BinDlg* dialog) {

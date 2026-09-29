@@ -44,30 +44,60 @@ s32 resourcesX;
 s32 noOffset = 0;
 
 //Where each race's art is split, and the strip that fills the gap: a plain
-//stretch of the selection box's top edge. Indexed like the StatFluf tables
+//stretch of the selection box's top edge. Also where the first button sits in
+//the race's vanilla command card (496,354). Indexed like the StatFluf tables
 //(consoleRace()).
 struct ConsoleStretch {
   s32 split;       //first column of the right part; also the strip's start
   s32 stripWidth;  //the widest strip used
-  s32 cardFrame;   //first column of the command card's frame
+  s32 buttonX;     //first button's offset in the vanilla card
+  s32 buttonY;
 };
 const ConsoleStretch consoleStretch[4] = {
-  { 270, 40, 466 },  //Zerg
-  { 270, 40, 466 },  //Terran
-  { 210, 40, 488 },  //Protoss: its box has gold bumps further right
-  { 270, 40, 466 },  //replays (nconsole.pcx)
+  { 270, 40, 4, 7 },  //Zerg
+  { 270, 40, 9, 4 },  //Terran
+  { 210, 40, 9, 4 },  //Protoss: its box has gold bumps further right
+  { 270, 40, 9, 4 },  //replays (nconsole.pcx), which keep the vanilla card
 };
 
-//The races' command cards (rez\statbtn[tpz].bin) are 5x3, wider than the
-//vanilla 3x3: this is their root rect in vanilla coordinates. The portrait and
-//the MENU button move left to make room, and the start of the card frame's
-//art is copied into the gap they leave. The card is kept on screen (it would
-//end 2 px past the right edge). Replays keep the vanilla card (statbtnn.bin)
-//and layout.
-const s32 CARD_LEFT = 453, CARD_TOP = 333, CARD_WIDTH = 189, CARD_HEIGHT = 148;
-const s32 CARD_OVERHANG = CARD_LEFT + CARD_WIDTH > 640 ? CARD_LEFT + CARD_WIDTH - 640 : 0;
-const s32 VANILLA_CARD_LEFT = 496;  //also where the portrait panel ends
-const s32 PORTRAIT_SHIFT = VANILLA_CARD_LEFT - (CARD_LEFT - CARD_OVERHANG);
+//The races' command cards (rez\statbtn[tpz].bin) are 5x3 and dense: 15
+//buttons of 36x34 touching each other. The frame is rebuilt from the vanilla
+//3x3 one (cells 46 x 40 apart): its left border, each cell's 36 px of screen
+//(the middle cell three times) and its right border, then each row's 34 px of
+//screen without the gaps between rows. That makes it 196x114, flush with the
+//bottom-right corner, and moves the portrait and the MENU button left by the
+//difference. Replays keep the vanilla card (statbtnn.bin) and layout.
+const s32 VANILLA_CARD_LEFT = 496, VANILLA_CARD_TOP = 354;
+const s32 BUTTON_WIDTH = 36, BUTTON_HEIGHT = 34;
+const s32 CARD_WIDTH = 144 + 2 * BUTTON_WIDTH - 2 * (46 - BUTTON_WIDTH);
+const s32 CARD_HEIGHT = 126 - 2 * (40 - BUTTON_HEIGHT);
+const s32 CARD_LEFT = 640 - CARD_WIDTH, CARD_TOP = 480 - CARD_HEIGHT;
+const s32 CARD_DROP = CARD_TOP - VANILLA_CARD_TOP;  //how much lower the frame's top sits
+const s32 PORTRAIT_SHIFT = VANILLA_CARD_LEFT - CARD_LEFT;
+
+//The vanilla art column shown at column i of the dense card.
+s32 cardSourceColumn(s32 i, const ConsoleStretch& stretch) {
+  static const s32 sourceCell[5] = { 0, 1, 1, 1, 2 };
+  if (i < stretch.buttonX)
+    return VANILLA_CARD_LEFT + i;
+  i -= stretch.buttonX;
+  if (i < 5 * BUTTON_WIDTH)
+    return VANILLA_CARD_LEFT + stretch.buttonX + 46 * sourceCell[i / BUTTON_WIDTH] + i % BUTTON_WIDTH;
+  return VANILLA_CARD_LEFT + stretch.buttonX + 2 * 46 + BUTTON_WIDTH + (i - 5 * BUTTON_WIDTH);
+}
+
+//The vanilla art row shown at row y in the card's columns, or -1 for none.
+s32 cardSourceRow(s32 y, const ConsoleStretch& stretch) {
+  y -= CARD_DROP;
+  const s32 firstRow = VANILLA_CARD_TOP + stretch.buttonY;
+  if (y < firstRow)
+    return y;  //-1 and up above the frame: transparent
+  y -= firstRow;
+  if (y < 3 * BUTTON_HEIGHT)
+    return firstRow + 40 * (y / BUTTON_HEIGHT) + y % BUTTON_HEIGHT;
+  return firstRow + 2 * 40 + BUTTON_HEIGHT + (y - 3 * BUTTON_HEIGHT);
+}
+
 //The console art in use: 0 Zerg, 1 Terran, 2 Protoss, 3 replays, as chosen by
 //the console loader (0x004C3950) and the StatFluf setup (0x004F4DC0).
 u32 consoleRace() {
@@ -96,14 +126,18 @@ s32 consolePortraitX;  //the portrait and the MENU button
 s32 consoleCardX;      //the command card
 s32 statDataGrowth;    //how much wider the selection box is
 
-//Where a column of the vanilla art goes on the screen.
+//Where a column of the vanilla art goes on the screen. Columns of the dense
+//card are rearranged (cardSourceColumn); this gives their proportional place,
+//which is enough for the decorative pieces' rects.
 s32 mapConsoleX(s32 x, u32 race) {
   const ConsoleStretch& stretch = consoleStretch[race];
   if (x < stretch.split)
     return consoleLeftX + x;
-  if (x < stretch.cardFrame)
+  if (!usesExtendedCard(race))
+    return consoleRightX + x;
+  if (x < VANILLA_CARD_LEFT)
     return consoleRightX - portraitShift(race) + x;
-  return consoleRightX + x;
+  return consoleRightX + CARD_LEFT + (x - VANILLA_CARD_LEFT) * CARD_WIDTH / 144;
 }
 
 //At console setup: the layout for the console art and card in use.
@@ -111,7 +145,7 @@ void setConsoleLayout() {
   layoutRace = consoleRace();
   const s32 shift = portraitShift(layoutRace);
   consolePortraitX = consoleRightX - shift;
-  consoleCardX = usesExtendedCard(layoutRace) ? consoleRightX - CARD_OVERHANG : consoleRightX;
+  consoleCardX = consoleRightX;
   statDataGrowth = consoleGap - shift;
 
   //The command card's rect (0x005136CC, vanilla (496,354)-(639,479)), used for
@@ -159,16 +193,21 @@ void buildFlufTable(u32 race) {
   FlufEntry* out = flufTables[race];
   const FlufEntry* const end = out + MAX_FLUF_PIECES;
   const bool cutCard = usesExtendedCard(race);
-  const s32 cardLeft = consoleRightX - CARD_OVERHANG + CARD_LEFT;
+  const s32 cardLeft = consoleRightX + CARD_LEFT;
   const s32 cardTop = consoleY + CARD_TOP;
   const s32 cardRight = cardLeft + CARD_WIDTH;
   const s32 cardBottom = cardTop + CARD_HEIGHT;
 
   for (const FlufEntry* piece = (const FlufEntry*)flufVanillaTables[race]; piece->x != 0xFFFF; ++piece) {
     const s32 left = mapConsoleX(piece->x, race);
-    const s32 right = mapConsoleX(piece->x + piece->width - 1, race) + 1;
+    const s32 lastX = piece->x + piece->width - 1;
+    const s32 right = cutCard && lastX >= VANILLA_CARD_LEFT
+                        ? mapConsoleX(lastX + 1, race)  //proportional: map the end itself
+                        : mapConsoleX(lastX, race) + 1;
     const s32 top = piece->y + consoleY;
-    const s32 bottom = top + piece->height;
+    s32 bottom = top + piece->height;
+    if (cutCard && piece->x + piece->width > VANILLA_CARD_LEFT)
+      bottom += CARD_DROP;
     if (!cutCard || right <= cardLeft || left >= cardRight || bottom <= cardTop || top >= cardBottom) {
       addFluf(out, end, left, top, right, bottom);
       continue;
@@ -306,7 +345,8 @@ void copyColumn(u8* wide, const u8* art, s32 fromX, s32 toX) {
 //After the console image loads (0x004C3950): rebuild it at the full screen
 //size. The vanilla art left of the split goes to the bottom-left corner, the
 //rest to the bottom-right one (the portrait part shifted left for the wider
-//command card, per mapConsoleX()), and the gap is filled with pairs of the strip,
+//command card, whose frame is rebuilt dense, per cardSourceColumn/Row()), and
+//the gap is filled with pairs of the strip,
 //each one copy followed by a mirrored copy. The pairs are narrowed slightly
 //so a whole number of them fits: every pair then ends on the split column,
 //where the right part continues, and no copy is cut off at any width. Storm's
@@ -324,11 +364,19 @@ void __cdecl widenConsoleImage() {
   const ConsoleStretch& stretch = consoleStretch[layoutRace];
   const s32 shift = portraitShift(layoutRace);
   const s32 gap = consoleRightX - consoleLeftX - shift;
-  for (s32 x = 0; x < 640; ++x)
+  const bool denseCard = usesExtendedCard(layoutRace);
+  for (s32 x = 0; x < (denseCard ? VANILLA_CARD_LEFT : 640); ++x)
     copyColumn(wide, art, x, mapConsoleX(x, layoutRace));
-  //The gap the portrait leaves before the card frame: the frame's start again.
-  for (s32 i = 0; i < shift; ++i)
-    copyColumn(wide, art, stretch.cardFrame + i, consoleRightX + stretch.cardFrame - shift + i);
+  if (denseCard) {
+    for (s32 i = 0; i < CARD_WIDTH; ++i) {
+      const s32 fromX = cardSourceColumn(i, stretch);
+      u8* column = wide + consoleY * res_w + consoleRightX + CARD_LEFT + i;
+      for (s32 y = 0; y < 480; ++y) {
+        const s32 fromY = cardSourceRow(y, stretch);
+        column[y * res_w] = fromY < 0 ? 0 : art[fromY * 640 + fromX];
+      }
+    }
+  }
 
   if (gap > 0) {
     const s32 halves = gap / 2;  //gap is even: widths are multiples of 32
