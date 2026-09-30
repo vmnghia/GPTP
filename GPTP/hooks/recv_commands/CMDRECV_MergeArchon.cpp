@@ -1,6 +1,7 @@
 #include "CMDRECV_MergeArchon.h"
 #include "smart_cast.h"
 #include <SCBW/api.h>
+#include <SCBW/selection_ext.h>
 
 //Helper functions declaration
 
@@ -18,7 +19,7 @@ void CMDRECV_MergeDarkArchon() {
 	CUnit* current_unit;
 	CUnit* templar_stored;
 	CUnit* templar_merge_partner;
-	CUnit* templars_stored[SELECTION_ARRAY_LENGTH];
+	CUnit* templars_stored[selext::SEL_MAX];
 	CUnit** templars_stored_iterator;
 	int templars_stored_count;
 
@@ -29,14 +30,14 @@ void CMDRECV_MergeDarkArchon() {
 		current_unit->canUseTech(TechId::DarkArchonMeld,*ACTIVE_NATION_ID) == 1) 
 	{
 
-		for(int i = 0;i < SELECTION_ARRAY_LENGTH;i++)
+		for(u32 i = 0;i < selext::SEL_MAX;i++)
 			templars_stored[i] = NULL;
 
 		templars_stored_count = 0;
 
 		while(current_unit != NULL) {
 
-			if(current_unit->id == UnitId::ProtossDarkTemplar) {
+			if(current_unit->id == UnitId::ProtossDarkTemplar && templars_stored_count < (int)selext::SEL_MAX) {
 				templars_stored[templars_stored_count] = current_unit;
 				templars_stored_count++;
 			}
@@ -150,7 +151,7 @@ void CMDRECV_MergeArchon() {
 	CUnit* current_unit;
 	CUnit* templar_stored;
 	CUnit* templar_merge_partner;
-	CUnit* templars_stored[SELECTION_ARRAY_LENGTH];
+	CUnit* templars_stored[selext::SEL_MAX];
 	CUnit** templars_stored_iterator;
 	int templars_stored_count;
 
@@ -161,14 +162,14 @@ void CMDRECV_MergeArchon() {
 		current_unit->canUseTech(TechId::ArchonWarp,*ACTIVE_NATION_ID) == 1) 
 	{
 
-		for(int i = 0;i < SELECTION_ARRAY_LENGTH;i++)
+		for(u32 i = 0;i < selext::SEL_MAX;i++)
 			templars_stored[i] = NULL;
 
 		templars_stored_count = 0;
 
 		while(current_unit != NULL) {
 
-			if(current_unit->id == UnitId::ProtossHighTemplar) {
+			if(current_unit->id == UnitId::ProtossHighTemplar && templars_stored_count < (int)selext::SEL_MAX) {
 				templars_stored[templars_stored_count] = current_unit;
 				templars_stored_count++;
 			}

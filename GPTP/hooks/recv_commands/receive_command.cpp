@@ -1,6 +1,7 @@
 #include "receive_command.h"
 #include "smart_cast.h"
 #include <SCBW/api.h>
+#include <SCBW/selection_ext.h>
 
 //Helper functions declaration
 
@@ -53,15 +54,15 @@ namespace hooks {
 
 			if(smartCasting) {
 
-				CUnit* selection[SELECTION_ARRAY_LENGTH];
-				CUnit* candidates[SELECTION_ARRAY_LENGTH];
+				static CUnit* selection[selext::SEL_MAX];
+				static CUnit* candidates[selext::SEL_MAX];
 				u32 selectionCount = 0, candidateCount = 0;
 
 				*selectionIndexStart = 0;
 				for(CUnit* unit = getActivePlayerNextSelection(); unit != NULL; unit = getActivePlayerNextSelection()) {
-					if(selectionCount < SELECTION_ARRAY_LENGTH)
+					if(selectionCount < selext::SEL_MAX)
 						selection[selectionCount++] = unit;
-					if(candidateCount < SELECTION_ARRAY_LENGTH && takesOrder(unit, unitParam, bActionOrder))
+					if(candidateCount < selext::SEL_MAX && takesOrder(unit, unitParam, bActionOrder))
 						candidates[candidateCount++] = unit;
 				}
 

@@ -1,5 +1,6 @@
 #include "smart_cast.h"
 #include <SCBW/api.h>
+#include <SCBW/selection_ext.h>
 
 namespace {
 
@@ -53,7 +54,7 @@ struct UnitRef {
   u16 index;
   u8 uniqueness;
 };
-UnitRef roundSelection[PLAYER_COUNT][SELECTION_ARRAY_LENGTH];
+UnitRef roundSelection[PLAYER_COUNT][selext::SEL_MAX];
 u32 roundSelectionCount[PLAYER_COUNT];
 
 UnitRef refOf(const CUnit* unit) {
@@ -81,9 +82,9 @@ void followSelection(u32 playerId, CUnit* const* selection, u32 count) {
   }
   if (grew)
     ++currentRound[playerId];
-  for (u32 i = 0; i < count && i < SELECTION_ARRAY_LENGTH; ++i)
+  for (u32 i = 0; i < count && i < selext::SEL_MAX; ++i)
     roundSelection[playerId][i] = refOf(selection[i]);
-  roundSelectionCount[playerId] = count < SELECTION_ARRAY_LENGTH ? count : SELECTION_ARRAY_LENGTH;
+  roundSelectionCount[playerId] = count < selext::SEL_MAX ? count : selext::SEL_MAX;
 }
 
 s32 spellCost(u32 orderId) {
