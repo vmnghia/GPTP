@@ -5,6 +5,11 @@ supply, all Zerglings). Control groups (Ctrl+0–9) grow to 400 too. Old save ga
 longer load, which the user accepted. Single-player comes first, multiplayer later. The
 selection panel gets pages. Particular spells use SC2-style smart-casting.
 
+> **Superseded in part (2026-09-30):** the design is in
+> `docs/superpowers/specs/2026-09-30-extended-selection-design.md`, with every address
+> re-checked in the exe. Where this survey and the spec disagree (the writer list, packets,
+> circles, 0x4BF8C0), the spec wins. The limit is not settled; 400 is the working target.
+
 Tags as in `resolution.md`: `[BUILT]` works today, `[PROPOSED]` planned, `[VERIFY]` inferred
 but not confirmed. Everything below comes from a survey of StarCraft.exe 1.16.1 on
 2026-09-29. Nothing is built yet.
