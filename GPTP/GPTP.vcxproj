@@ -330,6 +330,7 @@
     <ClCompile Include="hooks\selection_ext\sel_synced.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_local.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_send.cpp" />
+    <ClCompile Include="hooks\selection_ext\sel_save.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_Selection.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_Selection_inject.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_ResearchUpgrade.cpp" />
@@ -510,6 +511,7 @@
     <ClInclude Include="hooks\selection_ext\sel_synced.h" />
     <ClInclude Include="hooks\selection_ext\sel_local.h" />
     <ClInclude Include="hooks\selection_ext\sel_send.h" />
+    <ClInclude Include="hooks\selection_ext\sel_save.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_Selection.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_ResearchUpgrade.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_Stimpack.h" />
