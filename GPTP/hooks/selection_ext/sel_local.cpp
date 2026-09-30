@@ -45,6 +45,10 @@ void** const HEALTH_BAR_POOL_TAIL	= (void**)	0x0057EB6C;
 //Circles: the local selection, and every other player's dashed ally circles.
 CImage extraCircles[SEL_MAX * PLAYERS];
 CImage extraHealthBars[SEL_MAX];
+//Each health-bar image draws from its own 14-byte GRP frame (image+0x2C),
+//which 0x4D6010 fills per unit; vanilla's 12 are at 0x51F200.
+const u32 HEALTH_BAR_FRAME_BYTES = 14;
+u8 extraHealthBarFrames[SEL_MAX][HEALTH_BAR_FRAME_BYTES];
 
 } //unnamed namespace
 
@@ -63,6 +67,14 @@ void growImagePools() {
 	//A new game: every image of the last one is gone, so these are all free.
 	memset(extraCircles, 0, sizeof(extraCircles));
 	memset(extraHealthBars, 0, sizeof(extraHealthBars));
+	memset(extraHealthBarFrames, 0, sizeof(extraHealthBarFrames));
+	//As the pool init does for vanilla's 12 (0x4D68C0), then each gets its own frame.
+	for (u32 i = 0; i < SEL_MAX; i++) {
+		selexe::initHealthBarImage(&extraHealthBars[i]);
+		u8** const frame = (u8**)((u8*)&extraHealthBars[i] + 0x2C);
+		*frame = extraHealthBarFrames[i];
+		*(u16*)extraHealthBarFrames[i] = 1;
+	}
 	freeListAppend(CIRCLE_POOL_HEAD, CIRCLE_POOL_TAIL, extraCircles,
 		sizeof(extraCircles) / sizeof(CImage), sizeof(CImage));
 	freeListAppend(HEALTH_BAR_POOL_HEAD, HEALTH_BAR_POOL_TAIL, extraHealthBars,

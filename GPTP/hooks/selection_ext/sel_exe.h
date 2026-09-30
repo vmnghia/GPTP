@@ -15,6 +15,9 @@ bool isTeamAlly(u32 player);								//0x49A110
 void removeDashedCircle(CSprite* sprite);					//0x497590
 void addDashedCircle(CUnit* unit);							//0x4E65C0
 void freeImage(CImage* image);								//0x4D4FA0
+//Sets up a health-bar pool image the way the pool init does (its frame buffer
+//is vanilla image 0's; the caller points it at its own).
+void initHealthBarImage(CImage* image);						//0x4D68C0
 //Whether the unit may join a selection of more than one.
 bool canMultiSelect(CUnit* unit);							//0x47B770
 //Whether unit ranks above best for the console portrait.

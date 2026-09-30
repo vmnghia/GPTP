@@ -10,6 +10,7 @@ const u32 Func_IsTeamAlly				= 0x0049A110;
 const u32 Func_RemoveDashedCircle		= 0x00497590;
 const u32 Func_AddDashedCircle			= 0x004E65C0;
 const u32 Func_FreeImage				= 0x004D4FA0;
+const u32 Func_InitHealthBarImage		= 0x004D68C0;
 const u32 Func_CanMultiSelect			= 0x0047B770;
 const u32 Func_Outranks					= 0x0049A350;
 const u32 Func_SelectRecentGroupOf		= 0x00496D30;
@@ -83,6 +84,16 @@ void freeImage(CImage* image) {
 		PUSHAD
 		MOV ESI, image
 		CALL Func_FreeImage
+		POPAD
+	}
+}
+
+void initHealthBarImage(CImage* image) {
+	__asm {
+		PUSHAD
+		MOV ECX, image
+		XOR EAX, EAX
+		CALL Func_InitHealthBarImage
 		POPAD
 	}
 }

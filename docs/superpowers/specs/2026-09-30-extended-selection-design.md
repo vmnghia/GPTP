@@ -186,7 +186,9 @@ ring slot). Their logic is reimplemented inside the replacements.
   0x5254B8/0x57EB6C). When a pool is empty the image is silently not made. The calls to
   0x4D6930 at 0x4EEE5F and 0x4EEFED are wrapped to append `SEL_MAX * 8` circle images and
   `SEL_MAX` health-bar images owned by the plugin. (Found in the stage 2 test round: only
-  80 circles and 12 health bars showed.)
+  80 circles and 12 health bars showed.) Health-bar images need the pool init's per-image
+  setup (0x4D68C0), including their own 14-byte GRP frame at `image+0x2C`, which 0x4D6010
+  fills per unit; circle images are set up in full when allocated (0x4D6810).
 - 17 of the 19 flag-0x08 tests are sprite "selected" tests; their actions (0x4C3B40,
   0x49F7A0, 0x45D040, HP-bar redraws) are either replaced or size-independent.
 
