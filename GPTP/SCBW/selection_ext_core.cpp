@@ -53,7 +53,7 @@ u32 chunkBuild(u8* out, ChunkMode mode, const u16* tags, u32 count, u32 index) {
 	u32 n = count > start ? count - start : 0;
 	if (n > CHUNK_MAX_UNITS)
 		n = CHUNK_MAX_UNITS;
-	u8 flags = (u8)mode;
+	u8 flags = (u8)(mode | ((index & 0x0F) << CHUNK_INDEX_SHIFT));
 	if (index == 0)
 		flags |= CHUNK_FIRST;
 	if (index + 1 >= chunks)
@@ -69,6 +69,7 @@ bool chunkFeed(PendingPacket& p, const u8* cmd) {
 	const u8 flags = cmd[1];
 	const u32 n = cmd[2];
 	const u8 mode = flags & CHUNK_MODE_MASK;
+	const u8 index = flags >> CHUNK_INDEX_SHIFT;
 	if (n > CHUNK_MAX_UNITS || mode > CHUNK_REMOVE) {
 		p.open = false;
 		return false;
@@ -76,6 +77,7 @@ bool chunkFeed(PendingPacket& p, const u8* cmd) {
 	if (flags & CHUNK_FIRST) {
 		p.open = true;
 		p.mode = mode;
+		p.next = 0;
 		p.count = 0;
 	}
 	else
@@ -83,6 +85,11 @@ bool chunkFeed(PendingPacket& p, const u8* cmd) {
 		p.open = false;
 		return false;
 	}
+	if (index != p.next) {
+		p.open = false;
+		return false;
+	}
+	p.next = (p.next + 1) & 0x0F;
 	if (p.count + n > SEL_MAX) {
 		p.open = false;
 		return false;

@@ -96,6 +96,31 @@ void chunkFeedRejects() {
 	CHECK(!chunkFeed(p, first) && !p.open);
 }
 
+//A lost middle chunk (the sender's queue can drop one under lag) must drop
+//the whole packet, not commit the chunks that did arrive.
+void chunkMissingMiddle() {
+	static u16 tags[SEL_MAX];
+	for (u32 i = 0; i < SEL_MAX; i++)
+		tags[i] = (u16)(i + 1);
+	static PendingPacket p;
+	memset(&p, 0, sizeof(p));
+	u8 c0[CHUNK_MAX_BYTES], c1[CHUNK_MAX_BYTES], c2[CHUNK_MAX_BYTES];
+	chunkBuild(c0, CHUNK_REPLACE, tags, 300, 0);
+	chunkBuild(c1, CHUNK_REPLACE, tags, 300, 1);
+	chunkBuild(c2, CHUNK_REPLACE, tags, 300, 2);
+
+	chunkFeed(p, c0);
+	CHECK(!chunkFeed(p, c2) && !p.open);	//c1 never arrived
+	//The same chunk twice is a gap too.
+	chunkFeed(p, c0);
+	chunkFeed(p, c1);
+	CHECK(!chunkFeed(p, c1) && !p.open);
+	//In order, the packet completes.
+	chunkFeed(p, c0);
+	chunkFeed(p, c1);
+	CHECK(chunkFeed(p, c2) && p.count == 300);
+}
+
 void lengths() {
 	const u8 select[] = { 0x09, 3, 0, 0, 0, 0, 0, 0 };
 	CHECK(variableCommandLength(select) == 8);
@@ -124,6 +149,7 @@ u32 selfTest(u32* firstFailedLine) {
 	lists();
 	chunkRoundTrip();
 	chunkFeedRejects();
+	chunkMissingMiddle();
 	lengths();
 	ring();
 	*firstFailedLine = firstLine;

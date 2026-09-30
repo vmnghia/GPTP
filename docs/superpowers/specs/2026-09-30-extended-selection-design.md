@@ -236,7 +236,8 @@ into transports, morphs, mind control and archon merges.
   a 0x0A of the adds. It copies the list into last-sent unclamped. It sends in replays too.
 
 **The command:** `[0x3C][flags][u8 count][u16 unit tag × count]`, length `3 + 2*count`.
-- `flags`: bits 0–1 mode (0 replace, 1 add, 2 remove), bit 2 first, bit 3 last.
+- `flags`: bits 0–1 mode (0 replace, 1 add, 2 remove), bit 2 first, bit 3 last, bits
+  4–7 the chunk's place in its packet (mod 16).
 - **At most 125 units per chunk (253 bytes).**
 - 0x3C is free: GPTP only sends 0x14 and 0x36, and SCManifold contains only the MPQDraft
   stub, WMode and GPTP.
@@ -253,8 +254,10 @@ into transports, morphs, mind control and archon merges.
   chunks. The diff against `lastSentExt`, the visibility rule and the reversed order
   follow vanilla. In replays, large packets are not sent (the viewer's selection is local
   only, and the executor would skip them anyway).
-- **A dropped chunk** never reaches any machine, so the commit either doesn't happen or
-  is replaced by the next "first". That is deterministic. The local UI can briefly
+- **A dropped chunk** never reaches any machine. The receiver checks each chunk's place,
+  so a gap anywhere (first, middle or last) drops the whole packet: the commit either
+  doesn't happen or is replaced by the next "first". That is deterministic. (The final
+  review found that a lost middle chunk used to commit a partial packet.) The local UI can briefly
   disagree, as in vanilla when a command drops.
 - **The pending buffer is not saved.** A selection half-received at save time simply
   doesn't happen after load.
@@ -354,6 +357,9 @@ Each stage ends with a build and a numbered in-game test round, using hero units
 
 ## Known issues and follow-ups
 - Multiplayer: host-synced limit and a check that every player runs the same `SEL_MAX`.
+- Multiplayer: circles and health bars on every selected unit draw from the shared
+  5000-image pool; if the pool is nearly full, a synced sprite could fail to create on
+  one machine and not another. Single-player is unaffected; check before multiplayer.
 - Multiplayer replays: enlarge the replay frame buffers (data 0x6552B0, ids 0x6554D8,
   lengths 0x654AA8; referenced at 0x487150/0x487155/0x48715A and 0x4871B3/0x4871E8/
   0x4871F1/0x487203) before several players can send full turns of chunks in one frame.

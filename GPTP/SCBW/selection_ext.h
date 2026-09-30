@@ -69,6 +69,8 @@ enum ChunkMode { CHUNK_REPLACE = 0, CHUNK_ADD = 1, CHUNK_REMOVE = 2 };
 const u8 CHUNK_MODE_MASK = 0x03;
 const u8 CHUNK_FIRST = 0x04;
 const u8 CHUNK_LAST = 0x08;
+//Bits 4-7: the chunk's place in its packet, mod 16, so a lost chunk is seen.
+const u8 CHUNK_INDEX_SHIFT = 4;
 
 //How many chunks a packet of count tags takes (at least 1).
 u32 chunkCountFor(u32 count);
@@ -80,12 +82,14 @@ u32 chunkBuild(u8* out, ChunkMode mode, const u16* tags, u32 count, u32 index);
 struct PendingPacket {
 	bool open;
 	u8 mode;
+	u8 next;	//index (mod 16) of the chunk expected next
 	u32 count;
 	u16 tags[SEL_MAX];
 };
 extern PendingPacket pending[PLAYERS];
 //Feeds one whole chunk command. Returns true when it completes the packet,
-//which is then in p (and p is closed).
+//which is then in p (and p is closed). A chunk out of place (none before it,
+//another mode, or one missing in between) drops the packet.
 bool chunkFeed(PendingPacket& p, const u8* cmd);
 
 //Length of a variable-length command (the select chunk, or 0x09-0x0B), or 0
