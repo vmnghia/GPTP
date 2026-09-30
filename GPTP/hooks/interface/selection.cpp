@@ -1,6 +1,7 @@
 #include "selection.h"
 #include <SCBW/api.h>
 #include "resolution.h"
+#include <SCBW/selection_ext.h>
 
 //Helper functions declaration
 namespace {
@@ -200,7 +201,7 @@ namespace hooks {
 								//6F203
 
 								//0x0046F208 (use of SELECTION_ARRAY_LENGTH)
-								if(current_index_in_unit_list >= SELECTION_ARRAY_LENGTH) //action when unit_list is full
+								if(current_index_in_unit_list >= selext::SEL_MAX) //action when unit_list is full
 									function_0046F040_Helper(current_unit, unit_list, unit, current_index_in_unit_list);
 								else {
 									//6F217
@@ -300,8 +301,8 @@ namespace hooks {
 				list2_length++;
 			} while (current_unit != NULL);
 
-			if (list2_length >= SELECTION_ARRAY_LENGTH) {
-				return_value = SELECTION_ARRAY_LENGTH;
+			if (list2_length >= selext::SEL_MAX) {
+				return_value = selext::SEL_MAX;
 				bEndThere = true;
 			}
 			else
@@ -358,8 +359,10 @@ namespace hooks {
 					//6F33A
 					if (!bUnitAlreadyInList) {
 
-						if (return_value >= SELECTION_ARRAY_LENGTH)
-							function_0046F040_Helper(current_unit, &unit_list_2[return_value], unit, counter);
+						//Full: the unit may displace one of the units added so far
+						//(vanilla 0x46F349 passes these, not the whole list)
+						if (return_value >= selext::SEL_MAX)
+							function_0046F040_Helper(current_unit, &unit_list_2[list2_length], unit, return_value - list2_length);
 						else { //6F356
 							unit_list_2[return_value] = current_unit;
 							return_value++;
@@ -385,11 +388,12 @@ namespace hooks {
 	///
 	void getSelectedUnitsInBox(Box16* coords) {
 
-		static CUnit* local_array_1[SELECTION_ARRAY_LENGTH];
-		static CUnit* local_array_2[SELECTION_ARRAY_LENGTH];
+		//One slot more than the limit: combineSelectionsLists reads up to a null.
+		static CUnit* local_array_1[selext::SEL_MAX + 1];
+		static CUnit* local_array_2[selext::SEL_MAX + 1];
 		u32 someResult;
 
-		for (int i = 0; i < SELECTION_ARRAY_LENGTH; i++)
+		for (u32 i = 0; i < selext::SEL_MAX + 1; i++)
 			local_array_1[i] = NULL;
 
 		someResult = SortAllUnits_Helper(NULL, local_array_1, FindAllUnits(coords));
@@ -399,10 +403,11 @@ namespace hooks {
 
 		if (someResult != 0) {
 
-			if (*IS_HOLDING_SHIFT && activePlayerSelection->unit[0] != NULL)
+			if (*IS_HOLDING_SHIFT && selext::activeSel[0] != NULL)
 			{
-				for (int i = 0; i < SELECTION_ARRAY_LENGTH; i++)
-					local_array_2[i] = activePlayerSelection->unit[i];
+				for (u32 i = 0; i < selext::SEL_MAX; i++)
+					local_array_2[i] = selext::activeSel[i];
+				local_array_2[selext::SEL_MAX] = NULL;
 				someResult = combineLists_Sub_6F290(NULL, local_array_1, local_array_2, someResult);
 				applyNewSelect_Sub_6FA00(local_array_2, someResult);
 			}
@@ -451,8 +456,9 @@ namespace hooks {
 		Bool8* const bCanUpdateStatDataDialog		= (Bool8*)	0x0068C1F8;
 		BinDlg** const someDialogUnknownUser		= (BinDlg**)0x0068C1EC; //related to MouseOver? Usually someDialogUnknown->user if not 0 or -1
 
-		CUnit* local_temp_array_1[SELECTION_ARRAY_LENGTH];	//used instead of an array starting from [EBP-3C]
-		CUnit* local_temp_array_2[SELECTION_ARRAY_LENGTH];	//used instead of an array starting from [EBP-6C]
+		//One slot more than the limit: combineSelectionsLists reads up to a null.
+		static CUnit* local_temp_array_1[selext::SEL_MAX + 1];	//used instead of an array starting from [EBP-3C]
+		static CUnit* local_temp_array_2[selext::SEL_MAX + 1];	//used instead of an array starting from [EBP-6C]
 
 		Box16 local_temp_box16_structure;	//used instead of using from [EBP-0C] to [EBP-06]
 
@@ -465,12 +471,12 @@ namespace hooks {
 			*IS_HOLDING_CTRL || 
 			( *IS_DOUBLE_CLICKING && (clicked_unit->sprite->flags & CSprite_Flags::Selected) );
 
-		for(int i = 0; i < SELECTION_ARRAY_LENGTH; i++)
+		for(u32 i = 0; i < selext::SEL_MAX + 1; i++)
 			local_temp_array_1[i] = NULL;
 
 		if(
 			isHoldingCtrl_OR_isDoubleClickingSelectedClickedUnit ||
-				(*IS_HOLDING_SHIFT != 0 && (activePlayerSelection->unit[0] != NULL))
+				(*IS_HOLDING_SHIFT != 0 && (selext::activeSel[0] != NULL))
 			) 
 		{
 
@@ -547,8 +553,9 @@ namespace hooks {
 					local_temp_box16_structure.bottom = *MoveToY + resolution::viewHeight();
 
 					//save existing selection to a temporary array
-					for(int i = 0; i < SELECTION_ARRAY_LENGTH; i++)
-						local_temp_array_2[i] = activePlayerSelection->unit[i];
+					for(u32 i = 0; i < selext::SEL_MAX; i++)
+						local_temp_array_2[i] = selext::activeSel[i];
+					local_temp_array_2[selext::SEL_MAX] = NULL;
 
 					//locate surrounding units for selection
 					units_in_bounds = getAllUnitsInBounds(&local_temp_box16_structure);
@@ -583,8 +590,8 @@ namespace hooks {
 					int arrayIndex;
 
 					//copy the existing selection into the local array
-					for(arrayIndex = 0 ; arrayIndex < SELECTION_ARRAY_LENGTH && activePlayerSelection->unit[arrayIndex] != NULL; arrayIndex++)
-						local_temp_array_1[arrayIndex] = activePlayerSelection->unit[arrayIndex];
+					for(arrayIndex = 0 ; arrayIndex < (int)selext::SEL_MAX && selext::activeSel[arrayIndex] != NULL; arrayIndex++)
+						local_temp_array_1[arrayIndex] = selext::activeSel[arrayIndex];
 
 					if( !(clicked_unit->sprite->flags & CSprite_Flags::Selected) ) {	
 						
@@ -592,7 +599,7 @@ namespace hooks {
 						//unit not selected, so it's added to current selection if valid
 
 						if(
-							arrayIndex < SELECTION_ARRAY_LENGTH && 
+							arrayIndex < (int)selext::SEL_MAX &&
 							unit_IsStandardAndMovable(local_temp_array_1[0]) && 
 							unitIsOwnedByCurrentPlayer(local_temp_array_1[0]) &&
 							unit_IsStandardAndMovable(clicked_unit) && 
@@ -617,28 +624,12 @@ namespace hooks {
 
 						//unit already selected, remove it from selection
 
-						u32 memcpy_size;
 						bool bUpdateSelection = true;
 
-						//decrease it so it's equal to the index of last element
-						arrayIndex--;
-
-						//each element is 4 bytes, multiply it by the number of elements
-						//after the one to remove
-						memcpy_size = (arrayIndex - clicked_unit->sprite->selectionIndex) * 4;
-
-						//Copy the elements on the right of the one to delete one step left
-						//to overwrite the one to delete
-						SC_memcpy_0(
-							(u32)&local_temp_array_1[clicked_unit->sprite->selectionIndex], 
-							(u32)&local_temp_array_1[clicked_unit->sprite->selectionIndex+1], 
-							memcpy_size
-						);
-
-						//either erase the element to delete or one that was repeated
-						//after memcpy
-#pragma warning( suppress: 6386 )
-						local_temp_array_1[arrayIndex] = NULL;
+						//Search for it: CSprite::selectionIndex is a byte, so it
+						//can't index a list longer than 255. The count left is the
+						//new length, as vanilla's decremented index was.
+						arrayIndex = (int)selext::listRemove(local_temp_array_1, (u32)arrayIndex, clicked_unit);
 						
 						if(arrayIndex == 1) {
 
