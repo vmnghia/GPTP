@@ -2,6 +2,9 @@
 #include "sel_exe.h"
 #include <SCBW/selection_ext.h>
 #include <cstring>
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 using namespace selext;
 
