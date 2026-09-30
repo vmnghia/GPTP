@@ -116,6 +116,7 @@ using namespace dll;
 #include "hooks/recv_commands/CMDRECV_ResearchUpgrade.h"
 #include "hooks/recv_commands/CMDRECV_RightClick.h"
 #include "hooks/recv_commands/CMDRECV_Selection.h"
+#include "hooks/selection_ext/selection_ext_hooks.h"
 #include "hooks/recv_commands/CMDRECV_SiegeTank.h"
 #include "hooks/recv_commands/CMDRECV_Stimpack.h"
 #include "hooks/recv_commands/CMDRECV_Stop.h"
@@ -229,6 +230,8 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	hooks::injectRecvCmdHook();
 	hooks::injectCMDRECV_MergeArchonHooks();
 	hooks::injectSelectLarvaHooks();
+	//Selections above 12 units (hooks/selection_ext, SCBW/selection_ext.h).
+	hooks::injectSelectionExtHooks();
 
 	//======== DISABLED HOOKS ========//
 	//Written but not in use. To turn one on, move it up into the enabled list.

@@ -331,6 +331,7 @@
     <ClCompile Include="hooks\selection_ext\sel_local.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_send.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_save.cpp" />
+    <ClCompile Include="hooks\selection_ext\sel_inject.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_Selection.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_Selection_inject.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_ResearchUpgrade.cpp" />
