@@ -1,6 +1,7 @@
 # Extended selection (larger selections, pages, control groups)
 
-Status: designed, approved section by section (2026-09-30); not built
+Status: designed, approved section by section (2026-09-30); stage 1+2 plan in
+`docs/superpowers/plans/2026-09-30-extended-selection-stage-1-2.md`
 Branch: `feature/resolution`
 Detailed notes: `docs/selection.md` §1–§5 (the first survey; where it and this spec
 disagree, this spec wins, because every address below was re-checked in the exe)
@@ -85,7 +86,7 @@ disagree, this spec wins, because every address below was re-checked in the exe)
 | `activeSelExt` | `CUnit*[SEL_MAX]` | local | 0x6284B8 |
 | `clientSelExt` + `u16` count | `CUnit*[SEL_MAX]` | local | 0x597208 + u8 0x59723D |
 | `lastSentExt` | `CUnit*[SEL_MAX]` | local | 0x59724C |
-| `spriteSelSlot` | `u16[sprite count]` | local | `CSprite+0x0B` |
+| `reselectExt` | `CUnit*[SEL_MAX]` | local | 0x596B7C (re-selected at game start) |
 | page state | `u16` page, page size `P` | local | — |
 
 Group tags use the vanilla encoding: 11-bit unit index plus uniqueness in the upper bits
@@ -97,57 +98,105 @@ Group tags use the vanilla encoding: 11-bit unit index plus uniqueness in the up
   7 as `bl` right after `xor ebx, ebx`, all checked). So the new iterator treats "byte is
   0" as a reset and writes a nonzero byte while it is partway through. None of the ~40
   command handlers that reset it need to change.
-- Like vanilla, it calls 0x49A7F0 on a dying unit (order Die, state 1) and re-reads the
-  same slot, and it stops at the first null.
+- Like vanilla, it calls the remove-from-all routine on a dying unit (order Die, state 1)
+  and re-reads the same slot, and it stops at the first null. Unlike vanilla, a unit
+  whose sprite is gone is removed without touching the sprite (vanilla 0x49A7F0 would
+  dereference it).
 - The iterator is the only synced reader of the selection, so converting it gives every
   order handler, and OpenBW-style group-move logic, the whole selection.
 
 ## Stage 1: storage, iterator, writers, circles
 
-**Writers moved to the new arrays** (verified inventory, see "Evidence"):
-| Group | Address | Role |
+The four decompile reports of 2026-09-30 settled every function below (calling
+convention, semantics, callers). Functions with **no references at all** in the exe are
+dead code and are not touched: 0x49A320, 0x4BF8A0, 0x4BF870, 0x4CE700, 0x4D02D0,
+0x49A7C0, 0x49A8B0, 0x4967A0, 0x4BF9A0, 0x4CDE10.
+
+**Hooked (whole function replaced):**
+| Address | Role | Convention |
 |---|---|---|
-| Core remover | 0x49A170 | remove unit from one player's selection |
-| Remove from all players | 0x49A7F0 | calls 0x49A170 for players 0–7, clears sprite flags 0x06, deletes circle images 0x23B–0x244 |
-| Add | 0x49AF80 | |
-| Clear one / clear all | 0x49A740 / 0x49A320 | 0x49A320 also clears `activeSel` and 3 slots of `lastSent` |
-| Hotkey recall and add | 0x4965D0, 0x496940 | receive side (stage 4 widens the groups) |
-| Build `activeSel` | 0x49AE40, 0x499A60, 0x49B690 | |
-| Circle and slot | 0x4E6180 | writes `CSprite+0x0B`, sets flag 0x08 |
-| Local removal | 0x49F7A0 | memmoves the unit out of `activeSel` by `selectionIndex`; always called right after 0x49A7F0 |
-| Client copy | 0x4C38B0, 0x4C3BB0 | 0x4C38B0 sorts via `CompareUnitRank` 0x49A350 |
-| Last-sent | 0x4BF8C0, 0x4BF8A0 | remove (indexes `[eax*4 + 0x597248]` = `lastSent[i-1]`); clear (no direct callers) |
-| Receive select / shift-add / shift-remove | 0x4C2750, 0x4C2560, 0x4BFB40 | |
-| Game start | 0x4D0820, 0x4CE700, 0x4EED10 | 0x596B7C array reapplied at game start |
-| Save | 0x4C2910 (`CMDRECV_SaveGame`), 0x4D02D0 | chunks via 0x4C3450 |
-| Load | 0x4CFEF0 | chunks via 0x4C3280 |
-| Pointer ↔ tag | 0x4CEDA0, 0x4CEE00 | |
+| 0x49A850 | iterator | none → EAX; keep EBX/ESI/EDI/EBP |
+| 0x49A7F0 | remove from every player's selection, the dashed ally circle, and last-sent (its tail jump to 0x4BF8C0) | EDI = unit |
+| 0x49A740 | clear one player's selection (also called when a player leaves, 0x4C4F69) | EAX = player |
+| 0x4C2750 / 0x4C2560 / 0x4BFB40 | receive 0x09 / 0x0A / 0x0B | stdcall(packet), `ret 4` |
+| 0x4C2870 | receive hotkey 0x13 | ECX = packet |
+| 0x49AE40 | build the local selection from a list (no bound in vanilla: past 12 it writes into the synced array) | EAX = list (written back), stdcall(count) |
+| 0x49F7A0 | local removal (the only `selectionIndex` array-offset reader) | EAX = unit |
+| 0x499A60 | redraw every circle after a save (which strips them all) | none |
+| 0x4C38B0 | client copy + portrait (does not sort) | none; tail `jmp 0x458DE0` |
+| 0x4C3B40 | local deselect-one and send | EDX = unit |
+| 0x4D0820 | re-select the saved local selection at game start | none |
+
+**Not hooked: 0x49B690** (redraw circles after an alliance or colour change). Its per-slot
+loop only touches units the local player doesn't own, which can only be in slot 0, and its
+dashed-circle pass reads the allies' mirror; so past 12, only allies' dashed circles keep
+their old colour until the next selection.
+
+**Not hooked, because every live caller is replaced:** 0x49A170 (remove from one player),
+0x49AF80 (add), 0x4965D0 (group assign/add), 0x496940 (group recall), 0x496560 (oldest
+ring slot). Their logic is reimplemented inside the replacements.
+
+**Patched in place:**
+- 0x4EED10 (game start/load) at its entry, to clear the new arrays alongside vanilla's
+  clears, and at 0x4EEDC6, where vanilla copies the local player's row to 0x596B7C and
+  wipes every synced selection: the new version copies `playersSelExt[local]` to
+  `reselectExt` and wipes the new arrays too.
+
+**Receive rules, reproduced faithfully (from the decompile):**
+- 0x09: refuse count > 12; clear the player's selection even for count 0; for each tag:
+  skip invalid, dying, duplicate, and Nuclear Missile; slot 0 takes any visible unit,
+  later slots need multi-selectable (0x47B770) and owned by the active nation. Ring push
+  if more than 1 unit was added.
+- 0x0A: refuse count > 12 or `count + current > limit` (the raw count, refused whole); the
+  same checks without the Nuclear Missile one; ring push if the total is more than 1.
+- 0x0B: refuse count 0 or > 12; remove each valid tag; ring push if the count left after
+  the last valid tag is more than 1.
+- Ring push: oldest slot by timestamp (ties to the higher index), assign the selection to
+  group 10 + slot, stamp it with the low 16 bits of frame counter 0x57EEBC. Vanilla's
+  all-0xFFFF case (slot 0xFF → group 9, out-of-bounds stamp) keeps the group-9 write and
+  skips the out-of-bounds stamp.
+- Hotkey: group must be < 18 (vanilla lets 18 through). Assign/add/recall follow
+  vanilla; add stops at the group's capacity instead of spilling into the next group.
+  In stages 1–3 groups stay the vanilla 12-slot arrays; recall writes the new selection.
+- Dashed ally circles (sprite flags 0x06, images 0x23B–0x244, gated on the local-state
+  test 0x49A110) are kept by calling the vanilla helpers; they are local visuals only.
 
 **Fixed-size consumers of the iterator:**
 - **`CMDRECV_MergeArchon.cpp` (enabled) must be fixed:** both functions fill
-  `templars_stored[12]` from the iterator with no bound, which would corrupt the stack
-  with more than 12 templars.
-- `receive_command.cpp` caps its `selection[]` / `candidates[]` at 12 (safe, but
-  smart-cast then only sees 12 casters) and `smart_cast.cpp`'s `roundSelection`: both
-  move to `SEL_MAX`.
+  `templars_stored[12]` from the iterator with no bound.
+- `receive_command.cpp` caps its `selection[]` / `candidates[]` at 12 and
+  `smart_cast.cpp` keeps a 12-entry `roundSelection`: all move to `SEL_MAX`.
 - In the exe, of the 38 functions that call the iterator, only the vanilla archon
-  receivers 0x4C0CD0/0x4C0E90 store into a stack array, and GPTP replaces them.
+  receivers store into a stack array, and GPTP replaces them.
 
 **Circles and `selectionIndex`:**
-- 0x4E6180 runs for every selected unit, so every one gets flag 0x08 and a circle.
-- `spriteSelSlot[sprite]` holds the real slot. `CSprite+0x0B` gets `min(slot, 255)`.
-- Every reader of `CSprite+0x0B` as a selection slot is replaced by a lookup in
-  `activeSelExt`. Candidates from the scan: 0x46FD77 (click, GPTP), 0x49F7B3 (local
-  removal), 0x4D6016 (health bars), 0x4E614B, 0x49F00B, 0x49F8B6, 0x499299, 0x49938A,
-  0x4D5744, 0x4D5940. Offset +0x0B is shared by other structs, so **the plan's first
-  task confirms which are sprite reads**, and also classifies the 19 flag-0x08 tests.
+- The new 0x49AE40 calls 0x4E6180 for every selected unit, so every one gets flag 0x08
+  and a circle. `CSprite+0x0B` gets `min(slot, 255)`.
+- The only reader that uses `CSprite+0x0B` as an array offset is 0x49F7B3 (in 0x49F7A0,
+  replaced: it searches `activeSelExt` instead) and GPTP's shift-click in `selection.cpp`
+  (stage 2, same fix). 0x49F00B and 0x49F8B6 only save the byte and hand it back to
+  0x4E6180, which is harmless. The other candidates were `CImage` fields. So no per-sprite
+  slot table is needed.
+- 17 of the 19 flag-0x08 tests are sprite "selected" tests; their actions (0x4C3B40,
+  0x49F7A0, 0x45D040, HP-bar redraws) are either replaced or size-independent.
 
-**Save chunk, version 1:** appended after the vanilla chunks in both save paths and read
-in 0x4CFEF0. Header `{magic, version, saved limit}`, then `playersSelExt` as tags. The
-vanilla 0x180-byte selection chunk stays, holding the mirror.
-- Load uses `min(saved limit, SEL_MAX)` per selection.
-- A file without the chunk (an old save) keeps the vanilla first 12. `[VERIFY]` how
-  0x4C3280 reports a missing chunk before relying on this.
+**Save chunk, version 1:**
+- Save: the last vanilla write in 0x4C2910 is `fwrite(&screenY)` at 0x4C2E0A. Its call is
+  retargeted to a wrapper that does that write and then appends a raw header
+  `{u32 magic 'SELX', u16 version, u16 saved limit, u32 payload bytes}` and a compressed
+  payload (0x4C3450) of `playersSelExt` as tags. A failed write returns 0, which takes
+  vanilla's failure path (delete the file, error dialog).
+- Load: the last vanilla read in 0x4CFEF0 is `fread(&screenY)` at 0x4D0225, after the
+  units exist. Its call is retargeted to a wrapper that then reads the raw header with the
+  exe's `fread`. A short read or a wrong magic means an old save: `playersSelExt` is
+  filled from the vanilla 12. A bad payload (0x4C3280 returns 0) returns 0, which takes
+  vanilla's clean failure path (error dialog, back to the menu). Load keeps
+  `min(saved limit, SEL_MAX)` per selection.
+- The exe's own CRT must be used (fwrite 0x411931, fread 0x4117DE, both cdecl), since
+  the `FILE*` belongs to it.
+- After a load, 0x4EED10 keeps only the local player's row (for re-selection) and wipes
+  every synced selection; 0x4D0820 then re-sends it as select commands. So the chunk
+  matters for the local player's restored selection.
 
 **What stage 1 alone can show:** nothing above 12 can be selected until stage 2, so the
 test is that everything still works at 12 or fewer, including save/load, deaths, loads
@@ -155,32 +204,52 @@ into transports, morphs, mind control and archon merges.
 
 ## Stage 2: select commands and client-side list builders
 
-**Verified in the exe:**
-- Executor 0x4865D0. Its loop head 0x4865F0 dispatches on `id - 5` through a replay-mode
-  table (0x486DAC, when `IS_IN_REPLAY` 0x6D0F14) and a normal one (0x486E08). Unknown
-  ids go to 0x486DA3, the same exit as a malformed command.
-- Five places compute a command's length from table 0x5005F8 and special-case only
-  0x09–0x0B as `count*2 + 2`: 0x48661C, 0x4BF9A6, 0x4CDD04, 0x4CDE3A, 0x4CE085.
-- Unused ids: 0x16, 0x17, 0x3C–0x54, 0x59, 0x5B (length -1 in the table).
-- `QueueGameCommand` 0x485BD0: if a command doesn't fit the turn (capacity 0x57F0D8,
-  ≤ 512), it flushes the turn early via 0x485A40, unless 16 − [0x57F090] turns are
-  already in transit, in which case it drops the command silently. It also drops
-  everything while `gwGameMode` 0x596904 is 4 (menus).
-- The replay recorder 0x4CDE70 records each executed command under 256 bytes
-  (`cmp edi, 0x100` at 0x4CDE7B), starting a new block in the same frame when one fills.
+**Verified in the exe (send-side decompile report):**
+- Executor 0x4865D0: `eax` = buffer, `[ebp+8]` = bytes left, `[ebp+0xC]` = 1 for
+  replay-file commands. Normal dispatch at 0x48663F: `id - 5` through index table 0x486EF0
+  and jump table 0x486E08. Slot 50 (dword at **0x486ED0**, currently 0x486DA3, the
+  discard exit) is shared by unused ids 0x3C–0x44, 0x48 and 0x5B. Replay-file commands use
+  the normal dispatch too. During a replay, the viewer's own network commands use a filter
+  table and a skip path whose length comes from site 0x48661C.
+- Length sites (table 0x5005F8, special case 0x09–0x0B):
+  - 0x48661C, the replay-viewer skip path: with length -1 it loops ~2^31 times.
+  - 0x4CE085, the replay playback frame reader 0x4CDFF0: with -1 it memcpys 4 GB.
+  - 0x4CDD04, the replay save walk 0x4CDCE0: with -1 it never ends.
+  - 0x4BF9A6 and 0x4CDE3A are in dead functions.
+- Recorder 0x4CDE70: records `[storm id][command]`; skips size ≥ 0x100 and the ids at
+  0x502860 (0x3C is not among them). The block size byte wraps at a 255-byte command, so
+  **a command may be at most 254 bytes**.
+- `QueueGameCommand` 0x485BD0 (ECX = data, EDX = size): if the command doesn't fit the
+  turn (capacity 0x57F0D8, ≤ 512) it flushes early via 0x485A40, unless in menus
+  (`gwGameMode` 4) or 16 − [0x57F090] turns are in transit, in which case it drops it.
+- Replay playback joins one frame's commands, from every player, into a 512-byte buffer
+  (0x6552B0) with no bounds check; ids and lengths go to separate arrays. One player's
+  turn is at most 512 bytes, so single-player replays are safe. Several players each
+  sending a full turn in one frame could overflow it (a latent vanilla bug that large
+  selections make likely): see "Known issues".
+- `CMDACT_Select` 0x4C0860, `stdcall(count, list)`: diffs the list against last-sent;
+  new units need to be visible (0x57F0B0, or 0x6D0F18 in replays). If adds + removes ≥
+  count it sends one 0x09 with the list **reversed**; otherwise a 0x0B of the removes then
+  a 0x0A of the adds. It copies the list into last-sent unclamped. It sends in replays too.
 
-**The command:** `[id][flags][u8 count][u16 unit tag × count]`.
-- `flags`: mode (replace / add / remove), first, last.
-- At most 126 units per chunk (255 bytes), so a chunk always fits one turn and one
-  replay record.
-- Id: an unused one, e.g. 0x3C. `[VERIFY]` that no other plugin in SCManifold uses it.
-- **Receive:** "first" clears the player's pending buffer; each chunk appends; "last"
-  commits in one go under the vanilla rules above, writes `playersSelExt`, refreshes the
-  mirror, and updates the recent-selection ring **once** (stage 4 widens the ring).
-- **Patches:** one detour at the executor loop head 0x4865F0, which covers normal play
-  and replays, and the five length sites.
-- **Sender:** selections of 12 or fewer send vanilla 0x09/0x0A/0x0B. Larger ones send
-  ⌈n / 126⌉ chunks.
+**The command:** `[0x3C][flags][u8 count][u16 unit tag × count]`, length `3 + 2*count`.
+- `flags`: bits 0–1 mode (0 replace, 1 add, 2 remove), bit 2 first, bit 3 last.
+- **At most 125 units per chunk (253 bytes).**
+- 0x3C is free: GPTP only sends 0x14 and 0x36, and SCManifold contains only the MPQDraft
+  stub, WMode and GPTP.
+- **Receive:** hooked by writing the stub's address into dispatch slot 50 (0x486ED0). The
+  stub handles id 0x3C (length check, `[ebp-4]` = length, then `jmp 0x486D7A`, which
+  records it and advances) and sends every other id of that slot to 0x486DA3 as before.
+  "First" resets the player's pending buffer and sets its mode; each chunk appends; a
+  chunk with no pending "first" or another mode is dropped; "last" commits under the same
+  rules as 0x09 (replace), 0x0A (add) or 0x0B (remove), with the limit in place of 12,
+  and pushes the ring once.
+- **Length sites patched:** 0x48661C, 0x4CE085, 0x4CDD04 (the dead two are left alone).
+- **Sender:** a packet of 12 or fewer tags goes out as vanilla 0x09/0x0A/0x0B, which the
+  new receive handlers accept at the full limit. A packet of more goes out as ⌈n / 125⌉
+  chunks. The diff against `lastSentExt`, the visibility rule and the reversed order
+  follow vanilla. In replays, large packets are not sent (the viewer's selection is local
+  only, and the executor would skip them anyway).
 - **A dropped chunk** never reaches any machine, so the commit either doesn't happen or
   is replaced by the next "first". That is deterministic. The local UI can briefly
   disagree, as in vanilla when a command drops.
@@ -189,12 +258,15 @@ into transports, morphs, mind control and archon merges.
 
 **Client-side list builders moved to `SEL_MAX` lists:**
 - GPTP `selection.cpp` (enabled): drag box 0x46FA40, click / double-click / Ctrl-click
-  0x46FB40, shift-combine 0x46F290, sorting 0x46F0F0. It includes the shift-click
-  memmove on `selectionIndex`.
-- `CMDACT_Select` 0x4C0860 and `CMDACT_HotkeyUnit` 0x4C07B0 (diff against `lastSentExt`,
-  choose vanilla packets or chunks).
-- 0x45D040: adds the egg's twin Zergling or Scourge to the selection, called from
-  0x45D910 when the egg has flag 0x08.
+  0x46FB40, shift-combine 0x46F290, sorting 0x46F0F0. The shift-click removal searches
+  the list instead of using `selectionIndex`. The list-full helper 0x46F040 takes its
+  length as an argument, so it works at any size.
+- `CMDACT_Select` 0x4C0860 replaced (above). `CMDACT_HotkeyUnit` 0x4C07B0 copies the
+  recalled list into last-sent unclamped; it is replaced to copy into `lastSentExt`.
+- 0x45D040 (the egg's twin Zergling or Scourge joins the selection): replaced to append
+  to `activeSelExt`.
+- 0x49AEF0 and 0x46FA00 need no change: they only pass the list and count to 0x49AE40 and
+  0x4C0860.
 - Larva select (0x423930, `select_larva.cpp`) needs no change: buildings can't
   multi-select, so it yields at most 3 larvae.
 
@@ -279,6 +351,11 @@ Each stage ends with a build and a numbered in-game test round, using hero units
 
 ## Known issues and follow-ups
 - Multiplayer: host-synced limit and a check that every player runs the same `SEL_MAX`.
+- Multiplayer replays: enlarge the replay frame buffers (data 0x6552B0, ids 0x6554D8,
+  lengths 0x654AA8; referenced at 0x487150/0x487155/0x48715A and 0x4871B3/0x4871E8/
+  0x4871F1/0x487203) before several players can send full turns of chunks in one frame.
+- 0x4967E0 (centre the view on a group, local) hardcodes 320/200, a 640x400 view: fix
+  with the stage 4 group work.
 - Page buttons, page indicator, group-by-type panel.
 - Formation offsets in group moves apply only to groups that fit in 192–256 px (OpenBW
   `calc_group_move`), so large groups move as a blob. That is vanilla behaviour at a new
