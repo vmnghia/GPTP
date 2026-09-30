@@ -273,6 +273,107 @@ void __declspec(naked) healthBarUnitStub() {
 	}
 }
 
+//-------- Stage 2 --------//
+
+u32 __stdcall commandLengthOf(const u8* command) {
+	return selext::commandLength(command);
+}
+
+void __cdecl recvSelectChunkC(const u8* packet) {
+	selsync::recvSelectChunk(packet);
+}
+
+//Dispatch slot 50 of the executor 0x4865D0 (ids 0x3C-0x44, 0x48, 0x5B). ESI =
+//command, EAX = bytes left, [EBP+8] = bytes left, [EBP-4] = command size.
+const u32 Back_CommandDone = 0x00486D7A;	//records the command and advances
+const u32 Back_CommandBad = 0x00486DA3;		//vanilla's exit for these ids
+void __declspec(naked) selectChunkDispatch() {
+	__asm {
+		CMP BYTE PTR [ESI], 0x3C
+		JNE notOurs
+		CMP EAX, 3
+		JL notOurs
+		MOVZX ECX, BYTE PTR [ESI+2]
+		LEA ECX, [ECX*2+3]
+		SUB EAX, ECX
+		MOV [EBP+8], EAX
+		JS notOurs
+		MOV [EBP-4], ECX
+		PUSHAD
+		PUSH ESI
+		CALL recvSelectChunkC
+		ADD ESP, 4
+		POPAD
+		JMP Back_CommandDone
+	notOurs:
+		JMP Back_CommandBad
+	}
+}
+
+//0x486619 (executor, replay viewer's skip path): ECX = id, ESI = command;
+//out EDX = length, then 0x486632.
+const u32 Back_ExecutorLength = 0x00486632;
+void __declspec(naked) executorLengthStub() {
+	__asm {
+		PUSH EAX
+		PUSH ECX
+		PUSH ESI
+		CALL commandLengthOf
+		MOV EDX, EAX
+		POP ECX
+		POP EAX
+		JMP Back_ExecutorLength
+	}
+}
+
+//0x4CE082 (replay playback 0x4CDFF0): EAX = id, ECX = command; out EBX =
+//length, then 0x4CE09B. ECX and EDX are used afterwards.
+const u32 Back_PlaybackLength = 0x004CE09B;
+void __declspec(naked) playbackLengthStub() {
+	__asm {
+		PUSH ECX
+		PUSH EDX
+		PUSH ECX
+		CALL commandLengthOf
+		MOV EBX, EAX
+		POP EDX
+		POP ECX
+		JMP Back_PlaybackLength
+	}
+}
+
+//0x4CDD04 (replay save walk 0x4CDCE0): EAX + 1 = command; does vanilla's
+//INC EAX, out EDX = length, then 0x4CDD1E.
+const u32 Back_SaveWalkLength = 0x004CDD1E;
+void __declspec(naked) saveWalkLengthStub() {
+	__asm {
+		INC EAX
+		PUSH EAX
+		PUSH ECX
+		PUSH EAX
+		CALL commandLengthOf
+		MOV EDX, EAX
+		POP ECX
+		POP EAX
+		JMP Back_SaveWalkLength
+	}
+}
+
+//0x45D040: stdcall(twin).
+void __declspec(naked) addTwinWrapper() {
+	static CUnit* twin;
+	__asm {
+		MOV EAX, [ESP+4]
+		MOV twin, EAX
+		PUSHAD
+	}
+	sellocal::addTwin(twin);
+	__asm {
+		POPAD
+		RETN 4
+	}
+}
+
 } //unnamed namespace
 
 namespace hooks {
@@ -298,6 +399,14 @@ void injectSelectionExtHooks() {
 	jmpPatch(cmdactHotkeyWrapper,				0x004C07B0, 2);
 	callPatch(selsave::writeLastAndExtension,	0x004C2E0A, 0);
 	callPatch(selsave::readLastAndExtension,	0x004D0225, 0);
+}
+
+void injectSelectChunkHooks() {
+	memoryPatch(0x00486ED0, (u32)&selectChunkDispatch);
+	jmpPatch(executorLengthStub,	0x00486619, 20);
+	jmpPatch(playbackLengthStub,	0x004CE082, 20);
+	jmpPatch(saveWalkLengthStub,	0x004CDD04, 21);
+	jmpPatch(addTwinWrapper,		0x0045D040, 1);
 }
 
 } //hooks
