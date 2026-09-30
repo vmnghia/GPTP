@@ -133,11 +133,11 @@ void centerViewOnGroup(u32 group) {
 	}
 }
 
-void queueCommand(const void* data, u32 size) {
+void queueCommand(const void* data, u32 bytes) {
 	__asm {
 		PUSHAD
 		MOV ECX, data
-		MOV EDX, size
+		MOV EDX, bytes
 		CALL Func_QueueCommand
 		POPAD
 	}
@@ -160,12 +160,12 @@ void cancelTargetOrder() {
 	}
 }
 
-bool writeCompressed(FILE* file, const void* data, u32 size) {
+bool writeCompressed(FILE* file, const void* data, u32 bytes) {
 	u32 result;
 	__asm {
 		PUSHAD
 		PUSH file
-		PUSH size
+		PUSH bytes
 		MOV EAX, data
 		CALL Func_WriteCompressed
 		MOV result, EAX
