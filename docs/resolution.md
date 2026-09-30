@@ -317,6 +317,10 @@ starfield handled (§5). Features 1 and 2 below are done.
   was seen once, when `LastReplay.rep` was probably still held open after watching it.
   Not caused by the plugin.
 
+**Known bugs, to fix** (reported by the user on 2026-10-01):
+- **Restarting a game confines the cursor** to a 640×480 area in the centre of the screen.
+- **Opening the menu (F10) in a replay is very laggy.**
+
 **Then the planned features, in this order** (set by the user on 2026-09-28):
 1. **Resolution choice without rebuilding** `[BUILT]`, tested 2026-09-28 at 1024×576,
    1280×720, 1920×1072 and 640×480 (see §4). The size is fixed for the whole run, because
@@ -328,9 +332,11 @@ starfield handled (§5). Features 1 and 2 below are done.
 3. **Extended button set** `[BUILT]`, tested 2026-09-29 for all three races and replays
    (§5a). The card is 5×3. The buttons are to be rearranged later, following SC2's
    layouts.
-4. **Extended unit selection** `[PROPOSED]`: more than 12 selected units. Scope to be
-   defined. Unlike the view, selections are sent as network commands and recorded in
-   replays, so this touches synced game state, unlike everything above.
+4. **Extended unit selection** `[IN PROGRESS]`: more than 12 selected units. Stages 1+2
+   (storage, the iterator, every writer, circles, saves, the chunked select command) are
+   built; see `docs/superpowers/specs/2026-09-30-extended-selection-design.md`. Unlike the
+   view, selections are sent as network commands and recorded in replays, so this touches
+   synced game state, unlike everything above.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
    first game frame; every client applies it in the same frame; replays record it. This
    needs the view size switchable at game start. The buffers would be allocated for the

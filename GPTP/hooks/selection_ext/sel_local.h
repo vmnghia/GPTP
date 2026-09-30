@@ -27,6 +27,10 @@ void gameStartKeepLocal();
 void addTwin(CUnit* twin);
 //Tells the console to rebuild the selection, buttons, portrait and wireframes.
 void requestRefresh();
+//After the exe builds its image pools (0x4D6930) for a game: adds images to
+//the selection circle pool (80 in vanilla) and the health bar pool (12), so
+//every selected unit, and every ally's dashed circle, can have one.
+void growImagePools();
 //The unit whose health bar is being made for this sprite (0x4D603C): vanilla
 //reads activeSel[sprite->selectionIndex], which is a byte.
 CUnit* unitForHealthBar(CSprite* sprite, u32 slot);

@@ -141,6 +141,33 @@ void ring() {
 	CHECK(oldestRingSlot(full) == 0xFF);
 }
 
+//The selection circle and health bar pools are free lists of 0x40-byte images.
+struct Node {
+	Node* prev;
+	Node* next;
+	u8 rest[0x38];
+};
+
+void freeLists() {
+	static Node vanilla[2];
+	static Node extra[3];
+	memset(vanilla, 0, sizeof(vanilla));
+	vanilla[0].next = &vanilla[1];
+	vanilla[1].prev = &vanilla[0];
+	void* head = &vanilla[0];
+	void* tail = &vanilla[1];
+	freeListAppend(&head, &tail, extra, 3, sizeof(Node));
+	CHECK(head == &vanilla[0] && tail == &extra[2]);
+	CHECK(vanilla[1].next == &extra[0] && extra[0].prev == &vanilla[1]);
+	CHECK(extra[0].next == &extra[1] && extra[2].prev == &extra[1] && extra[2].next == NULL);
+
+	//An empty list (every vanilla image in use) gets a new head.
+	void* emptyHead = NULL;
+	void* emptyTail = NULL;
+	freeListAppend(&emptyHead, &emptyTail, extra, 3, sizeof(Node));
+	CHECK(emptyHead == &extra[0] && emptyTail == &extra[2] && extra[0].prev == NULL);
+}
+
 } //unnamed namespace
 
 u32 selfTest(u32* firstFailedLine) {
@@ -152,6 +179,7 @@ u32 selfTest(u32* firstFailedLine) {
 	chunkMissingMiddle();
 	lengths();
 	ring();
+	freeLists();
 	*firstFailedLine = firstLine;
 	return failures;
 }

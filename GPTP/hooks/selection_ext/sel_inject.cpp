@@ -374,6 +374,21 @@ void __declspec(naked) addTwinWrapper() {
 	}
 }
 
+//The calls to 0x4D6930 (builds the image pools; no arguments) at 0x4EEE5F and
+//0x4EEFED, the new-game and load paths of game init.
+const u32 Func_InitImages = 0x004D6930;
+void __declspec(naked) initImagesWrapper() {
+	__asm {
+		CALL Func_InitImages
+		PUSHAD
+	}
+	sellocal::growImagePools();
+	__asm {
+		POPAD
+		RETN
+	}
+}
+
 } //unnamed namespace
 
 namespace hooks {
@@ -390,6 +405,8 @@ void injectSelectionExtHooks() {
 	jmpPatch(localRemoveWrapper,				0x0049F7A0, 1);
 	jmpPatch(redrawCirclesWrapper,				0x00499A60, 1);
 	jmpPatch(healthBarUnitStub,					0x004D603C, 2);
+	callPatch(initImagesWrapper,				0x004EEE5F, 0);
+	callPatch(initImagesWrapper,				0x004EEFED, 0);
 	jmpPatch(clientCopyWrapper,					0x004C38B0, 3);
 	jmpPatch(deselectAndSendWrapper,			0x004C3B40, 1);
 	jmpPatch(reselectAtStartWrapper,			0x004D0820, 1);

@@ -37,6 +37,15 @@ bool isDying(const CUnit* unit) {
 	return unit->mainOrderId == OrderId::Die && unit->mainOrderState == 1;
 }
 
+//Free lists of the two image pools: the exe takes images from the head.
+void** const CIRCLE_POOL_HEAD		= (void**)	0x0052F564;	//80 images at 0x57D768
+void** const CIRCLE_POOL_TAIL		= (void**)	0x0052E4C0;
+void** const HEALTH_BAR_POOL_HEAD	= (void**)	0x005254B8;	//12 images at 0x57EB78
+void** const HEALTH_BAR_POOL_TAIL	= (void**)	0x0057EB6C;
+//Circles: the local selection, and every other player's dashed ally circles.
+CImage extraCircles[SEL_MAX * PLAYERS];
+CImage extraHealthBars[SEL_MAX];
+
 } //unnamed namespace
 
 namespace sellocal {
@@ -48,6 +57,16 @@ void requestRefresh() {
 	*REFRESH_BUTTON_SET = 1;
 	*REFRESH_PORTRAIT = 1;
 	*REFRESH_STAT_DATA = 1;
+}
+
+void growImagePools() {
+	//A new game: every image of the last one is gone, so these are all free.
+	memset(extraCircles, 0, sizeof(extraCircles));
+	memset(extraHealthBars, 0, sizeof(extraHealthBars));
+	freeListAppend(CIRCLE_POOL_HEAD, CIRCLE_POOL_TAIL, extraCircles,
+		sizeof(extraCircles) / sizeof(CImage), sizeof(CImage));
+	freeListAppend(HEALTH_BAR_POOL_HEAD, HEALTH_BAR_POOL_TAIL, extraHealthBars,
+		sizeof(extraHealthBars) / sizeof(CImage), sizeof(CImage));
 }
 
 CUnit* unitForHealthBar(CSprite* sprite, u32 slot) {

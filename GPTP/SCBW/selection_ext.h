@@ -104,6 +104,13 @@ u32 commandLength(const u8* cmd);
 //higher slot; 0xFF when every stamp is 0xFFFF (vanilla 0x496560).
 u8 oldestRingSlot(const u16* stamps);
 
+//-------- Image pools --------//
+
+//Appends count nodes (stride bytes apart, each starting with a prev and a next
+//pointer, like CImage's link) to the end of a free list given by its head and
+//tail pointers. The exe takes images from the head.
+void freeListAppend(void** head, void** tail, void* nodes, u32 count, u32 stride);
+
 //Clears every array, its mirror, and the pending chunks.
 void clearAll();
 

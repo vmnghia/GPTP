@@ -180,6 +180,13 @@ ring slot). Their logic is reimplemented inside the replacements.
   0x6284B8 and 0x597208 confirms there are no others. 0x49F00B and 0x49F8B6 only save the byte and hand it back to
   0x4E6180, which is harmless. The other candidates were `CImage` fields. So no per-sprite
   slot table is needed.
+- **Image pools.** Circles and health bars come from two small dedicated pools that
+  0x4D6930 builds at game start: 80 circle images at 0x57D768 (free list 0x52F564/0x52E4C0,
+  shared with allies' dashed circles) and 12 health-bar images at 0x57EB78 (free list
+  0x5254B8/0x57EB6C). When a pool is empty the image is silently not made. The calls to
+  0x4D6930 at 0x4EEE5F and 0x4EEFED are wrapped to append `SEL_MAX * 8` circle images and
+  `SEL_MAX` health-bar images owned by the plugin. (Found in the stage 2 test round: only
+  80 circles and 12 health bars showed.)
 - 17 of the 19 flag-0x08 tests are sprite "selected" tests; their actions (0x4C3B40,
   0x49F7A0, 0x45D040, HP-bar redraws) are either replaced or size-independent.
 

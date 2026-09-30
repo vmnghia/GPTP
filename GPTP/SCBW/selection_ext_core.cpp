@@ -123,4 +123,22 @@ u8 oldestRingSlot(const u16* stamps) {
 	return slot;
 }
 
+void freeListAppend(void** head, void** tail, void* nodes, u32 count, u32 stride) {
+	struct Link {
+		Link* prev;
+		Link* next;
+	};
+	for (u32 i = 0; i < count; i++) {
+		Link* node = (Link*)((u8*)nodes + i * stride);
+		Link* last = (Link*)*tail;
+		node->prev = last;
+		node->next = NULL;
+		if (last != NULL)
+			last->next = node;
+		else
+			*head = node;
+		*tail = node;
+	}
+}
+
 } //selext
