@@ -7,6 +7,8 @@
 #include <SCBW/api.h>
 #include "../interface/resolution.h"
 #include "../recv_commands/smart_cast.h"
+#include <SCBW/selection_ext.h>
+#include <cstdio>
 
 #include "../psi_field.h"
 
@@ -85,6 +87,16 @@ void initializeGame()
     {
         scbw::printText(PLUGIN_NAME ": built " __DATE__ " " __TIME__);
         resolution::printSettings();
+
+        u32 failedLine;
+        const u32 failed = selext::selfTest(&failedLine);
+        char selfTestText[96];
+        if (failed == 0)
+            sprintf_s(selfTestText, "extended selection: self-test passed");
+        else
+            sprintf_s(selfTestText, "extended selection: %u self-test checks FAILED (first at line %u)",
+                      failed, failedLine);
+        scbw::printText(selfTestText);
 
         if (*GAME_TYPE != GameType::UseMapSettings)
         {

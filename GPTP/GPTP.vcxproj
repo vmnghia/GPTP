@@ -323,6 +323,9 @@
     <ClCompile Include="hooks\recv_commands\receive_command.cpp" />
     <ClCompile Include="hooks\recv_commands\receive_command_inject.cpp" />
     <ClCompile Include="hooks\recv_commands\smart_cast.cpp" />
+    <ClCompile Include="SCBW\selection_ext.cpp" />
+    <ClCompile Include="SCBW\selection_ext_core.cpp" />
+    <ClCompile Include="hooks\selection_ext\sel_selftest.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_Selection.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_Selection_inject.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_ResearchUpgrade.cpp" />
@@ -497,6 +500,8 @@
     <ClInclude Include="hooks\recv_commands\CMDRECV_Stop.h" />
     <ClInclude Include="hooks\recv_commands\receive_command.h" />
     <ClInclude Include="hooks\recv_commands\smart_cast.h" />
+    <ClInclude Include="SCBW\selection_ext.h" />
+    <ClInclude Include="hooks\selection_ext\selection_ext_hooks.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_Selection.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_ResearchUpgrade.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_Stimpack.h" />

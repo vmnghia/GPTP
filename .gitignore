@@ -4,3 +4,6 @@
 
 /GPTP/.vs/GPTP
 /GPTP/Debug
+
+/tests/out
+/.superpowers

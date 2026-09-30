@@ -1,0 +1,133 @@
+//Checks of the pure selection logic (SCBW/selection_ext_core.cpp). They run
+//once at the start of a game, which prints the result, and in the host test
+//tests/selection_ext_test.bat.
+#include <SCBW/selection_ext.h>
+#include <cstring>
+
+namespace selext {
+
+namespace {
+
+u32 failures;
+u32 firstLine;
+
+void check(bool ok, u32 line) {
+	if (!ok) {
+		if (failures == 0)
+			firstLine = line;
+		failures++;
+	}
+}
+
+#define CHECK(x) check((x), __LINE__)
+
+//Fake unit pointers: the list helpers never dereference them.
+CUnit* fake(u32 n) {
+	return (CUnit*)(0x1000 + 0x10 * n);
+}
+
+void lists() {
+	CUnit* list[5] = { fake(1), fake(2), fake(3), NULL, NULL };
+	CHECK(listCount(list, 5) == 3);
+	CHECK(listFind(list, 5, fake(2)) == 1);
+	CHECK(listFind(list, 5, fake(9)) == -1);
+	CHECK(listRemove(list, 5, fake(9)) == 3);
+	CHECK(listRemove(list, 5, fake(1)) == 2);
+	CHECK(list[0] == fake(2) && list[1] == fake(3) && list[2] == NULL);
+
+	CUnit* full[3] = { fake(1), fake(2), fake(3) };
+	CHECK(listCount(full, 3) == 3);
+	CHECK(listRemove(full, 3, fake(3)) == 2 && full[2] == NULL);
+
+	CUnit* swap[4] = { fake(1), fake(2), fake(3), fake(4) };
+	listRemoveSwapLast(swap, 4, fake(2));
+	CHECK(swap[0] == fake(1) && swap[1] == fake(4) && swap[2] == fake(3) && swap[3] == NULL);
+
+	listClear(swap, 4);
+	CHECK(listCount(swap, 4) == 0);
+}
+
+void chunkRoundTrip() {
+	static u16 tags[SEL_MAX];
+	for (u32 i = 0; i < SEL_MAX; i++)
+		tags[i] = (u16)(i + 1);
+	const u32 count = 300;
+	CHECK(chunkCountFor(0) == 1);
+	CHECK(chunkCountFor(125) == 1);
+	CHECK(chunkCountFor(126) == 2);
+	CHECK(chunkCountFor(count) == 3);
+
+	static PendingPacket p;
+	memset(&p, 0, sizeof(p));
+	u8 buf[CHUNK_MAX_BYTES];
+	bool done = false;
+	for (u32 c = 0; c < chunkCountFor(count); c++) {
+		const u32 len = chunkBuild(buf, CHUNK_ADD, tags, count, c);
+		CHECK(len <= CHUNK_MAX_BYTES && len == variableCommandLength(buf));
+		CHECK(!done);
+		done = chunkFeed(p, buf);
+	}
+	CHECK(done && p.count == count && p.mode == CHUNK_ADD && !p.open);
+	CHECK(p.tags[0] == 1 && p.tags[count - 1] == count);
+}
+
+void chunkFeedRejects() {
+	u16 tags[200];
+	for (u32 i = 0; i < 200; i++)
+		tags[i] = (u16)(i + 1);
+	static PendingPacket p;
+	memset(&p, 0, sizeof(p));
+	u8 first[CHUNK_MAX_BYTES], second[CHUNK_MAX_BYTES], other[CHUNK_MAX_BYTES];
+	chunkBuild(first, CHUNK_REPLACE, tags, 200, 0);
+	chunkBuild(second, CHUNK_REPLACE, tags, 200, 1);
+	chunkBuild(other, CHUNK_REMOVE, tags, 200, 1);
+
+	//A later chunk with no first one is dropped.
+	CHECK(!chunkFeed(p, second) && !p.open);
+	//A chunk of another mode in between drops the packet.
+	chunkFeed(p, first);
+	CHECK(!chunkFeed(p, other) && !p.open);
+	CHECK(!chunkFeed(p, second));
+	//A new first chunk restarts the packet.
+	chunkFeed(p, first);
+	CHECK(chunkFeed(p, second) && p.count == 200);
+	//A count above the chunk limit is dropped.
+	first[2] = (u8)(CHUNK_MAX_UNITS + 1);
+	CHECK(!chunkFeed(p, first) && !p.open);
+}
+
+void lengths() {
+	const u8 select[] = { 0x09, 3, 0, 0, 0, 0, 0, 0 };
+	CHECK(variableCommandLength(select) == 8);
+	const u8 chunk[] = { CMD_SELECT_CHUNK, CHUNK_FIRST | CHUNK_LAST, 2, 0, 0, 0, 0 };
+	CHECK(variableCommandLength(chunk) == 7);
+	const u8 hotkey[] = { 0x13, 0, 0 };
+	CHECK(variableCommandLength(hotkey) == 0);
+}
+
+void ring() {
+	const u16 stamps[8] = { 5, 3, 9, 3, 7, 8, 6, 4 };
+	CHECK(oldestRingSlot(stamps) == 3);	//ties go to the higher slot
+	const u16 zeros[8] = { 0 };
+	CHECK(oldestRingSlot(zeros) == 7);
+	u16 full[8];
+	for (u32 i = 0; i < 8; i++)
+		full[i] = 0xFFFF;
+	CHECK(oldestRingSlot(full) == 0xFF);
+}
+
+} //unnamed namespace
+
+u32 selfTest(u32* firstFailedLine) {
+	failures = 0;
+	firstLine = 0;
+	lists();
+	chunkRoundTrip();
+	chunkFeedRejects();
+	lengths();
+	ring();
+	*firstFailedLine = firstLine;
+	return failures;
+}
+
+} //selext
