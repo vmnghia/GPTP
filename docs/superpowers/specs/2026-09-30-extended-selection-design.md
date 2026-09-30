@@ -172,9 +172,12 @@ ring slot). Their logic is reimplemented inside the replacements.
 **Circles and `selectionIndex`:**
 - The new 0x49AE40 calls 0x4E6180 for every selected unit, so every one gets flag 0x08
   and a circle. `CSprite+0x0B` gets `min(slot, 255)`.
-- The only reader that uses `CSprite+0x0B` as an array offset is 0x49F7B3 (in 0x49F7A0,
-  replaced: it searches `activeSelExt` instead) and GPTP's shift-click in `selection.cpp`
-  (stage 2, same fix). 0x49F00B and 0x49F8B6 only save the byte and hand it back to
+- The readers that use `CSprite+0x0B` as an array offset are 0x49F7B3 (in 0x49F7A0,
+  replaced: it searches `activeSelExt` instead), **0x4D603C** in the health-bar setup
+  0x4D6010 (hooked: `activeSelExt[slot]` below 255, else a search by sprite; found in the
+  stage 1 test round, where it crashed on the stale mirror), and GPTP's shift-click in
+  `selection.cpp` (stage 2, same fix). A search of every register-indexed read of
+  0x6284B8 and 0x597208 confirms there are no others. 0x49F00B and 0x49F8B6 only save the byte and hand it back to
   0x4E6180, which is harmless. The other candidates were `CImage` fields. So no per-sprite
   slot table is needed.
 - 17 of the 19 flag-0x08 tests are sprite "selected" tests; their actions (0x4C3B40,

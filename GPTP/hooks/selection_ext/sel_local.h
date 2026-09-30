@@ -27,5 +27,8 @@ void gameStartKeepLocal();
 void addTwin(CUnit* twin);
 //Tells the console to rebuild the selection, buttons, portrait and wireframes.
 void requestRefresh();
+//The unit whose health bar is being made for this sprite (0x4D603C): vanilla
+//reads activeSel[sprite->selectionIndex], which is a byte.
+CUnit* unitForHealthBar(CSprite* sprite, u32 slot);
 
 } //sellocal

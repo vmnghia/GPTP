@@ -252,6 +252,27 @@ void __declspec(naked) cmdactHotkeyWrapper() {
 	}
 }
 
+//0x4D603C in 0x4D6010 (health bar setup; 7 bytes: mov edi, [ecx*4+0x6284B8]):
+//ECX = the sprite's selectionIndex, [EBP+8] = the sprite; out EDI = its unit.
+const u32 Back_HealthBarUnit = 0x004D6043;
+void __declspec(naked) healthBarUnitStub() {
+	static CSprite* sprite;
+	static u32 slot;
+	static CUnit* unit;
+	__asm {
+		MOV slot, ECX
+		MOV EDI, [EBP+8]
+		MOV sprite, EDI
+		PUSHAD
+	}
+	unit = sellocal::unitForHealthBar(sprite, slot);
+	__asm {
+		POPAD
+		MOV EDI, unit
+		JMP Back_HealthBarUnit
+	}
+}
+
 } //unnamed namespace
 
 namespace hooks {
@@ -267,6 +288,7 @@ void injectSelectionExtHooks() {
 	jmpPatch(buildActiveWrapper,				0x0049AE40, 0);
 	jmpPatch(localRemoveWrapper,				0x0049F7A0, 1);
 	jmpPatch(redrawCirclesWrapper,				0x00499A60, 1);
+	jmpPatch(healthBarUnitStub,					0x004D603C, 2);
 	jmpPatch(clientCopyWrapper,					0x004C38B0, 3);
 	jmpPatch(deselectAndSendWrapper,			0x004C3B40, 1);
 	jmpPatch(reselectAtStartWrapper,			0x004D0820, 1);

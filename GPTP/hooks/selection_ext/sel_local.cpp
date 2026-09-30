@@ -50,17 +50,33 @@ void requestRefresh() {
 	*REFRESH_STAT_DATA = 1;
 }
 
+CUnit* unitForHealthBar(CSprite* sprite, u32 slot) {
+	//Below the byte's cap the slot is exact, as in vanilla.
+	if (slot < 255 && slot < SEL_MAX && activeSel[slot] != NULL)
+		return activeSel[slot];
+	for (u32 i = 0; i < SEL_MAX && activeSel[i] != NULL; i++)
+		if (activeSel[i]->sprite == sprite)
+			return activeSel[i];
+	CUnit* const* const vanillaActive = (CUnit* const*)0x006284B8;
+	return slot < VANILLA_MAX ? vanillaActive[slot] : activeSel[0];
+}
+
 void buildActive(CUnit** list, u32 count) {
 	for (u32 i = 0; i < SEL_MAX && activeSel[i] != NULL; i++) {
 		CUnit* unit = activeSel[i];
 		activeSel[i] = NULL;
 		selexe::removeSelectionCircle(parentOf(unit));
 	}
+	mirrorActive();
 	if (count > SEL_MAX)
 		count = SEL_MAX;
+	CUnit** const vanillaActive = (CUnit**)0x006284B8;
 	for (u32 i = 0; i < count; i++) {
 		CUnit* unit = parentOf(list[i]);
 		activeSel[i] = unit;
+		//Vanilla fills each slot before its circle is made; keep the mirror so.
+		if (i < VANILLA_MAX)
+			vanillaActive[i] = unit;
 		selexe::createSelectionCircle(unit, circleSlot(i));
 		list[i] = unit;
 	}
