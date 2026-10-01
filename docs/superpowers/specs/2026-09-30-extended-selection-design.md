@@ -367,7 +367,8 @@ subgroup is **active**, and the card shows that subgroup's buttons.
   unburrowed Hydralisks show Move, Stop, Attack, Patrol, Hold and Burrow. Pressing a
   button orders every selected unit able to obey: Burrow on the Hydralisk card also
   burrows selected Zerglings, as in SC2.
-- **Build** with several workers selected: the selected worker nearest the site builds.
+- **Build** with several workers selected stays hidden, as vanilla, until smart-build
+  (a separate feature, below).
 - Replays: the card is unchanged (the replay set). Tab still moves the highlight.
 - Tab is not yet confirmed unused by vanilla in game; the plan checks it first and stops
   for a decision if it is taken.
@@ -393,7 +394,9 @@ subgroup is **active**, and the card shows that subgroup's buttons.
   same burrow state, same detection state (unless burrowed), same hallucination state.
 - The vanilla card choice (GPTP `updateButtonSetEx`, 0x458BC0) picks a merged set when
   types differ: GroupMixed, GroupPeons, GroupCloaker or GroupBurrower.
-- Build receive refuses a Build with more than one unit selected.
+- Build receive refuses a Build with more than one unit selected, and the Build-menu
+  conditions (SCV, Probe, Drone and the build/train buttons) need exactly one unit
+  selected (u8 count 0x59723D == 1).
 - Smart-casting's buffers and round snapshot already use `SEL_MAX` (stage 1–2).
 
 **Design**
@@ -414,7 +417,8 @@ subgroup is **active**, and the card shows that subgroup's buttons.
   (except in replays, which keep the vanilla card).
 - **Conditions, "any member can":** each button's existing condition is called once per
   member of the active subgroup, with the 12-slot client selection mirror temporarily
-  holding only that unit (count 1), then restored. The button takes the best result:
+  holding only that unit, then restored. The mirror's count stays the real selection's,
+  so the Build menus stay hidden with several units selected. The button takes the best result:
   Enabled > Disabled > Invisible, stopping at the first Enabled. No condition is
   rewritten, so conditions not looked at come along. It runs when the card refreshes,
   not every frame.
@@ -422,9 +426,6 @@ subgroup is **active**, and the card shows that subgroup's buttons.
   vanilla set order decides which one wins (the "on" one, as in vanilla).
 - **Actions** send the same commands as now, for the whole synced selection; receive
   already drops units that can't obey. No new synced command.
-- **Build** receive with several units selected: the selected worker able to build the
-  type that is nearest the site (squared distance, ties to the lowest selection index)
-  gets the order. Synced state only.
 
 **Other readers** (from the first stage 5 design, still to classify in the plan)
 - The u8 count 0x59723D (23 readers): the mirror holds min(n, 12), so `== 0`, `== 1`
@@ -441,6 +442,12 @@ subgroup is **active**, and the card shows that subgroup's buttons.
 button (Siege, Cloak, Burrow) at position 11 and the "off" one (Unsiege, Decloak,
 Unburrow) at 12. They are entries in each type's own set; the card needs no code change
 to show both.
+
+**Smart-build (separate feature, not this stage):** several workers selected can build,
+like smart-casting: each order goes to one worker (synced pick), Shift queues several
+buildings, of several kinds, across the workers, and the build menu stays open after each
+placement instead of going back to the basic card (as in SC2). Vanilla hides Build with
+several workers so they don't all walk to one site and contend for it.
 
 **Out of scope:** Lift/Land (buildings aren't multi-selectable), multiplayer testing,
 any editor UI.
@@ -463,10 +470,10 @@ Each stage ends with a build and a numbered in-game test round, using hero units
   from before this feature.
 - **Stage 5:** host tests for the subgroup key (siege aliases, hallucinations), the
   priority sort, which subgroup stays active after add, remove or death, Tab wrapping,
-  combining button results, and the nearest-worker pick with its tie rule. In game: a
+  and combining button results. In game: a
   mixed army's card and Tab; burrowed + unburrowed Hydralisks show Move and Burrow;
   sieged + unsieged tanks are one subgroup; Ctrl+click on a burrowed Hydralisk takes
-  both states; Build with 10 SCVs; hallucinations as their own subgroup; shift-add
+  both states; 10 SCVs show no Build (as vanilla); hallucinations as their own subgroup; shift-add
   keeps the active subgroup; a replay.
 
 ## Known issues and follow-ups
