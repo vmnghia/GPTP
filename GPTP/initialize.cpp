@@ -233,6 +233,7 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	//Selections above 12 units (hooks/selection_ext, SCBW/selection_ext.h).
 	hooks::injectSelectionExtHooks();
 	hooks::injectSelectChunkHooks();
+	hooks::injectSelectionPanelHooks();
 
 	//======== DISABLED HOOKS ========//
 	//Written but not in use. To turn one on, move it up into the enabled list.

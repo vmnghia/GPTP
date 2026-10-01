@@ -7,5 +7,7 @@ namespace hooks {
 void injectSelectionExtHooks();
 //Stage 2: the select-chunk command and the command-length sites.
 void injectSelectChunkHooks();
+//Stage 3: the selection panel's pages. Needs the wide rez\statdata.bin.
+void injectSelectionPanelHooks();
 
 } //hooks

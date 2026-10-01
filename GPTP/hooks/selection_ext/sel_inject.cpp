@@ -5,6 +5,7 @@
 #include "sel_local.h"
 #include "sel_send.h"
 #include "sel_save.h"
+#include "sel_panel.h"
 #include <SCBW/selection_ext.h>
 #include <hook_tools.h>
 
@@ -119,7 +120,8 @@ void __declspec(naked) buildActiveWrapper() {
 		MOV count, EAX
 		PUSHAD
 	}
-	sellocal::buildActive(list, count);
+	//Every exe caller (drag, click, recall, Alt-click) makes a new selection.
+	sellocal::buildActiveNewSelection(list, count);
 	__asm {
 		POPAD
 		RETN 4
@@ -389,6 +391,62 @@ void __declspec(naked) initImagesWrapper() {
 	}
 }
 
+//-------- Stage 3 --------//
+
+//0x425960: EAX = dialog.
+void __declspec(naked) panelFillWrapper() {
+	static BinDlg* dialog;
+	__asm {
+		MOV dialog, EAX
+		PUSHAD
+	}
+	selpanel::fill(dialog);
+	__asm {
+		POPAD
+		RETN
+	}
+}
+
+//0x424660: no arguments, BOOL in EAX.
+void __declspec(naked) panelChangedWrapper() {
+	static u32 result;
+	__asm PUSHAD
+	result = selpanel::changed() ? 1 : 0;
+	__asm {
+		POPAD
+		MOV EAX, result
+		RETN
+	}
+}
+
+//0x458220: EDX = the clicked wireframe.
+void __declspec(naked) panelClickWrapper() {
+	static BinDlg* control;
+	__asm {
+		MOV control, EDX
+		PUSHAD
+	}
+	selpanel::click(control);
+	__asm {
+		POPAD
+		RETN
+	}
+}
+
+//0x484350, the in-game KEYDOWN proc: ECX = the event.
+void __declspec(naked) keyDownWrapper() {
+	static const u8* event;
+	__asm {
+		MOV event, ECX
+		PUSHAD
+	}
+	selpanel::keyDown(event);
+	__asm {
+		POPAD
+		RETN
+	}
+}
+
 } //unnamed namespace
 
 namespace hooks {
@@ -424,6 +482,19 @@ void injectSelectChunkHooks() {
 	jmpPatch(playbackLengthStub,	0x004CE082, 20);
 	jmpPatch(saveWalkLengthStub,	0x004CDD04, 21);
 	jmpPatch(addTwinWrapper,		0x0045D040, 1);
+}
+
+void injectSelectionPanelHooks() {
+	//StatData's interact table, which 0x4584C0 passes to 0x418100 at
+	//USER_CREATE: vanilla's 44 entries, then the wireframe handler.
+	memoryPatch(0x004584C3, selpanel::interactTableBytes());
+	memoryPatch(0x004584C8, (u32)selpanel::interactTable());
+	//Tooltips for every wireframe id (a sign-extended imm8, so at most 0x7F).
+	memoryPatch(0x00457D7E, (u8)(selext::WIREFRAME_FIRST_ID + selext::WIREFRAME_MAX - 1));
+	jmpPatch(panelFillWrapper,		0x00425960, 6);
+	jmpPatch(panelChangedWrapper,	0x00424660, 2);
+	jmpPatch(panelClickWrapper,		0x00458220, 1);
+	jmpPatch(keyDownWrapper,		0x00484350, 0);
 }
 
 } //hooks
