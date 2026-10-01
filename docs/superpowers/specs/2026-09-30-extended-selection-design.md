@@ -4,12 +4,12 @@ Status: stages 1+2 built and tested in game (2026-10-01, build 03:26); stage 3 (
 built and tested (2026-10-01, build 23:00, plan
 `docs/superpowers/plans/2026-10-01-extended-selection-stage-3.md`); stage 4 (control
 groups) built and tested (2026-10-02, build 00:09, plan
-`docs/superpowers/plans/2026-10-02-extended-selection-stage-4.md`); stage 5 not built. Stage 1+2
+`docs/superpowers/plans/2026-10-02-extended-selection-stage-4.md`); stage 5 (subgroups and the command card) designed, not built. Stage 1+2
 plan: `docs/superpowers/plans/2026-09-30-extended-selection-stage-1-2.md`.
 Found during testing and review (details in the stage sections): the health-bar lookup
 0x4D603C, the 80-circle and 12-health-bar image pools, and chunks needing an index so a
 lost middle chunk drops the packet.
-Branch: stages 1–3 on `master` (local); stage 4 on `feature/control-groups`
+Branch: stages 1–4 on `master` (local); stage 5 on `feature/command-card`
 Detailed notes: `docs/selection.md` §1–§5 (the first survey; where it and this spec
 disagree, this spec wins, because every address below was re-checked in the exe)
 
@@ -35,14 +35,13 @@ disagree, this spec wins, because every address below was re-checked in the exe)
   on page 0. When units die, the page stays, moved back to the last page if needed.
   - Click a wireframe to select that unit. Shift-click removes it. Ctrl-click selects
     every unit of that type in the **whole** selection, not just the page.
-- **Buttons.** The command card considers every selected unit, so a Ghost at slot 13 of
-  a Marine selection still shows Lockdown.
+- **Subgroups and the card** (stage 5). The selection splits into subgroups by unit
+  type. The card shows the active subgroup's buttons; Tab cycles subgroups.
 - **Control groups.** Ctrl+number, Shift+number, number and Alt-click (the recent
   selections) work at the full limit.
 - **Saves.** Selections and groups survive save and load. A save from before this
   feature loads with the first 12 units of each selection and group.
-- **Not in this feature:** page buttons, a page indicator, grouping the panel by unit
-  type.
+- **Not in this feature:** page buttons, a page indicator.
 
 ## Decisions
 - **The mirror** (chosen over repointing every reference or rewriting ~90 functions).
@@ -338,23 +337,113 @@ oldest ring slot.
 - **Recent ring (groups 10–17):** a completed select of more than 1 unit (vanilla 0x09 /
   0x0A or one chunk commit) is copied into the oldest ring slot once.
 - **Local side:** recall 0x496B40 (GPTP `selectUnitGroup`, enabled) and Alt-click
-  0x496D30 read `groupsExt`. Double-tap to centre stays. 0x4967E0 (group unit count, 12
-  callers) is checked per caller; callers that use the count move over.
+  0x496D30 read `groupsExt`. Double-tap centring 0x4967E0 (`cl` = group) is replaced to
+  read `groupsExt` and centre on the view's size.
 - **Save chunk, version 2:** adds `groupsExt` after the selections.
 
-## Stage 5: remaining readers
+## Stage 5: subgroups and the command card
 
-- **Button conditions and actions:** about 40 functions (0x4234D0–0x429470, 0x458BC0,
-  0x46F5B0) loop `for (p = clientSel; p < clientSel + 12; p++)` (the 44
-  `cmp reg, 0x597238` hits). For each loop, patch the base and end immediates as a pair
-  to `clientSelExt` and `clientSelExt + SEL_MAX`. A site where both halves can't be
-  found gets a C++ rewrite. 0x46F5B0 is the send-side "does any selected caster have the
-  energy" check.
-- **The u8 count 0x59723D (23 readers):** the mirror holds min(n, 12), so `== 0`,
-  `== 1` and `> 1` behave the same. Every comparison is listed; any that tests against 12
-  or more is converted.
-- **Classified in the plan and converted where they differ above 12:** 0x455A00,
-  0x4563A0, 0x4564E0, 0x458120, 0x458DE0, 0x464360, 0x492CC0, 0x49FED0, 0x4E5640.
+Replaces the first stage 5 design (button conditions over the whole selection). The
+goal is SC2's command card: the selection splits into **subgroups** by unit type, one
+subgroup is **active**, and the card shows that subgroup's buttons.
+
+**What the player sees**
+- The panel is sorted by subgroup, highest priority first, and each subgroup's units
+  sit together. The active subgroup's wireframes are highlighted and the rest dimmed.
+  The look is chosen from rendered mock-ups before it is built.
+- The card and the portrait are the active subgroup leader's: its first unit in panel
+  order. The card's hotkeys work at once, without selecting the subgroup first.
+- **Tab** activates the next subgroup, **Shift+Tab** the previous one, both wrapping.
+  Not while chat is open. With one subgroup, Tab does nothing. If the new subgroup's
+  first unit is on another page, the panel goes to that page.
+- A new selection (click, box, Ctrl+click, double-click, group recall, Alt-click)
+  activates the highest-priority subgroup. A shift-add, shift-remove or a death keeps
+  the active subgroup while any of its units remain; otherwise the next one down is
+  active (the last one if it was the lowest).
+- **Ctrl+click and double-click** select every unit with the same subgroup key on
+  screen, so a burrowed Hydralisk takes the unburrowed ones too, and a sieged tank the
+  unsieged ones.
+- A button shows if **any** unit of the active subgroup can use it. Burrowed and
+  unburrowed Hydralisks show Move, Stop, Attack, Patrol, Hold and Burrow. Pressing a
+  button orders every selected unit able to obey: Burrow on the Hydralisk card also
+  burrows selected Zerglings, as in SC2.
+- **Build** with several workers selected: the selected worker nearest the site builds.
+- Replays: the card is unchanged (the replay set). Tab still moves the highlight.
+- Tab is not yet confirmed unused by vanilla in game; the plan checks it first and stops
+  for a decision if it is taken.
+
+**Verified (2026-10-02)**
+- `BUTTON_SET` (12 bytes at 0x5187E8 + 12 × set): button count, first `BUTTON` (20
+  bytes: position, icon, `reqFunc`, `actFunc`, reqVar, actVar, two string ids),
+  `connectedUnit`. Only set 16 (Kerrigan) is connected (to 1, Ghost).
+- Button condition results: Enabled 1, Disabled −1, Invisible 0
+  (`BUTTON_STATE`). Vanilla conditions loop the 12-slot client selection 0x597208 and mix
+  "any" and "all": Hydralisk set 38 has Move/Stop/Patrol/Hold on 0x4283C0 (hidden if
+  any unit is burrowed), Burrow on 0x4290F0 (shown if any unit can burrow), Unburrow on
+  0x429070 (shown only if all are burrowed). Burrow and Unburrow share position 9, so a
+  mixed selection shows Burrow and hides Move (checked in game).
+- **Toggle families.** Every on/off pair shares one position, chosen by condition:
+  Siege/Unsiege at 7 (sets 5 and 30 hold both buttons, likewise 23 and 25);
+  Cloak/Decloak at 7 (Ghost, Wraith, Kerrigan, Kazansky, Infested Kerrigan, Duran,
+  Stukov, Infested Duran); Burrow/Unburrow at 9 (Zergling, Hydralisk, Drone, Defiler,
+  Infested Terran, Lurker, Unclean One, Hunter Killer, Devouring One); Lift/Land at 9
+  (Terran buildings, which can't be multi-selected). **Only siege changes the unit
+  type** (Siege Tank 5 ↔ 30, Edmund Duke 23 ↔ 25).
+- **Ctrl+click filter** 0x46F0F0 (GPTP `SortAllUnits_Helper`): same owner, same type,
+  same burrow state, same detection state (unless burrowed), same hallucination state.
+- The vanilla card choice (GPTP `updateButtonSetEx`, 0x458BC0) picks a merged set when
+  types differ: GroupMixed, GroupPeons, GroupCloaker or GroupBurrower.
+- Build receive refuses a Build with more than one unit selected.
+- Smart-casting's buffers and round snapshot already use `SEL_MAX` (stage 1–2).
+
+**Design**
+- **Subgroup key** = owner, unit type with the siege aliases (30 → 5, 25 → 23), and the
+  hallucination flag. Burrow, cloak and detection state are ignored. Hallucinations
+  are their own subgroup, ranked right after the real units of the type. The same key
+  drives Ctrl+click, double-click and Ctrl-click on a wireframe (stage 3).
+- **Priority table:** one `u16` per unit type in the plugin, filled at game start:
+  heroes first (units.dat hero flag), then higher build score, then lower unit id. It
+  is the one place a later editor writes (an override file loaded over the defaults;
+  no format now). It only orders the UI, so a different table on another machine can't
+  desync.
+- **Active subgroup:** local UI state like the page, not synced and not saved. A load
+  activates the highest-priority subgroup.
+- **The panel order is local too.** The synced selection keeps its order; the panel
+  draws from a sorted view of it.
+- **Card:** the leader's own button set; the merged group sets are no longer chosen
+  (except in replays, which keep the vanilla card).
+- **Conditions, "any member can":** each button's existing condition is called once per
+  member of the active subgroup, with the 12-slot client selection mirror temporarily
+  holding only that unit (count 1), then restored. The button takes the best result:
+  Enabled > Disabled > Invisible, stopping at the first Enabled. No condition is
+  rewritten, so conditions not looked at come along. It runs when the card refreshes,
+  not every frame.
+- **On/off pairs** keep sharing a position until the button editor moves them; the
+  vanilla set order decides which one wins (the "on" one, as in vanilla).
+- **Actions** send the same commands as now, for the whole synced selection; receive
+  already drops units that can't obey. No new synced command.
+- **Build** receive with several units selected: the selected worker able to build the
+  type that is nearest the site (squared distance, ties to the lowest selection index)
+  gets the order. Synced state only.
+
+**Other readers** (from the first stage 5 design, still to classify in the plan)
+- The u8 count 0x59723D (23 readers): the mirror holds min(n, 12), so `== 0`, `== 1`
+  and `> 1` behave the same. Any comparison against 12 or more is converted.
+- 0x46F5B0 (send side: does any selected caster have the energy), 0x455A00, 0x4563A0,
+  0x4564E0, 0x458120, 0x458DE0, 0x464360, 0x492CC0, 0x49FED0, 0x4E5640: converted where
+  they differ above 12, or where the card change needs them.
+- GPTP code still looping `SELECTION_ARRAY_LENGTH` over the client selection
+  (`btns_cond.cpp`, `buttonsets.cpp`, the status display, `right_click_CMDACT.cpp` and
+  others): each is classified as enabled or `//OFF` in `initialize.cpp`, and enabled
+  ones are converted.
+
+**TODO (with the button editor, not this stage):** on/off pairs side by side, the "on"
+button (Siege, Cloak, Burrow) at position 11 and the "off" one (Unsiege, Decloak,
+Unburrow) at 12. They are entries in each type's own set; the card needs no code change
+to show both.
+
+**Out of scope:** Lift/Land (buildings aren't multi-selectable), multiplayer testing,
+any editor UI.
 
 ## Testing
 Each stage ends with a build and a numbered in-game test round, using hero units.
@@ -372,9 +461,13 @@ Each stage ends with a build and a numbered in-game test round, using hero units
 - **Stage 4:** Ctrl+1 on 400 units and recall; Shift+1 until the limit; a group with dead
   or loaded units; Alt-click through the recent ring; save, load, recall; load a save
   from before this feature.
-- **Stage 5:** 12 Marines + a Ghost at slot 13 shows Lockdown and the Ghost casts it; a
-  mixed selection where only unit 20 can burrow shows Burrow; buttons unchanged at 12 or
-  fewer.
+- **Stage 5:** host tests for the subgroup key (siege aliases, hallucinations), the
+  priority sort, which subgroup stays active after add, remove or death, Tab wrapping,
+  combining button results, and the nearest-worker pick with its tie rule. In game: a
+  mixed army's card and Tab; burrowed + unburrowed Hydralisks show Move and Burrow;
+  sieged + unsieged tanks are one subgroup; Ctrl+click on a burrowed Hydralisk takes
+  both states; Build with 10 SCVs; hallucinations as their own subgroup; shift-add
+  keeps the active subgroup; a replay.
 
 ## Known issues and follow-ups
 - Multiplayer: host-synced limit and a check that every player runs the same `SEL_MAX`.
@@ -384,9 +477,7 @@ Each stage ends with a build and a numbered in-game test round, using hero units
 - Multiplayer replays: enlarge the replay frame buffers (data 0x6552B0, ids 0x6554D8,
   lengths 0x654AA8; referenced at 0x487150/0x487155/0x48715A and 0x4871B3/0x4871E8/
   0x4871F1/0x487203) before several players can send full turns of chunks in one frame.
-- 0x4967E0 (centre the view on a group, local) hardcodes 320/200, a 640x400 view: fix
-  with the stage 4 group work.
-- Page buttons, page indicator, group-by-type panel.
+- Page buttons, page indicator.
 - Formation offsets in group moves apply only to groups that fit in 192–256 px (OpenBW
   `calc_group_move`), so large groups move as a blob. That is vanilla behaviour at a new
   scale, not a bug.
