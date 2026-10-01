@@ -7,6 +7,7 @@
 #include "sel_save.h"
 #include "sel_panel.h"
 #include "sel_groups.h"
+#include "sel_subgroups.h"
 #include <SCBW/selection_ext.h>
 #include <hook_tools.h>
 
@@ -517,6 +518,63 @@ void __declspec(naked) pageUpHeldStub() {
 	}
 }
 
+//-------- Stage 5 --------//
+
+//0x45990F (button click, 24 bytes to the handler's return): ESI = the dialog.
+//Runs the button's action with the client mirror holding the active
+//subgroup's best units, then returns from the handler as vanilla does.
+void __declspec(naked) buttonActionStub() {
+	__asm {
+		MOV ESI, [ESI+0x26]
+		PUSHAD
+	}
+	selsub::viewBegin();
+	__asm {
+		POPAD
+		PUSH EAX
+		MOV EAX, 0x00596A28
+		MOV DL, [EAX]
+		POP EAX
+		MOV CX, [ESI+0x0E]
+		CALL DWORD PTR [ESI+8]
+		PUSHAD
+	}
+	selsub::viewEnd();
+	__asm {
+		POPAD
+		POP EDI
+		MOV EAX, 1
+		POP ESI
+		RETN
+	}
+}
+
+//Calls of 0x46F5B0 (target-order send check): stdcall, 4 arguments. Each
+//PUSH [ESP+0x10] copies the next argument down (they sit at ESP+4..+0x10
+//after the call here, and every push moves ESP by 4).
+const u32 Func_TargetOrderCheck = 0x0046F5B0;
+void __declspec(naked) targetOrderCheckStub() {
+	static u32 result;
+	__asm PUSHAD
+	selsub::viewBegin();
+	__asm {
+		POPAD
+		PUSH DWORD PTR [ESP+0x10]
+		PUSH DWORD PTR [ESP+0x10]
+		PUSH DWORD PTR [ESP+0x10]
+		PUSH DWORD PTR [ESP+0x10]
+		CALL Func_TargetOrderCheck
+		MOV result, EAX
+		PUSHAD
+	}
+	selsub::viewEnd();
+	__asm {
+		POPAD
+		MOV EAX, result
+		RETN 0x10
+	}
+}
+
 } //unnamed namespace
 
 namespace hooks {
@@ -572,6 +630,13 @@ void injectSelectionPanelHooks() {
 void injectControlGroupHooks() {
 	jmpPatch(selectRecentGroupWrapper,	0x00496D30, 1);
 	jmpPatch(centerViewOnGroupWrapper,	0x004967E0, 1);
+}
+
+void injectCommandCardHooks() {
+	jmpPatch(buttonActionStub,		0x0045990F, 19);
+	callPatch(targetOrderCheckStub,	0x004A5631, 0);
+	callPatch(targetOrderCheckStub,	0x004BD54B, 0);
+	callPatch(targetOrderCheckStub,	0x004BD564, 0);
 }
 
 } //hooks

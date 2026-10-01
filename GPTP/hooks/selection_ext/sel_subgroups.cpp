@@ -77,4 +77,25 @@ void reset() {
 	activeKey = 0;
 }
 
+void viewBegin() {
+	static CUnit* view[SEL_MAX];
+	u32 m = activeMembers(view);
+	//Most energy first: the check wants one unit able to cast.
+	for (u32 i = 1; i < m; i++) {
+		CUnit* const unit = view[i];
+		u32 j = i;
+		for (; j > 0 && view[j - 1]->energy < unit->energy; j--)
+			view[j] = view[j - 1];
+		view[j] = unit;
+	}
+	for (u32 i = 0; i < clientCount && m < VANILLA_MAX; i++)
+		if (keys[i] != activeKey)
+			view[m++] = clientSel[i];
+	mirrorClientView(view, m, clientCount);
+}
+
+void viewEnd() {
+	mirrorClient();
+}
+
 } //selsub

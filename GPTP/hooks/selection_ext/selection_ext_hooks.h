@@ -11,5 +11,8 @@ void injectSelectChunkHooks();
 void injectSelectionPanelHooks();
 //Stage 4: Alt-click and double-tap centring on the extended control groups.
 void injectControlGroupHooks();
+//Stage 5: the card's conditions over the active subgroup; send-side checks
+//(button actions, the target-order check) see it first.
+void injectCommandCardHooks();
 
 } //hooks

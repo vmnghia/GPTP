@@ -1,4 +1,6 @@
 #include "buttonsets.h"
+#include <SCBW/selection_ext.h>
+#include "../selection_ext/sel_subgroups.h"
 
 //Helper functions
 
@@ -449,8 +451,9 @@ namespace hooks {
 
 		*BUTTONSET_CURRENT_BUTTONSETID = UnitId::Buttons_Blank;
 
-		if( (*clientSelectionCount > 1) && (!scbw::isInReplay()) )
-			updateButtonSetEx();
+		//Stage 5 (subgroups): the card is the active subgroup leader's own set
+		//(the portrait unit's), not a merged group set; updateButtonSetEx is
+		//no longer called.
 
 	} //updateButtonSet
 
@@ -683,6 +686,26 @@ namespace hooks {
 
 	;
 
+//Stage 5: with several units selected, a button takes the best result of
+//its condition over the active subgroup's members, each checked alone (the
+//client mirror holds only that member; its count stays the real selection's,
+//so the Build menus still need one unit selected).
+static s32 subgroupButtonState(BUTTON* button) {
+	static CUnit* members[selext::SEL_MAX];
+	const u32 player = (u8)*LOCAL_NATION_ID;
+	if (*IS_IN_REPLAY || selext::clientCount <= 1)
+		return req_check((u32)button->reqFunc, (u8)button->reqVar, player, *activePortraitUnit);
+	const u32 m = selsub::activeMembers(members);
+	s32 best = BUTTON_STATE::Invisible;
+	for (u32 i = 0; i < m && best != BUTTON_STATE::Enabled; i++) {
+		selext::mirrorClientView(&members[i], 1, selext::clientCount);
+		best = selext::betterButtonState(best,
+			req_check((u32)button->reqFunc, (u8)button->reqVar, player, members[i]));
+	}
+	selext::mirrorClient();
+	return best;
+}
+
 void updateButtonSet_Sub4591D0() {
 
 	BinDlg**	const BUTTONSET_DIALOG	=				(BinDlg**)	0x0068C148;
@@ -730,7 +753,7 @@ void updateButtonSet_Sub4591D0() {
 
 			while (current_button_state == BUTTON_STATE::Invisible && (buttons_count < current_buttonset->buttonsInSet)) {
 
-				current_button_state = req_check((u32)current_button->reqFunc,(u8)current_button->reqVar,(u8)*LOCAL_NATION_ID,*activePortraitUnit);
+				current_button_state = subgroupButtonState(current_button);
 
 				if(current_button_state == BUTTON_STATE::Invisible) {
 					buttons_count++;

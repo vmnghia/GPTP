@@ -20,5 +20,10 @@ u32 activeMembers(CUnit** out);
 u32 activeFirstIndex();
 //Forgets the active subgroup (a new game).
 void reset();
+//Puts into the client mirror the 12 best units for a send-side check: the
+//active subgroup's first (most energy first), then the rest of the selection.
+void viewBegin();
+//Puts the real client mirror back.
+void viewEnd();
 
 } //selsub
