@@ -193,6 +193,20 @@ void pageKeys() {
 	CHECK(pageAfterKey(other, true, false, 0, 3) == 0);
 }
 
+void ringSearch() {
+	static u16 ring[8][SEL_MAX];
+	memset(ring, 0, sizeof(ring));
+	const u16 stamps[8] = { 5, 9, 9, 1, 0, 0, 0, 0 };
+	ring[0][0] = 7;
+	ring[1][3] = 7;		//no tag before it: slot 3 is past the group's end
+	ring[2][0] = 7;
+	for (u32 i = 0; i < SEL_MAX; i++)
+		ring[3][i] = (u16)(1000 + i);	//a full group
+	CHECK(newestRingGroupWith(ring, stamps, 7) == 2);	//stamps 9 and 9: the higher group
+	CHECK(newestRingGroupWith(ring, stamps, (u16)(1000 + SEL_MAX - 1)) == 3);	//its last slot
+	CHECK(newestRingGroupWith(ring, stamps, 0x7FFF) == -1);
+}
+
 } //unnamed namespace
 
 u32 selfTest(u32* firstFailedLine) {
@@ -207,6 +221,7 @@ u32 selfTest(u32* firstFailedLine) {
 	freeLists();
 	pages();
 	pageKeys();
+	ringSearch();
 	*firstFailedLine = firstLine;
 	return failures;
 }

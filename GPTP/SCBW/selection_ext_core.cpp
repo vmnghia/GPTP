@@ -150,6 +150,18 @@ u32 pageAfterKey(u16 key, bool ctrlHeld, bool chatOpen, u32 page, u32 pages) {
 	return page;
 }
 
+int newestRingGroupWith(const u16 (*ring)[SEL_MAX], const u16* stamps, u16 tag) {
+	int best = -1;
+	for (int k = 7; k >= 0; k--) {
+		bool found = false;
+		for (u32 i = 0; i < SEL_MAX && ring[k][i] != 0 && !found; i++)
+			found = ring[k][i] == tag;
+		if (found && (best < 0 || stamps[k] > stamps[best]))
+			best = k;
+	}
+	return best;
+}
+
 void freeListAppend(void** head, void** tail, void* nodes, u32 count, u32 stride) {
 	struct Link {
 		Link* prev;

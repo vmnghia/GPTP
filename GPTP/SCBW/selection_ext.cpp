@@ -14,6 +14,7 @@ CUnit* lastSent[SEL_MAX];
 CUnit* reselect[SEL_MAX];
 PendingPacket pending[PLAYERS];
 u32 selectionPage;
+u16 groupsExt[PLAYERS][GROUP_COUNT][SEL_MAX];
 
 namespace {
 
@@ -22,6 +23,7 @@ CUnit** const VANILLA_ACTIVE_SEL	= (CUnit**)	0x006284B8;
 CUnit** const VANILLA_CLIENT_SEL	= (CUnit**)	0x00597208;
 u8* const VANILLA_CLIENT_COUNT		= (u8*)		0x0059723D;
 CUnit** const VANILLA_LAST_SENT		= (CUnit**)	0x0059724C;
+u32* const VANILLA_GROUPS			= (u32*)	0x0057FE60;	//[8][18][12] tags, in CGame
 const u32* const COMMAND_LENGTHS	= (u32*)	0x005005F8;
 
 void copyFirst12(CUnit** dest, CUnit* const* src) {
@@ -47,6 +49,14 @@ void mirrorClient() {
 
 void mirrorLastSent() {
 	copyFirst12(VANILLA_LAST_SENT, lastSent);
+}
+
+void mirrorGroup(u32 player, u32 group) {
+	if (player >= PLAYERS || group >= GROUP_COUNT)
+		return;
+	u32* const vanilla = &VANILLA_GROUPS[(player * GROUP_COUNT + group) * VANILLA_MAX];
+	for (u32 i = 0; i < VANILLA_MAX; i++)
+		vanilla[i] = groupsExt[player][group][i];
 }
 
 u16 tagOf(const CUnit* unit) {
@@ -91,6 +101,9 @@ void clearAll() {
 	listClear(reselect, SEL_MAX);
 	memset(pending, 0, sizeof(pending));
 	selectionPage = 0;
+	//The vanilla groups are left alone: on a load they already hold the saved
+	//ones, which the save chunk's reader turns back into groupsExt.
+	memset(groupsExt, 0, sizeof(groupsExt));
 }
 
 } //selext

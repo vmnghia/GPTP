@@ -7,13 +7,8 @@ using namespace selext;
 
 namespace {
 
-u32* const CONTROL_GROUPS			= (u32*)		0x0057FE60;	//tags [8][18][12], in CGame
 u16* const RING_STAMPS				= (u16*)		0x0063FE40;	//[8][8]
 const u32* const FRAME_COUNTER		= (const u32*)	0x0057EEBC;
-const u32 GROUP_COUNT = 18;
-const u32 FIRST_RING_GROUP = 10;
-//Units per control group: vanilla's 12 until the groups grow (stage 4).
-const u32 GROUP_CAP = 12;
 
 u32 iteratorCursor;
 
@@ -25,8 +20,8 @@ bool isDying(const CUnit* unit) {
 	return unit->mainOrderId == OrderId::Die && unit->mainOrderState == 1;
 }
 
-u32* groupSlots(u32 player, u32 group) {
-	return &CONTROL_GROUPS[(player * GROUP_COUNT + group) * GROUP_CAP];
+u16* groupSlots(u32 player, u32 group) {
+	return groupsExt[player][group];
 }
 
 //One fewer dashed ally circle on the sprite (sprite flags bits 1-2 count them).
@@ -55,23 +50,22 @@ bool addUnit(u32 player, CUnit* unit, u32 slot) {
 }
 
 //Stores the player's selection in a control group (vanilla 0x4965D0).
-void groupAssign(u32 player, u32 group, bool replace) {
-	u32* slots = groupSlots(player, group);
+void assignSlots(u32 player, u16* slots, bool replace) {
 	u32 n = 0;
 	if (!replace) {
 		CUnit* first = unitOfTag(slots[0]);
 		if (first != NULL && !selexe::canMultiSelect(first))
 			return;
-		while (n < GROUP_CAP && slots[n] != 0)
+		while (n < SEL_MAX && slots[n] != 0)
 			n++;
 	}
 	else
-		memset(slots, 0, GROUP_CAP * sizeof(u32));
+		memset(slots, 0, SEL_MAX * sizeof(u16));
 	for (u32 j = 0; j < SEL_MAX; j++) {
 		CUnit* unit = playersSel[player][j];
 		if (unit == NULL || unit->playerId != *ACTIVE_NATION_ID)
 			return;
-		const u32 tag = tagOf(unit);
+		const u16 tag = tagOf(unit);
 		if (tag == 0)
 			continue;
 		if (!replace && n > 0) {
@@ -81,12 +75,17 @@ void groupAssign(u32 player, u32 group, bool replace) {
 			if (present || !selexe::canMultiSelect(unit))
 				continue;
 		}
-		if (n >= GROUP_CAP)
+		if (n >= SEL_MAX)
 			return;	//vanilla writes one past the group here
 		slots[n++] = tag;
-		if (n >= GROUP_CAP)
+		if (n >= SEL_MAX)
 			return;
 	}
+}
+
+void groupAssign(u32 player, u32 group, bool replace) {
+	assignSlots(player, groupSlots(player, group), replace);
+	mirrorGroup(player, group);
 }
 
 //Copies the selection into the oldest recent-selection group.
@@ -101,9 +100,9 @@ void ringPush(u32 player) {
 
 //Selects a control group (vanilla 0x496940).
 void groupRecall(u32 player, u32 group) {
-	u32* slots = groupSlots(player, group);
+	u16* slots = groupSlots(player, group);
 	u32 n = 0;
-	while (n < GROUP_CAP && slots[n] != 0)
+	while (n < SEL_MAX && slots[n] != 0)
 		n++;
 	if (n == 0)
 		return;
@@ -127,6 +126,7 @@ void groupRecall(u32 player, u32 group) {
 		}
 	}
 	mirrorPlayer(player);
+	mirrorGroup(player, group);
 	if (group >= FIRST_RING_GROUP)
 		RING_STAMPS[player * 8 + group - FIRST_RING_GROUP] = (u16)*FRAME_COUNTER;
 	else

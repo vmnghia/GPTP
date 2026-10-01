@@ -124,6 +124,18 @@ extern u32 selectionPage;
 //(Plain PgUp/PgDn scroll the map diagonally in vanilla.)
 u32 pageAfterKey(u16 key, bool ctrlHeld, bool chatOpen, u32 page, u32 pages);
 
+//-------- Control groups (stage 4) --------//
+
+const u32 GROUP_COUNT = 18;			//Ctrl+0-9, then the 8 recent selections
+const u32 FIRST_RING_GROUP = 10;
+//Synced: each player's control groups, as unit tags, compact.
+extern u16 groupsExt[PLAYERS][GROUP_COUNT][SEL_MAX];
+//Copies a group's first 12 into vanilla's u32[8][18][12] at 0x57FE60.
+void mirrorGroup(u32 player, u32 group);
+//Of the 8 recent-selection groups (ring[0..7]), the one holding tag with the
+//newest stamp, ties going to the higher group, or -1 (vanilla 0x496D30).
+int newestRingGroupWith(const u16 (*ring)[SEL_MAX], const u16* stamps, u16 tag);
+
 //-------- Image pools --------//
 
 //Appends count nodes (stride bytes apart, each starting with a prev and a next
