@@ -182,6 +182,17 @@ void pages() {
 	CHECK(clampPage(3, 0, 12) == 0);
 }
 
+void pageKeys() {
+	const u16 up = 0x21, down = 0x22, other = 0x41;
+	CHECK(pageAfterKey(down, true, false, 0, 3) == 1);
+	CHECK(pageAfterKey(up, true, false, 2, 3) == 1);
+	CHECK(pageAfterKey(down, true, false, 2, 3) == 2);	//stops at the last page
+	CHECK(pageAfterKey(up, true, false, 0, 3) == 0);	//and at the first
+	CHECK(pageAfterKey(down, false, false, 0, 3) == 0);	//plain PgDn scrolls the map
+	CHECK(pageAfterKey(down, true, true, 0, 3) == 0);	//chat is open
+	CHECK(pageAfterKey(other, true, false, 0, 3) == 0);
+}
+
 } //unnamed namespace
 
 u32 selfTest(u32* firstFailedLine) {
@@ -195,6 +206,7 @@ u32 selfTest(u32* firstFailedLine) {
 	ring();
 	freeLists();
 	pages();
+	pageKeys();
 	*firstFailedLine = firstLine;
 	return failures;
 }

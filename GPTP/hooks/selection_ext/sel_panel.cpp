@@ -16,8 +16,9 @@ const u8* const	ALT_HELD		= (u8*)	0x00596A2A;
 const u32* const VANILLA_INTERACT = (u32*)0x00504AF0;	//44 entries
 const u32 VANILLA_CONTROLS = 44;
 const u32 WIREFRAME_INTERACT = 0x004583E0;
-const u16 VK_PAGE_UP = 0x21;
-const u16 VK_PAGE_DOWN = 0x22;
+//The console's chat input (TextBox), made at console setup (0x4F38D1) and
+//visible while the player types.
+BinDlg* const* const CHAT_BOX = (BinDlg**)0x0068C140;
 
 //Made by the wireframe handler at USER_CREATE; its draw proc reads it.
 struct WireframeUser {
@@ -149,14 +150,14 @@ void click(BinDlg* control) {
 
 void keyDown(const u8* event) {
 	const u16 key = *(const u16*)(event + 8);
-	const u32 pages = pageCountFor(clientCount, pageSize);
-	if (key == VK_PAGE_UP && selectionPage > 0)
-		selectionPage--;
-	else
-	if (key == VK_PAGE_DOWN && selectionPage + 1 < pages)
-		selectionPage++;
-	else
+	//The chat box lets PgUp/PgDn through to here while it is open.
+	BinDlg* const chat = *CHAT_BOX;
+	const bool chatOpen = chat != NULL && (chat->flags & BinDlgFlags::Visible) != 0;
+	const u32 page = pageAfterKey(key, *CTRL_HELD != 0, chatOpen, selectionPage,
+	                              pageCountFor(clientCount, pageSize));
+	if (page == selectionPage)
 		return;
+	selectionPage = page;
 	*REFRESH_STAT_DATA = 1;
 }
 

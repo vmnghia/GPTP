@@ -119,6 +119,10 @@ u32 pageCountFor(u32 count, u32 pageSize);
 u32 clampPage(u32 page, u32 count, u32 pageSize);
 //Local: the page of the selection the panel shows.
 extern u32 selectionPage;
+//The page after a key press: Ctrl+PgUp/PgDn (virtual keys 0x21/0x22) turn it,
+//stopping at the ends; nothing else does, nor anything while chat is open.
+//(Plain PgUp/PgDn scroll the map diagonally in vanilla.)
+u32 pageAfterKey(u16 key, bool ctrlHeld, bool chatOpen, u32 page, u32 pages);
 
 //-------- Image pools --------//
 

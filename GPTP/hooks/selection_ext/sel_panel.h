@@ -13,7 +13,7 @@ bool changed();
 //A click on a wireframe: plain selects its unit, Shift removes it, Ctrl
 //selects every unit of its type in the whole selection (0x458220).
 void click(BinDlg* control);
-//The in-game KEYDOWN proc (0x484350): PgUp/PgDn change the page.
+//The in-game KEYDOWN proc (0x484350): Ctrl+PgUp/PgDn change the page.
 void keyDown(const u8* event);
 //StatData's interact table, indexed by control id - 1 (for 0x4584C0).
 const u32* interactTable();

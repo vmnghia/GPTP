@@ -26,8 +26,8 @@ disagree, this spec wins, because every address below was re-checked in the exe)
 - **Orders.** Every selected unit takes the order. Group moves use the whole selection.
   Smart-cast spells and archon merges choose from the whole selection.
 - **Circles.** Every selected unit shows its selection circle.
-- **Panel.** The wireframes continue into more columns of the wide StatData box. PgUp
-  and PgDn change the page, stopping at the first and last page. A new selection starts
+- **Panel.** The wireframes continue into more columns of the wide StatData box. Ctrl+PgUp
+  and Ctrl+PgDn change the page, stopping at the first and last page. A new selection starts
   on page 0. When units die, the page stays, moved back to the last page if needed.
   - Click a wireframe to select that unit. Shift-click removes it. Ctrl-click selects
     every unit of that type in the **whole** selection, not just the page.
@@ -298,8 +298,12 @@ controls from 0x21. 0x4584C0 registers 0xB0 bytes (44 handlers) from 0x504AF0 th
 
 - **Page size** `P` = columns that fit the StatData box at the current resolution × 2
   rows. Wireframe `k` on page `p` shows `clientSelExt[p*P + k]`. Local UI only.
-- **Hotkeys:** replace 0x484350 with a PgUp/PgDn handler. `[VERIFY]` first that chat
-  input and dialogs never reach it.
+- **Hotkeys: Ctrl+PgUp/PgDn** (the user's choice, 2026-10-01). Plain PgUp/PgDn are not
+  free: vanilla's keyboard scroll (0x47EF80) scrolls the map diagonally with them (held
+  state at 0x596A39/0x596A3A). The in-game KEYDOWN proc 0x484350 turns the page with Ctrl
+  held, and the scroll's two reads (0x47EFEA, 0x47F03A) see the keys as up while Ctrl is
+  held. The chat box (TextBox, `[0x68C140]`) lets PgUp/PgDn through, so paging is ignored
+  while it is visible.
 - **`statdata.bin`:** wireframe controls 45 onward, up to the largest `P` of any
   supported resolution, from a generator script next to the command-card one in
   `D:\SC Modding\SCManifold\to-repack\`. Controls beyond `P` stay hidden.
@@ -357,7 +361,7 @@ Each stage ends with a build and a numbered in-game test round, using hero units
   patrol; shift-add until refused; shift-remove 200; twin Zerglings from selected eggs
   join; rapid reselects while the game lags; watch a replay of it; save and load with
   400 selected.
-- **Stage 3:** page with PgUp/PgDn and stop at the ends; click, shift-click and
+- **Stage 3:** page with Ctrl+PgUp/PgDn and stop at the ends; plain PgUp/PgDn still scroll; click, shift-click and
   Ctrl-click on page 2; tooltip on a high slot; units dying on the last page; chat
   typing is unaffected.
 - **Stage 4:** Ctrl+1 on 400 units and recall; Shift+1 until the limit; a group with dead

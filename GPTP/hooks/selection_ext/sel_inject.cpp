@@ -447,6 +447,39 @@ void __declspec(naked) keyDownWrapper() {
 	}
 }
 
+//The keyboard scroll (0x47EF80) reads PgDn's and PgUp's held state at
+//0x47EFEA and 0x47F03A (6 bytes each: mov dl, [key]; then test dl, dl). With
+//Ctrl held they read as up, so Ctrl+PgUp/PgDn turn pages without scrolling.
+void __declspec(naked) pageDownHeldStub() {
+	__asm {
+		PUSH EAX
+		MOV EAX, 0x00596A3A
+		MOV DL, [EAX]
+		MOV EAX, 0x00596A29
+		CMP BYTE PTR [EAX], 0
+		POP EAX
+		JE keep
+		XOR DL, DL
+	keep:
+		RETN
+	}
+}
+
+void __declspec(naked) pageUpHeldStub() {
+	__asm {
+		PUSH EAX
+		MOV EAX, 0x00596A39
+		MOV DL, [EAX]
+		MOV EAX, 0x00596A29
+		CMP BYTE PTR [EAX], 0
+		POP EAX
+		JE keep
+		XOR DL, DL
+	keep:
+		RETN
+	}
+}
+
 } //unnamed namespace
 
 namespace hooks {
@@ -495,6 +528,8 @@ void injectSelectionPanelHooks() {
 	jmpPatch(panelChangedWrapper,	0x00424660, 2);
 	jmpPatch(panelClickWrapper,		0x00458220, 1);
 	jmpPatch(keyDownWrapper,		0x00484350, 0);
+	callPatch(pageDownHeldStub,		0x0047EFEA, 1);
+	callPatch(pageUpHeldStub,		0x0047F03A, 1);
 }
 
 } //hooks

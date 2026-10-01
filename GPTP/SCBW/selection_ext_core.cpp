@@ -140,6 +140,16 @@ u32 clampPage(u32 page, u32 count, u32 pageSize) {
 	return page < last ? page : last;
 }
 
+u32 pageAfterKey(u16 key, bool ctrlHeld, bool chatOpen, u32 page, u32 pages) {
+	if (!ctrlHeld || chatOpen)
+		return page;
+	if (key == 0x21 && page > 0)
+		return page - 1;
+	if (key == 0x22 && page + 1 < pages)
+		return page + 1;
+	return page;
+}
+
 void freeListAppend(void** head, void** tail, void* nodes, u32 count, u32 stride) {
 	struct Link {
 		Link* prev;
