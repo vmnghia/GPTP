@@ -411,7 +411,9 @@ void __declspec(naked) panelFillWrapper() {
 void __declspec(naked) panelChangedWrapper() {
 	static u32 result;
 	__asm PUSHAD
-	result = selpanel::changed() ? 1 : 0;
+	//No temporaries here: in a naked function they land in the caller's frame
+	//(tests/check_naked_wrappers.py).
+	result = selpanel::changed();
 	__asm {
 		POPAD
 		MOV EAX, result
