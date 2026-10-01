@@ -1,0 +1,178 @@
+#include "sel_panel.h"
+#include "sel_exe.h"
+#include "sel_local.h"
+#include "sel_send.h"
+#include <SCBW/selection_ext.h>
+
+using namespace selext;
+
+namespace {
+
+u8* const	LAYOUT				= (u8*)	0x0068C1E5;	//1: the multi-selection layout is up
+u8* const	REFRESH_STAT_DATA	= (u8*)	0x0068C1F8;
+const u8* const	SHIFT_HELD		= (u8*)	0x00596A28;
+const u8* const	CTRL_HELD		= (u8*)	0x00596A29;
+const u8* const	ALT_HELD		= (u8*)	0x00596A2A;
+const u32* const VANILLA_INTERACT = (u32*)0x00504AF0;	//44 entries
+const u32 VANILLA_CONTROLS = 44;
+const u32 WIREFRAME_INTERACT = 0x004583E0;
+const u16 VK_PAGE_UP = 0x21;
+const u16 VK_PAGE_DOWN = 0x22;
+
+//Made by the wireframe handler at USER_CREATE; its draw proc reads it.
+struct WireframeUser {
+	CUnit* unit;
+	u16 unitId;
+	u16 pad;
+};
+
+u32 interact[WIREFRAME_FIRST_ID - 1 + WIREFRAME_MAX];
+bool interactBuilt;
+
+u32 pageSize = VANILLA_MAX;		//of the last fill
+u32 shownStart;
+u32 shownCount;
+s32 shownHitPoints[WIREFRAME_MAX];
+u16 shownId[WIREFRAME_MAX];
+
+BinDlg* firstChild(BinDlg* dialog) {
+	return *(BinDlg**)((u8*)dialog + 0x42);
+}
+
+WireframeUser* userOf(BinDlg* control) {
+	return (WireframeUser*)control->user;
+}
+
+//The dialog's wireframe controls by id; returns how many there are.
+u32 collectWireframes(BinDlg* dialog, BinDlg** wireframes) {
+	for (u32 k = 0; k < WIREFRAME_MAX; k++)
+		wireframes[k] = NULL;
+	for (BinDlg* control = firstChild(dialog); control != NULL; control = control->next) {
+		const s32 k = control->index - (s32)WIREFRAME_FIRST_ID;
+		if (k >= 0 && k < (s32)WIREFRAME_MAX)
+			wireframes[k] = control;
+	}
+	u32 n = 0;
+	while (n < WIREFRAME_MAX && wireframes[n] != NULL)
+		n++;
+	return n;
+}
+
+} //unnamed namespace
+
+namespace selpanel {
+
+void fill(BinDlg* dialog) {
+	if (*LAYOUT != 1) {
+		for (BinDlg* control = dialog->controlType ? dialog : firstChild(dialog);
+			 control != NULL; control = control->next)
+			selexe::hideControl(control);
+		*LAYOUT = 1;
+	}
+	if (dialog->controlType)
+		dialog = dialog->parent;
+
+	static BinDlg* wireframes[WIREFRAME_MAX];
+	const u32 controls = collectWireframes(dialog, wireframes);
+	pageSize = pageSizeFor(dialog->bounds.width, controls);
+	selectionPage = clampPage(selectionPage, clientCount, pageSize);
+	shownStart = selectionPage * pageSize;
+
+	u32 k = 0;
+	for (u32 i = shownStart; i < SEL_MAX && k < pageSize; i++) {
+		CUnit* unit = clientSel[i];
+		if (unit == NULL)
+			break;
+		BinDlg* control = wireframes[k];
+		userOf(control)->unit = unit;
+		userOf(control)->unitId = unit->id;
+		selexe::showControl(control);
+		if (!(control->flags & 1)) {
+			control->flags |= 1;
+			selexe::invalidateControl(control);
+		}
+		shownHitPoints[k] = unit->hitPoints;
+		shownId[k] = unit->id;
+		k++;
+	}
+	shownCount = k;
+	for (; k < controls; k++)
+		selexe::hideControl(wireframes[k]);
+}
+
+bool changed() {
+	if (shownCount == 0 && clientCount > shownStart)
+		return true;
+	if (clientCount != 0 && shownStart >= clientCount)
+		return true;
+	for (u32 k = 0; k < pageSize && shownStart + k < SEL_MAX; k++) {
+		CUnit* unit = clientSel[shownStart + k];
+		if (unit == NULL)
+			continue;
+		if (k >= shownCount || unit->hitPoints != shownHitPoints[k] || unit->id != shownId[k])
+			return true;
+	}
+	return false;
+}
+
+void click(BinDlg* control) {
+	static CUnit* list[SEL_MAX];
+	CUnit* const clickedUnit = userOf(control)->unit;
+	const bool shift = *SHIFT_HELD != 0;
+	const bool ctrl = !shift && *CTRL_HELD != 0;
+	u32 n = 0;
+	if (shift) {
+		for (u32 i = 0; i < SEL_MAX && clientSel[i] != NULL; i++)
+			if (clientSel[i] != clickedUnit)
+				list[n++] = clientSel[i];
+	}
+	else
+	if (ctrl) {
+		for (u32 i = 0; i < SEL_MAX && clientSel[i] != NULL; i++)
+			if (clientSel[i]->id == clickedUnit->id)
+				list[n++] = clientSel[i];
+	}
+	else {
+		if (*ALT_HELD && selexe::selectRecentGroupOf(tagOf(clickedUnit)))
+			return;
+		list[n++] = clickedUnit;
+	}
+	if ((shift || ctrl) && n == 1 && *ALT_HELD && selexe::selectRecentGroupOf(tagOf(list[0])))
+		return;
+	//Removing a unit keeps the page; a new selection starts at page 0.
+	if (!shift)
+		selectionPage = 0;
+	sellocal::buildActive(list, n);
+	selsend::cmdactSelect(n, list);
+	sellocal::requestRefresh();
+}
+
+void keyDown(const u8* event) {
+	const u16 key = *(const u16*)(event + 8);
+	const u32 pages = pageCountFor(clientCount, pageSize);
+	if (key == VK_PAGE_UP && selectionPage > 0)
+		selectionPage--;
+	else
+	if (key == VK_PAGE_DOWN && selectionPage + 1 < pages)
+		selectionPage++;
+	else
+		return;
+	*REFRESH_STAT_DATA = 1;
+}
+
+const u32* interactTable() {
+	if (!interactBuilt) {
+		for (u32 i = 0; i < VANILLA_CONTROLS; i++)
+			interact[i] = VANILLA_INTERACT[i];
+		for (u32 id = VANILLA_CONTROLS + 1; id < WIREFRAME_FIRST_ID + WIREFRAME_MAX; id++)
+			interact[id - 1] = WIREFRAME_INTERACT;
+		interactBuilt = true;
+	}
+	return interact;
+}
+
+u32 interactTableBytes() {
+	return sizeof(interact);
+}
+
+} //selpanel

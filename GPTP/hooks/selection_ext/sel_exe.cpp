@@ -11,6 +11,9 @@ const u32 Func_RemoveDashedCircle		= 0x00497590;
 const u32 Func_AddDashedCircle			= 0x004E65C0;
 const u32 Func_FreeImage				= 0x004D4FA0;
 const u32 Func_InitHealthBarImage		= 0x004D68C0;
+const u32 Func_ShowControl				= 0x004186A0;
+const u32 Func_HideControl				= 0x00418700;
+const u32 Func_InvalidateControl		= 0x0041C400;
 const u32 Func_CanMultiSelect			= 0x0047B770;
 const u32 Func_Outranks					= 0x0049A350;
 const u32 Func_SelectRecentGroupOf		= 0x00496D30;
@@ -94,6 +97,33 @@ void initHealthBarImage(CImage* image) {
 		MOV ECX, image
 		XOR EAX, EAX
 		CALL Func_InitHealthBarImage
+		POPAD
+	}
+}
+
+void showControl(BinDlg* control) {
+	__asm {
+		PUSHAD
+		MOV ESI, control
+		CALL Func_ShowControl
+		POPAD
+	}
+}
+
+void hideControl(BinDlg* control) {
+	__asm {
+		PUSHAD
+		MOV ESI, control
+		CALL Func_HideControl
+		POPAD
+	}
+}
+
+void invalidateControl(BinDlg* control) {
+	__asm {
+		PUSHAD
+		MOV EAX, control
+		CALL Func_InvalidateControl
 		POPAD
 	}
 }

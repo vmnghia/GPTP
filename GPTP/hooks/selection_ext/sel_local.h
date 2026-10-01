@@ -8,6 +8,8 @@ namespace sellocal {
 //Makes list the drawn selection, replacing subunits by their parents in
 //list too (0x49AE40).
 void buildActive(CUnit** list, u32 count);
+//buildActive for a new selection made by the player: also goes back to page 0.
+void buildActiveNewSelection(CUnit** list, u32 count);
 //Drops a dying unit from the drawn selection (0x49F7A0).
 void localRemove(CUnit* unit);
 //Draws every circle again after a save stripped them (0x499A60).

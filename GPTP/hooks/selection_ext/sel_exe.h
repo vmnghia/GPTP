@@ -18,6 +18,9 @@ void freeImage(CImage* image);								//0x4D4FA0
 //Sets up a health-bar pool image the way the pool init does (its frame buffer
 //is vanilla image 0's; the caller points it at its own).
 void initHealthBarImage(CImage* image);						//0x4D68C0
+void showControl(BinDlg* control);							//0x4186A0
+void hideControl(BinDlg* control);							//0x418700
+void invalidateControl(BinDlg* control);					//0x41C400
 //Whether the unit may join a selection of more than one.
 bool canMultiSelect(CUnit* unit);							//0x47B770
 //Whether unit ranks above best for the console portrait.

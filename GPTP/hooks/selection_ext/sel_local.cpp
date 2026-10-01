@@ -114,6 +114,11 @@ void buildActive(CUnit** list, u32 count) {
 	mirrorActive();
 }
 
+void buildActiveNewSelection(CUnit** list, u32 count) {
+	selectionPage = 0;
+	buildActive(list, count);
+}
+
 void localRemove(CUnit* unit) {
 	if (!(unit->sprite->flags & CSprite_Flags::Selected))
 		return;
