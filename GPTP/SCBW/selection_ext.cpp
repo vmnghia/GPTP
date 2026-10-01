@@ -13,6 +13,7 @@ u32 clientCount;
 CUnit* lastSent[SEL_MAX];
 CUnit* reselect[SEL_MAX];
 PendingPacket pending[PLAYERS];
+u32 selectionPage;
 
 namespace {
 
@@ -89,6 +90,7 @@ void clearAll() {
 	mirrorLastSent();
 	listClear(reselect, SEL_MAX);
 	memset(pending, 0, sizeof(pending));
+	selectionPage = 0;
 }
 
 } //selext

@@ -104,6 +104,22 @@ u32 commandLength(const u8* cmd);
 //higher slot; 0xFF when every stamp is 0xFFFF (vanilla 0x496560).
 u8 oldestRingSlot(const u16* stamps);
 
+//-------- Selection panel pages (stage 3) --------//
+
+//Wireframe controls of statdata.bin: ids 0x21 onward, 2 rows, columns 36 px
+//apart from x 30 (make_statdata_wide.py writes WIREFRAME_MAX of them).
+const u32 WIREFRAME_FIRST_ID = 0x21;
+const u32 WIREFRAME_MAX = 90;
+//Wireframes per page: the columns that fit a StatData dialog this wide (the
+//vanilla 270 fits 6), two rows, at most the controls present.
+u32 pageSizeFor(u32 dialogWidth, u32 wireframeControls);
+//Pages for count units (at least 1).
+u32 pageCountFor(u32 count, u32 pageSize);
+//page, moved back to the last page if it is past it.
+u32 clampPage(u32 page, u32 count, u32 pageSize);
+//Local: the page of the selection the panel shows.
+extern u32 selectionPage;
+
 //-------- Image pools --------//
 
 //Appends count nodes (stride bytes apart, each starting with a prev and a next

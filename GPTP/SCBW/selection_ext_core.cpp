@@ -123,6 +123,23 @@ u8 oldestRingSlot(const u16* stamps) {
 	return slot;
 }
 
+u32 pageSizeFor(u32 dialogWidth, u32 wireframeControls) {
+	const u32 columns = dialogWidth > 90 ? (dialogWidth - 90) / 36 + 1 : 1;
+	const u32 size = 2 * columns;
+	return size < wireframeControls ? size : wireframeControls;
+}
+
+u32 pageCountFor(u32 count, u32 pageSize) {
+	if (count == 0 || pageSize == 0)
+		return 1;
+	return (count + pageSize - 1) / pageSize;
+}
+
+u32 clampPage(u32 page, u32 count, u32 pageSize) {
+	const u32 last = pageCountFor(count, pageSize) - 1;
+	return page < last ? page : last;
+}
+
 void freeListAppend(void** head, void** tail, void* nodes, u32 count, u32 stride) {
 	struct Link {
 		Link* prev;

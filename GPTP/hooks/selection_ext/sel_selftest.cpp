@@ -168,6 +168,20 @@ void freeLists() {
 	CHECK(emptyHead == &extra[0] && emptyTail == &extra[2] && extra[0].prev == NULL);
 }
 
+void pages() {
+	CHECK(pageSizeFor(270, 12) == 12);		//vanilla
+	CHECK(pageSizeFor(270, WIREFRAME_MAX) == 12);
+	CHECK(pageSizeFor(910, WIREFRAME_MAX) == 46);	//23 columns
+	CHECK(pageSizeFor(1678, WIREFRAME_MAX) == 90);	//2048 wide
+	CHECK(pageSizeFor(4000, WIREFRAME_MAX) == WIREFRAME_MAX);
+	CHECK(pageSizeFor(910, 12) == 12);		//statdata.bin not repacked
+	CHECK(pageSizeFor(60, 12) == 2);		//never below one column
+	CHECK(pageCountFor(0, 12) == 1 && pageCountFor(12, 12) == 1);
+	CHECK(pageCountFor(13, 12) == 2 && pageCountFor(400, 46) == 9);
+	CHECK(clampPage(5, 13, 12) == 1 && clampPage(1, 13, 12) == 1);
+	CHECK(clampPage(3, 0, 12) == 0);
+}
+
 } //unnamed namespace
 
 u32 selfTest(u32* firstFailedLine) {
@@ -180,6 +194,7 @@ u32 selfTest(u32* firstFailedLine) {
 	lengths();
 	ring();
 	freeLists();
+	pages();
 	*firstFailedLine = firstLine;
 	return failures;
 }
