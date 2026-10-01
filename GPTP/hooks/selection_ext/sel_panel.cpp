@@ -2,6 +2,7 @@
 #include "sel_exe.h"
 #include "sel_local.h"
 #include "sel_send.h"
+#include "sel_subgroups.h"
 #include <SCBW/selection_ext.h>
 
 using namespace selext;
@@ -146,8 +147,10 @@ void click(BinDlg* control) {
 	}
 	else
 	if (ctrl) {
+		//The clicked unit's subgroup (stage 5): every state of its type.
+		const u32 key = selsub::keyOf(clickedUnit);
 		for (u32 i = 0; i < SEL_MAX && clientSel[i] != NULL; i++)
-			if (clientSel[i]->id == clickedUnit->id)
+			if (selsub::keyOf(clientSel[i]) == key)
 				list[n++] = clientSel[i];
 	}
 	else {
@@ -169,6 +172,17 @@ void keyDown(const u8* event) {
 	const u16 key = *(const u16*)(event + 8);
 	//The chat box lets PgUp/PgDn through to here while it is open.
 	const bool chatOpen = isChatOpen();
+	//Stage 5: Tab / Shift+Tab activate the next / previous subgroup, and the
+	//panel turns to the page of its first unit.
+	const u16 VK_TAB_KEY = 0x09;
+	if (key == VK_TAB_KEY) {
+		if (!chatOpen && selsub::cycle(*SHIFT_HELD != 0)) {
+			if (pageSize != 0)
+				selectionPage = selsub::activeFirstIndex() / pageSize;
+			sellocal::requestRefresh();
+		}
+		return;
+	}
 	const u32 page = pageAfterKey(key, *CTRL_HELD != 0, chatOpen, selectionPage,
 	                              pageCountFor(clientCount, pageSize));
 	if (page == selectionPage)

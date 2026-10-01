@@ -1,6 +1,7 @@
 #include "sel_local.h"
 #include "sel_exe.h"
 #include "sel_send.h"
+#include "sel_subgroups.h"
 #include <SCBW/selection_ext.h>
 #include <cstring>
 
@@ -158,22 +159,10 @@ void redrawCircles() {
 
 void clientCopy() {
 	memcpy(clientSel, activeSel, sizeof(clientSel));
-	clientCount = 0;
-	*activePortraitUnit = NULL;
-	CUnit* best = NULL;
-	for (u32 i = 0; i < SEL_MAX; i++) {
-		CUnit* unit = clientSel[i];
-		if (unit == NULL)
-			continue;
-		if (selexe::outranks(unit, best))
-			best = unit;
-		clientCount++;
-	}
-	*activePortraitUnit = best;
-	if (clientCount == 1) {
-		listClear(clientSel, SEL_MAX);
-		clientSel[0] = best;
-	}
+	clientCount = listCount(clientSel, SEL_MAX);
+	//Stage 5: the console list is sorted by subgroup, and the portrait (whose
+	//button set is the card) is the active subgroup's leader.
+	*activePortraitUnit = selsub::sortAndPickLeader(clientCount);
 	mirrorClient();
 }
 
@@ -218,6 +207,7 @@ void reselectAtStart() {
 
 void gameStartClear() {
 	clearAll();
+	selsub::reset();
 }
 
 void gameStartKeepLocal() {

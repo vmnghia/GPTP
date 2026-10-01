@@ -47,6 +47,12 @@ void mirrorClient() {
 	*VANILLA_CLIENT_COUNT = (u8)(clientCount < VANILLA_MAX ? clientCount : VANILLA_MAX);
 }
 
+void mirrorClientView(CUnit* const* list, u32 n, u32 count) {
+	for (u32 i = 0; i < VANILLA_MAX; i++)
+		VANILLA_CLIENT_SEL[i] = i < n ? list[i] : NULL;
+	*VANILLA_CLIENT_COUNT = (u8)(count < VANILLA_MAX ? count : VANILLA_MAX);
+}
+
 void mirrorLastSent() {
 	copyFirst12(VANILLA_LAST_SENT, lastSent);
 }

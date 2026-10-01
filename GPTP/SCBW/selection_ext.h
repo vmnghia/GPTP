@@ -51,6 +51,11 @@ void mirrorPlayer(u32 player);	//0x6284E8
 void mirrorActive();			//0x6284B8
 void mirrorClient();			//0x597208, and the count 0x59723D
 void mirrorLastSent();			//0x59724C
+//Writes list (n entries, at most 12 used) into the client mirror, with count
+//(capped at 12) as its count, for a check that reads it; mirrorClient() puts
+//the real one back. The count stays the real selection's, so conditions that
+//need one unit selected (the Build menus) still see the whole selection.
+void mirrorClientView(CUnit* const* list, u32 n, u32 count);
 
 //-------- Unit tags: 1-based unit index | uniqueness << 11, 0 for none. --------//
 

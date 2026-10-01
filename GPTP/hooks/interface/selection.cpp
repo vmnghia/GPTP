@@ -147,8 +147,9 @@ namespace hooks {
 								if(unit->playerId != current_unit->playerId)
 									bDontAddToList = true;
 								else
-								//select only units with same Id
-								if(unit->id != current_unit->id)
+								//select only units of the same subgroup type
+								//(stage 5: siege mode counts as tank mode)
+								if(selext::subgroupType(unit->id) != selext::subgroupType(current_unit->id))
 									bDontAddToList = true;
 								else {
 
@@ -157,41 +158,17 @@ namespace hooks {
 									//equivalent to " unit->status XOR current_unit->status "
 									//keep the flags appearing in only 1 of the variables
 									u32 mixed_flags =
-										( ~(unit->status) & current_unit->status ) | 
+										( ~(unit->status) & current_unit->status ) |
 										( unit->status & ~(current_unit->status) )
 										;
 
-									//Only select all burrowed OR all unburrowed
-									//units.The test exclude current_unit if the
-									//burrowed state differ from the one of unit.
-									if( mixed_flags & UnitStatus::Burrowed )
+									//Subgroup rule (stage 5): burrow, cloak and
+									//siege state don't split a type, as in SC2
+									//(vanilla kept burrowed and detectable
+									//states apart). Only hallucinations stay
+									//apart.
+									if(mixed_flags & UnitStatus::IsHallucination)
 										bDontAddToList = true;
-									else {
-
-										//6F1E8
-										if( !isUnitBurrowed(current_unit) ) {
-
-											//Only select all detectables OR all undetectables
-											//units.The test exclude current_unit if the
-											//detectable state differ from the one of unit.
-											if(mixed_flags & UnitStatus::RequiresDetection)
-												bDontAddToList = true;
-
-										}
-
-										if(!bDontAddToList) {
-
-											//6F1F8
-
-											//Only select hallucinations OR non-hallucinations
-											//units.The test exclude current_unit if the
-											//hallucination state differ from the one of unit.
-											if(mixed_flags & UnitStatus::IsHallucination)
-												bDontAddToList = true;
-
-										}
-
-									}
 
 								}
 
