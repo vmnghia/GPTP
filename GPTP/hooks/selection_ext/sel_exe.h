@@ -29,6 +29,8 @@ bool outranks(CUnit* unit, CUnit* best);					//0x49A350
 bool selectRecentGroupOf(u32 tag);							//0x496D30
 void centerViewOnGroup(u32 group);							//0x4967E0
 void queueCommand(const void* data, u32 size);				//0x485BD0
+//Moves the view's top-left corner (clamped to the map by the exe).
+void moveScreen(s32 x, s32 y);								//0x49C440
 //Cancels building placement (0x48D9A0, then 0x48E310).
 void cancelPlacement();
 void cancelTargetOrder();									//0x48CA10

@@ -2,6 +2,7 @@
 #include <SCBW/api.h>
 #include "resolution.h"
 #include <SCBW/selection_ext.h>
+#include "../selection_ext/sel_send.h"
 
 //Helper functions declaration
 namespace {
@@ -757,7 +758,6 @@ namespace hooks {
 	///
 	void selectUnitGroup(u32 selectionGroupNumber) {
 
-		u32* const			CGameStruct_selection_hotkeys	= (u32*)	0x0057FE60; //array of units refs of StoredUnit type stored as u32
 		Bool8* const		bCanUpdateSelectedUnitData		= (Bool8*)	0x0059723C;
 		CUnit* const		unitTable_0059CB58				= (CUnit*)	0x0059CB58;	//array of CUnit structures
 		Bool8* const		bDoingCancellableTargetOrder	= (Bool8*)	0x00641694;
@@ -771,18 +771,19 @@ namespace hooks {
 		u32 selectionLength = 0;
 		StoredUnit current_stored_unit;
 		CUnit* current_unit;
-		CUnit* temp_selection_array[SELECTION_ARRAY_LENGTH];
-		u32* CGameStruct_selection_hotkeys_current = &CGameStruct_selection_hotkeys[0xC * (0x12 * *LOCAL_HUMAN_ID + selectionGroupNumber)];
+		static CUnit* temp_selection_array[selext::SEL_MAX];
 
-		current_stored_unit.fullValue = CGameStruct_selection_hotkeys_current[selectionLength];
+		//The extended groups (SCBW/selection_ext.h); vanilla's are a mirror.
+		if ((u32)*LOCAL_HUMAN_ID >= selext::PLAYERS || selectionGroupNumber >= selext::GROUP_COUNT)
+			return;
+		const u16* const CGameStruct_selection_hotkeys_current =
+			selext::groupsExt[*LOCAL_HUMAN_ID][selectionGroupNumber];
 
-		while (selectionLength < SELECTION_ARRAY_LENGTH && current_stored_unit.fullValue != 0) {
+		while (selectionLength < selext::SEL_MAX && CGameStruct_selection_hotkeys_current[selectionLength] != 0)
 			selectionLength++;
-			current_stored_unit.fullValue = CGameStruct_selection_hotkeys_current[selectionLength];
-		}
 
-		for (i = 0; i < SELECTION_ARRAY_LENGTH; i++)
-			temp_selection_array[i] = NULL;
+		for (u32 k = 0; k < selext::SEL_MAX; k++)
+			temp_selection_array[k] = NULL;
 
 		if (selectionLength > 0) {
 
@@ -893,7 +894,8 @@ namespace hooks {
 				*someDialogUnknown = NULL;
 				*someDialogUnknownUser = NULL;
 
-				CMDACT_HotkeyUnit(selectionGroupNumber, 1, temp_selection_array, index);
+				//Directly: the exe's 0x4C07B0 takes the count as a byte.
+				selsend::cmdactHotkey(selectionGroupNumber, 1, temp_selection_array, index);
 
 			}
 

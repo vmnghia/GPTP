@@ -19,6 +19,7 @@ const u32 Func_Outranks					= 0x0049A350;
 const u32 Func_SelectRecentGroupOf		= 0x00496D30;
 const u32 Func_CenterViewOnGroup		= 0x004967E0;
 const u32 Func_QueueCommand				= 0x00485BD0;
+const u32 Func_MoveScreen				= 0x0049C440;
 const u32 Func_RefreshLayer3And4		= 0x0048D9A0;
 const u32 Func_Sub48E310				= 0x0048E310;
 const u32 Func_CancelTargetOrder		= 0x0048CA10;
@@ -180,6 +181,16 @@ void queueCommand(const void* data, u32 bytes) {
 		MOV ECX, data
 		MOV EDX, bytes
 		CALL Func_QueueCommand
+		POPAD
+	}
+}
+
+void moveScreen(s32 x, s32 y) {
+	__asm {
+		PUSHAD
+		MOV EAX, x
+		MOV ECX, y
+		CALL Func_MoveScreen
 		POPAD
 	}
 }

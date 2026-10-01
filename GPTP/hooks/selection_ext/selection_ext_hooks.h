@@ -9,5 +9,7 @@ void injectSelectionExtHooks();
 void injectSelectChunkHooks();
 //Stage 3: the selection panel's pages. Needs the wide rez\statdata.bin.
 void injectSelectionPanelHooks();
+//Stage 4: Alt-click and double-tap centring on the extended control groups.
+void injectControlGroupHooks();
 
 } //hooks

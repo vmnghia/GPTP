@@ -6,6 +6,7 @@
 #include "sel_send.h"
 #include "sel_save.h"
 #include "sel_panel.h"
+#include "sel_groups.h"
 #include <SCBW/selection_ext.h>
 #include <hook_tools.h>
 
@@ -449,6 +450,40 @@ void __declspec(naked) keyDownWrapper() {
 	}
 }
 
+//-------- Stage 4 --------//
+
+//0x496D30 (Alt-click): stdcall(tag), BOOL in EAX.
+void __declspec(naked) selectRecentGroupWrapper() {
+	static u32 tag;
+	static u32 result;
+	__asm {
+		MOV EAX, [ESP+4]
+		MOV tag, EAX
+		PUSHAD
+	}
+	result = selgroups::selectRecentGroupOf(tag);
+	__asm {
+		POPAD
+		MOV EAX, result
+		RETN 4
+	}
+}
+
+//0x4967E0 (double-tap centring): CL = group.
+void __declspec(naked) centerViewOnGroupWrapper() {
+	static u32 group;
+	__asm {
+		MOVZX EAX, CL
+		MOV group, EAX
+		PUSHAD
+	}
+	selgroups::centerViewOnGroup(group);
+	__asm {
+		POPAD
+		RETN
+	}
+}
+
 //The keyboard scroll (0x47EF80) reads PgDn's and PgUp's held state at
 //0x47EFEA and 0x47F03A (6 bytes each: mov dl, [key]; then test dl, dl). With
 //Ctrl held they read as up, so Ctrl+PgUp/PgDn turn pages without scrolling.
@@ -532,6 +567,11 @@ void injectSelectionPanelHooks() {
 	jmpPatch(keyDownWrapper,		0x00484350, 0);
 	callPatch(pageDownHeldStub,		0x0047EFEA, 1);
 	callPatch(pageUpHeldStub,		0x0047F03A, 1);
+}
+
+void injectControlGroupHooks() {
+	jmpPatch(selectRecentGroupWrapper,	0x00496D30, 1);
+	jmpPatch(centerViewOnGroupWrapper,	0x004967E0, 1);
 }
 
 } //hooks

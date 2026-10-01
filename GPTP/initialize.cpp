@@ -234,6 +234,7 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	hooks::injectSelectionExtHooks();
 	hooks::injectSelectChunkHooks();
 	hooks::injectSelectionPanelHooks();
+	hooks::injectControlGroupHooks();
 
 	//======== DISABLED HOOKS ========//
 	//Written but not in use. To turn one on, move it up into the enabled list.
