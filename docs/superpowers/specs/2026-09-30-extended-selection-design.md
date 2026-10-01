@@ -1,11 +1,13 @@
 # Extended selection (larger selections, pages, control groups)
 
-Status: stages 1+2 built and tested in game (2026-10-01, build 03:26); stages 3–5 not
-built. Plan: `docs/superpowers/plans/2026-09-30-extended-selection-stage-1-2.md`.
+Status: stages 1+2 built and tested in game (2026-10-01, build 03:26); stage 3 (pages)
+built and tested (2026-10-01, build 23:00, plan
+`docs/superpowers/plans/2026-10-01-extended-selection-stage-3.md`); stages 4–5 not built. Stage 1+2
+plan: `docs/superpowers/plans/2026-09-30-extended-selection-stage-1-2.md`.
 Found during testing and review (details in the stage sections): the health-bar lookup
 0x4D603C, the 80-circle and 12-health-bar image pools, and chunks needing an index so a
 lost middle chunk drops the packet.
-Branch: `feature/resolution`
+Branch: stages 1+2 on `master` (local); stage 3 on `feature/selection-pages`
 Detailed notes: `docs/selection.md` §1–§5 (the first survey; where it and this spec
 disagree, this spec wins, because every address below was re-checked in the exe)
 
