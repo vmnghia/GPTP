@@ -16,9 +16,11 @@ const u8* const	ALT_HELD		= (u8*)	0x00596A2A;
 const u32* const VANILLA_INTERACT = (u32*)0x00504AF0;	//44 entries
 const u32 VANILLA_CONTROLS = 44;
 const u32 WIREFRAME_INTERACT = 0x004583E0;
-//The console's chat input (TextBox), made at console setup (0x4F38D1) and
-//visible while the player types.
-BinDlg* const* const CHAT_BOX = (BinDlg**)0x0068C140;
+//The console's TextBox dialog (rez\?textbox.bin), made at console setup
+//(0x4F38D1). It is visible all game (its .bin flags it so); the chat input is
+//its edit control, id 6, which shows while the player types.
+BinDlg* const* const TEXT_BOX = (BinDlg**)0x0068C140;
+const s16 CHAT_EDIT_ID = 6;
 
 //Made by the wireframe handler at USER_CREATE; its draw proc reads it.
 struct WireframeUser {
@@ -42,6 +44,21 @@ BinDlg* firstChild(BinDlg* dialog) {
 
 WireframeUser* userOf(BinDlg* control) {
 	return (WireframeUser*)control->user;
+}
+
+bool isVisible(const BinDlg* dialog) {
+	return (dialog->flags & BinDlgFlags::Visible) != 0;
+}
+
+//Whether the player is typing a chat message.
+bool isChatOpen() {
+	BinDlg* const textBox = *TEXT_BOX;
+	if (textBox == NULL || !isVisible(textBox))
+		return false;
+	for (BinDlg* control = firstChild(textBox); control != NULL; control = control->next)
+		if (control->index == CHAT_EDIT_ID)
+			return isVisible(control);
+	return false;
 }
 
 //The dialog's wireframe controls by id; returns how many there are.
@@ -151,8 +168,7 @@ void click(BinDlg* control) {
 void keyDown(const u8* event) {
 	const u16 key = *(const u16*)(event + 8);
 	//The chat box lets PgUp/PgDn through to here while it is open.
-	BinDlg* const chat = *CHAT_BOX;
-	const bool chatOpen = chat != NULL && (chat->flags & BinDlgFlags::Visible) != 0;
+	const bool chatOpen = isChatOpen();
 	const u32 page = pageAfterKey(key, *CTRL_HELD != 0, chatOpen, selectionPage,
 	                              pageCountFor(clientCount, pageSize));
 	if (page == selectionPage)
