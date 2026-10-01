@@ -162,6 +162,85 @@ int newestRingGroupWith(const u16 (*ring)[SEL_MAX], const u16* stamps, u16 tag) 
 	return best;
 }
 
+u16 subgroupType(u16 unitId) {
+	if (unitId == 30)	//Siege Tank, siege mode
+		return 5;
+	if (unitId == 25)	//Edmund Duke, siege mode
+		return 23;
+	return unitId;
+}
+
+u16 defaultPriority(bool hero, u16 buildScore) {
+	const u16 score = buildScore < 0x7FFF ? buildScore : 0x7FFF;
+	return hero ? (u16)(0x8000 | score) : score;
+}
+
+u32 subgroupKey(u16 priority, u16 type, bool hallucination) {
+	return ((u32)(0xFFFF - priority) << 10) | ((u32)(type & 0x1FF) << 1) | (hallucination ? 1 : 0);
+}
+
+void sortBySubgroup(CUnit** units, u32* keys, u32 n) {
+	for (u32 i = 1; i < n; i++) {
+		CUnit* const unit = units[i];
+		const u32 key = keys[i];
+		u32 j = i;
+		for (; j > 0 && keys[j - 1] > key; j--) {
+			units[j] = units[j - 1];
+			keys[j] = keys[j - 1];
+		}
+		units[j] = unit;
+		keys[j] = key;
+	}
+}
+
+namespace {
+
+bool holdsAll(CUnit* const* big, u32 nb, CUnit* const* small, u32 ns) {
+	for (u32 i = 0; i < ns; i++) {
+		bool found = false;
+		for (u32 j = 0; j < nb && !found; j++)
+			found = big[j] == small[i];
+		if (!found)
+			return false;
+	}
+	return true;
+}
+
+} //unnamed namespace
+
+bool keepsActive(CUnit* const* before, u32 nb, CUnit* const* after, u32 na) {
+	return holdsAll(after, na, before, nb) || holdsAll(before, nb, after, na);
+}
+
+u32 activeKeyAfter(const u32* keys, u32 n, u32 oldKey, bool keep) {
+	if (!keep)
+		return keys[0];
+	for (u32 i = 0; i < n; i++)
+		if (keys[i] >= oldKey)
+			return keys[i];
+	return keys[n - 1];
+}
+
+u32 keyAfterTab(const u32* keys, u32 n, u32 active, bool back) {
+	if (!back) {
+		for (u32 i = 0; i < n; i++)
+			if (keys[i] > active)
+				return keys[i];
+		return keys[0];
+	}
+	for (u32 i = n; i > 0; i--)
+		if (keys[i - 1] < active)
+			return keys[i - 1];
+	return keys[n - 1];
+}
+
+s32 betterButtonState(s32 a, s32 b) {
+	//Enabled 1 > Disabled -1 > Invisible 0.
+	const s32 rankA = a == 1 ? 2 : a == -1 ? 1 : 0;
+	const s32 rankB = b == 1 ? 2 : b == -1 ? 1 : 0;
+	return rankB > rankA ? b : a;
+}
+
 void freeListAppend(void** head, void** tail, void* nodes, u32 count, u32 stride) {
 	struct Link {
 		Link* prev;

@@ -136,6 +136,32 @@ void mirrorGroup(u32 player, u32 group);
 //newest stamp, ties going to the higher group, or -1 (vanilla 0x496D30).
 int newestRingGroupWith(const u16 (*ring)[SEL_MAX], const u16* stamps, u16 tag);
 
+//-------- Subgroups (stage 5) --------//
+
+const u32 UNIT_TYPES = 228;
+//The type a unit counts as in a subgroup: siege mode counts as tank mode
+//(Siege Tank 30 -> 5, Edmund Duke 25 -> 23).
+u16 subgroupType(u16 unitId);
+//Default priority: heroes above everything, then higher build score.
+u16 defaultPriority(bool hero, u16 buildScore);
+//Sort key: ascending is panel order (higher priority, then lower type, real
+//units before hallucinations). type must be below 512.
+u32 subgroupKey(u16 priority, u16 type, bool hallucination);
+//Sorts units by keys (parallel arrays), keeping the order of equal keys.
+void sortBySubgroup(CUnit** units, u32* keys, u32 n);
+//Whether a selection change keeps the active subgroup: the new selection
+//holds every old unit (an add) or the old one holds every new unit (a
+//removal, a death). Anything else is a fresh selection.
+bool keepsActive(CUnit* const* before, u32 nb, CUnit* const* after, u32 na);
+//The active key after a change. keys: the new selection's keys, sorted, n > 0.
+//keep and oldKey present: oldKey. keep and absent: the first key past oldKey,
+//else the last. Not keep: the first.
+u32 activeKeyAfter(const u32* keys, u32 n, u32 oldKey, bool keep);
+//The next (back: previous) distinct key after active, wrapping. n > 0.
+u32 keyAfterTab(const u32* keys, u32 n, u32 active, bool back);
+//Of two button condition results, the better: Enabled 1 > Disabled -1 > Invisible 0.
+s32 betterButtonState(s32 a, s32 b);
+
 //-------- Image pools --------//
 
 //Appends count nodes (stride bytes apart, each starting with a prev and a next

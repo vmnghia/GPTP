@@ -207,6 +207,56 @@ void ringSearch() {
 	CHECK(newestRingGroupWith(ring, stamps, 0x7FFF) == -1);
 }
 
+void subgroupKeys() {
+	CHECK(subgroupType(30) == 5 && subgroupType(5) == 5);
+	CHECK(subgroupType(25) == 23 && subgroupType(23) == 23);
+	CHECK(subgroupType(37) == 37);
+	CHECK(defaultPriority(true, 0) > defaultPriority(false, 0xFFFF));	//heroes first
+	CHECK(defaultPriority(false, 1200) > defaultPriority(false, 50));
+	const u16 bc = defaultPriority(false, 1200), marine = defaultPriority(false, 50);
+	CHECK(subgroupKey(bc, 12, false) < subgroupKey(marine, 0, false));	//priority first
+	CHECK(subgroupKey(marine, 0, false) < subgroupKey(marine, 32, false));	//then lower type
+	CHECK(subgroupKey(marine, 0, false) < subgroupKey(marine, 0, true));	//real before fake
+	CHECK(subgroupKey(marine, 0, true) < subgroupKey(marine, 1, false));	//fakes right after
+}
+
+void subgroupSort() {
+	CUnit* units[5] = { fake(1), fake(2), fake(3), fake(4), fake(5) };
+	u32 keys[5] = { 7, 3, 7, 3, 1 };
+	sortBySubgroup(units, keys, 5);
+	CHECK(keys[0] == 1 && keys[1] == 3 && keys[2] == 3 && keys[3] == 7 && keys[4] == 7);
+	CHECK(units[0] == fake(5) && units[1] == fake(2) && units[2] == fake(4));	//stable
+	CHECK(units[3] == fake(1) && units[4] == fake(3));
+}
+
+void subgroupActive() {
+	CUnit* before[3] = { fake(1), fake(2), fake(3) };
+	CUnit* added[4] = { fake(3), fake(1), fake(9), fake(2) };
+	CUnit* removed[2] = { fake(3), fake(1) };
+	CUnit* fresh[2] = { fake(1), fake(9) };
+	CHECK(keepsActive(before, 3, added, 4));
+	CHECK(keepsActive(before, 3, removed, 2));
+	CHECK(keepsActive(before, 3, before, 3));
+	CHECK(!keepsActive(before, 3, fresh, 2));
+	const u32 keys[5] = { 2, 2, 5, 9, 9 };
+	CHECK(activeKeyAfter(keys, 5, 5, true) == 5);
+	CHECK(activeKeyAfter(keys, 5, 5, false) == 2);
+	CHECK(activeKeyAfter(keys, 5, 4, true) == 5);	//gone: the next one down
+	CHECK(activeKeyAfter(keys, 5, 10, true) == 9);	//gone and it was the lowest
+	CHECK(keyAfterTab(keys, 5, 2, false) == 5);
+	CHECK(keyAfterTab(keys, 5, 9, false) == 2);	//wraps
+	CHECK(keyAfterTab(keys, 5, 2, true) == 9);
+	CHECK(keyAfterTab(keys, 5, 5, true) == 2);
+	const u32 one[2] = { 4, 4 };
+	CHECK(keyAfterTab(one, 2, 4, false) == 4 && keyAfterTab(one, 2, 4, true) == 4);
+}
+
+void buttonStates() {
+	CHECK(betterButtonState(0, -1) == -1 && betterButtonState(-1, 0) == -1);
+	CHECK(betterButtonState(-1, 1) == 1 && betterButtonState(1, 0) == 1);
+	CHECK(betterButtonState(0, 0) == 0);
+}
+
 } //unnamed namespace
 
 u32 selfTest(u32* firstFailedLine) {
@@ -222,6 +272,10 @@ u32 selfTest(u32* firstFailedLine) {
 	pages();
 	pageKeys();
 	ringSearch();
+	subgroupKeys();
+	subgroupSort();
+	subgroupActive();
+	buttonStates();
 	*firstFailedLine = firstLine;
 	return failures;
 }
