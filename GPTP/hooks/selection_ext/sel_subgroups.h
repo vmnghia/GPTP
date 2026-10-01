@@ -12,6 +12,8 @@ u32 keyOf(CUnit* unit);
 //from the change since the last call, and returns the leader (the active
 //subgroup's unit selexe::outranks picks), or NULL for n == 0.
 CUnit* sortAndPickLeader(u32 n);
+//The next sort follows a fresh selection: the top subgroup becomes active.
+void markFresh();
 //Tab / Shift+Tab. Returns false if nothing changed (one subgroup or none).
 bool cycle(bool back);
 //The active subgroup's units, in panel order; returns how many.

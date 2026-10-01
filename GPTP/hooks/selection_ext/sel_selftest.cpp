@@ -234,10 +234,14 @@ void subgroupActive() {
 	CUnit* added[4] = { fake(3), fake(1), fake(9), fake(2) };
 	CUnit* removed[2] = { fake(3), fake(1) };
 	CUnit* fresh[2] = { fake(1), fake(9) };
-	CHECK(keepsActive(before, 3, added, 4));
-	CHECK(keepsActive(before, 3, removed, 2));
-	CHECK(keepsActive(before, 3, before, 3));
-	CHECK(!keepsActive(before, 3, fresh, 2));
+	CHECK(keepsActive(false, before, 3, added, 4));
+	CHECK(keepsActive(false, before, 3, removed, 2));
+	CHECK(keepsActive(false, before, 3, before, 3));
+	CHECK(!keepsActive(false, before, 3, fresh, 2));
+	//A fresh box over the whole army (or a recall) holds the old units but
+	//still starts at the top subgroup.
+	CHECK(!keepsActive(true, before, 3, added, 4));
+	CHECK(!keepsActive(true, before, 3, removed, 2));
 	const u32 keys[5] = { 2, 2, 5, 9, 9 };
 	CHECK(activeKeyAfter(keys, 5, 5, true) == 5);
 	CHECK(activeKeyAfter(keys, 5, 5, false) == 2);

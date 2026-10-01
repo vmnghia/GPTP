@@ -154,10 +154,11 @@ u16 defaultPriority(bool hero, u16 buildScore);
 u32 subgroupKey(u16 priority, u16 type, bool hallucination);
 //Sorts units by keys (parallel arrays), keeping the order of equal keys.
 void sortBySubgroup(CUnit** units, u32* keys, u32 n);
-//Whether a selection change keeps the active subgroup: the new selection
-//holds every old unit (an add) or the old one holds every new unit (a
-//removal, a death). Anything else is a fresh selection.
-bool keepsActive(CUnit* const* before, u32 nb, CUnit* const* after, u32 na);
+//Whether a selection change keeps the active subgroup. A fresh selection (a
+//click, box, recall or Alt-click without Shift) never does; otherwise it
+//does if the new selection holds every old unit (an add) or the old one
+//holds every new unit (a removal, a death).
+bool keepsActive(bool fresh, CUnit* const* before, u32 nb, CUnit* const* after, u32 na);
 //The active key after a change. keys: the new selection's keys, sorted, n > 0.
 //keep and oldKey present: oldKey. keep and absent: the first key past oldKey,
 //else the last. Not keep: the first.

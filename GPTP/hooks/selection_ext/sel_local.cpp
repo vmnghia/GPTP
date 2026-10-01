@@ -19,6 +19,7 @@ const u32* const PLACING_BUILDING		= (u32*)	0x00640880;
 const u8* const	TARGETING				= (u8*)		0x00641694;
 const u8* const	LOCAL_VISIBILITY		= (u8*)		0x0057F0B0;
 const u8* const	ALT_HELD				= (u8*)		0x00596A2A;
+const u8* const	SHIFT_HELD				= (u8*)		0x00596A28;
 const u8* const	IS_MULTIPLAYER			= (u8*)		0x0057F0B4;
 const u8* const	IS_TEAM_GAME			= (u8*)		0x00596875;
 const u8* const	PLAYER_FORCES			= (u8*)		0x0057EEEA;	//+ player * 0x24
@@ -117,6 +118,10 @@ void buildActive(CUnit** list, u32 count) {
 
 void buildActiveNewSelection(CUnit** list, u32 count) {
 	selectionPage = 0;
+	//Shift-click and shift-drag come here too: they add, and keep the active
+	//subgroup (stage 5); anything else is a fresh selection.
+	if (!*SHIFT_HELD)
+		selsub::markFresh();
 	buildActive(list, count);
 }
 

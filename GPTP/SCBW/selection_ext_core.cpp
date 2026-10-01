@@ -208,7 +208,9 @@ bool holdsAll(CUnit* const* big, u32 nb, CUnit* const* small, u32 ns) {
 
 } //unnamed namespace
 
-bool keepsActive(CUnit* const* before, u32 nb, CUnit* const* after, u32 na) {
+bool keepsActive(bool fresh, CUnit* const* before, u32 nb, CUnit* const* after, u32 na) {
+	if (fresh)
+		return false;
 	return holdsAll(after, na, before, nb) || holdsAll(before, nb, after, na);
 }
 

@@ -11,6 +11,7 @@ u32 keys[SEL_MAX];			//of clientSel, sorted with it
 CUnit* previous[SEL_MAX];	//the selection at the last sort
 u32 previousCount;
 u32 activeKey;
+bool freshPending;	//set by markFresh, used by the next sort
 
 u16 priorityOf(u16 type) {
 	if (type >= UNIT_TYPES)
@@ -36,7 +37,9 @@ CUnit* sortAndPickLeader(u32 n) {
 	for (u32 i = 0; i < n; i++)
 		keys[i] = keyOf(clientSel[i]);
 	sortBySubgroup(clientSel, keys, n);
-	const bool keep = previousCount != 0 && keepsActive(previous, previousCount, clientSel, n);
+	const bool keep = previousCount != 0 &&
+		keepsActive(freshPending, previous, previousCount, clientSel, n);
+	freshPending = false;
 	activeKey = activeKeyAfter(keys, n, activeKey, keep);
 	memcpy(previous, clientSel, n * sizeof(CUnit*));
 	previousCount = n;
@@ -45,6 +48,10 @@ CUnit* sortAndPickLeader(u32 n) {
 		if (keys[i] == activeKey && selexe::outranks(clientSel[i], leader))
 			leader = clientSel[i];
 	return leader;
+}
+
+void markFresh() {
+	freshPending = true;
 }
 
 bool cycle(bool back) {
@@ -75,6 +82,7 @@ u32 activeFirstIndex() {
 void reset() {
 	previousCount = 0;
 	activeKey = 0;
+	freshPending = false;
 }
 
 void viewBegin() {
