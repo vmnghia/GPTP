@@ -2,12 +2,14 @@
 
 Status: stages 1+2 built and tested in game (2026-10-01, build 03:26); stage 3 (pages)
 built and tested (2026-10-01, build 23:00, plan
-`docs/superpowers/plans/2026-10-01-extended-selection-stage-3.md`); stages 4–5 not built. Stage 1+2
+`docs/superpowers/plans/2026-10-01-extended-selection-stage-3.md`); stage 4 (control
+groups) built and tested (2026-10-02, build 00:09, plan
+`docs/superpowers/plans/2026-10-02-extended-selection-stage-4.md`); stage 5 not built. Stage 1+2
 plan: `docs/superpowers/plans/2026-09-30-extended-selection-stage-1-2.md`.
 Found during testing and review (details in the stage sections): the health-bar lookup
 0x4D603C, the 80-circle and 12-health-bar image pools, and chunks needing an index so a
 lost middle chunk drops the packet.
-Branch: stages 1+2 on `master` (local); stage 3 on `feature/selection-pages`
+Branch: stages 1–3 on `master` (local); stage 4 on `feature/control-groups`
 Detailed notes: `docs/selection.md` §1–§5 (the first survey; where it and this spec
 disagree, this spec wins, because every address below was re-checked in the exe)
 
@@ -331,7 +333,8 @@ oldest ring slot.
 
 - **No packet change:** recall and assign work on synced state.
 - **Receive** (0x4C2870, 0x4965D0, 0x496940 replaced): the guard, assign, add and recall
-  rules in "Decisions".
+  rules in "Decisions". Add (Shift+number) fills the group up to the limit and stops,
+  as vanilla fills up to 12; it is not refused whole (that rule is the selection's 0x0A).
 - **Recent ring (groups 10–17):** a completed select of more than 1 unit (vanilla 0x09 /
   0x0A or one chunk commit) is copied into the oldest ring slot once.
 - **Local side:** recall 0x496B40 (GPTP `selectUnitGroup`, enabled) and Alt-click
