@@ -575,6 +575,25 @@ void __declspec(naked) targetOrderCheckStub() {
 	}
 }
 
+//0x456FB6 (wireframe draw proc, after its colour fill, before the frame is
+//drawn): ESI = the unit. Dims the colours, then the replaced
+//mov eax, [0x68C1FC], and back.
+const u32 WireframeDrawBack = 0x00456FBB;
+void __declspec(naked) wireframeDimStub() {
+	static CUnit* unit;
+	__asm {
+		MOV unit, ESI
+		PUSHAD
+	}
+	selsub::dimWireframe(unit);
+	__asm {
+		POPAD
+		MOV EAX, 0x0068C1FC
+		MOV EAX, [EAX]
+		JMP WireframeDrawBack
+	}
+}
+
 } //unnamed namespace
 
 namespace hooks {
@@ -637,6 +656,7 @@ void injectCommandCardHooks() {
 	callPatch(targetOrderCheckStub,	0x004A5631, 0);
 	callPatch(targetOrderCheckStub,	0x004BD54B, 0);
 	callPatch(targetOrderCheckStub,	0x004BD564, 0);
+	jmpPatch(wireframeDimStub,		0x00456FB6, 0);
 }
 
 } //hooks

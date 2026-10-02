@@ -115,6 +115,14 @@ void fill(BinDlg* dialog) {
 		k++;
 	}
 	shownCount = k;
+	//Stage 5 highlight: a new active subgroup changes which wireframes are
+	//dimmed without changing the units, so draw them all again.
+	static u32 shownStamp;
+	if (selsub::activeStamp() != shownStamp) {
+		shownStamp = selsub::activeStamp();
+		for (u32 s = 0; s < shownCount; s++)
+			selexe::invalidateControl(wireframes[s]);
+	}
 	for (; k < controls; k++)
 		selexe::hideControl(wireframes[k]);
 }

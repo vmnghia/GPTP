@@ -12,6 +12,22 @@ CUnit* previous[SEL_MAX];	//the selection at the last sort
 u32 previousCount;
 u32 activeKey;
 bool freshPending;	//set by markFresh, used by the next sort
+u32 stamp;			//changes with activeKey
+
+//The panel highlight: the wireframe colour remap and the game palette.
+u8* const WIRE_REMAP = (u8*)0x0050CE80;
+const u8* const GAME_PALETTE = (const u8*)0x006CE320;	//PALETTEENTRY[256]
+const u32 DIM_PERCENT = 40;
+const u8 DIM_ENTRIES[] = { 0x01, 0x02, 0x11, 0x12, 0x13, 0x14, 0x19, 0x1A, 0x1B, 0x1C };
+u8 paletteSeen[256 * 4];
+u8 dimOf[256];
+bool dimBuilt;
+
+void setActiveKey(u32 key) {
+	if (key != activeKey)
+		stamp++;
+	activeKey = key;
+}
 
 u16 priorityOf(u16 type) {
 	if (type >= UNIT_TYPES)
@@ -40,7 +56,7 @@ CUnit* sortAndPickLeader(u32 n) {
 	const bool keep = previousCount != 0 &&
 		keepsActive(freshPending, previous, previousCount, clientSel, n);
 	freshPending = false;
-	activeKey = activeKeyAfter(keys, n, activeKey, keep);
+	setActiveKey(activeKeyAfter(keys, n, activeKey, keep));
 	memcpy(previous, clientSel, n * sizeof(CUnit*));
 	previousCount = n;
 	CUnit* leader = NULL;
@@ -60,7 +76,7 @@ bool cycle(bool back) {
 	const u32 next = keyAfterTab(keys, clientCount, activeKey, back);
 	if (next == activeKey)
 		return false;
-	activeKey = next;
+	setActiveKey(next);
 	return true;
 }
 
@@ -83,6 +99,8 @@ void reset() {
 	previousCount = 0;
 	activeKey = 0;
 	freshPending = false;
+	dimBuilt = false;
+	stamp++;
 }
 
 void viewBegin() {
@@ -104,6 +122,29 @@ void viewBegin() {
 
 void viewEnd() {
 	mirrorClient();
+}
+
+bool isDimmed(CUnit* unit) {
+	if (clientCount <= 1 || keys[0] == keys[clientCount - 1])
+		return false;
+	return keyOf(unit) != activeKey;
+}
+
+void dimWireframe(CUnit* unit) {
+	if (unit == NULL || !isDimmed(unit))
+		return;
+	if (!dimBuilt || memcmp(paletteSeen, GAME_PALETTE, sizeof(paletteSeen)) != 0) {
+		memcpy(paletteSeen, GAME_PALETTE, sizeof(paletteSeen));
+		for (u32 i = 0; i < 256; i++)
+			dimOf[i] = dimIndex(paletteSeen, (u8)i, DIM_PERCENT);
+		dimBuilt = true;
+	}
+	for (u32 k = 0; k < sizeof(DIM_ENTRIES); k++)
+		WIRE_REMAP[DIM_ENTRIES[k]] = dimOf[WIRE_REMAP[DIM_ENTRIES[k]]];
+}
+
+u32 activeStamp() {
+	return stamp;
 }
 
 } //selsub

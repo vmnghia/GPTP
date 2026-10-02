@@ -27,5 +27,14 @@ void reset();
 void viewBegin();
 //Puts the real client mirror back.
 void viewEnd();
+//Whether a panel wireframe of unit is drawn dimmed: several subgroups are
+//selected and unit is outside the active one.
+bool isDimmed(CUnit* unit);
+//Replaces the wireframe colour remap (0x50CE81-82, 0x50CE91-94,
+//0x50CE99-9C) with its dimmed colours, if unit is dimmed. The draw proc
+//0x456F50 puts the remap back after the frame is drawn.
+void dimWireframe(CUnit* unit);
+//Changes whenever the active subgroup does (for the panel's redraw).
+u32 activeStamp();
 
 } //selsub
