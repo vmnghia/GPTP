@@ -243,6 +243,22 @@ s32 betterButtonState(s32 a, s32 b) {
 	return rankB > rankA ? b : a;
 }
 
+u8 dimIndex(const u8* palette, u8 index, u32 percent) {
+	const s32 r = palette[4 * index] * (s32)percent / 100;
+	const s32 g = palette[4 * index + 1] * (s32)percent / 100;
+	const s32 b = palette[4 * index + 2] * (s32)percent / 100;
+	u32 best = 0, bestDistance = 0xFFFFFFFF;
+	for (u32 i = 0; i < 256; i++) {
+		const s32 dr = palette[4 * i] - r, dg = palette[4 * i + 1] - g, db = palette[4 * i + 2] - b;
+		const u32 distance = (u32)(dr * dr + dg * dg + db * db);
+		if (distance < bestDistance) {
+			best = i;
+			bestDistance = distance;
+		}
+	}
+	return (u8)best;
+}
+
 void freeListAppend(void** head, void** tail, void* nodes, u32 count, u32 stride) {
 	struct Link {
 		Link* prev;

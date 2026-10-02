@@ -167,6 +167,9 @@ u32 activeKeyAfter(const u32* keys, u32 n, u32 oldKey, bool keep);
 u32 keyAfterTab(const u32* keys, u32 n, u32 active, bool back);
 //Of two button condition results, the better: Enabled 1 > Disabled -1 > Invisible 0.
 s32 betterButtonState(s32 a, s32 b);
+//The palette entry (rgbx, 4 bytes each, 256 of them) nearest by squared RGB
+//distance to entry index scaled by percent; ties to the lower index.
+u8 dimIndex(const u8* palette, u8 index, u32 percent);
 
 //-------- Image pools --------//
 

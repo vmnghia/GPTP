@@ -261,6 +261,21 @@ void buttonStates() {
 	CHECK(betterButtonState(0, 0) == 0);
 }
 
+void dimColours() {
+	static u8 pal[256 * 4];
+	memset(pal, 0, sizeof(pal));
+	//1: bright green, 2: dark green (40%), 3: mid green, 4: dark red
+	pal[4 * 1 + 1] = 250;
+	pal[4 * 2 + 1] = 100;
+	pal[4 * 3 + 1] = 170;
+	pal[4 * 4 + 0] = 100;
+	CHECK(dimIndex(pal, 1, 40) == 2);
+	CHECK(dimIndex(pal, 3, 40) == 2);	//68 green: 100 (distance 32) beats black (68)
+	CHECK(dimIndex(pal, 0, 40) == 0);	//black stays black
+	pal[4 * 5 + 1] = 100;	//a second dark green: the lower index wins
+	CHECK(dimIndex(pal, 1, 40) == 2);
+}
+
 } //unnamed namespace
 
 u32 selfTest(u32* firstFailedLine) {
@@ -280,6 +295,7 @@ u32 selfTest(u32* firstFailedLine) {
 	subgroupSort();
 	subgroupActive();
 	buttonStates();
+	dimColours();
 	*firstFailedLine = firstLine;
 	return failures;
 }
