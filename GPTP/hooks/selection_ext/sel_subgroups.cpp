@@ -16,7 +16,11 @@ u32 stamp;			//changes with activeKey
 
 //The panel highlight: the wireframe colour remap and the game palette.
 u8* const WIRE_REMAP = (u8*)0x0050CE80;
-const u8* const GAME_PALETTE = (const u8*)0x006CE320;	//PALETTEENTRY[256]
+//PALETTEENTRY[256]. Live: the tileset's colour cycling rotates some entries
+//(records at 0x6CE2A0) and fades rewrite it.
+const u8* const GAME_PALETTE = (const u8*)0x006CE320;
+const u8* const CYCLE_RECORDS = (const u8*)0x006CE2A0;
+const u32 CYCLE_RECORD_COUNT = 8;
 const u32 DIM_PERCENT = 40;
 const u8 DIM_ENTRIES[] = { 0x01, 0x02, 0x11, 0x12, 0x13, 0x14, 0x19, 0x1A, 0x1B, 0x1C };
 u8 paletteSeen[256 * 4];
@@ -133,10 +137,19 @@ bool isDimmed(CUnit* unit) {
 void dimWireframe(CUnit* unit) {
 	if (unit == NULL || !isDimmed(unit))
 		return;
-	if (!dimBuilt || memcmp(paletteSeen, GAME_PALETTE, sizeof(paletteSeen)) != 0) {
+	//Cycling entries are never a dim colour (they would shimmer) and their
+	//rotation is not a palette change.
+	static bool cycling[256];
+	memset(cycling, 0, sizeof(cycling));
+	cyclingEntries(CYCLE_RECORDS, CYCLE_RECORD_COUNT, cycling);
+	if (!dimBuilt || !samePalette(paletteSeen, GAME_PALETTE, cycling)) {
 		memcpy(paletteSeen, GAME_PALETTE, sizeof(paletteSeen));
 		for (u32 i = 0; i < 256; i++)
-			dimOf[i] = dimIndex(paletteSeen, (u8)i, DIM_PERCENT);
+			dimOf[i] = dimIndex(paletteSeen, cycling, (u8)i, DIM_PERCENT);
+		//A changed palette (a fade): the panel draws again with the new
+		//colours, so its last draw uses the settled palette.
+		if (dimBuilt)
+			stamp++;
 		dimBuilt = true;
 	}
 	for (u32 k = 0; k < sizeof(DIM_ENTRIES); k++)

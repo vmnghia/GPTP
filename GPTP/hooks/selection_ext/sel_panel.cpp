@@ -34,6 +34,7 @@ u32 interact[WIREFRAME_FIRST_ID - 1 + WIREFRAME_MAX];
 bool interactBuilt;
 
 u32 pageSize = VANILLA_MAX;		//of the last fill
+u32 shownStamp;					//selsub::activeStamp() at the last fill
 u32 shownStart;
 u32 shownCount;
 s32 shownHitPoints[WIREFRAME_MAX];
@@ -117,7 +118,6 @@ void fill(BinDlg* dialog) {
 	shownCount = k;
 	//Stage 5 highlight: a new active subgroup changes which wireframes are
 	//dimmed without changing the units, so draw them all again.
-	static u32 shownStamp;
 	if (selsub::activeStamp() != shownStamp) {
 		shownStamp = selsub::activeStamp();
 		for (u32 s = 0; s < shownCount; s++)
@@ -128,6 +128,9 @@ void fill(BinDlg* dialog) {
 }
 
 bool changed() {
+	//A new active subgroup or palette changes the dimmed wireframes.
+	if (selsub::activeStamp() != shownStamp)
+		return true;
 	if (shownCount == 0 && clientCount > shownStart)
 		return true;
 	if (clientCount != 0 && shownStart >= clientCount)

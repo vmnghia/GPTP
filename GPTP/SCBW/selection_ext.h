@@ -168,8 +168,15 @@ u32 keyAfterTab(const u32* keys, u32 n, u32 active, bool back);
 //Of two button condition results, the better: Enabled 1 > Disabled -1 > Invisible 0.
 s32 betterButtonState(s32 a, s32 b);
 //The palette entry (rgbx, 4 bytes each, 256 of them) nearest by squared RGB
-//distance to entry index scaled by percent; ties to the lower index.
-u8 dimIndex(const u8* palette, u8 index, u32 percent);
+//distance to entry index scaled by percent, leaving out the entries marked
+//in skip (256 flags); ties to the lower index.
+u8 dimIndex(const u8* palette, const bool* skip, u8 index, u32 percent);
+//Marks in cycling (256 flags) the palette entries the tileset's colour
+//cycling rotates: records are count 16-byte records (0x6CE2A0); one with
+//byte 1 set cycles entries byte 3 to byte 5.
+void cyclingEntries(const u8* records, u32 count, bool* cycling);
+//Whether two palettes (rgbx x 256) are equal outside the skipped entries.
+bool samePalette(const u8* a, const u8* b, const bool* skip);
 
 //-------- Image pools --------//
 

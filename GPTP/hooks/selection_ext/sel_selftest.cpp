@@ -263,17 +263,50 @@ void buttonStates() {
 
 void dimColours() {
 	static u8 pal[256 * 4];
+	static bool none[256];
 	memset(pal, 0, sizeof(pal));
+	memset(none, 0, sizeof(none));
 	//1: bright green, 2: dark green (40%), 3: mid green, 4: dark red
 	pal[4 * 1 + 1] = 250;
 	pal[4 * 2 + 1] = 100;
 	pal[4 * 3 + 1] = 170;
 	pal[4 * 4 + 0] = 100;
-	CHECK(dimIndex(pal, 1, 40) == 2);
-	CHECK(dimIndex(pal, 3, 40) == 2);	//68 green: 100 (distance 32) beats black (68)
-	CHECK(dimIndex(pal, 0, 40) == 0);	//black stays black
-	pal[4 * 5 + 1] = 100;	//a second dark green: the lower index wins
-	CHECK(dimIndex(pal, 1, 40) == 2);
+	CHECK(dimIndex(pal, none, 1, 40) == 2);
+	CHECK(dimIndex(pal, none, 3, 40) == 2);	//68 green: 100 (distance 32) beats black (68)
+	CHECK(dimIndex(pal, none, 0, 40) == 0);	//black stays black
+	pal[4 * 6 + 1] = 100;	//the same dark green at a higher index: the lower wins
+	CHECK(dimIndex(pal, none, 1, 40) == 2);
+	//A cycling entry is never picked: with 2 skipped, the copy at 6 is.
+	static bool skip[256];
+	memset(skip, 0, sizeof(skip));
+	skip[2] = true;
+	CHECK(dimIndex(pal, skip, 1, 40) == 6);
+}
+
+void paletteCycling() {
+	u8 records[3 * 16];
+	memset(records, 0, sizeof(records));
+	records[0 * 16 + 1] = 8;	//active, entries 1-6
+	records[0 * 16 + 3] = 1;
+	records[0 * 16 + 5] = 6;
+	records[1 * 16 + 3] = 20;	//inactive (byte 1 clear): not marked
+	records[1 * 16 + 5] = 30;
+	records[2 * 16 + 1] = 8;	//active, entries 7-13
+	records[2 * 16 + 3] = 7;
+	records[2 * 16 + 5] = 13;
+	static bool cycling[256];
+	memset(cycling, 0, sizeof(cycling));
+	cyclingEntries(records, 3, cycling);
+	CHECK(!cycling[0] && cycling[1] && cycling[6] && cycling[7] && cycling[13]);
+	CHECK(!cycling[14] && !cycling[20] && !cycling[30]);
+
+	static u8 a[256 * 4], b[256 * 4];
+	memset(a, 0, sizeof(a));
+	memset(b, 0, sizeof(b));
+	b[4 * 3] = 99;		//a cycling entry moved: still the same palette
+	CHECK(samePalette(a, b, cycling));
+	b[4 * 200 + 2] = 1;	//a fade step: changed
+	CHECK(!samePalette(a, b, cycling));
 }
 
 } //unnamed namespace
@@ -296,6 +329,7 @@ u32 selfTest(u32* firstFailedLine) {
 	subgroupActive();
 	buttonStates();
 	dimColours();
+	paletteCycling();
 	*firstFailedLine = firstLine;
 	return failures;
 }

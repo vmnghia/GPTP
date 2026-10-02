@@ -243,12 +243,31 @@ s32 betterButtonState(s32 a, s32 b) {
 	return rankB > rankA ? b : a;
 }
 
-u8 dimIndex(const u8* palette, u8 index, u32 percent) {
+void cyclingEntries(const u8* records, u32 count, bool* cycling) {
+	for (u32 k = 0; k < count; k++) {
+		const u8* const record = records + 16 * k;
+		if (record[1] == 0)
+			continue;
+		for (u32 i = record[3]; i <= record[5] && i < 256; i++)
+			cycling[i] = true;
+	}
+}
+
+bool samePalette(const u8* a, const u8* b, const bool* skip) {
+	for (u32 i = 0; i < 256; i++)
+		if (!skip[i] && (a[4 * i] != b[4 * i] || a[4 * i + 1] != b[4 * i + 1] || a[4 * i + 2] != b[4 * i + 2]))
+			return false;
+	return true;
+}
+
+u8 dimIndex(const u8* palette, const bool* skip, u8 index, u32 percent) {
 	const s32 r = palette[4 * index] * (s32)percent / 100;
 	const s32 g = palette[4 * index + 1] * (s32)percent / 100;
 	const s32 b = palette[4 * index + 2] * (s32)percent / 100;
 	u32 best = 0, bestDistance = 0xFFFFFFFF;
 	for (u32 i = 0; i < 256; i++) {
+		if (skip[i])
+			continue;
 		const s32 dr = palette[4 * i] - r, dg = palette[4 * i + 1] - g, db = palette[4 * i + 2] - b;
 		const u32 distance = (u32)(dr * dr + dg * dg + db * db);
 		if (distance < bestDistance) {
