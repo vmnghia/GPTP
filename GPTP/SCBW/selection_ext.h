@@ -203,8 +203,10 @@ int pickDrone(const bool* isFree, const bool* recyclable, const u32* stamps,
 //or -1 (a plain placement prefers workers that aren't constructing).
 int nearestPreferring(const s32* xs, const s32* ys, const bool* able, const bool* preferred,
                       u32 n, s32 x, s32 y);
-//Whether a worker's current order holds a building: the three build orders
-//and an SCV constructing (0x21), so a Shift-placement queues behind it.
+//Whether a worker's order holds a building: the three build orders, an SCV
+//constructing (0x21), and the Drone's DroneLand (0x46) / DroneBuild (0x1A),
+//which its DroneStartBuild becomes at once. A Shift-placement queues behind
+//it (a Drone's is recycled instead).
 bool holdsBuild(u32 order);
 //A build order gave up: "Couldn't reach the building site." when the
 //worker got stuck (Unmovable) or stopped out of reach; not after a money

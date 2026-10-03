@@ -352,7 +352,10 @@ void buildReview() {
 	const bool none[3] = { false, false, false };
 	CHECK(nearestPreferring(xs, ys, none, notConstructing, 3, 0, 0) == -1);
 	CHECK(holdsBuild(0x19) && holdsBuild(0x1E) && holdsBuild(0x1F) && holdsBuild(0x21));
-	CHECK(!holdsBuild(0x06) && !holdsBuild(0x46) && !holdsBuild(0x55));
+	//A Drone's DroneStartBuild becomes DroneLand (0x46) then DroneBuild (0x1A)
+	//at once: a walking Drone holds its building through those.
+	CHECK(holdsBuild(0x1A) && holdsBuild(0x46));
+	CHECK(!holdsBuild(0x06) && !holdsBuild(0x55));
 	CHECK(showCantReach(true, true) && showCantReach(false, false) && showCantReach(true, false));
 	CHECK(!showCantReach(false, true));	//money failure: its own error
 }

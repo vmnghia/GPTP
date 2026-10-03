@@ -61,7 +61,7 @@ u32 buildsOf(CUnit* unit, s32* lastX, s32* lastY) {
 		*lastY = unit->orderTarget.pt.y;
 	}
 	for (COrder* order = unit->orderQueueHead; order != NULL; order = order->next)
-		if (isBuildOrder(order->orderId)) {
+		if (holdsBuild(order->orderId)) {
 			n++;
 			*lastX = order->target.pt.x;
 			*lastY = order->target.pt.y;
