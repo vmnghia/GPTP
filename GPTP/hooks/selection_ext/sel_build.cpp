@@ -409,9 +409,10 @@ u32 selectedWorkers(bool* anyCan) {
 bool placementStillValid() {
 	bool anyCan;
 	const u32 workers = selectedWorkers(&anyCan);
-	//Shift-queuing: the cursor stays while Shift is held and a worker is
-	//selected (as SC2), even once the only builder has started building.
-	return placingHolds(shiftPlacing && keepsPlacing(), anyCan, workers);
+	//Shift held on a worker build: the cursor stays while a worker is
+	//selected (as SC2), even once the only builder has started building, and
+	//whether or not this placing has placed anything yet.
+	return placingHolds(keepsPlacing(), anyCan, workers);
 }
 
 void frame() {
