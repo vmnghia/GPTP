@@ -160,8 +160,8 @@ void sortBySubgroup(CUnit** units, u32* keys, u32 n);
 //holds every new unit (a removal, a death).
 bool keepsActive(bool fresh, CUnit* const* before, u32 nb, CUnit* const* after, u32 na);
 //The active key after a change. keys: the new selection's keys, sorted, n > 0.
-//keep and oldKey present: oldKey. keep and absent: the first key past oldKey,
-//else the last. Not keep: the first.
+//keep and oldKey present: oldKey. Otherwise (a fresh selection, or the active
+//subgroup killed or removed): the first, as in SC2.
 u32 activeKeyAfter(const u32* keys, u32 n, u32 oldKey, bool keep);
 //The next (back: previous) distinct key after active, wrapping. n > 0.
 u32 keyAfterTab(const u32* keys, u32 n, u32 active, bool back);

@@ -358,8 +358,8 @@ subgroup is **active**, and the card shows that subgroup's buttons.
   first unit is on another page, the panel goes to that page.
 - A new selection (click, box, Ctrl+click, double-click, group recall, Alt-click)
   activates the highest-priority subgroup. A shift-add, shift-remove or a death keeps
-  the active subgroup while any of its units remain; otherwise the next one down is
-  active (the last one if it was the lowest).
+  the active subgroup while any of its units remain; when its last unit goes, the
+  highest-priority subgroup is active, as in SC2 (user, 2026-10-03).
 - **Ctrl+click and double-click** select every unit with the same subgroup key on
   screen, so a burrowed Hydralisk takes the unburrowed ones too, and a sieged tank the
   unsieged ones.

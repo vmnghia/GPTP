@@ -245,8 +245,9 @@ void subgroupActive() {
 	const u32 keys[5] = { 2, 2, 5, 9, 9 };
 	CHECK(activeKeyAfter(keys, 5, 5, true) == 5);
 	CHECK(activeKeyAfter(keys, 5, 5, false) == 2);
-	CHECK(activeKeyAfter(keys, 5, 4, true) == 5);	//gone: the next one down
-	CHECK(activeKeyAfter(keys, 5, 10, true) == 9);	//gone and it was the lowest
+	//Gone (killed, shift-removed): the top subgroup, as in SC2.
+	CHECK(activeKeyAfter(keys, 5, 4, true) == 2);
+	CHECK(activeKeyAfter(keys, 5, 10, true) == 2);
 	CHECK(keyAfterTab(keys, 5, 2, false) == 5);
 	CHECK(keyAfterTab(keys, 5, 9, false) == 2);	//wraps
 	CHECK(keyAfterTab(keys, 5, 2, true) == 9);

@@ -215,12 +215,11 @@ bool keepsActive(bool fresh, CUnit* const* before, u32 nb, CUnit* const* after, 
 }
 
 u32 activeKeyAfter(const u32* keys, u32 n, u32 oldKey, bool keep) {
-	if (!keep)
-		return keys[0];
-	for (u32 i = 0; i < n; i++)
-		if (keys[i] >= oldKey)
-			return keys[i];
-	return keys[n - 1];
+	if (keep)
+		for (u32 i = 0; i < n; i++)
+			if (keys[i] == oldKey)
+				return oldKey;
+	return keys[0];
 }
 
 u32 keyAfterTab(const u32* keys, u32 n, u32 active, bool back) {
