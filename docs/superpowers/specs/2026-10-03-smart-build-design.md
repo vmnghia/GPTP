@@ -99,26 +99,36 @@ SC2-style building with several workers selected:
   to the site's centre), ties to the lowest selection index. Then vanilla's path with
   that builder: tile check, 0x48E190 with the builder fed to 0x48E010/0x48E0A0 at their
   iterator calls. With one unit selected this is vanilla.
-- **0x3D**: same able-worker set; the pick:
-  - Terran and Protoss workers: fewest queued build orders; then nearest to the site
-    from the worker's last queued build site (else its position); then lowest index.
-  - Drones: one without a build order (current or queued), nearest first; else the one
-    with the lowest assignment number whose build hasn't started morphing; its build
-    order is removed from its queue (or, if current, the Drone stops it) before the new
-    one is given.
-  - The pick is given the build order with `stopPreviousOrders` false and the type in
-    the queue entry (0x474810). Its assignment number is set from a per-player counter
-    (Drones; harmless for others).
-  - No able worker (all queues full, or none can build it): the placement is dropped
-    with an error to the player.
-- **A queued build starting:** a hook where 0x475000 makes a build order current
-  (DroneStartBuild, BuildTerran, BuildProtoss1, PlaceAddon) with `orderUnitType` set
-  runs what 0x48DE70 does at command time (supply and resource checks with their
-  errors, then 0x467250). If a check fails, the order is dropped and the next queued
-  order starts.
+- **0x3D**: same able-worker set (0x48DBD0 passes; PlaceAddon is never queued: a
+  building alone takes the 0x0C path). The pick:
+  - Terran and Protoss workers: fewest build orders (current plus queued); then
+    nearest to the site from the worker's last queued build site (else its position);
+    then lowest index.
+  - Drones: one without a build order, nearest first; else the one with the lowest
+    assignment number that is not already landing or morphing (0x48DE70's own test:
+    DroneBuild, or DroneLand with NoBrkCodeStart/CanNotReceiveOrders). Assignment
+    numbers come from a per-player counter, stamped when a Drone is picked.
+  - **A pick with no build order** (mining, idle, moving, or a recycled Drone) starts
+    the building now, through the plain path (0x48E190 with that builder): vanilla's
+    checks, errors and order, its other orders replaced, as a plain build would.
+  - **A pick already building** gets it appended to its queue (0x4745F0 with
+    `orderId`, the site's centre, and the type marked with 0x8000), after vanilla's
+    queue checks (0x4754F0): at most 8 queued orders ("Unit's waypoint list is
+    full"), and the global order count below 1800. The site is checked when queued
+    (0x473FB0 and its message, as 0x48E010 does).
+  - No able worker: the placement is dropped (the vanilla error of the check that
+    failed is shown).
+- **A queued build starting:** the main order dispatcher 0x4EC4D0 (EAX = unit, every
+  unit, every frame) checks first: if the current order is a build order and its
+  `orderUnitType` carries the 0x8000 mark, the mark is cleared and 0x48DE70's command
+  time checks run (minerals, gas, supply, with their errors), then 0x466E80 and
+  0x467250 fill the build slot. A failed check sends the worker on with `orderToIdle`
+  (the next queued order, or idle). Arrival still runs vanilla's own checks (money at
+  0x467030, the site at createUnit), so a site blocked since queueing fails as in
+  vanilla.
 - **Assignment numbers:** synced, per unit (indexed by unit index), with a per-player
-  counter; saved in the SELX chunk (a new version); older saves start at 0, so ties go
-  to the lowest selection index.
+  counter; saved in the SELX chunk (version 3); older saves start at 0, so ties go to
+  the lowest selection index.
 
 ### Local UI
 - At the placement click (0x48E5xx): Shift held → send 0x3D and skip the end-placing
