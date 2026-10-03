@@ -38,6 +38,22 @@ SC2-style building with several workers selected:
   minerals, gas, the site still valid). If one fails, the player gets vanilla's error
   (e.g. "Not enough minerals") and the worker goes on to its next queued order.
   Resources are spent when each building starts, not when it is queued.
+- **Disruptions** (user, 2026-10-03), whatever the cause (a building landing, our or
+  enemy units in the way or on the site):
+  1. **Placing:** a worker is able only if vanilla's placement check (0x473FB0) passes
+     for it, which includes reaching the site (code 7, "Couldn't reach the building
+     site."). If none passes, the first failure's own message shows and nothing is
+     queued.
+  2. **Arrival, site unusable** (a building landed on it, units vanilla can't move
+     aside): vanilla's own error ("You can't build there." etc.), then the worker goes
+     on to its next queued building. Vanilla's SCV wipes its whole queue here; the
+     Probe already goes on; a Drone has nothing queued behind it.
+  3. **Can't get there** (a path cut by a landed building or a permanent jam, once BW
+     gives up): "Couldn't reach the building site.", then its next queued building.
+     A temporary jam only delays the worker. SCV and Probe; a Drone's give-up stays
+     vanilla (it idles; nothing is queued behind it).
+  - Not enough minerals, gas or supply on arrival: vanilla's error, then the next
+    queued building (vanilla already does this).
 - A plain order (Stop, Move, a new plain Build) clears the worker's queue, as BW does;
   Shift+Move after the builds queues the move after them.
 - **Not in this feature:** SC2's translucent images of queued buildings at their sites;
@@ -70,6 +86,20 @@ SC2-style building with several workers selected:
   (0x59723D) is 1 (`cmp byte [0x59723D], 1` then `jne`). 0x428E60
   (Can_Create_UnitorBuilding, 87 buttons) returns Invisible when the count is above 1
   unless the unit is a Larva (0x23), Mutalisk (0x2B) or Hydralisk (0x26).
+- **Placement codes** (0x473FB0, with the builder; messages via table 0x513634): 1 an
+  undetected unit in the way, 2 next to minerals, 3 off the map, 4 can't build there,
+  5 creep, 6 pylon, **7 "Couldn't reach the building site."**, 8 geyser, 9 must see,
+  10 must explore, 11 map edge. The click shows these for the leader only (0x48E4E0).
+- **Failures on the way and on arrival.** SCV order 0x467FD0: when it stops, it needs
+  0x401240 (ECX unit, EAX y, push x, push distance; 1 = within) with 128, then 0x467030
+  (supply, minerals, gas, with errors); any failure jumps to 0x46817A
+  `mov ecx, esi; call 0x4753A0` (toIdle: the next queued order, silently). A failed
+  createUnit shows the error (0x49E530) and calls 0x475310 at 0x468125 (ESI unit, CL the
+  idle order: replaces every order, so the queue is lost). Probe order 0x4E4D00: a
+  failed warp shows the error and tail-jumps to toIdle (0x4E4E5E); the give-up exit is
+  0x4E4EDB `call 0x4753A0` (ECX unit). The only uses of "Couldn't reach the building
+  site." are the click's (0x48E50F, 0x48E665); nothing shows it once a worker is on its
+  way.
 - Holding Ctrl or Alt keeps the card's hotkeys from firing (they work from typed
   characters); Shift alone does not (user-tested).
 

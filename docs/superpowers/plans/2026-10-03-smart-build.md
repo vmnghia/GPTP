@@ -242,11 +242,46 @@ void buildNow(CUnit* builder, u8 order, u16 type, u32 tiles) {
 	chosenBuilder = NULL;
 }
 ```
-`recvBuild`: read order/tiles/type; return if `type >= UNIT_TYPES` or the tiles are off the map (`mapTileSize`); collect; `able[i] = placeBuildingAllowed(u, order, type)`; positions; `k = nearestIndex(...)` to the site centre; if `k >= 0` `buildNow(units[k], order, type, tiles)`.
-`recvQueuedBuild`: as `recvBuild` up to `able`; if the order isn't Drone/Terran/Protoss1 → `recvBuild(packet)` and return; per unit `builds[i] = buildsOf(u, &fx[i], &fy[i])`; for Drones (`order == ORDER_DRONE_START_BUILD`): `isFree[i] = able[i] && builds[i] == 0`, `recyclable[i] = able[i] && builds[i] > 0 && !droneCommitted(u)`, `k = pickDrone(isFree, recyclable, stampOf, xs, ys, n, cx, cy)`; else `k = pickBalanced(builds, fx, fy, able, n, cx, cy)`. `k < 0` → return. Stamp: `stamps[idx] = ++nextStamp[player]`. If `builds[k] == 0` or Drone → `buildNow(...)`. Else (append): `if (u->orderQueueCount >= 8)` show stat_txt 0x367 to the player and return; `if (*(u32*)0x00641698 >= 1800)` 0x369 and return; `placementMessage(placementCheck(u, player, tileX, tileY, type))` false → return; `queueOrderAtEnd(u, order, cx, cy, type | QUEUED_BUILD_MARK)`.
+`recvBuild`: read order/tiles/type; return if `type >= UNIT_TYPES` or the tiles are off the map (`mapTileSize`); collect; `able[i] = placeBuildingAllowed(u, order, type) && (code = placementCheck(u, player, tileX, tileY, type)) == 0`, keeping the first nonzero `code` (rule 1: the check includes reaching the site, code 7); positions; `k = nearestIndex(...)` to the site centre; if `k >= 0` `buildNow(units[k], order, type, tiles)`, else if a code was kept `placementMessage(code)`.
+`recvQueuedBuild`: as `recvBuild` up to `able`; if the order isn't Drone/Terran/Protoss1 → `recvBuild(packet)` and return; per unit `builds[i] = buildsOf(u, &fx[i], &fy[i])`; for Drones (`order == ORDER_DRONE_START_BUILD`): `isFree[i] = able[i] && builds[i] == 0`, `recyclable[i] = able[i] && builds[i] > 0 && !droneCommitted(u)`, `k = pickDrone(isFree, recyclable, stampOf, xs, ys, n, cx, cy)`; else `k = pickBalanced(builds, fx, fy, able, n, cx, cy)`. `k < 0` → `placementMessage(firstCode)` if one was kept, and return. Stamp: `stamps[idx] = ++nextStamp[player]`. If `builds[k] == 0` or Drone → `buildNow(...)`. Else (append): `if (u->orderQueueCount >= 8)` show stat_txt 0x367 to the player and return; `if (*(u32*)0x00641698 >= 1800)` 0x369 and return; `queueOrderAtEnd(u, order, cx, cy, type | QUEUED_BUILD_MARK)` (the site already passed `placementCheck` for this worker in `able`).
 `beforeOrder(unit)`: `if (!(unit->orderUnitType & QUEUED_BUILD_MARK) || !isBuildOrder(unit->mainOrderId)) return;` `type = orderUnitType & ~MARK`; `unit->orderUnitType = type`; `p = unit->playerId`; costs into 0x6CA51C/0x6CA4EC as 0x48DE70; `ok = hasSupplies(type, p)`; minerals then gas with the 0x352/0x353 errors (`scbw::showErrorMessageWithSfx(p, id, sfx + *(u8*)0x0057F1E2)`), `ok` false on any; if `ok`: `refundQueueSlots(unit); ok = fillBuildSlot(unit, type);`; if `!ok` → `unit->orderToIdle()`.
 - [ ] `sel_inject.cpp`: `recvBuildWrapper` at 0x4C23C0 (ESI = packet; `jmpPatch(..., 0x004C23C0, 3)` after `disat.py 4C23C0` confirms 8 bytes); `builderStub` (`MOV EAX, [chosenBuilder]` through a file-static pointer; nonzero → `RETN`; else `JMP 0x0049A850`) callPatched at 0x48E01E and 0x48E0B1; `selectChunkDispatch`: before `notOurs`, a 0x3D branch: `CMP BYTE PTR [ESI], 0x3D / JNE notOurs / CMP EAX, 8 / JL notOurs / SUB EAX, 8 / MOV [EBP+8], EAX / MOV DWORD PTR [EBP-4], 8 / PUSHAD / PUSH ESI / CALL recvQueuedBuildC / ADD ESP, 4 / POPAD / JMP Back_CommandDone`; `orderRootStub` at 0x4EC4D0 (`jmpPatch(..., 3)`): `PUSHAD`, `PUSH EAX`, `CALL beforeOrderC`, `ADD ESP, 4`, `POPAD`, then the 8 replaced bytes `PUSH EBX / PUSH ESI / MOV ESI, EAX / MOVZX EAX, BYTE PTR [ESI+0x4D]` and `JMP 0x004EC4D8` (re-read [ESI+0x4D] after the call: beforeOrder may change the order). All in `injectSmartBuildHooks()`.
 - [ ] verify; commit `feat: smart-build receive: nearest builder, queued builds shared out`.
+
+### Task 3b: disruptions on the way and on arrival (rules 2 and 3)
+**Files:** `hooks/selection_ext/sel_inject.cpp` (stubs, in `injectSmartBuildHooks()`), `sel_exe.h/.cpp` (`bool withinReach(CUnit*, s32 x, s32 y, u32 distance)` = 0x401240: ECX unit, EAX y, push x, push distance; `void showStatTextTo(u32 stringId, u8 player)` = 0x48CF00 with `statTxtTbl->getString(id)`), `sel_build.h/.cpp`.
+- [ ] `selbuild::gaveUp(CUnit* unit)` (synced; the message only shows on its owner's screen): `if (!selexe::withinReach(unit, unit->orderTarget.pt.x, unit->orderTarget.pt.y, 128)) selexe::showStatTextTo(0x35E, unit->playerId);` ("Couldn't reach the building site."; a money failure is within reach and has shown its own error).
+- [ ] Rule 3 stubs, callPatched over the `call 0x4753A0` give-up exits, ECX = unit: SCV 0x46817C, Probe 0x4E4EDB:
+```cpp
+const u32 Func_ToIdle = 0x004753A0;
+void __declspec(naked) buildGaveUpStub() {
+	static CUnit* unit;
+	__asm {
+		MOV unit, ECX
+		PUSHAD
+	}
+	selbuild::gaveUp(unit);
+	__asm {
+		POPAD
+		JMP Func_ToIdle
+	}
+}
+```
+- [ ] Rule 2 stub, callPatched at 0x468125 (SCV, createUnit failed; ESI = unit, CL = idle order; vanilla `call 0x475310` replaces every order): with a queued order left, go on to it instead.
+```cpp
+const u32 Func_OrderComputerCL = 0x00475310;
+void __declspec(naked) scvSiteBlockedStub() {
+	__asm {
+		CMP DWORD PTR [ESI+0x74], 0		//orderQueueHead
+		JE vanilla
+		MOV ECX, ESI
+		JMP Func_ToIdle
+	vanilla:
+		JMP Func_OrderComputerCL
+	}
+}
+```
+- [ ] verify (naked check); commit `feat: queued builds go on after a blocked site or a cut path, with the message`.
 
 ### Task 4: placing with Shift
 **Files:** `sel_build.h/.cpp` (`bool sendAsQueued(u8* cmd)`, `void frame()`), `sel_inject.cpp`, `hooks/main/game_hooks.cpp`.
@@ -270,6 +305,9 @@ void buildNow(CUnit* builder, u8 order, u16 type, u32 tiles) {
 - 9.7 Save with queued builds, load: the queues carry on. Load a save from before this feature.
 - 9.8 Replay of all of it: same builders, no desync.
 - 9.9 A plain Move clears a worker's queue; Shift+Move after the builds runs after them.
+- 9.10 Rule 1: select SCVs on two islands, Shift-place on one: only that island's SCVs take it; with only the far island's SCVs selected: "Couldn't reach the building site.", nothing queued.
+- 9.11 Rule 2: Shift-queue 3 depots on one SCV, then land a Barracks (or park units that can't move) on the 2nd site before it gets there: "You can't build there.", and it goes on to the 3rd.
+- 9.12 Rule 3: Shift-queue 2 buildings outside a wall, then close the path (land a building, or wall with units held in place): once it gives up, "Couldn't reach the building site.", and it goes on to the next. A short jam only delays it.
 
 ### Task 7: docs
 Spec status; `docs/resolution.md` §6; memory; commit.
