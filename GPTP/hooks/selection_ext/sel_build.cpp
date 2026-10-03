@@ -1,5 +1,6 @@
 #include "sel_build.h"
 #include "sel_exe.h"
+#include "sel_subgroups.h"
 #include <SCBW/selection_ext.h>
 #include <cstring>
 
@@ -243,6 +244,52 @@ void reset() {
 	memset(stamps, 0, sizeof(stamps));
 	memset(lastStamp, 0, sizeof(lastStamp));
 	chosenBuilder = NULL;
+}
+
+} //selbuild
+
+namespace {
+
+const u8* const SHIFT_HELD			= (const u8*)	0x00596A28;
+const u32* const PLACING			= (const u32*)	0x00640880;
+const u16* const PLACING_TYPE		= (const u16*)	0x0064088A;
+const u8* const PLACING_ORDER		= (const u8*)	0x0064088D;
+bool shiftPlacing;	//local: placing goes on after a Shift-placement
+
+} //unnamed namespace
+
+namespace selbuild {
+
+bool sendAsQueued(u8* cmd) {
+	if (!*SHIFT_HELD || !isBuildOrder(cmd[1]))
+		return false;
+	cmd[0] = CMD_QUEUED_BUILD;
+	shiftPlacing = true;
+	return true;
+}
+
+bool placementStillValid() {
+	static CUnit* members[SEL_MAX];
+	const u32 m = selsub::activeMembers(members);
+	if (m == 0)
+		return *activePortraitUnit != NULL
+			&& selexe::placeBuildingAllowed(*activePortraitUnit, *PLACING_ORDER, *PLACING_TYPE);
+	for (u32 i = 0; i < m; i++)
+		if (selexe::placeBuildingAllowed(members[i], *PLACING_ORDER, *PLACING_TYPE))
+			return true;
+	return false;
+}
+
+void frame() {
+	if (!shiftPlacing)
+		return;
+	if (*PLACING == 0)
+		shiftPlacing = false;	//ended otherwise (Esc, right-click, a plain placement)
+	else
+	if (!*SHIFT_HELD) {
+		shiftPlacing = false;
+		selexe::cancelPlacement();
+	}
 }
 
 } //selbuild

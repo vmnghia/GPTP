@@ -732,6 +732,46 @@ void __declspec(naked) scvSiteBlockedStub() {
 	}
 }
 
+//0x48E62E-0x48E639 at the placement click (placing mode's left click):
+//vanilla's call 0x485BD0 (ECX = the 8-byte 0x0C, EDX = 8), push 0,
+//call 0x4843F0 (placing ends). With Shift, the command goes as 0x3D and
+//placing goes on.
+const u32 Func_QueueCommandSend	= 0x00485BD0;
+const u32 Func_SetInputMode		= 0x004843F0;
+const u32 PlaceSendBack			= 0x0048E63A;
+void __declspec(naked) placeSendStub() {
+	static u8* command;
+	static u32 queued;
+	__asm {
+		MOV command, ECX
+		PUSHAD
+	}
+	queued = selbuild::sendAsQueued(command);
+	__asm {
+		POPAD
+		CALL Func_QueueCommandSend
+		CMP DWORD PTR queued, 0
+		JNE back
+		PUSH 0
+		CALL Func_SetInputMode
+	back:
+		JMP PlaceSendBack
+	}
+}
+
+//0x48DDA0 (can the builder still place it; EAX out): any member of the
+//active subgroup, not the portrait only.
+void __declspec(naked) placementStillValidWrapper() {
+	static u32 result;
+	__asm PUSHAD
+	result = selbuild::placementStillValid();
+	__asm {
+		POPAD
+		MOV EAX, result
+		RETN
+	}
+}
+
 } //unnamed namespace
 
 namespace hooks {
@@ -820,6 +860,9 @@ void injectSmartBuildHooks() {
 	callPatch(buildGaveUpStub,		0x0046817C, 0);
 	callPatch(buildGaveUpStub,		0x004E4EDB, 0);
 	callPatch(scvSiteBlockedStub,	0x00468125, 0);
+	//Placing: Shift sends 0x3D and keeps placing; any member may place.
+	jmpPatch(placeSendStub,					0x0048E62E, 7);
+	jmpPatch(placementStillValidWrapper,	0x0048DDA0, 2);
 }
 
 } //hooks

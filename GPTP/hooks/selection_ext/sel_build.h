@@ -28,4 +28,17 @@ void gaveUp(CUnit* unit);
 //A new game: no stamps.
 void reset();
 
+//-------- Local: placing --------//
+
+//At the placement click, before cmd (an 8-byte 0x0C) is sent: with Shift
+//held and a worker build order, turns it into 0x3D and returns true (placing
+//then goes on).
+bool sendAsQueued(u8* cmd);
+//Whether any member of the active subgroup can still place the building
+//being placed (replaces 0x48DDA0, which asks the portrait only).
+bool placementStillValid();
+//Every frame: Shift released while Shift-placing ends placing; the build
+//menu stays.
+void frame();
+
 } //selbuild

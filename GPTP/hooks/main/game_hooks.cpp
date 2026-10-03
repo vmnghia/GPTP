@@ -8,6 +8,7 @@
 #include "../interface/resolution.h"
 #include "../recv_commands/smart_cast.h"
 #include <SCBW/selection_ext.h>
+#include "../selection_ext/sel_build.h"
 #include <cstdio>
 
 #include "../psi_field.h"
@@ -352,6 +353,7 @@ bool nextFrame()
         hooks::updatePsiFieldProviders();
         plugins::initializeGame();
         resolution::debugReport();
+        selbuild::frame(); // Smart-build: Shift released ends Shift-placing
 
         u32 idleWorkerCount = 0;
 
