@@ -181,6 +181,25 @@ bool samePalette(const u8* a, const u8* b, const bool* skip);
 //Tab cycles subgroups, so the minimap's vanilla Tab toggles (0x4A5938) move:
 //Alt+T hides/shows terrain, Ctrl+Shift+T cycles the ally colours (user,
 //2026-10-03). Which toggle a key press is, if any.
+//-------- Smart-build --------//
+
+//Queued build: [0x3D][order][u16 x tile][u16 y tile][u16 type], as 0x0C.
+const u8 CMD_QUEUED_BUILD = 0x3D;
+//A queued build order's type, marked so the order hook sets it up when it
+//becomes current (vanilla never starts a build from the queue).
+const u16 QUEUED_BUILD_MARK = 0x8000;
+//Index of the able entry nearest (x, y) (squared distance), ties to the
+//lowest index, or -1.
+int nearestIndex(const s32* xs, const s32* ys, const bool* able, u32 n, s32 x, s32 y);
+//Balanced pick: the able entry with the fewest builds; then nearest (x, y)
+//from fromX/fromY; then the lowest index; or -1.
+int pickBalanced(const u32* builds, const s32* fromX, const s32* fromY, const bool* able,
+                 u32 n, s32 x, s32 y);
+//Drone pick: a free one, nearest (x, y); else the recyclable one with the
+//lowest stamp, ties to the lowest index; or -1.
+int pickDrone(const bool* isFree, const bool* recyclable, const u32* stamps,
+              const s32* xs, const s32* ys, u32 n, s32 x, s32 y);
+
 enum MinimapToggle { MINIMAP_NONE = 0, MINIMAP_TERRAIN = 1, MINIMAP_ALLY_COLOURS = 2 };
 MinimapToggle minimapToggleFor(u16 key, bool shift, bool ctrl, bool alt);
 

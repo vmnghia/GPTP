@@ -107,6 +107,8 @@ u32 variableCommandLength(const u8* cmd) {
 	const u8 id = cmd[0];
 	if (id == CMD_SELECT_CHUNK)
 		return 3 + 2 * cmd[2];
+	if (id == CMD_QUEUED_BUILD)
+		return 8;
 	if (id >= 0x09 && id <= 0x0B)
 		return 2 + 2 * cmd[1];
 	return 0;
@@ -240,6 +242,48 @@ s32 betterButtonState(s32 a, s32 b) {
 	const s32 rankA = a == 1 ? 2 : a == -1 ? 1 : 0;
 	const s32 rankB = b == 1 ? 2 : b == -1 ? 1 : 0;
 	return rankB > rankA ? b : a;
+}
+
+int nearestIndex(const s32* xs, const s32* ys, const bool* able, u32 n, s32 x, s32 y) {
+	int best = -1;
+	u32 bestDistance = 0;
+	for (u32 i = 0; i < n; i++) {
+		if (!able[i])
+			continue;
+		const s32 dx = xs[i] - x, dy = ys[i] - y;
+		const u32 distance = (u32)(dx * dx) + (u32)(dy * dy);
+		if (best < 0 || distance < bestDistance) {
+			best = (int)i;
+			bestDistance = distance;
+		}
+	}
+	return best;
+}
+
+int pickBalanced(const u32* builds, const s32* fromX, const s32* fromY, const bool* able,
+                 u32 n, s32 x, s32 y) {
+	if (n > SEL_MAX)
+		n = SEL_MAX;
+	u32 fewest = 0xFFFFFFFF;
+	for (u32 i = 0; i < n; i++)
+		if (able[i] && builds[i] < fewest)
+			fewest = builds[i];
+	static bool candidate[SEL_MAX];
+	for (u32 i = 0; i < n; i++)
+		candidate[i] = able[i] && builds[i] == fewest;
+	return nearestIndex(fromX, fromY, candidate, n, x, y);
+}
+
+int pickDrone(const bool* isFree, const bool* recyclable, const u32* stamps,
+              const s32* xs, const s32* ys, u32 n, s32 x, s32 y) {
+	const int free = nearestIndex(xs, ys, isFree, n, x, y);
+	if (free >= 0)
+		return free;
+	int best = -1;
+	for (u32 i = 0; i < n; i++)
+		if (recyclable[i] && (best < 0 || stamps[i] < stamps[best]))
+			best = (int)i;
+	return best;
 }
 
 MinimapToggle minimapToggleFor(u16 key, bool shift, bool ctrl, bool alt) {

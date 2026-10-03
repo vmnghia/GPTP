@@ -128,6 +128,8 @@ void lengths() {
 	CHECK(variableCommandLength(chunk) == 7);
 	const u8 hotkey[] = { 0x13, 0, 0 };
 	CHECK(variableCommandLength(hotkey) == 0);
+	const u8 queued[] = { CMD_QUEUED_BUILD, 0x1E, 0, 0, 0, 0, 0, 0 };
+	CHECK(variableCommandLength(queued) == 8);
 }
 
 void ring() {
@@ -310,6 +312,36 @@ void paletteCycling() {
 	CHECK(!samePalette(a, b, cycling));
 }
 
+void buildPicks() {
+	const s32 xs[4] = { 100, 10, 50, 50 }, ys[4] = { 100, 10, 50, 50 };
+	const bool able[4] = { true, false, true, true };
+	CHECK(nearestIndex(xs, ys, able, 4, 0, 0) == 2);	//1 nearer but unable; 2 and 3 tie
+	CHECK(nearestIndex(xs, ys, able, 0, 0, 0) == -1);
+	const s32 far[2] = { 8191, 0 };
+	const bool both[2] = { true, true };
+	CHECK(nearestIndex(far, far, both, 2, 0, 8191) == 0);	//no overflow at map size
+
+	const u32 builds[4] = { 2, 0, 1, 1 };
+	CHECK(pickBalanced(builds, xs, ys, able, 4, 0, 0) == 2);	//fewest able (1 unable)
+	const u32 even[4] = { 1, 1, 1, 1 };
+	CHECK(pickBalanced(even, xs, ys, able, 4, 200, 200) == 0);	//tie: nearest
+	CHECK(pickBalanced(even, xs, ys, able, 4, 50, 50) == 2);	//tie on distance: index
+	const bool none[4] = { false, false, false, false };
+	CHECK(pickBalanced(even, xs, ys, none, 4, 0, 0) == -1);
+
+	const bool isFree[3] = { false, true, true };
+	const bool recyclable[3] = { true, false, true };
+	const u32 stamps[3] = { 7, 0, 3 };
+	const s32 dx[3] = { 0, 90, 10 }, dy[3] = { 0, 0, 0 };
+	CHECK(pickDrone(isFree, recyclable, stamps, dx, dy, 3, 0, 0) == 2);	//free, nearest
+	const bool busy[3] = { false, false, false };
+	CHECK(pickDrone(busy, recyclable, stamps, dx, dy, 3, 0, 0) == 2);	//earliest stamp 3
+	const u32 zeros[3] = { 0, 0, 0 };
+	CHECK(pickDrone(busy, recyclable, zeros, dx, dy, 3, 90, 0) == 0);	//old save: lowest index
+	const bool stuck[3] = { false, false, false };
+	CHECK(pickDrone(busy, stuck, stamps, dx, dy, 3, 0, 0) == -1);
+}
+
 void minimapKeys() {
 	const u16 T = 0x54, TAB = 0x09;
 	CHECK(minimapToggleFor(T, false, false, true) == MINIMAP_TERRAIN);		//Alt+T
@@ -345,6 +377,7 @@ u32 selfTest(u32* firstFailedLine) {
 	dimColours();
 	paletteCycling();
 	minimapKeys();
+	buildPicks();
 	*firstFailedLine = firstLine;
 	return failures;
 }
