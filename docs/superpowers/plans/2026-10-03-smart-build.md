@@ -295,6 +295,15 @@ void __declspec(naked) scvSiteBlockedStub() {
 **Files:** `hooks/selection_ext/sel_save.cpp`.
 - [ ] Write version 3: after the v2 payload, a second compressed block `u32 stamps[1700]`, `u32 nextStamp[8]`. Read: v3 reads both blocks; v1/v2 → `selbuild::reset()` (stamps 0). Verify; commit `feat: save chunk version 3 with the smart-build stamps`.
 
+### Task 5b: Shift-placements prepaid (user, after testing)
+- Remove the build-menu refresh after each Shift-placement (`afterQueuedSend`): the cursor keeps the building.
+- Pure (host-tested): `void reconcilePaid(u32* paidM, u32* paidG, u32 heldM, u32 heldG, u32* refundM, u32* refundG)` — what a unit has paid but no longer holds is refunded; `bool canAfford(s32 minerals, s32 gas, u32 costM, u32 costG)`.
+- Synced per unit (index - 1): `paidMinerals`, `paidGas` (all prepaid builds it holds), `paidCurrentType` (the current build's type if it is prepaid, else 0xFFFF). Saved in SELX v3's second block.
+- 0x3D: check `canAfford` (else 0x352/0x353 with sfx, return). Start-now: `buildNow`, then if the unit now holds a build at this site, take the cost and set `paidCurrentType`. Append: take the cost, then queue the marked entry.
+- `beforeOrder`: a marked current build sets `paidCurrentType` (no money check: prepaid); then for units with paid > 0: held = (`paidCurrentType` valid and `holdsBuild(mainOrderId)` ? its cost : 0, else clear it) + the costs of marked queue entries; `reconcilePaid` and give the refund.
+- Arrival (paying sites): `callPatch` over `call 0x467030` at 0x468064 (SCV) and 0x4E4DF5 (Probe), EAX = unit, and over `call 0x42CF70` at 0x45E189 (Drone, ESI = unit): if `paidCurrentType` is set, give its cost back, take it off `paid*`, clear it; then vanilla (which spends it).
+- Death: in the dying unit's remove-from-selections hook (0x49A7F0), refund everything it has paid.
+
 ### Task 6: in-game test round
 - 9.1 10 SCVs (mining): Build Structure shows; place a Supply Depot → the nearest builds, the rest keep mining.
 - 9.2 Shift-place 6 depots, 2 barracks and a bunker: the cursor stays while Shift is held (switch building from the open menu); each SCV builds its share in order. Release Shift: placing ends, the build menu stays. Esc while Shift-placing: placing ends, nothing stuck.

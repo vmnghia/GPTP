@@ -32,6 +32,15 @@ SC2-style building with several workers selected:
     selected Drone has one, the Drone with the earliest assignment that hasn't morphed
     has its build cancelled and takes the new one; the next placement takes the
     second-earliest, and so on.
+- **Holding Shift** (user, 2026-10-03, after testing): the card is not changed after a
+  Shift-placement; the cursor stays on the same building, so each left-click places
+  another.
+- **Shift-placements are paid when received** (SC2; plain placements stay vanilla,
+  paying on arrival): minerals and gas are taken at once, and a placement you can't
+  afford is refused with vanilla's "Not enough minerals/gas" and nothing is queued. A
+  prepaid building that never starts (a plain order clears the queue, the worker dies,
+  rule 2 or 3, a recycled Drone) is refunded in full. On arrival its cost is given
+  back just before vanilla's own check spends it (net: paid once).
 - **Releasing Shift** ends placing; the card stays on the build menu (Basic or Advanced)
   it was on. Pressing a building there starts placing it.
 - **A queued building starting** goes through the same checks as a plain one (supply,
