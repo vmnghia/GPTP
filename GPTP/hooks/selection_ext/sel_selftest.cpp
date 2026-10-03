@@ -384,6 +384,10 @@ void shiftPlacing() {
 	CHECK(placingHolds(false, true, 3));
 	CHECK(!placingHolds(false, false, 3));	//no Shift, nobody can: vanilla cancels
 	CHECK(!placingHolds(true, true, 0));	//nothing selected any more
+	CHECK(ableToQueue(true, false, true));
+	CHECK(ableToQueue(false, true, true));	//constructing SCV: queues behind
+	CHECK(!ableToQueue(false, true, false));	//can't make it at all
+	CHECK(!ableToQueue(false, false, true));	//not free and not building
 }
 
 void minimapKeys() {

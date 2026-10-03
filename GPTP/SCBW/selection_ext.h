@@ -224,6 +224,9 @@ bool shiftQueues(bool shiftHeld, u32 order);
 //starts): with members selected, while Shift-queuing (as SC2: the cursor
 //stays while Shift is held), else if any member can still place it.
 bool placingHolds(bool shiftQueuing, bool anyMemberCan, u32 members);
+//Whether a worker can take a Shift-queued build: free to take it now
+//(0x48DBD0), or already building and its type can make it (it queues).
+bool ableToQueue(bool allowedNow, bool holdingBuild, bool canMake);
 //Whether a player with these resources can pay this cost now.
 bool canAfford(s32 minerals, s32 gas, u32 costM, u32 costG);
 

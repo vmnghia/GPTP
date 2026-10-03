@@ -121,7 +121,7 @@ struct BuildCommand {
 };
 BuildCommand cmd;
 
-bool readCommand(const u8* packet) {
+bool readCommand(const u8* packet, bool forQueue) {
 	cmd.order = packet[1];
 	cmd.tileX = *(const u16*)(packet + 2);
 	cmd.tileY = *(const u16*)(packet + 4);
@@ -137,7 +137,12 @@ bool readCommand(const u8* packet) {
 		cmd.xs[i] = unit->position.x;
 		cmd.ys[i] = unit->position.y;
 		cmd.able[i] = false;
-		if (!selexe::placeBuildingAllowed(unit, cmd.order, cmd.type))
+		//A Shift-queued build may also go to a worker already building (it
+		//queues behind): vanilla's 0x48DBD0 refuses a busy one outright.
+		const bool allowedNow = selexe::placeBuildingAllowed(unit, cmd.order, cmd.type);
+		if (!ableToQueue(allowedNow,
+		                 forQueue && holdsBuild(unit->mainOrderId),
+		                 !allowedNow && unit->canMakeUnit(cmd.type, unit->playerId) != 0))
 			continue;
 		const u32 code = selexe::placementCheck(unit, unit->playerId, cmd.tileX, cmd.tileY, cmd.type);
 		if (code != 0) {
@@ -160,7 +165,7 @@ void showNoneCould() {
 namespace selbuild {
 
 void recvBuild(const u8* packet) {
-	if (!readCommand(packet))
+	if (!readCommand(packet, false))
 		return;
 	//Prefer a worker that isn't constructing (it would leave its building).
 	static bool notConstructing[SEL_MAX];
@@ -179,7 +184,7 @@ void recvQueuedBuild(const u8* packet) {
 		recvBuild(packet);	//an addon or a landing: never queued
 		return;
 	}
-	if (!readCommand(packet))
+	if (!readCommand(packet, true))
 		return;
 	static u32 builds[SEL_MAX];
 	static s32 fromX[SEL_MAX], fromY[SEL_MAX];
@@ -362,26 +367,45 @@ bool keepsPlacing() {
 	return shiftQueues(*SHIFT_HELD != 0, *PLACING_ORDER);
 }
 
-bool placementStillValid() {
+//The selected workers (the active subgroup, or the portrait), and whether
+//any can place the building now.
+u32 selectedWorkers(bool* anyCan) {
 	static CUnit* members[SEL_MAX];
 	u32 m = selsub::activeMembers(members);
 	if (m == 0 && *activePortraitUnit != NULL) {
 		members[0] = *activePortraitUnit;
 		m = 1;
 	}
-	bool anyCan = false;
-	for (u32 i = 0; i < m && !anyCan; i++)
-		anyCan = selexe::placeBuildingAllowed(members[i], *PLACING_ORDER, *PLACING_TYPE);
-	//Shift-queuing: the cursor stays while Shift is held (as SC2), even once
-	//the only builder has started building.
-	return placingHolds(shiftPlacing && keepsPlacing(), anyCan, m);
+	u32 workers = 0;
+	*anyCan = false;
+	for (u32 i = 0; i < m; i++) {
+		if (units_dat::BaseProperty[members[i]->id] & UnitProperty::Worker)
+			workers++;
+		if (!*anyCan)
+			*anyCan = selexe::placeBuildingAllowed(members[i], *PLACING_ORDER, *PLACING_TYPE);
+	}
+	return workers;
+}
+
+bool placementStillValid() {
+	bool anyCan;
+	const u32 workers = selectedWorkers(&anyCan);
+	//Shift-queuing: the cursor stays while Shift is held and a worker is
+	//selected (as SC2), even once the only builder has started building.
+	return placingHolds(shiftPlacing && keepsPlacing(), anyCan, workers);
 }
 
 void frame() {
 	if (!shiftPlacing)
 		return;
+	bool anyCan;
 	if (*PLACING == 0)
 		shiftPlacing = false;	//ended otherwise (Esc, right-click, a plain placement)
+	else
+	if (selectedWorkers(&anyCan) == 0) {
+		shiftPlacing = false;	//no worker left (the last Drone became the building)
+		selexe::cancelPlacement();
+	}
 	else
 	if (!*SHIFT_HELD) {
 		shiftPlacing = false;
