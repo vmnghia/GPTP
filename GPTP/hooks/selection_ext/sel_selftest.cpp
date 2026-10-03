@@ -408,6 +408,18 @@ void queuedSites() {
 	CHECK(!footprintsOverlap(100, 100, 64, 64, 164, 100, 64, 64));	//edge to edge
 	CHECK(!footprintsOverlap(100, 100, 64, 64, 100, 200, 64, 64));
 	CHECK(footprintsOverlap(100, 100, 128, 96, 150, 140, 32, 32));
+	s32 cx, cy;
+	placementCellCentre(10, 20, 0, 0, &cx, &cy);
+	CHECK(cx == 336 && cy == 656);	//tile (10, 20)'s centre
+	placementCellCentre(10, 20, 1, 2, &cx, &cy);
+	CHECK(cx == 400 && cy == 688);	//row 1, column 2: tile (12, 21)
+	CHECK(placementCellIndex(0, 0, 0) == 0 && placementCellIndex(0, 1, 2) == 8);
+	CHECK(placementCellIndex(1, 0, 0) == 48 && placementCellIndex(1, 2, 3) == 63);
+	//A depot cell inside a queued depot's footprint is red; one beside it isn't.
+	placementCellCentre(10, 20, 0, 0, &cx, &cy);
+	CHECK(footprintsOverlap(cx, cy, 32, 32, 352, 672, 96, 64));
+	placementCellCentre(13, 20, 0, 0, &cx, &cy);
+	CHECK(!footprintsOverlap(cx, cy, 32, 32, 352, 672, 96, 64));
 }
 
 void minimapKeys() {

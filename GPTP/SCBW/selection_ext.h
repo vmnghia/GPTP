@@ -198,6 +198,12 @@ u32 nextShiftSequence(u32 sequence);
 //Whether a queued, unstarted building blocks a new placement over it: always
 //for a plain placement (sequence 0), else unless it is of the same sequence.
 bool queuedSiteBlocks(u32 newSequence, u32 queuedSequence);
+//The placement grid cell (row, column) of a building whose top-left tile is
+//(tileX, tileY): its centre in pixels (cells are 32x32 tiles).
+void placementCellCentre(u32 tileX, u32 tileY, u32 row, u32 column, s32* x, s32* y);
+//The placement grid's status byte of cell (row, column) of box (0: the
+//building, 1: an addon) in BW's array at 0x6408F8: 48 bytes a box, 6 a row.
+u32 placementCellIndex(u32 box, u32 row, u32 column);
 //Whether two footprints (centres and sizes in pixels) overlap.
 bool footprintsOverlap(s32 x1, s32 y1, s32 w1, s32 h1, s32 x2, s32 y2, s32 w2, s32 h2);
 //A queued build order's type, marked so the order hook sets it up when it

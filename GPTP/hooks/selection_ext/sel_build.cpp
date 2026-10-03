@@ -177,19 +177,19 @@ void showNoneCould() {
 		selexe::placementMessage(cmd.firstCode);
 }
 
-//Whether building type at (x2, y2) overlaps building t at (x1, y1).
-bool sitesOverlap(u16 t, s32 x1, s32 y1, u16 type, s32 x2, s32 y2) {
-	if (t >= UNIT_TYPES || type >= UNIT_TYPES)
+//Whether queued building t at (x1, y1) overlaps the area w x h at (x2, y2).
+bool siteOverlaps(u16 t, s32 x1, s32 y1, s32 x2, s32 y2, s32 w, s32 h) {
+	if (t >= UNIT_TYPES)
 		return false;
 	return footprintsOverlap(x1, y1, (s16)units_dat::BuildingDimensions[t].x, (s16)units_dat::BuildingDimensions[t].y,
-	                         x2, y2, (s16)units_dat::BuildingDimensions[type].x, (s16)units_dat::BuildingDimensions[type].y);
+	                         x2, y2, w, h);
 }
 
-//Whether a new building of type at (x, y), placed in Shift sequence
-//sequence (0: plain), overlaps one of player's own queued, unstarted
-//buildings that blocks it (SC2: another sequence, or a plain placement).
-//Allies' queued sites never block. Synced: unit state only.
-bool blockedByQueued(u8 player, u16 type, s32 x, s32 y, u32 sequence) {
+//Whether the area w x h centred at (x, y), placed in Shift sequence sequence
+//(0: plain), overlaps one of player's own queued, unstarted buildings that
+//blocks it (SC2: another sequence, or a plain placement). Allies' queued
+//sites never block. Synced: unit state only.
+bool areaBlockedByQueued(u8 player, s32 x, s32 y, s32 w, s32 h, u32 sequence) {
 	for (u32 i = 0; i < UNIT_ARRAY_LENGTH; i++) {
 		CUnit* const unit = &unitTable[i];
 		if (unit->sprite == NULL || unit->playerId != player)
@@ -202,16 +202,24 @@ bool blockedByQueued(u8 player, u16 type, s32 x, s32 y, u32 sequence) {
 		{
 			const u16 t = unit->buildQueue[unit->buildQueueSlot % 5];
 			if (queuedSiteBlocks(sequence, selbuild::buildSequence[i])
-				&& sitesOverlap(t, unit->orderTarget.pt.x, unit->orderTarget.pt.y, type, x, y))
+				&& siteOverlaps(t, unit->orderTarget.pt.x, unit->orderTarget.pt.y, x, y, w, h))
 				return true;
 		}
 		for (COrder* queued = unit->orderQueueHead; queued != NULL; queued = queued->next)
 			if (queued->unitId != UnitId::None && (queued->unitId & QUEUED_BUILD_MARK)
 				&& queuedSiteBlocks(sequence, queuedSequenceOf(queued->unitId))
-				&& sitesOverlap(queuedTypeOf(queued->unitId), queued->target.pt.x, queued->target.pt.y, type, x, y))
+				&& siteOverlaps(queuedTypeOf(queued->unitId), queued->target.pt.x, queued->target.pt.y, x, y, w, h))
 				return true;
 	}
 	return false;
+}
+
+//The same for a new building of type at (x, y).
+bool blockedByQueued(u8 player, u16 type, s32 x, s32 y, u32 sequence) {
+	if (type >= UNIT_TYPES)
+		return false;
+	return areaBlockedByQueued(player, x, y, (s16)units_dat::BuildingDimensions[type].x,
+	                           (s16)units_dat::BuildingDimensions[type].y, sequence);
 }
 
 const u32 CODE_CANT_BUILD_THERE = 4;	//placement code: "You can't build there."
@@ -430,6 +438,7 @@ u32 shiftSequence;	//local: the current (or last) Shift sequence's number
 const u16* const PLACING_TILE_X		= (const u16*)	0x00640890;
 const u16* const PLACING_TILE_Y		= (const u16*)	0x00640892;
 u8 queuedCommand[QUEUED_BUILD_BYTES];
+u8* const PLACEMENT_CELLS			= (u8*)			0x006408F8;	//[2 boxes][8 rows][6], 0 = green
 
 } //unnamed namespace
 
@@ -448,16 +457,27 @@ u8* sendAsQueued(const u8* cmd) {
 }
 
 u32 placementResult(u32 code) {
-	if (code != 0)
-		return code;
 	const u16 type = *PLACING_TYPE;
 	if (type >= UNIT_TYPES)
-		return 0;
+		return code;
 	s32 x, y;
 	siteCentre(*PLACING_TILE_X, *PLACING_TILE_Y, type, &x, &y);
 	//The sequence this click would be sent in (0: plain).
 	const u32 sequence = !shiftQueues(*SHIFT_HELD != 0, *PLACING_ORDER) ? 0
 		: shiftPlacing ? shiftSequence : nextShiftSequence(shiftSequence);
+	//The grid's cells over a blocking queued site turn red (BW draws a cell
+	//red when its byte in 0x6408F8 is nonzero; box 0 is the building's).
+	const u32 columns = (u32)((s16)units_dat::BuildingDimensions[type].x / 32);
+	const u32 rows = (u32)((s16)units_dat::BuildingDimensions[type].y / 32);
+	for (u32 row = 0; row < rows && row < 8; row++)
+		for (u32 column = 0; column < columns && column < 6; column++) {
+			s32 cx, cy;
+			placementCellCentre(*PLACING_TILE_X, *PLACING_TILE_Y, row, column, &cx, &cy);
+			if (areaBlockedByQueued(*LOCAL_NATION_ID, cx, cy, 32, 32, sequence))
+				PLACEMENT_CELLS[placementCellIndex(0, row, column)] = 1;
+		}
+	if (code != 0)
+		return code;	//vanilla's own reason first
 	return blockedByQueued(*LOCAL_NATION_ID, type, x, y, sequence) ? CODE_CANT_BUILD_THERE : 0;
 }
 
