@@ -345,23 +345,10 @@ const u32* const PLACING			= (const u32*)	0x00640880;
 const u16* const PLACING_TYPE		= (const u16*)	0x0064088A;
 const u8* const PLACING_ORDER		= (const u8*)	0x0064088D;
 bool shiftPlacing;	//local: placing goes on after a Shift-placement
-u16* const SPECIAL_BUTTON_SET		= (u16*)		0x0068C1C8;	//a build menu, Cancel, ...
-const u16 NO_BUTTON_SET				= 0xE4;
-
-//Shows the last build menu as its button would (0x459AF0: the special set,
-//then 0x4599A0).
-void showLastSubmenu() {
-	if (selbuild::lastSubmenu == NO_BUTTON_SET)
-		return;
-	*SPECIAL_BUTTON_SET = selbuild::lastSubmenu;
-	selexe::refreshButtonSet();
-}
 
 } //unnamed namespace
 
 namespace selbuild {
-
-u16 lastSubmenu = NO_BUTTON_SET;
 
 bool sendAsQueued(u8* cmd) {
 	if (!shiftQueues(*SHIFT_HELD != 0, cmd[1]))
@@ -377,14 +364,17 @@ bool keepsPlacing() {
 
 bool placementStillValid() {
 	static CUnit* members[SEL_MAX];
-	const u32 m = selsub::activeMembers(members);
-	if (m == 0)
-		return *activePortraitUnit != NULL
-			&& selexe::placeBuildingAllowed(*activePortraitUnit, *PLACING_ORDER, *PLACING_TYPE);
-	for (u32 i = 0; i < m; i++)
-		if (selexe::placeBuildingAllowed(members[i], *PLACING_ORDER, *PLACING_TYPE))
-			return true;
-	return false;
+	u32 m = selsub::activeMembers(members);
+	if (m == 0 && *activePortraitUnit != NULL) {
+		members[0] = *activePortraitUnit;
+		m = 1;
+	}
+	bool anyCan = false;
+	for (u32 i = 0; i < m && !anyCan; i++)
+		anyCan = selexe::placeBuildingAllowed(members[i], *PLACING_ORDER, *PLACING_TYPE);
+	//Shift-queuing: the cursor stays while Shift is held (as SC2), even once
+	//the only builder has started building.
+	return placingHolds(shiftPlacing && keepsPlacing(), anyCan, m);
 }
 
 void frame() {
@@ -395,8 +385,7 @@ void frame() {
 	else
 	if (!*SHIFT_HELD) {
 		shiftPlacing = false;
-		selexe::cancelPlacement();
-		showLastSubmenu();
+		selexe::cancelPlacement();	//and the card back to basic, as SC2
 	}
 }
 

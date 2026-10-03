@@ -320,6 +320,10 @@ bool shiftQueues(bool shiftHeld, u32 order) {
 	return shiftHeld && (order == 0x19 || order == 0x1E || order == 0x1F);
 }
 
+bool placingHolds(bool shiftQueuing, bool anyMemberCan, u32 members) {
+	return members != 0 && (shiftQueuing || anyMemberCan);
+}
+
 bool canAfford(s32 minerals, s32 gas, u32 costM, u32 costG) {
 	return minerals >= (s32)costM && gas >= (s32)costG;
 }

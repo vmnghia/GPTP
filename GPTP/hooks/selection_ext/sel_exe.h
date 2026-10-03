@@ -64,7 +64,5 @@ bool fillBuildSlot(CUnit* unit, u16 type);
 bool withinReach(CUnit* unit, s32 x, s32 y, u32 distance);
 //Shows stat_txt string stringId (1-based) to player's screen (0x48CF00).
 void showStatTextTo(u32 stringId, u8 player);
-//Redraws the command card from the button set globals (0x4599A0).
-void refreshButtonSet();
 
 } //selexe

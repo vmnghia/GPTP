@@ -11,7 +11,8 @@ SC2-style building with several workers selected:
 - A plain placement goes to one worker; the others keep what they are doing.
 - Shift-placement queues buildings, of one or several kinds, shared out across the
   selected workers, each building its share in order.
-- Holding Shift keeps placing; the build menu stays open after a Shift sequence.
+- Holding Shift keeps placing (the same building, click after click); releasing it
+  returns to the basic card, as SC2.
 - Lockstep-safe: every pick is made on the receive side from synced state.
 
 ## What the player sees
@@ -41,8 +42,10 @@ SC2-style building with several workers selected:
   prepaid building that never starts (a plain order clears the queue, the worker dies,
   rule 2 or 3, a recycled Drone) is refunded in full. On arrival its cost is given
   back just before vanilla's own check spends it (net: paid once).
-- **Releasing Shift** ends placing; the card stays on the build menu (Basic or Advanced)
-  it was on. Pressing a building there starts placing it.
+- **Releasing Shift** ends placing and the card returns to the basic card (SC2; user,
+  2026-10-03, after checking SC2). While Shift is held the cursor stays even once the
+  builder has started building (vanilla cancels placing then: 0x48DDA0 at 0x46814B,
+  0x4674D9, 0x4646FA).
 - **A queued building starting** goes through the same checks as a plain one (supply,
   minerals, gas, the site still valid). If one fails, the player gets vanilla's error
   (e.g. "Not enough minerals") and the worker goes on to its next queued order.
@@ -172,8 +175,10 @@ SC2-style building with several workers selected:
 ### Local UI
 - At the placement click (0x48E5xx): Shift held → send 0x3D and skip the end-placing
   call (0x4843F0); no Shift → vanilla.
-- Releasing Shift while placing: placing ends (as Esc/right-click does), but the card
-  keeps its current build menu set instead of returning to the basic card.
+- Releasing Shift while placing: placing ends (as Esc/right-click does) and the card
+  returns to the basic card. The click's own end of placing (0x48E594, inside
+  0x48E4E0, before the send) is skipped for a Shift-queued build; 0x48DDA0 answers yes
+  while Shift-queuing.
 
 ## Testing
 - Host tests (pure): the balanced pick (fewest, then nearest from the queue's end, then
@@ -182,8 +187,8 @@ SC2-style building with several workers selected:
 - In game:
   - 10 SCVs: place 1 depot (the nearest builds, the rest keep working); Shift-place 6
     depots, 2 barracks and a bunker (spread out, each worker builds its share in order);
-    the menu stays open while Shift is held; releasing Shift keeps the build menu; a
-    plain placement returns to the basic card.
+    the cursor stays while Shift is held, also after a builder starts building;
+    releasing Shift returns to the basic card; a plain placement too.
   - Probes: the same.
   - 3 Drones, 5 Shift-placements: the first three take one each; the 4th and 5th
     replace the earliest two.

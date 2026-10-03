@@ -220,6 +220,10 @@ void reconcilePaid(u32* paidM, u32* paidG, u32 heldM, u32 heldG, u32* refundM, u
 //only a worker's build order (Drone, Terran, Protoss), never an addon or a
 //landing.
 bool shiftQueues(bool shiftHeld, u32 order);
+//Whether placing goes on when the game asks (0x48DDA0, e.g. as a building
+//starts): with members selected, while Shift-queuing (as SC2: the cursor
+//stays while Shift is held), else if any member can still place it.
+bool placingHolds(bool shiftQueuing, bool anyMemberCan, u32 members);
 //Whether a player with these resources can pay this cost now.
 bool canAfford(s32 minerals, s32 gas, u32 costM, u32 costG);
 

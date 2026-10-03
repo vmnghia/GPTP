@@ -821,22 +821,6 @@ void __declspec(naked) droneArrivalPayStub() {
 	}
 }
 
-//0x459AF0, the action of a build-menu button (CX = the menu's button set):
-//remembers it for smart-build, then vanilla (special set, 0x4599A0).
-const u32 Func_RefreshButtonSet = 0x004599A0;
-u16* const LAST_SUBMENU = &selbuild::lastSubmenu;
-void __declspec(naked) openSubmenuStub() {
-	__asm {
-		PUSH EAX
-		MOV EAX, LAST_SUBMENU
-		MOV [EAX], CX
-		MOV EAX, 0x0068C1C8
-		MOV [EAX], CX
-		POP EAX
-		JMP Func_RefreshButtonSet
-	}
-}
-
 //0x48E594, the end of 0x48E4E0 (the placement click's finish, called only
 //from the click handler before it sends): vanilla's call 0x48E310 ends
 //placing. A Shift-queued build keeps placing (the cursor keeps the building).
@@ -960,7 +944,6 @@ void injectSmartBuildHooks() {
 	jmpPatch(placeSendStub,					0x0048E62E, 7);
 	jmpPatch(placementStillValidWrapper,	0x0048DDA0, 2);
 	callPatch(finishPlacementStub,			0x0048E594, 0);
-	jmpPatch(openSubmenuStub,				0x00459AF0, 2);
 	//Prepaid Shift-placements: paid once, on arrival vanilla's spend nets out.
 	callPatch(arrivalPayStub,				0x00468064, 0);
 	callPatch(arrivalPayStub,				0x004E4DF5, 0);

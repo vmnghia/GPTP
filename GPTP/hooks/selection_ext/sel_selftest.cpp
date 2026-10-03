@@ -380,6 +380,10 @@ void shiftPlacing() {
 	CHECK(shiftQueues(true, 0x19) && shiftQueues(true, 0x1E) && shiftQueues(true, 0x1F));
 	CHECK(!shiftQueues(false, 0x1E));	//plain placement
 	CHECK(!shiftQueues(true, 0x24) && !shiftQueues(true, 0x47) && !shiftQueues(true, 0x2E));	//addon, landing, Nydus exit
+	CHECK(placingHolds(true, false, 1));	//the only SCV started building: Shift keeps it
+	CHECK(placingHolds(false, true, 3));
+	CHECK(!placingHolds(false, false, 3));	//no Shift, nobody can: vanilla cancels
+	CHECK(!placingHolds(true, true, 0));	//nothing selected any more
 }
 
 void minimapKeys() {

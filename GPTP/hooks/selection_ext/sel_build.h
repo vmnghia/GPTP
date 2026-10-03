@@ -45,14 +45,12 @@ bool sendAsQueued(u8* cmd);
 //At the end of the placement click (0x48E4E0, before the send): whether
 //placing goes on instead of ending (a Shift-queued build).
 bool keepsPlacing();
-//Whether any member of the active subgroup can still place the building
-//being placed (replaces 0x48DDA0, which asks the portrait only).
+//Whether placing goes on (replaces 0x48DDA0, which asks the portrait only):
+//while Shift-queuing, yes; else if any member of the active subgroup can
+//still place the building.
 bool placementStillValid();
-//Every frame: Shift released while Shift-placing ends placing; the build
-//menu stays.
+//Every frame: Shift released while Shift-placing ends placing; the card
+//goes back to basic (as SC2).
 void frame();
-//Local: the build menu (a special button set) last opened by a button
-//(0x459AF0), shown again after a Shift-placement and when Shift is released.
-extern u16 lastSubmenu;
 
 } //selbuild
