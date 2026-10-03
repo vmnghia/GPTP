@@ -4,7 +4,9 @@ Status: stages 1+2 built and tested in game (2026-10-01, build 03:26); stage 3 (
 built and tested (2026-10-01, build 23:00, plan
 `docs/superpowers/plans/2026-10-01-extended-selection-stage-3.md`); stage 4 (control
 groups) built and tested (2026-10-02, build 00:09, plan
-`docs/superpowers/plans/2026-10-02-extended-selection-stage-4.md`); stage 5 (subgroups and the command card) designed, not built. Stage 1+2
+`docs/superpowers/plans/2026-10-02-extended-selection-stage-4.md`); stage 5 (subgroups and the command card) built and tested (2026-10-03, build 10:36,
+plans `docs/superpowers/plans/2026-10-02-extended-selection-stage-5.md` and
+`...-stage-5-highlight.md`). Stage 1+2
 plan: `docs/superpowers/plans/2026-09-30-extended-selection-stage-1-2.md`.
 Found during testing and review (details in the stage sections): the health-bar lookup
 0x4D603C, the 80-circle and 12-health-bar image pools, and chunks needing an index so a
@@ -349,10 +351,15 @@ subgroup is **active**, and the card shows that subgroup's buttons.
 
 **What the player sees**
 - The panel is sorted by subgroup, highest priority first, and each subgroup's units
-  sit together. The active subgroup's wireframes are highlighted and the rest dimmed.
-  The look is chosen from rendered mock-ups before it is built.
-- The card and the portrait are the active subgroup leader's: its first unit in panel
-  order. The card's hotkeys work at once, without selecting the subgroup first.
+  sit together. The rest of the panel's wireframes are drawn dimmed, so the active
+  subgroup stands out (option A of the mock-ups, user, 2026-10-02): the draw proc
+  0x456F50's colour remap (0x50CE81-82, 91-94, 99-9C) is swapped at 0x456FB6 for the
+  game palette's (0x6CE320) nearest entries at 40% brightness, never a tileset cycling
+  entry (records 0x6CE2A0); the panel redraws when the palette changes (fades).
+- The card and the portrait are the active subgroup leader's: the unit of the subgroup
+  vanilla's portrait rule (0x49A350) picks, which passes over locked-down, stasis and
+  maelstromed units. The card's hotkeys work at once, without selecting the subgroup
+  first.
 - **Tab** activates the next subgroup, **Shift+Tab** the previous one, both wrapping.
   Not while chat is open. With one subgroup, Tab does nothing. If the new subgroup's
   first unit is on another page, the panel goes to that page.
@@ -370,8 +377,10 @@ subgroup is **active**, and the card shows that subgroup's buttons.
 - **Build** with several workers selected stays hidden, as vanilla, until smart-build
   (a separate feature, below).
 - Replays: the card is unchanged (the replay set). Tab still moves the highlight.
-- Tab is not yet confirmed unused by vanilla in game; the plan checks it first and stops
-  for a decision if it is taken.
+- **Tab is also vanilla's** (minimap key handler 0x4A5900, hard-coded at 0x4A5938, not
+  from stat_txt): Tab toggles minimap terrain and Shift+Tab cycles the 3-step ally colour
+  mode, so both still fire with the subgroup cycling. Left as is for now (user,
+  2026-10-03); see Known issues.
 
 **Verified (2026-10-02)**
 - `BUTTON_SET` (12 bytes at 0x5187E8 + 12 × set): button count, first `BUTTON` (20
@@ -427,16 +436,15 @@ subgroup is **active**, and the card shows that subgroup's buttons.
 - **Actions** send the same commands as now, for the whole synced selection; receive
   already drops units that can't obey. No new synced command.
 
-**Other readers** (from the first stage 5 design, still to classify in the plan)
-- The u8 count 0x59723D (23 readers): the mirror holds min(n, 12), so `== 0`, `== 1`
-  and `> 1` behave the same. Any comparison against 12 or more is converted.
-- 0x46F5B0 (send side: does any selected caster have the energy), 0x455A00, 0x4563A0,
-  0x4564E0, 0x458120, 0x458DE0, 0x464360, 0x492CC0, 0x49FED0, 0x4E5640: converted where
-  they differ above 12, or where the card change needs them.
-- GPTP code still looping `SELECTION_ARRAY_LENGTH` over the client selection
-  (`btns_cond.cpp`, `buttonsets.cpp`, the status display, `right_click_CMDACT.cpp` and
-  others): each is classified as enabled or `//OFF` in `initialize.cpp`, and enabled
-  ones are converted.
+**Other readers** (resolved)
+- The u8 count 0x59723D: every exe reader compares it with 0 or 1, so the mirror's
+  min(n, 12) behaves as the real count. Unchanged.
+- 0x46F5B0 (the target-order send check) and button actions run with the client
+  mirror holding the active subgroup's best 12 (most energy first), then the rest.
+- 0x455A00, 0x4563A0, 0x4564E0, 0x458120, 0x464360, 0x492CC0, 0x49FED0, 0x4E5640:
+  status and UI readers; they see the first 12 of the sorted console list. Unchanged.
+- Enabled GPTP 12-slot loops (`game_hooks.cpp` factory rally points, `select_larva.cpp`)
+  only meet buildings or one hatchery's larvae. Unchanged; the rest are `//OFF`.
 
 **TODO (with the button editor, not this stage):** on/off pairs side by side, the "on"
 button (Siege, Cloak, Burrow) at position 11 and the "off" one (Unsiege, Decloak,
@@ -485,6 +493,14 @@ Each stage ends with a build and a numbered in-game test round, using hero units
   lengths 0x654AA8; referenced at 0x487150/0x487155/0x48715A and 0x4871B3/0x4871E8/
   0x4871F1/0x487203) before several players can send full turns of chunks in one frame.
 - Page buttons, page indicator.
+- Tab / Shift+Tab also toggle minimap terrain and ally colours (vanilla 0x4A5938):
+  patch that check (moving the toggles to other keys) or give subgroups another key.
+- Smart-build (stage 5 section). On/off buttons side by side (button editor).
+- Stage 5 minors: a wireframe Shift/Ctrl-click sends the list in the panel's sorted
+  order (the synced selection then follows it; deterministic); Tab while aiming a
+  spell keeps the targeting and the check sees the new subgroup first; Tab cycles
+  with Alt/Ctrl held and on key repeat; the dim table is rebuilt in full on every
+  palette change (fade step).
 - Formation offsets in group moves apply only to groups that fit in 192–256 px (OpenBW
   `calc_group_move`), so large groups move as a blob. That is vanilla behaviour at a new
   scale, not a bug.
