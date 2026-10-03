@@ -24,6 +24,7 @@ const u8 ORDER_DRONE_BUILD			= 0x1A;
 const u8 ORDER_BUILD_TERRAN			= 0x1E;
 const u8 ORDER_BUILD_PROTOSS1		= 0x1F;
 const u8 ORDER_DRONE_LAND			= 0x46;
+const u8 ORDER_CONSTRUCTING			= 0x21;
 const u32 STR_WAYPOINTS_FULL		= 0x367;	//"Unit's waypoint list is full."
 const u32 STR_LOW_ON_ORDERS			= 0x369;	//"Running low on orders, ..."
 const u32 STR_CANT_REACH_SITE		= 0x35E;	//"Couldn't reach the building site."
@@ -106,6 +107,19 @@ void buildNow(CUnit* builder, u8 order, u16 type, u32 tiles) {
 	selbuild::chosenBuilder = NULL;
 }
 
+//canMakeUnit (0x46E1C0) as if the unit were free: the requirement opcode
+//0xFF0B (0x46E424) refuses an SCV whose order is ConstructingBuilding, which
+//decides taking a build now, not queuing one behind its construction. Every
+//other requirement (FireGraft-editable) still applies.
+bool canMakeWhenFree(CUnit* unit, u16 type) {
+	const u8 order = unit->mainOrderId;
+	if (order == ORDER_CONSTRUCTING)
+		unit->mainOrderId = units_dat::ReturnToIdleOrder[unit->id];
+	const bool can = unit->canMakeUnit(type, unit->playerId) != 0;
+	unit->mainOrderId = order;
+	return can;
+}
+
 //The command, its selection and which units can build it there (rule 1:
 //vanilla's placement check per unit, reaching the site included).
 struct BuildCommand {
@@ -142,7 +156,7 @@ bool readCommand(const u8* packet, bool forQueue) {
 		const bool allowedNow = selexe::placeBuildingAllowed(unit, cmd.order, cmd.type);
 		if (!ableToQueue(allowedNow,
 		                 forQueue && holdsBuild(unit->mainOrderId),
-		                 !allowedNow && unit->canMakeUnit(cmd.type, unit->playerId) != 0))
+		                 !allowedNow && canMakeWhenFree(unit, cmd.type)))
 			continue;
 		const u32 code = selexe::placementCheck(unit, unit->playerId, cmd.tileX, cmd.tileY, cmd.type);
 		if (code != 0) {
