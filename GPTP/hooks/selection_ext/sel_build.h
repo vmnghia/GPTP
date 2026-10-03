@@ -50,7 +50,11 @@ bool keepsPlacing();
 //still place the building.
 bool placementStillValid();
 //Every frame: Shift released while Shift-placing ends placing; the card
-//goes back to basic (as SC2).
+//goes back to basic (as SC2). Also outlines the queued buildings' footprints.
 void frame();
+//In the draw hook, after the game is drawn: each queued building of the
+//local player's workers that hasn't started, drawn as a ghost (its GRP with
+//the cloaked draw function) at its site. Local only.
+void drawQueuedGhosts();
 
 } //selbuild

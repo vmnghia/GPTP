@@ -68,8 +68,13 @@ SC2-style building with several workers selected:
     queued building (vanilla already does this).
 - A plain order (Stop, Move, a new plain Build) clears the worker's queue, as BW does;
   Shift+Move after the builds queues the move after them.
-- **Not in this feature:** SC2's translucent images of queued buildings at their sites;
-  AI use of smart-build.
+- **Queued buildings shown at their sites** (user, 2026-10-04): each building the local
+  player's workers are to build and haven't started (a current build order on its way,
+  and every prepaid queued one) is drawn as a ghost, its GRP (frame 0) through BW's
+  cloaked render function (palette type 6, 0x4D54D0, called as BW's image draw
+  0x497CE0 does), with a green outline of its footprint. Local only; drawn in the draw
+  hook after the game, so it sits on top. In replays, every player's.
+- **Not in this feature:** AI use of smart-build.
 
 ## Verified facts (2026-10-03)
 - Build orders are not queueable in the mod's `orders.dat` (DroneStartBuild 0x19,

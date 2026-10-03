@@ -1,6 +1,8 @@
 #include "sel_build.h"
 #include "sel_exe.h"
 #include "sel_subgroups.h"
+#include "../interface/resolution.h"
+#include <graphics/graphics.h>
 #include <SCBW/selection_ext.h>
 #include <cstring>
 
@@ -415,7 +417,99 @@ bool placementStillValid() {
 	return placingHolds(keepsPlacing(), anyCan, workers);
 }
 
+} //selbuild
+
+namespace {
+
+//-------- Queued building ghosts (local) --------//
+
+//Calls f(type, siteX, siteY) for each building the local player's workers
+//are to build and haven't started: a current build order still on its way,
+//and every prepaid queued one.
+template <typename F>
+void forEachQueuedBuilding(F f) {
+	const u32 local = *LOCAL_NATION_ID;
+	const bool replay = *IS_IN_REPLAY != 0;
+	for (CUnit* unit = *firstVisibleUnit; unit != NULL; unit = unit->link.next) {
+		if (!replay && unit->playerId != local)
+			continue;
+		if (!(units_dat::BaseProperty[unit->id] & UnitProperty::Worker))
+			continue;
+		const u32 order = unit->mainOrderId;
+		if (order == ORDER_DRONE_START_BUILD || order == ORDER_BUILD_TERRAN
+			|| order == ORDER_BUILD_PROTOSS1 || order == ORDER_DRONE_LAND)
+		{
+			const u16 type = unit->buildQueue[unit->buildQueueSlot % 5];
+			if (type < UNIT_TYPES && (units_dat::BaseProperty[type] & UnitProperty::Building))
+				f(type, unit->orderTarget.pt.x, unit->orderTarget.pt.y);
+		}
+		for (COrder* queued = unit->orderQueueHead; queued != NULL; queued = queued->next)
+			if (queued->unitId != UnitId::None && (queued->unitId & QUEUED_BUILD_MARK))
+				f((u16)(queued->unitId & ~QUEUED_BUILD_MARK), queued->target.pt.x, queued->target.pt.y);
+	}
+}
+
+//A green outline of the footprint (a map shape, redrawn every frame).
+struct OutlineFootprint {
+	void operator()(u16 type, s32 x, s32 y) const {
+		if (type >= UNIT_TYPES)
+			return;
+		const s32 w = (s16)units_dat::BuildingDimensions[type].x;
+		const s32 h = (s16)units_dat::BuildingDimensions[type].y;
+		graphics::drawBox(x - w / 2, y - h / 2, x + (w + 1) / 2, y + (h + 1) / 2,
+		                  graphics::GREEN, graphics::ON_MAP);
+	}
+};
+
+//The building's GRP (frame 0) drawn as BW's image draw (0x497CE0) does:
+//ECX/EDX = where its visible part starts on the screen, then the frame, the
+//visible part {left, top, width, height} within it, and the colour data,
+//with the cloaked render function (palette type 6, 0x4D54D0).
+struct DrawGhost {
+	void operator()(u16 type, s32 x, s32 y) const {
+		if (type >= UNIT_TYPES)
+			return;
+		const u16 image = sprites_dat::ImageId[flingy_dat::SpriteID[units_dat::Graphic[type]]];
+		GrpHead* const grp = imageGrpGraphics[image];
+		if (grp == NULL || grp->frameCount == 0)
+			return;
+		GrpFrame* const frame = &grp->frames[0];
+		s32 left = x - grp->width / 2 + frame->x - *screenX;
+		s32 top = y - grp->height / 2 + frame->y - *screenY;
+		struct { s32 left, top, width, height; } part = { 0, 0, (u8)frame->width, (u8)frame->height };
+		if (left < 0) { part.left = -left; part.width += left; left = 0; }
+		if (top < 0) { part.top = -top; part.height += top; top = 0; }
+		if (left + part.width > resolution::viewWidth())
+			part.width = resolution::viewWidth() - left;
+		if (top + part.height > resolution::viewHeight())
+			part.height = resolution::viewHeight() - top;
+		if (part.width <= 0 || part.height <= 0)
+			return;
+		const u32 Func_DrawCloaked = 0x004D54D0;
+		void* const partPtr = &part;
+		__asm {
+			PUSHAD
+			PUSH 0
+			PUSH partPtr
+			PUSH frame
+			MOV ECX, left
+			MOV EDX, top
+			CALL Func_DrawCloaked
+			POPAD
+		}
+	}
+};
+
+} //unnamed namespace
+
+namespace selbuild {
+
+void drawQueuedGhosts() {
+	forEachQueuedBuilding(DrawGhost());
+}
+
 void frame() {
+	forEachQueuedBuilding(OutlineFootprint());
 	if (!shiftPlacing)
 		return;
 	bool anyCan;

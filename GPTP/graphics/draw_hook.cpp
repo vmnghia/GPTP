@@ -2,6 +2,7 @@
 #include "../SCBW/api.h"
 #include "../hook_tools.h"
 #include "graphics_misc.h"
+#include "../hooks/selection_ext/sel_build.h"
 
 namespace {
 
@@ -14,6 +15,7 @@ void __stdcall DrawHook(graphics::Bitmap *surface, Bounds *bounds) {
   }
 
   oldDrawGameProc(surface, bounds);
+  selbuild::drawQueuedGhosts();	//smart-build: queued buildings as ghosts
 
   //if ( BW::BWDATA::GameScreenBuffer->isValid() )
   //{
