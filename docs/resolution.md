@@ -321,6 +321,17 @@ starfield handled (§5). Features 1 and 2 below are done.
 - **Restarting a game confines the cursor** to a 640×480 area in the centre of the screen.
 - **Opening the menu (F10) in a replay is very laggy.**
 
+**Next after smart-build** (user, 2026-10-03):
+- **The selection panel still shows only 12 wireframes** although it is wider (found in
+  play; stage 3 had no test that counted the wireframes on a page). The page size is
+  min(columns that fit × 2, wireframe controls in `statdata.bin`), so the game is most
+  likely loading vanilla's `rez\statdata.bin` (12 wireframes): the generated wide one,
+  `SCManifold	o-repackez\statdata.bin` (11,705 bytes, 90 wireframes, from
+  `make_statdata_wide.py`), is probably not in the repack, or not where the game looks.
+  Find out why, fix it, and add an in-game test that counts the wireframes on a page.
+- **Fold in page buttons and a page indicator** for the selection panel (left out of
+  stage 3; Ctrl+PgUp/PgDn is the only way to page now). Mock-ups first.
+
 **Data edits, the user's to make:**
 - **stat_txt.tbl entries 810 and 811** ("Show/Hide Terrain in Minimap (Tab)"): change
   "(Tab)" to "(Alt+T)". The minimap terrain toggle moved to Alt+T on 2026-10-03 (Tab now
