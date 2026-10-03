@@ -594,34 +594,13 @@ void __declspec(naked) wireframeDimStub() {
 	}
 }
 
-//0x4A5938 in the minimap key handler 0x4A5900 (ESI = the event): vanilla's
-//cmp word [esi+8], 9 (Tab) / jne. Tab now cycles subgroups, so Alt+T goes to
-//vanilla's terrain toggle, Ctrl+Shift+T to its ally colour cycle, and every
-//other key is not the minimap's. EAX is free here (vanilla reloads it).
-const u32 MinimapNotMine		= 0x004A5921;
-const u32 MinimapTerrain		= 0x004A597B;
-const u32 MinimapAllyColours	= 0x004A5948;
+//0x4A5938 in the minimap key handler 0x4A5900: vanilla's
+//cmp word [esi+8], 9 / jne, on a typed character (event 0xF, from WM_CHAR):
+//Tab, or Shift+Tab. Tab now cycles subgroups, so no character is the
+//minimap's; its toggles moved to Alt+T / Ctrl+Shift+T (selpanel::keyDown).
+const u32 MinimapNotMine = 0x004A5921;
 void __declspec(naked) minimapKeyStub() {
-	static u16 key;
-	static u32 toggle;
-	__asm {
-		MOV AX, [ESI+8]
-		MOV key, AX
-		PUSHAD
-	}
-	toggle = selpanel::minimapToggle(key);
-	__asm {
-		POPAD
-		CMP DWORD PTR toggle, 1
-		JE terrain
-		CMP DWORD PTR toggle, 2
-		JE allyColours
-		JMP MinimapNotMine
-	terrain:
-		JMP MinimapTerrain
-	allyColours:
-		JMP MinimapAllyColours
-	}
+	__asm JMP MinimapNotMine
 }
 
 } //unnamed namespace
@@ -687,7 +666,7 @@ void injectCommandCardHooks() {
 	callPatch(targetOrderCheckStub,	0x004BD54B, 0);
 	callPatch(targetOrderCheckStub,	0x004BD564, 0);
 	jmpPatch(wireframeDimStub,		0x00456FB6, 0);
-	//The minimap's Tab toggles move to Alt+T / Ctrl+Shift+T.
+	//The minimap's Tab toggles move to Alt+T / Ctrl+Shift+T (selpanel::keyDown).
 	jmpPatch(minimapKeyStub,		0x004A5938, 2);
 }
 

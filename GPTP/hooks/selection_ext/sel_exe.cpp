@@ -204,6 +204,31 @@ void cancelPlacement() {
 	}
 }
 
+//Enters the minimap key handler's toggle code at EAX, with EDI = the minimap
+//dialog, as if from its own entry (push esi, push edi): the code ends
+//pop edi / mov eax, 1 / pop esi / ret, which returns to the caller.
+void __declspec(naked) minimapToggleThunk() {
+	__asm {
+		PUSH ESI
+		PUSH EDI
+		JMP EAX
+	}
+}
+
+void minimapToggle(bool allyColours) {
+	BinDlg* const dialog = *(BinDlg**)0x0059CB5C;	//the minimap dialog
+	if (dialog == NULL)
+		return;
+	const u32 entry = allyColours ? 0x004A5948 : 0x004A597B;
+	__asm {
+		PUSHAD
+		MOV EDI, dialog
+		MOV EAX, entry
+		CALL minimapToggleThunk
+		POPAD
+	}
+}
+
 void cancelTargetOrder() {
 	__asm {
 		PUSHAD

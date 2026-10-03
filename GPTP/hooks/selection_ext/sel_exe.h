@@ -34,6 +34,9 @@ void moveScreen(s32 x, s32 y);								//0x49C440
 //Cancels building placement (0x48D9A0, then 0x48E310).
 void cancelPlacement();
 void cancelTargetOrder();									//0x48CA10
+//The minimap's own toggles, as its key handler 0x4A5900 runs them: terrain
+//(0x4A597B) or the ally colour cycle (0x4A5948), with their redraw.
+void minimapToggle(bool allyColours);
 bool writeCompressed(FILE* file, const void* data, u32 size);	//0x4C3450
 bool readCompressed(FILE* file, void* data, u32 size);			//0x4C3280
 //The exe's own CRT: the save file's FILE* belongs to it.

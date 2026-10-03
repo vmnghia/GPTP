@@ -185,6 +185,15 @@ void keyDown(const u8* event) {
 	const bool chatOpen = isChatOpen();
 	//Stage 5: Tab / Shift+Tab activate the next / previous subgroup, and the
 	//panel turns to the page of its first unit.
+	//The minimap's vanilla Tab toggles, moved off Tab: Alt+T and Ctrl+Shift+T
+	//come here as key-downs (the minimap only sees typed characters, and
+	//those keys type none it knows).
+	const MinimapToggle toggle = minimapToggleFor(key, *SHIFT_HELD != 0, *CTRL_HELD != 0, *ALT_HELD != 0);
+	if (toggle != MINIMAP_NONE) {
+		if (!chatOpen)
+			selexe::minimapToggle(toggle == MINIMAP_ALLY_COLOURS);
+		return;
+	}
 	const u16 VK_TAB_KEY = 0x09;
 	if (key == VK_TAB_KEY) {
 		if (!chatOpen && selsub::cycle(*SHIFT_HELD != 0)) {
@@ -200,10 +209,6 @@ void keyDown(const u8* event) {
 		return;
 	selectionPage = page;
 	*REFRESH_STAT_DATA = 1;
-}
-
-u32 minimapToggle(u16 key) {
-	return minimapToggleFor(key, *SHIFT_HELD != 0, *CTRL_HELD != 0, *ALT_HELD != 0);
 }
 
 const u32* interactTable() {
