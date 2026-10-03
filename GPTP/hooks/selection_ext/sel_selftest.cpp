@@ -360,6 +360,22 @@ void buildReview() {
 	CHECK(!showCantReach(false, true));	//money failure: its own error
 }
 
+void prepaid() {
+	u32 paidM = 250, paidG = 100, refundM, refundG;
+	reconcilePaid(&paidM, &paidG, 150, 100, &refundM, &refundG);	//a depot dropped
+	CHECK(refundM == 100 && refundG == 0 && paidM == 150 && paidG == 100);
+	reconcilePaid(&paidM, &paidG, 150, 100, &refundM, &refundG);	//nothing changed
+	CHECK(refundM == 0 && refundG == 0 && paidM == 150 && paidG == 100);
+	reconcilePaid(&paidM, &paidG, 0, 0, &refundM, &refundG);		//queue cleared
+	CHECK(refundM == 150 && refundG == 100 && paidM == 0 && paidG == 0);
+	paidM = 50;
+	reconcilePaid(&paidM, &paidG, 80, 0, &refundM, &refundG);		//never more than paid
+	CHECK(refundM == 0 && paidM == 50);
+	CHECK(canAfford(150, 0, 150, 0) && canAfford(400, 100, 150, 100));
+	CHECK(!canAfford(149, 0, 150, 0) && !canAfford(400, 99, 150, 100));
+	CHECK(canAfford(0, 0, 0, 0));	//cost 0 is always affordable
+}
+
 void minimapKeys() {
 	const u16 T = 0x54, TAB = 0x09;
 	CHECK(minimapToggleFor(T, false, false, true) == MINIMAP_TERRAIN);		//Alt+T
@@ -397,6 +413,7 @@ u32 selfTest(u32* firstFailedLine) {
 	minimapKeys();
 	buildPicks();
 	buildReview();
+	prepaid();
 	*firstFailedLine = firstLine;
 	return failures;
 }

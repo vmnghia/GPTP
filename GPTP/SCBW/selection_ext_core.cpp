@@ -308,6 +308,17 @@ bool showCantReach(bool stuck, bool withinReach) {
 	return stuck || !withinReach;
 }
 
+void reconcilePaid(u32* paidM, u32* paidG, u32 heldM, u32 heldG, u32* refundM, u32* refundG) {
+	*refundM = heldM < *paidM ? *paidM - heldM : 0;
+	*refundG = heldG < *paidG ? *paidG - heldG : 0;
+	*paidM -= *refundM;
+	*paidG -= *refundG;
+}
+
+bool canAfford(s32 minerals, s32 gas, u32 costM, u32 costG) {
+	return minerals >= (s32)costM && gas >= (s32)costG;
+}
+
 MinimapToggle minimapToggleFor(u16 key, bool shift, bool ctrl, bool alt) {
 	const u16 VK_T = 0x54;
 	if (key != VK_T)

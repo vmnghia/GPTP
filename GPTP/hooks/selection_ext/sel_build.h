@@ -11,6 +11,11 @@ namespace selbuild {
 //per player the last stamp given. Saved (SELX version 3).
 extern u32 stamps[UNIT_ARRAY_LENGTH];
 extern u32 lastStamp[8];
+//Synced, per unit: what its prepaid Shift-placements cost (all it holds), and
+//its current build's type if that one is prepaid (0xFFFF if not). Saved.
+extern u32 paidMinerals[UNIT_ARRAY_LENGTH];
+extern u32 paidGas[UNIT_ARRAY_LENGTH];
+extern u16 paidCurrentType[UNIT_ARRAY_LENGTH];
 //While 0x48E190 runs for a picked builder, the builder 0x48E010/0x48E0A0
 //take instead of the selection's first unit; NULL otherwise.
 extern CUnit* chosenBuilder;
@@ -22,6 +27,9 @@ void recvQueuedBuild(const u8* packet);
 //Before the order dispatcher (0x4EC4D0) runs unit's order: sets up a queued
 //build that just became current, or moves the unit on if it can't be made.
 void beforeOrder(CUnit* unit);
+//A worker about to pay for its building on arrival (SCV 0x468064, Probe
+//0x4E4DF5, Drone 0x45E189): a prepaid one gets its cost back first.
+void arriving(CUnit* unit);
 //A build order gave up on its way (SCV 0x46817C; Probe 0x4E4D90 when it
 //got stuck): the message if the worker got stuck or stopped out of reach.
 void gaveUp(CUnit* unit);
@@ -43,7 +51,5 @@ void frame();
 //Local: the build menu (a special button set) last opened by a button
 //(0x459AF0), shown again after a Shift-placement and when Shift is released.
 extern u16 lastSubmenu;
-//After the placement click sent a queued build: the build menu again.
-void afterQueuedSend();
 
 } //selbuild

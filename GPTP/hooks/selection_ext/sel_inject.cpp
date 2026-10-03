@@ -781,17 +781,43 @@ void __declspec(naked) placeSendStub() {
 		POPAD
 		CALL Func_QueueCommandSend
 		CMP DWORD PTR queued, 0
-		JNE queuedSent
+		JNE back
 		PUSH 0
 		CALL Func_SetInputMode
+	back:
 		JMP PlaceSendBack
-	queuedSent:
+	}
+}
+
+//Prepaid Shift-placements: just before a worker pays on arrival, a prepaid
+//building's cost goes back (net: paid once). SCV 0x468064 and Probe 0x4E4DF5
+//call 0x467030 with EAX = unit; the Drone's DroneBuild calls 0x42CF70 at
+//0x45E189 (stdcall, its arguments pushed) with ESI = unit.
+const u32 Func_ArrivalCheck = 0x00467030;
+const u32 Func_HasSupplies = 0x0042CF70;
+void __declspec(naked) arrivalPayStub() {
+	static CUnit* unit;
+	__asm {
+		MOV unit, EAX
 		PUSHAD
 	}
-	selbuild::afterQueuedSend();
+	selbuild::arriving(unit);
 	__asm {
 		POPAD
-		JMP PlaceSendBack
+		JMP Func_ArrivalCheck
+	}
+}
+
+void __declspec(naked) droneArrivalPayStub() {
+	static CUnit* unit;
+	__asm {
+		MOV unit, ESI
+		PUSHAD
+	}
+	selbuild::arriving(unit);
+	__asm {
+		POPAD
+		JMP Func_HasSupplies
 	}
 }
 
@@ -916,6 +942,10 @@ void injectSmartBuildHooks() {
 	jmpPatch(placeSendStub,					0x0048E62E, 7);
 	jmpPatch(placementStillValidWrapper,	0x0048DDA0, 2);
 	jmpPatch(openSubmenuStub,				0x00459AF0, 2);
+	//Prepaid Shift-placements: paid once, on arrival vanilla's spend nets out.
+	callPatch(arrivalPayStub,				0x00468064, 0);
+	callPatch(arrivalPayStub,				0x004E4DF5, 0);
+	callPatch(droneArrivalPayStub,			0x0045E189, 0);
 }
 
 } //hooks

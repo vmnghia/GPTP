@@ -35,6 +35,9 @@ u16 payload[LISTS_V2][SEL_MAX];
 struct BuildStamps {
 	u32 stamps[UNIT_ARRAY_LENGTH];
 	u32 lastStamp[8];
+	u32 paidMinerals[UNIT_ARRAY_LENGTH];
+	u32 paidGas[UNIT_ARRAY_LENGTH];
+	u16 paidCurrentType[UNIT_ARRAY_LENGTH];
 };
 BuildStamps buildStamps;
 
@@ -112,6 +115,9 @@ size_t __cdecl writeLastAndExtension(const void* data, size_t size, size_t count
 		return 0;
 	memcpy(buildStamps.stamps, selbuild::stamps, sizeof(buildStamps.stamps));
 	memcpy(buildStamps.lastStamp, selbuild::lastStamp, sizeof(buildStamps.lastStamp));
+	memcpy(buildStamps.paidMinerals, selbuild::paidMinerals, sizeof(buildStamps.paidMinerals));
+	memcpy(buildStamps.paidGas, selbuild::paidGas, sizeof(buildStamps.paidGas));
+	memcpy(buildStamps.paidCurrentType, selbuild::paidCurrentType, sizeof(buildStamps.paidCurrentType));
 	if (!selexe::writeCompressed(file, &buildStamps, sizeof(buildStamps)))
 		return 0;
 	return count;
@@ -143,6 +149,9 @@ size_t __cdecl readLastAndExtension(void* data, size_t size, size_t count, FILE*
 		if (ok) {
 			memcpy(selbuild::stamps, buildStamps.stamps, sizeof(buildStamps.stamps));
 			memcpy(selbuild::lastStamp, buildStamps.lastStamp, sizeof(buildStamps.lastStamp));
+			memcpy(selbuild::paidMinerals, buildStamps.paidMinerals, sizeof(buildStamps.paidMinerals));
+			memcpy(selbuild::paidGas, buildStamps.paidGas, sizeof(buildStamps.paidGas));
+			memcpy(selbuild::paidCurrentType, buildStamps.paidCurrentType, sizeof(buildStamps.paidCurrentType));
 		}
 	}
 	return ok ? count : 0;

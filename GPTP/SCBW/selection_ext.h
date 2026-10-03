@@ -212,6 +212,12 @@ bool holdsBuild(u32 order);
 //worker got stuck (Unmovable) or stopped out of reach; not after a money
 //failure (within reach, its own error shown).
 bool showCantReach(bool stuck, bool withinReach);
+//Prepaid Shift-placements: a unit has paid paidM/paidG for the builds it
+//holds; it now holds builds worth heldM/heldG. What it no longer holds is
+//refunded (out), and paid becomes held.
+void reconcilePaid(u32* paidM, u32* paidG, u32 heldM, u32 heldG, u32* refundM, u32* refundG);
+//Whether a player with these resources can pay this cost now.
+bool canAfford(s32 minerals, s32 gas, u32 costM, u32 costG);
 
 enum MinimapToggle { MINIMAP_NONE = 0, MINIMAP_TERRAIN = 1, MINIMAP_ALLY_COLOURS = 2 };
 MinimapToggle minimapToggleFor(u16 key, bool shift, bool ctrl, bool alt);
