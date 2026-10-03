@@ -202,6 +202,10 @@ void keyDown(const u8* event) {
 	*REFRESH_STAT_DATA = 1;
 }
 
+u32 minimapToggle(u16 key) {
+	return minimapToggleFor(key, *SHIFT_HELD != 0, *CTRL_HELD != 0, *ALT_HELD != 0);
+}
+
 const u32* interactTable() {
 	if (!interactBuilt) {
 		for (u32 i = 0; i < VANILLA_CONTROLS; i++)

@@ -178,6 +178,12 @@ void cyclingEntries(const u8* records, u32 count, bool* cycling);
 //Whether two palettes (rgbx x 256) are equal outside the skipped entries.
 bool samePalette(const u8* a, const u8* b, const bool* skip);
 
+//Tab cycles subgroups, so the minimap's vanilla Tab toggles (0x4A5938) move:
+//Alt+T hides/shows terrain, Ctrl+Shift+T cycles the ally colours (user,
+//2026-10-03). Which toggle a key press is, if any.
+enum MinimapToggle { MINIMAP_NONE = 0, MINIMAP_TERRAIN = 1, MINIMAP_ALLY_COLOURS = 2 };
+MinimapToggle minimapToggleFor(u16 key, bool shift, bool ctrl, bool alt);
+
 //-------- Image pools --------//
 
 //Appends count nodes (stride bytes apart, each starting with a prev and a next

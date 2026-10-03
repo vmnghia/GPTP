@@ -310,6 +310,19 @@ void paletteCycling() {
 	CHECK(!samePalette(a, b, cycling));
 }
 
+void minimapKeys() {
+	const u16 T = 0x54, TAB = 0x09;
+	CHECK(minimapToggleFor(T, false, false, true) == MINIMAP_TERRAIN);		//Alt+T
+	CHECK(minimapToggleFor(T, true, true, false) == MINIMAP_ALLY_COLOURS);	//Ctrl+Shift+T
+	CHECK(minimapToggleFor(TAB, false, false, false) == MINIMAP_NONE);	//Tab: subgroups only
+	CHECK(minimapToggleFor(TAB, true, false, false) == MINIMAP_NONE);	//Shift+Tab too
+	CHECK(minimapToggleFor(T, false, false, false) == MINIMAP_NONE);	//T: the card's
+	CHECK(minimapToggleFor(T, true, false, true) == MINIMAP_NONE);		//Alt+Shift+T
+	CHECK(minimapToggleFor(T, false, true, false) == MINIMAP_NONE);		//Ctrl+T
+	CHECK(minimapToggleFor(T, true, true, true) == MINIMAP_NONE);		//Ctrl+Alt+Shift+T
+	CHECK(minimapToggleFor(0x41, false, false, true) == MINIMAP_NONE);	//Alt+A
+}
+
 } //unnamed namespace
 
 u32 selfTest(u32* firstFailedLine) {
@@ -331,6 +344,7 @@ u32 selfTest(u32* firstFailedLine) {
 	buttonStates();
 	dimColours();
 	paletteCycling();
+	minimapKeys();
 	*firstFailedLine = firstLine;
 	return failures;
 }

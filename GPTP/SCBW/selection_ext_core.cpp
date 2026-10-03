@@ -242,6 +242,17 @@ s32 betterButtonState(s32 a, s32 b) {
 	return rankB > rankA ? b : a;
 }
 
+MinimapToggle minimapToggleFor(u16 key, bool shift, bool ctrl, bool alt) {
+	const u16 VK_T = 0x54;
+	if (key != VK_T)
+		return MINIMAP_NONE;
+	if (alt && !ctrl && !shift)
+		return MINIMAP_TERRAIN;
+	if (ctrl && shift && !alt)
+		return MINIMAP_ALLY_COLOURS;
+	return MINIMAP_NONE;
+}
+
 void cyclingEntries(const u8* records, u32 count, bool* cycling) {
 	for (u32 k = 0; k < count; k++) {
 		const u8* const record = records + 16 * k;
