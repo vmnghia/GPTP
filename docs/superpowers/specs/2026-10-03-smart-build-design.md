@@ -74,6 +74,22 @@ SC2-style building with several workers selected:
   cloaked render function (palette type 6, 0x4D54D0, called as BW's image draw
   0x497CE0 does), with a green outline of its footprint. Local only; drawn in the draw
   hook after the game, so it sits on top. In replays, every player's.
+  Allies' queued buildings show too in game (user, 2026-10-04); enemies' never.
+- **Queued sites block later placements** (SC2; user, 2026-10-04): placements within one
+  Shift sequence may overlap each other; once Shift is released, a placement (Shift or
+  plain, any builder) whose footprint overlaps one of the player's own queued, unstarted
+  buildings from another sequence is refused with "You can't build there." (placement
+  code 4). Allies' queued sites never block. Each Shift sequence has a number (1-63,
+  local counter, new when Shift-placing starts); 0x3D carries it in a 9th byte. Synced:
+  a queued entry keeps it in bits 9-14 of its type (type 9 bits, mark bit 15); a build
+  started at once keeps it per unit; a plain build is sequence 0 (blocked by any queued
+  site, and blocking any later one). Locally the placement check (0x48DCE0, result at
+  [0x640958]) gives code 4 over such sites, so the click is refused before sending.
+- **Commands queue behind a construction** (user, 2026-10-04): vanilla queues the SCV's
+  return-to-idle order when it starts constructing with an empty queue (0x4680B9), so a
+  command Shift-queued afterwards never ran; that call is removed: with the queue empty
+  after ResetCollision1, BW goes idle the same way (orderToIdle: the idle order, or the
+  AI's).
 - **Not in this feature:** AI use of smart-build.
 
 ## Verified facts (2026-10-03)
