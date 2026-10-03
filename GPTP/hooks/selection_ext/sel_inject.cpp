@@ -700,6 +700,38 @@ void __declspec(naked) orderRootStub() {
 	}
 }
 
+//Rule 3: a build order's give-up exit (its `call 0x4753A0`, ECX = unit:
+//SCV 0x46817C, Probe 0x4E4EDB). The message if the worker never got within
+//reach; then toIdle as vanilla (the next queued order).
+const u32 Func_ToIdle = 0x004753A0;
+void __declspec(naked) buildGaveUpStub() {
+	static CUnit* unit;
+	__asm {
+		MOV unit, ECX
+		PUSHAD
+	}
+	selbuild::gaveUp(unit);
+	__asm {
+		POPAD
+		JMP Func_ToIdle
+	}
+}
+
+//Rule 2: 0x468125, the SCV's failed createUnit (site unusable on arrival;
+//ESI = unit, CL = its idle order). Vanilla's call 0x475310 replaces every
+//order; with a queued order left, go on to it instead.
+const u32 Func_OrderComputerCL = 0x00475310;
+void __declspec(naked) scvSiteBlockedStub() {
+	__asm {
+		CMP DWORD PTR [ESI+0x74], 0		//orderQueueHead
+		JE vanilla
+		MOV ECX, ESI
+		JMP Func_ToIdle
+	vanilla:
+		JMP Func_OrderComputerCL
+	}
+}
+
 } //unnamed namespace
 
 namespace hooks {
@@ -784,6 +816,10 @@ void injectSmartBuildHooks() {
 	callPatch(builderStub,			0x0048E01E, 0);
 	callPatch(builderStub,			0x0048E0B1, 0);
 	jmpPatch(orderRootStub,			0x004EC4D0, 3);
+	//Disruptions: a cut path's message, a blocked site keeps the queue.
+	callPatch(buildGaveUpStub,		0x0046817C, 0);
+	callPatch(buildGaveUpStub,		0x004E4EDB, 0);
+	callPatch(scvSiteBlockedStub,	0x00468125, 0);
 }
 
 } //hooks
