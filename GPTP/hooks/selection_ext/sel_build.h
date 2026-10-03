@@ -16,6 +16,8 @@ extern u32 lastStamp[8];
 extern u32 paidMinerals[UNIT_ARRAY_LENGTH];
 extern u32 paidGas[UNIT_ARRAY_LENGTH];
 extern u16 paidCurrentType[UNIT_ARRAY_LENGTH];
+//Synced, per unit: the Shift sequence of its current build (0: plain). Saved.
+extern u8 buildSequence[UNIT_ARRAY_LENGTH];
 //While 0x48E190 runs for a picked builder, the builder 0x48E010/0x48E0A0
 //take instead of the selection's first unit; NULL otherwise.
 extern CUnit* chosenBuilder;
@@ -39,9 +41,13 @@ void reset();
 //-------- Local: placing --------//
 
 //At the placement click, before cmd (an 8-byte 0x0C) is sent: with Shift
-//held and a worker build order, turns it into 0x3D and returns true (placing
-//then goes on).
-bool sendAsQueued(u8* cmd);
+//held and a worker build order, the 9-byte 0x3D to send instead, with the
+//Shift sequence (placing then goes on); else NULL.
+u8* sendAsQueued(const u8* cmd);
+//The placement check's result (0x48DCE0, each frame while placing): vanilla's
+//code, or 4 ("You can't build there.") over a queued site this placement may
+//not overlap.
+u32 placementResult(u32 code);
 //At the end of the placement click (0x48E4E0, before the send): whether
 //placing goes on instead of ending (a Shift-queued build).
 bool keepsPlacing();

@@ -15,6 +15,7 @@ u32 lastStamp[8];
 u32 paidMinerals[UNIT_ARRAY_LENGTH];
 u32 paidGas[UNIT_ARRAY_LENGTH];
 u16 paidCurrentType[UNIT_ARRAY_LENGTH];
+u8 buildSequence[UNIT_ARRAY_LENGTH];
 CUnit* chosenBuilder;
 
 } //selbuild
@@ -176,6 +177,45 @@ void showNoneCould() {
 		selexe::placementMessage(cmd.firstCode);
 }
 
+//Whether building type at (x2, y2) overlaps building t at (x1, y1).
+bool sitesOverlap(u16 t, s32 x1, s32 y1, u16 type, s32 x2, s32 y2) {
+	if (t >= UNIT_TYPES || type >= UNIT_TYPES)
+		return false;
+	return footprintsOverlap(x1, y1, (s16)units_dat::BuildingDimensions[t].x, (s16)units_dat::BuildingDimensions[t].y,
+	                         x2, y2, (s16)units_dat::BuildingDimensions[type].x, (s16)units_dat::BuildingDimensions[type].y);
+}
+
+//Whether a new building of type at (x, y), placed in Shift sequence
+//sequence (0: plain), overlaps one of player's own queued, unstarted
+//buildings that blocks it (SC2: another sequence, or a plain placement).
+//Allies' queued sites never block. Synced: unit state only.
+bool blockedByQueued(u8 player, u16 type, s32 x, s32 y, u32 sequence) {
+	for (u32 i = 0; i < UNIT_ARRAY_LENGTH; i++) {
+		CUnit* const unit = &unitTable[i];
+		if (unit->sprite == NULL || unit->playerId != player)
+			continue;
+		if (!(units_dat::BaseProperty[unit->id] & UnitProperty::Worker))
+			continue;
+		const u32 order = unit->mainOrderId;
+		if (order == ORDER_DRONE_START_BUILD || order == ORDER_BUILD_TERRAN
+			|| order == ORDER_BUILD_PROTOSS1 || order == ORDER_DRONE_LAND)
+		{
+			const u16 t = unit->buildQueue[unit->buildQueueSlot % 5];
+			if (queuedSiteBlocks(sequence, selbuild::buildSequence[i])
+				&& sitesOverlap(t, unit->orderTarget.pt.x, unit->orderTarget.pt.y, type, x, y))
+				return true;
+		}
+		for (COrder* queued = unit->orderQueueHead; queued != NULL; queued = queued->next)
+			if (queued->unitId != UnitId::None && (queued->unitId & QUEUED_BUILD_MARK)
+				&& queuedSiteBlocks(sequence, queuedSequenceOf(queued->unitId))
+				&& sitesOverlap(queuedTypeOf(queued->unitId), queued->target.pt.x, queued->target.pt.y, type, x, y))
+				return true;
+	}
+	return false;
+}
+
+const u32 CODE_CANT_BUILD_THERE = 4;	//placement code: "You can't build there."
+
 } //unnamed namespace
 
 namespace selbuild {
@@ -183,6 +223,11 @@ namespace selbuild {
 void recvBuild(const u8* packet) {
 	if (!readCommand(packet, false))
 		return;
+	//A plain placement never goes over a queued site (SC2).
+	if (blockedByQueued(*ACTIVE_NATION_ID, cmd.type, cmd.siteX, cmd.siteY, 0)) {
+		selexe::placementMessage(CODE_CANT_BUILD_THERE);
+		return;
+	}
 	//Prefer a worker that isn't constructing (it would leave its building).
 	static bool notConstructing[SEL_MAX];
 	for (u32 i = 0; i < cmd.n; i++)
@@ -192,6 +237,7 @@ void recvBuild(const u8* packet) {
 		showNoneCould();
 		return;
 	}
+	buildSequence[cmd.units[k]->getIndex() - 1] = 0;	//a plain build
 	buildNow(cmd.units[k], cmd.order, cmd.type, cmd.tiles);
 }
 
@@ -202,6 +248,12 @@ void recvQueuedBuild(const u8* packet) {
 	}
 	if (!readCommand(packet, true))
 		return;
+	//Within one Shift sequence sites may overlap; not over another's (SC2).
+	const u32 sequence = packet[8];
+	if (blockedByQueued(*ACTIVE_NATION_ID, cmd.type, cmd.siteX, cmd.siteY, sequence)) {
+		selexe::placementMessage(CODE_CANT_BUILD_THERE);
+		return;
+	}
 	static u32 builds[SEL_MAX];
 	static s32 fromX[SEL_MAX], fromY[SEL_MAX];
 	static bool isFree[SEL_MAX], recyclable[SEL_MAX];
@@ -239,6 +291,7 @@ void recvQueuedBuild(const u8* packet) {
 	//time), starts it now; a worker already building queues it.
 	if (builds[k] == 0 || drones) {
 		stamps[index] = ++lastStamp[player & 7];
+		buildSequence[index] = (u8)sequence;
 		buildNow(unit, cmd.order, cmd.type, cmd.tiles);
 		//Paid once vanilla's path gave the order (its own checks passed).
 		if (isBuildOrder(unit->mainOrderId)
@@ -272,7 +325,7 @@ void recvQueuedBuild(const u8* packet) {
 		selexe::removeQueuedOrder(unit, last);
 	//The mark: set up when it becomes current, and prepaid.
 	unit->performAnotherOrder(cmd.order, (s16)cmd.siteX, (s16)cmd.siteY, NULL,
-	                          cmd.type | QUEUED_BUILD_MARK, NULL);
+	                          packQueuedType(cmd.type, sequence), NULL);
 }
 
 } //selbuild
@@ -293,8 +346,8 @@ void reconcile(CUnit* unit, u32 index) {
 	}
 	for (COrder* order = unit->orderQueueHead; order != NULL; order = order->next)
 		if (order->unitId != UnitId::None && (order->unitId & QUEUED_BUILD_MARK)) {
-			heldM += mineralCost(order->unitId & ~QUEUED_BUILD_MARK);
-			heldG += gasCost(order->unitId & ~QUEUED_BUILD_MARK);
+			heldM += mineralCost(queuedTypeOf(order->unitId));
+			heldG += gasCost(queuedTypeOf(order->unitId));
 		}
 	u32 refundM, refundG;
 	reconcilePaid(&selbuild::paidMinerals[index], &selbuild::paidGas[index], heldM, heldG,
@@ -324,7 +377,8 @@ void arriving(CUnit* unit) {
 void beforeOrder(CUnit* unit) {
 	const u32 index = unit->getIndex() - 1;
 	if (unit->orderUnitType != UnitId::None && (unit->orderUnitType & QUEUED_BUILD_MARK)) {
-		const u16 type = unit->orderUnitType & ~QUEUED_BUILD_MARK;
+		const u16 type = queuedTypeOf(unit->orderUnitType);
+		buildSequence[index] = (u8)queuedSequenceOf(unit->orderUnitType);
 		unit->orderUnitType = type;
 		if (isBuildOrder(unit->mainOrderId) && type < UNIT_TYPES) {
 			//A queued build starting: already paid; the supply check and the
@@ -359,6 +413,7 @@ void reset() {
 	memset(paidMinerals, 0, sizeof(paidMinerals));
 	memset(paidGas, 0, sizeof(paidGas));
 	memset(paidCurrentType, 0xFF, sizeof(paidCurrentType));
+	memset(buildSequence, 0, sizeof(buildSequence));
 	chosenBuilder = NULL;
 }
 
@@ -371,17 +426,39 @@ const u32* const PLACING			= (const u32*)	0x00640880;
 const u16* const PLACING_TYPE		= (const u16*)	0x0064088A;
 const u8* const PLACING_ORDER		= (const u8*)	0x0064088D;
 bool shiftPlacing;	//local: placing goes on after a Shift-placement
+u32 shiftSequence;	//local: the current (or last) Shift sequence's number
+const u16* const PLACING_TILE_X		= (const u16*)	0x00640890;
+const u16* const PLACING_TILE_Y		= (const u16*)	0x00640892;
+u8 queuedCommand[QUEUED_BUILD_BYTES];
 
 } //unnamed namespace
 
 namespace selbuild {
 
-bool sendAsQueued(u8* cmd) {
+u8* sendAsQueued(const u8* cmd) {
 	if (!shiftQueues(*SHIFT_HELD != 0, cmd[1]))
-		return false;
-	cmd[0] = CMD_QUEUED_BUILD;
+		return NULL;
+	if (!shiftPlacing)
+		shiftSequence = nextShiftSequence(shiftSequence);	//a new Shift sequence
 	shiftPlacing = true;
-	return true;
+	memcpy(queuedCommand, cmd, 8);
+	queuedCommand[0] = CMD_QUEUED_BUILD;
+	queuedCommand[8] = (u8)shiftSequence;
+	return queuedCommand;
+}
+
+u32 placementResult(u32 code) {
+	if (code != 0)
+		return code;
+	const u16 type = *PLACING_TYPE;
+	if (type >= UNIT_TYPES)
+		return 0;
+	s32 x, y;
+	siteCentre(*PLACING_TILE_X, *PLACING_TILE_Y, type, &x, &y);
+	//The sequence this click would be sent in (0: plain).
+	const u32 sequence = !shiftQueues(*SHIFT_HELD != 0, *PLACING_ORDER) ? 0
+		: shiftPlacing ? shiftSequence : nextShiftSequence(shiftSequence);
+	return blockedByQueued(*LOCAL_NATION_ID, type, x, y, sequence) ? CODE_CANT_BUILD_THERE : 0;
 }
 
 bool keepsPlacing() {
@@ -431,7 +508,8 @@ void forEachQueuedBuilding(F f) {
 	const u32 local = *LOCAL_NATION_ID;
 	const bool replay = *IS_IN_REPLAY != 0;
 	for (CUnit* unit = *firstVisibleUnit; unit != NULL; unit = unit->link.next) {
-		if (!replay && unit->playerId != local)
+		//Ours and our allies' (SC2); in a replay, everyone's.
+		if (!replay && unit->playerId != local && !scbw::isAlliedTo(local, unit->playerId))
 			continue;
 		if (!(units_dat::BaseProperty[unit->id] & UnitProperty::Worker))
 			continue;
@@ -445,7 +523,7 @@ void forEachQueuedBuilding(F f) {
 		}
 		for (COrder* queued = unit->orderQueueHead; queued != NULL; queued = queued->next)
 			if (queued->unitId != UnitId::None && (queued->unitId & QUEUED_BUILD_MARK))
-				f((u16)(queued->unitId & ~QUEUED_BUILD_MARK), queued->target.pt.x, queued->target.pt.y);
+				f(queuedTypeOf(queued->unitId), queued->target.pt.x, queued->target.pt.y);
 	}
 }
 

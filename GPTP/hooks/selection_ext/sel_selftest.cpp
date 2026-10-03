@@ -128,8 +128,8 @@ void lengths() {
 	CHECK(variableCommandLength(chunk) == 7);
 	const u8 hotkey[] = { 0x13, 0, 0 };
 	CHECK(variableCommandLength(hotkey) == 0);
-	const u8 queued[] = { CMD_QUEUED_BUILD, 0x1E, 0, 0, 0, 0, 0, 0 };
-	CHECK(variableCommandLength(queued) == 8);
+	const u8 queued[] = { CMD_QUEUED_BUILD, 0x1E, 0, 0, 0, 0, 0, 0, 5 };
+	CHECK(variableCommandLength(queued) == 9);
 }
 
 void ring() {
@@ -393,6 +393,23 @@ void shiftPlacing() {
 	CHECK(!dropsTrailingIdle(0x06, 0x03));	//a queued move stays
 }
 
+void queuedSites() {
+	const u16 packed = packQueuedType(109, 37);	//Supply Depot, sequence 37
+	CHECK((packed & QUEUED_BUILD_MARK) != 0);
+	CHECK(queuedTypeOf(packed) == 109 && queuedSequenceOf(packed) == 37);
+	CHECK(queuedTypeOf(packQueuedType(227, 63)) == 227 && queuedSequenceOf(packQueuedType(227, 63)) == 63);
+	CHECK(nextShiftSequence(0) == 1 && nextShiftSequence(5) == 6 && nextShiftSequence(63) == 1);
+	CHECK(!queuedSiteBlocks(7, 7));	//the same Shift sequence may overlap
+	CHECK(queuedSiteBlocks(8, 7));	//a later sequence may not
+	CHECK(queuedSiteBlocks(0, 7) && queuedSiteBlocks(0, 0));	//a plain placement never may
+	CHECK(queuedSiteBlocks(7, 0));	//nor over a plain build on its way
+	//Footprints: centres and sizes; touching edges don't overlap.
+	CHECK(footprintsOverlap(100, 100, 64, 64, 120, 100, 64, 64));
+	CHECK(!footprintsOverlap(100, 100, 64, 64, 164, 100, 64, 64));	//edge to edge
+	CHECK(!footprintsOverlap(100, 100, 64, 64, 100, 200, 64, 64));
+	CHECK(footprintsOverlap(100, 100, 128, 96, 150, 140, 32, 32));
+}
+
 void minimapKeys() {
 	const u16 T = 0x54, TAB = 0x09;
 	CHECK(minimapToggleFor(T, false, false, true) == MINIMAP_TERRAIN);		//Alt+T
@@ -432,6 +449,7 @@ u32 selfTest(u32* firstFailedLine) {
 	buildReview();
 	prepaid();
 	shiftPlacing();
+	queuedSites();
 	*firstFailedLine = firstLine;
 	return failures;
 }

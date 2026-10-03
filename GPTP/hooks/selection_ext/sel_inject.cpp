@@ -318,11 +318,11 @@ void __declspec(naked) selectChunkDispatch() {
 		POPAD
 		JMP Back_CommandDone
 	queuedBuild:
-		CMP EAX, 8
+		CMP EAX, 9
 		JL notOurs
-		SUB EAX, 8
+		SUB EAX, 9
 		MOV [EBP+8], EAX
-		MOV DWORD PTR [EBP-4], 8
+		MOV DWORD PTR [EBP-4], 9
 		PUSHAD
 		PUSH ESI
 		CALL recvQueuedBuildC
@@ -771,7 +771,7 @@ const u32 Func_SetInputMode		= 0x004843F0;
 const u32 PlaceSendBack			= 0x0048E63A;
 void __declspec(naked) placeSendStub() {
 	static u8* command;
-	static u32 queued;
+	static u8* queued;
 	__asm {
 		MOV command, ECX
 		PUSHAD
@@ -779,13 +779,36 @@ void __declspec(naked) placeSendStub() {
 	queued = selbuild::sendAsQueued(command);
 	__asm {
 		POPAD
-		CALL Func_QueueCommandSend
 		CMP DWORD PTR queued, 0
-		JNE back
+		JNE sendQueued
+		CALL Func_QueueCommandSend
 		PUSH 0
 		CALL Func_SetInputMode
-	back:
 		JMP PlaceSendBack
+	sendQueued:
+		MOV ECX, queued
+		MOV EDX, 9
+		CALL Func_QueueCommandSend
+		JMP PlaceSendBack
+	}
+}
+
+//0x48DE07 (each frame while placing): vanilla's placement check 0x48DCE0,
+//whose EAX goes to [0x640958]; a queued site this placement may not
+//overlap gives code 4, so the click is refused before it is sent.
+const u32 Func_PlacementCheckNow = 0x0048DCE0;
+void __declspec(naked) placementResultStub() {
+	static u32 code;
+	__asm {
+		CALL Func_PlacementCheckNow
+		MOV code, EAX
+		PUSHAD
+	}
+	code = selbuild::placementResult(code);
+	__asm {
+		POPAD
+		MOV EAX, code
+		RETN
 	}
 }
 
@@ -944,6 +967,12 @@ void injectSmartBuildHooks() {
 	jmpPatch(placeSendStub,					0x0048E62E, 7);
 	jmpPatch(placementStillValidWrapper,	0x0048DDA0, 2);
 	callPatch(finishPlacementStub,			0x0048E594, 0);
+	callPatch(placementResultStub,			0x0048DE07, 0);
+	//Commands queue behind a construction: vanilla's return-to-idle order,
+	//queued when an SCV starts constructing with an empty queue, is gone
+	//(with the queue empty BW goes idle the same way).
+	static const u8 NOP5[5] = { 0x90, 0x90, 0x90, 0x90, 0x90 };
+	memoryPatch(0x004680B9, NOP5, 5);
 	//Prepaid Shift-placements: paid once, on arrival vanilla's spend nets out.
 	callPatch(arrivalPayStub,				0x00468064, 0);
 	callPatch(arrivalPayStub,				0x004E4DF5, 0);

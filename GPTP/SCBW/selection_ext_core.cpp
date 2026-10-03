@@ -108,7 +108,7 @@ u32 variableCommandLength(const u8* cmd) {
 	if (id == CMD_SELECT_CHUNK)
 		return 3 + 2 * cmd[2];
 	if (id == CMD_QUEUED_BUILD)
-		return 8;
+		return QUEUED_BUILD_BYTES;
 	if (id >= 0x09 && id <= 0x0B)
 		return 2 + 2 * cmd[1];
 	return 0;
@@ -330,6 +330,32 @@ bool ableToQueue(bool allowedNow, bool holdingBuild, bool canMake) {
 
 bool dropsTrailingIdle(u32 lastQueuedOrder, u32 unitIdleOrder) {
 	return lastQueuedOrder == unitIdleOrder;
+}
+
+u16 packQueuedType(u16 type, u32 sequence) {
+	return (u16)(QUEUED_BUILD_MARK | ((sequence & 0x3F) << 9) | (type & QUEUED_TYPE_MASK));
+}
+
+u16 queuedTypeOf(u16 packed) {
+	return packed & QUEUED_TYPE_MASK;
+}
+
+u32 queuedSequenceOf(u16 packed) {
+	return (packed >> 9) & 0x3F;
+}
+
+u32 nextShiftSequence(u32 sequence) {
+	return sequence % 63 + 1;
+}
+
+bool queuedSiteBlocks(u32 newSequence, u32 queuedSequence) {
+	return newSequence == 0 || newSequence != queuedSequence;
+}
+
+bool footprintsOverlap(s32 x1, s32 y1, s32 w1, s32 h1, s32 x2, s32 y2, s32 w2, s32 h2) {
+	const s32 left1 = x1 - w1 / 2, top1 = y1 - h1 / 2;
+	const s32 left2 = x2 - w2 / 2, top2 = y2 - h2 / 2;
+	return left1 < left2 + w2 && left2 < left1 + w1 && top1 < top2 + h2 && top2 < top1 + h1;
 }
 
 bool canAfford(s32 minerals, s32 gas, u32 costM, u32 costG) {

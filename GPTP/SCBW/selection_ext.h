@@ -183,8 +183,23 @@ bool samePalette(const u8* a, const u8* b, const bool* skip);
 //2026-10-03). Which toggle a key press is, if any.
 //-------- Smart-build --------//
 
-//Queued build: [0x3D][order][u16 x tile][u16 y tile][u16 type], as 0x0C.
+//Queued build: [0x3D][order][u16 x tile][u16 y tile][u16 type][u8 Shift
+//sequence], 0x0C plus the sequence (1-63) it was placed in.
 const u8 CMD_QUEUED_BUILD = 0x3D;
+const u32 QUEUED_BUILD_BYTES = 9;
+//A queued build entry's type field: the type (bits 0-8), its Shift sequence
+//(bits 9-14) and the mark (bit 15).
+const u16 QUEUED_TYPE_MASK = 0x01FF;
+u16 packQueuedType(u16 type, u32 sequence);
+u16 queuedTypeOf(u16 packed);
+u32 queuedSequenceOf(u16 packed);
+//The next Shift sequence number: 1-63, wrapping (0 is a plain placement).
+u32 nextShiftSequence(u32 sequence);
+//Whether a queued, unstarted building blocks a new placement over it: always
+//for a plain placement (sequence 0), else unless it is of the same sequence.
+bool queuedSiteBlocks(u32 newSequence, u32 queuedSequence);
+//Whether two footprints (centres and sizes in pixels) overlap.
+bool footprintsOverlap(s32 x1, s32 y1, s32 w1, s32 h1, s32 x2, s32 y2, s32 w2, s32 h2);
 //A queued build order's type, marked so the order hook sets it up when it
 //becomes current (vanilla never starts a build from the queue).
 const u16 QUEUED_BUILD_MARK = 0x8000;
