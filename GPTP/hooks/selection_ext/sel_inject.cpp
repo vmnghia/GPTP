@@ -603,6 +603,32 @@ void __declspec(naked) minimapKeyStub() {
 	__asm JMP MinimapNotMine
 }
 
+//-------- Smart-build --------//
+
+//0x428E89, Can_Create_UnitorBuilding with several units selected and the
+//unit none of Larva/Mutalisk/Hydralisk: workers may build too. EAX (the
+//type), ESI (the unit) and EDX (the player) are kept for 0x428E91.
+const u32 CanCreate_Allowed = 0x00428E91;
+void __declspec(naked) canCreateWorkerStub() {
+	__asm {
+		PUSH EAX
+		PUSH ECX
+		MOVZX EAX, WORD PTR [ESI+0x64]
+		MOV ECX, 0x00664080				//units_dat::BaseProperty
+		TEST BYTE PTR [ECX+EAX*4], 0x08	//UnitProperty::Worker
+		POP ECX
+		POP EAX
+		JNZ allowed
+		POP EDI
+		XOR EAX, EAX
+		POP ESI
+		POP EBP
+		RETN 4
+	allowed:
+		JMP CanCreate_Allowed
+	}
+}
+
 } //unnamed namespace
 
 namespace hooks {
@@ -668,6 +694,20 @@ void injectCommandCardHooks() {
 	jmpPatch(wireframeDimStub,		0x00456FB6, 0);
 	//The minimap's Tab toggles move to Alt+T / Ctrl+Shift+T (selpanel::keyDown).
 	jmpPatch(minimapKeyStub,		0x004A5938, 2);
+}
+
+void injectSmartBuildHooks() {
+	//The build-menu conditions no longer need one unit selected (each
+	//button's condition already runs once per member, stage 5).
+	static const u8 NOP2[2] = { 0x90, 0x90 };
+	static const u8 NOP6[6] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
+	memoryPatch(0x0042899E, NOP2, 2);	//SCV basic
+	memoryPatch(0x00428A1E, NOP2, 2);	//SCV advanced
+	memoryPatch(0x00428ADE, NOP6, 6);	//Probe basic
+	memoryPatch(0x00428B8E, NOP6, 6);	//Probe advanced
+	memoryPatch(0x00428C3E, NOP2, 2);	//Drone basic
+	memoryPatch(0x00428CBE, NOP2, 2);	//Drone advanced
+	jmpPatch(canCreateWorkerStub,	0x00428E89, 3);
 }
 
 } //hooks

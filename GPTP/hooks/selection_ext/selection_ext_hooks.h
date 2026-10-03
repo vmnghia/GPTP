@@ -14,5 +14,7 @@ void injectControlGroupHooks();
 //Stage 5: the card's conditions over the active subgroup; send-side checks
 //(button actions, the target-order check) see it first.
 void injectCommandCardHooks();
+//Smart-build: several workers build; Shift queues buildings.
+void injectSmartBuildHooks();
 
 } //hooks
