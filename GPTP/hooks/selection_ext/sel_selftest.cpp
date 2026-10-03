@@ -342,6 +342,21 @@ void buildPicks() {
 	CHECK(pickDrone(busy, stuck, stamps, dx, dy, 3, 0, 0) == -1);
 }
 
+void buildReview() {
+	const s32 xs[3] = { 10, 50, 90 }, ys[3] = { 0, 0, 0 };
+	const bool able[3] = { true, true, true };
+	const bool notConstructing[3] = { false, true, true };
+	CHECK(nearestPreferring(xs, ys, able, notConstructing, 3, 0, 0) == 1);	//0 nearer but constructing
+	const bool allConstructing[3] = { false, false, false };
+	CHECK(nearestPreferring(xs, ys, able, allConstructing, 3, 0, 0) == 0);	//none free: nearest
+	const bool none[3] = { false, false, false };
+	CHECK(nearestPreferring(xs, ys, none, notConstructing, 3, 0, 0) == -1);
+	CHECK(holdsBuild(0x19) && holdsBuild(0x1E) && holdsBuild(0x1F) && holdsBuild(0x21));
+	CHECK(!holdsBuild(0x06) && !holdsBuild(0x46) && !holdsBuild(0x55));
+	CHECK(showCantReach(true, true) && showCantReach(false, false) && showCantReach(true, false));
+	CHECK(!showCantReach(false, true));	//money failure: its own error
+}
+
 void minimapKeys() {
 	const u16 T = 0x54, TAB = 0x09;
 	CHECK(minimapToggleFor(T, false, false, true) == MINIMAP_TERRAIN);		//Alt+T
@@ -378,6 +393,7 @@ u32 selfTest(u32* firstFailedLine) {
 	paletteCycling();
 	minimapKeys();
 	buildPicks();
+	buildReview();
 	*firstFailedLine = firstLine;
 	return failures;
 }

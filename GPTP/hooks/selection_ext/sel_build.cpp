@@ -54,7 +54,8 @@ u32 buildsOf(CUnit* unit, s32* lastX, s32* lastY) {
 	u32 n = 0;
 	*lastX = unit->position.x;
 	*lastY = unit->position.y;
-	if (isBuildOrder(unit->mainOrderId)) {
+	//An SCV constructing holds a building too: queue behind it, never pull it off.
+	if (holdsBuild(unit->mainOrderId)) {
 		n++;
 		*lastX = unit->orderTarget.pt.x;
 		*lastY = unit->orderTarget.pt.y;
@@ -148,7 +149,11 @@ namespace selbuild {
 void recvBuild(const u8* packet) {
 	if (!readCommand(packet))
 		return;
-	const int k = nearestIndex(cmd.xs, cmd.ys, cmd.able, cmd.n, cmd.siteX, cmd.siteY);
+	//Prefer a worker that isn't constructing (it would leave its building).
+	static bool notConstructing[SEL_MAX];
+	for (u32 i = 0; i < cmd.n; i++)
+		notConstructing[i] = !holdsBuild(cmd.units[i]->mainOrderId);
+	const int k = nearestPreferring(cmd.xs, cmd.ys, cmd.able, notConstructing, cmd.n, cmd.siteX, cmd.siteY);
 	if (k < 0) {
 		showNoneCould();
 		return;
@@ -170,7 +175,7 @@ void recvQueuedBuild(const u8* packet) {
 	for (u32 i = 0; i < cmd.n; i++) {
 		CUnit* const unit = cmd.units[i];
 		builds[i] = buildsOf(unit, &fromX[i], &fromY[i]);
-		isFree[i] = cmd.able[i] && builds[i] == 0;
+		isFree[i] = cmd.able[i] && builds[i] == 0 && !droneCommitted(unit);	//not landing
 		recyclable[i] = cmd.able[i] && builds[i] > 0 && !droneCommitted(unit);
 		stampOf[i] = stamps[unit->getIndex() - 1];
 	}
@@ -236,7 +241,9 @@ void beforeOrder(CUnit* unit) {
 }
 
 void gaveUp(CUnit* unit) {
-	if (!selexe::withinReach(unit, unit->orderTarget.pt.x, unit->orderTarget.pt.y, 128))
+	const bool stuck = (unit->status & UnitStatus::Unmovable) != 0;
+	const bool within = selexe::withinReach(unit, unit->orderTarget.pt.x, unit->orderTarget.pt.y, 128);
+	if (showCantReach(stuck, within))
 		selexe::showStatTextTo(STR_CANT_REACH_SITE, unit->playerId);
 }
 

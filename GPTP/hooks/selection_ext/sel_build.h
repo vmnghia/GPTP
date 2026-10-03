@@ -22,8 +22,8 @@ void recvQueuedBuild(const u8* packet);
 //Before the order dispatcher (0x4EC4D0) runs unit's order: sets up a queued
 //build that just became current, or moves the unit on if it can't be made.
 void beforeOrder(CUnit* unit);
-//A build order gave up on its way (SCV 0x46817C, Probe 0x4E4EDB): the
-//message if the worker never got within reach of the site.
+//A build order gave up on its way (SCV 0x46817C; Probe 0x4E4D90 when it
+//got stuck): the message if the worker got stuck or stopped out of reach.
 void gaveUp(CUnit* unit);
 //A new game: no stamps.
 void reset();

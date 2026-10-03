@@ -700,8 +700,8 @@ void __declspec(naked) orderRootStub() {
 	}
 }
 
-//Rule 3: a build order's give-up exit (its `call 0x4753A0`, ECX = unit:
-//SCV 0x46817C, Probe 0x4E4EDB). The message if the worker never got within
+//Rule 3: the SCV build order's give-up exit (its `call 0x4753A0` at
+//0x46817C, ECX = unit). The message if it got stuck or stopped out of
 //reach; then toIdle as vanilla (the next queued order).
 const u32 Func_ToIdle = 0x004753A0;
 void __declspec(naked) buildGaveUpStub() {
@@ -713,6 +713,36 @@ void __declspec(naked) buildGaveUpStub() {
 	selbuild::gaveUp(unit);
 	__asm {
 		POPAD
+		JMP Func_ToIdle
+	}
+}
+
+//Rule 3, Probe: 0x4E4D90 in the Probe build order's move state, after
+//0x401DC0 (EAX: 0 moving, 1 stopped, 2 stopped and stuck). Vanilla moves
+//again whenever it has stopped, forever; stuck, it now gives up: the
+//message, then toIdle (EBX and ESI were pushed by the order; EDI = unit).
+const u32 ProbeStillMoving	= 0x004E4F00;
+const u32 ProbeMoveAgain	= 0x004E4D98;
+void __declspec(naked) probeStuckStub() {
+	static CUnit* unit;
+	__asm {
+		TEST EAX, EAX
+		JE moving
+		CMP EAX, 2
+		JE stuck
+		JMP ProbeMoveAgain
+	moving:
+		JMP ProbeStillMoving
+	stuck:
+		MOV unit, EDI
+		PUSHAD
+	}
+	selbuild::gaveUp(unit);
+	__asm {
+		POPAD
+		POP ESI
+		POP EBX
+		MOV ECX, EDI
 		JMP Func_ToIdle
 	}
 }
@@ -880,7 +910,7 @@ void injectSmartBuildHooks() {
 	jmpPatch(orderRootStub,			0x004EC4D0, 3);
 	//Disruptions: a cut path's message, a blocked site keeps the queue.
 	callPatch(buildGaveUpStub,		0x0046817C, 0);
-	callPatch(buildGaveUpStub,		0x004E4EDB, 0);
+	jmpPatch(probeStuckStub,		0x004E4D90, 3);
 	callPatch(scvSiteBlockedStub,	0x00468125, 0);
 	//Placing: Shift sends 0x3D and keeps placing; any member may place.
 	jmpPatch(placeSendStub,					0x0048E62E, 7);

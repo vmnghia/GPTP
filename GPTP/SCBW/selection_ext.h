@@ -199,6 +199,17 @@ int pickBalanced(const u32* builds, const s32* fromX, const s32* fromY, const bo
 //lowest stamp, ties to the lowest index; or -1.
 int pickDrone(const bool* isFree, const bool* recyclable, const u32* stamps,
               const s32* xs, const s32* ys, u32 n, s32 x, s32 y);
+//The nearest able entry among the preferred ones, else among all able ones;
+//or -1 (a plain placement prefers workers that aren't constructing).
+int nearestPreferring(const s32* xs, const s32* ys, const bool* able, const bool* preferred,
+                      u32 n, s32 x, s32 y);
+//Whether a worker's current order holds a building: the three build orders
+//and an SCV constructing (0x21), so a Shift-placement queues behind it.
+bool holdsBuild(u32 order);
+//A build order gave up: "Couldn't reach the building site." when the
+//worker got stuck (Unmovable) or stopped out of reach; not after a money
+//failure (within reach, its own error shown).
+bool showCantReach(bool stuck, bool withinReach);
 
 enum MinimapToggle { MINIMAP_NONE = 0, MINIMAP_TERRAIN = 1, MINIMAP_ALLY_COLOURS = 2 };
 MinimapToggle minimapToggleFor(u16 key, bool shift, bool ctrl, bool alt);

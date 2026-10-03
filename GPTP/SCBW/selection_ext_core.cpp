@@ -286,6 +286,26 @@ int pickDrone(const bool* isFree, const bool* recyclable, const u32* stamps,
 	return best;
 }
 
+int nearestPreferring(const s32* xs, const s32* ys, const bool* able, const bool* preferred,
+                      u32 n, s32 x, s32 y) {
+	if (n > SEL_MAX)
+		n = SEL_MAX;
+	static bool both[SEL_MAX];
+	for (u32 i = 0; i < n; i++)
+		both[i] = able[i] && preferred[i];
+	const int k = nearestIndex(xs, ys, both, n, x, y);
+	return k >= 0 ? k : nearestIndex(xs, ys, able, n, x, y);
+}
+
+bool holdsBuild(u32 order) {
+	//DroneStartBuild, BuildTerran, BuildProtoss1, ConstructingBuilding
+	return order == 0x19 || order == 0x1E || order == 0x1F || order == 0x21;
+}
+
+bool showCantReach(bool stuck, bool withinReach) {
+	return stuck || !withinReach;
+}
+
 MinimapToggle minimapToggleFor(u16 key, bool shift, bool ctrl, bool alt) {
 	const u16 VK_T = 0x54;
 	if (key != VK_T)
