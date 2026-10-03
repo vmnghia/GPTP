@@ -85,10 +85,13 @@ SC2-style building with several workers selected:
 ### Commands
 - Plain placement: vanilla 0x0C, unchanged on the wire.
 - Shift-placement: new command **0x3D** `[0x3D][order][u16 x tile][u16 y tile][u16 type]`
-  (8 bytes), sent instead of 0x0C when Shift is held at the placement click. Its length
-  goes into `selext::variableCommandLength`'s table of extra commands (the stage 2 hooks
-  at 0x48661C / 0x4CE085 / 0x4CDD04 already route every length through it) and its
-  receive into the dispatch table (0x486ED0 + 4 × 0x3D... as 0x3C was).
+  (8 bytes), sent instead of 0x0C when Shift is held at the placement click.
+  - 0x3D is free: vanilla's unused ids 0x3C–0x44 share dispatch slot 50 (0x486ED0),
+    whose stage 2 stub (`selectChunkDispatch`) already takes 0x3C; it also takes 0x3D.
+    The replay recorder's skip list (0x502860: 0x05–0x08, 0x10, 0x11, 0x37–0x3B) leaves
+    it in, so replays record it.
+  - Its length (8) goes into `selext::commandLength`, which the stage 2 hooks at
+    0x48661C / 0x4CE085 / 0x4CDD04 already use for every command.
 
 ### Receive (synced)
 - **0x0C** (replaced 0x4C23C0): the builder is the selected worker that passes 0x48DBD0
