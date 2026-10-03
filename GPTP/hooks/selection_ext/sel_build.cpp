@@ -263,6 +263,11 @@ void recvQueuedBuild(const u8* packet) {
 	resources->gas[player] -= costG;
 	paidMinerals[index] += costM;
 	paidGas[index] += costG;
+	//An SCV that started constructing with an empty queue has its idle order
+	//queued after it; a build behind that would never run.
+	COrder* const last = unit->orderQueueTail;
+	if (last != NULL && dropsTrailingIdle(last->orderId, units_dat::ReturnToIdleOrder[unit->id]))
+		selexe::removeQueuedOrder(unit, last);
 	//The mark: set up when it becomes current, and prepaid.
 	unit->performAnotherOrder(cmd.order, (s16)cmd.siteX, (s16)cmd.siteY, NULL,
 	                          cmd.type | QUEUED_BUILD_MARK, NULL);

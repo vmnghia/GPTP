@@ -227,6 +227,10 @@ bool placingHolds(bool shiftQueuing, bool anyMemberCan, u32 members);
 //Whether a worker can take a Shift-queued build: free to take it now
 //(0x48DBD0), or already building and its type can make it (it queues).
 bool ableToQueue(bool allowedNow, bool holdingBuild, bool canMake);
+//Whether a queued build must first take out the queue's last order: the
+//unit's own return-to-idle order, which vanilla queues when an SCV starts
+//constructing with an empty queue (0x467FD0); a build after it never runs.
+bool dropsTrailingIdle(u32 lastQueuedOrder, u32 unitIdleOrder);
 //Whether a player with these resources can pay this cost now.
 bool canAfford(s32 minerals, s32 gas, u32 costM, u32 costG);
 

@@ -328,6 +328,10 @@ bool ableToQueue(bool allowedNow, bool holdingBuild, bool canMake) {
 	return allowedNow || (holdingBuild && canMake);
 }
 
+bool dropsTrailingIdle(u32 lastQueuedOrder, u32 unitIdleOrder) {
+	return lastQueuedOrder == unitIdleOrder;
+}
+
 bool canAfford(s32 minerals, s32 gas, u32 costM, u32 costG) {
 	return minerals >= (s32)costM && gas >= (s32)costG;
 }

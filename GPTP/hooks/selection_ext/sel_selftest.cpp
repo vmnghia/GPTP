@@ -388,6 +388,9 @@ void shiftPlacing() {
 	CHECK(ableToQueue(false, true, true));	//constructing SCV: queues behind
 	CHECK(!ableToQueue(false, true, false));	//can't make it at all
 	CHECK(!ableToQueue(false, false, true));	//not free and not building
+	CHECK(dropsTrailingIdle(0x03, 0x03));	//PlayerGuard behind a construction
+	CHECK(!dropsTrailingIdle(0x1E, 0x03));	//a queued build stays
+	CHECK(!dropsTrailingIdle(0x06, 0x03));	//a queued move stays
 }
 
 void minimapKeys() {

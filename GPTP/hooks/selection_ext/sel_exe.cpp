@@ -384,6 +384,17 @@ bool withinReach(CUnit* unit, s32 x, s32 y, u32 distance) {
 	return result != 0;
 }
 
+void removeQueuedOrder(CUnit* unit, COrder* order) {
+	const u32 Func = 0x004742D0;
+	__asm {
+		PUSHAD
+		MOV ECX, unit
+		MOV EAX, order
+		CALL Func
+		POPAD
+	}
+}
+
 void showStatTextTo(u32 stringId, u8 player) {
 	const char* const text = statTxtTbl->getString((u16)stringId);
 	const u32 player32 = player;
