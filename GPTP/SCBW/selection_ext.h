@@ -216,6 +216,10 @@ bool showCantReach(bool stuck, bool withinReach);
 //holds; it now holds builds worth heldM/heldG. What it no longer holds is
 //refunded (out), and paid becomes held.
 void reconcilePaid(u32* paidM, u32* paidG, u32 heldM, u32 heldG, u32* refundM, u32* refundG);
+//Whether a placement click with Shift held queues (0x3D) and keeps placing:
+//only a worker's build order (Drone, Terran, Protoss), never an addon or a
+//landing.
+bool shiftQueues(bool shiftHeld, u32 order);
 //Whether a player with these resources can pay this cost now.
 bool canAfford(s32 minerals, s32 gas, u32 costM, u32 costG);
 

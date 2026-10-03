@@ -364,11 +364,15 @@ namespace selbuild {
 u16 lastSubmenu = NO_BUTTON_SET;
 
 bool sendAsQueued(u8* cmd) {
-	if (!*SHIFT_HELD || !isBuildOrder(cmd[1]))
+	if (!shiftQueues(*SHIFT_HELD != 0, cmd[1]))
 		return false;
 	cmd[0] = CMD_QUEUED_BUILD;
 	shiftPlacing = true;
 	return true;
+}
+
+bool keepsPlacing() {
+	return shiftQueues(*SHIFT_HELD != 0, *PLACING_ORDER);
 }
 
 bool placementStillValid() {

@@ -42,6 +42,9 @@ void reset();
 //held and a worker build order, turns it into 0x3D and returns true (placing
 //then goes on).
 bool sendAsQueued(u8* cmd);
+//At the end of the placement click (0x48E4E0, before the send): whether
+//placing goes on instead of ending (a Shift-queued build).
+bool keepsPlacing();
 //Whether any member of the active subgroup can still place the building
 //being placed (replaces 0x48DDA0, which asks the portrait only).
 bool placementStillValid();

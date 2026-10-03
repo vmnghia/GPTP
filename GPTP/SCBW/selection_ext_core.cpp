@@ -315,6 +315,11 @@ void reconcilePaid(u32* paidM, u32* paidG, u32 heldM, u32 heldG, u32* refundM, u
 	*paidG -= *refundG;
 }
 
+bool shiftQueues(bool shiftHeld, u32 order) {
+	//DroneStartBuild, BuildTerran, BuildProtoss1
+	return shiftHeld && (order == 0x19 || order == 0x1E || order == 0x1F);
+}
+
 bool canAfford(s32 minerals, s32 gas, u32 costM, u32 costG) {
 	return minerals >= (s32)costM && gas >= (s32)costG;
 }

@@ -376,6 +376,12 @@ void prepaid() {
 	CHECK(canAfford(0, 0, 0, 0));	//cost 0 is always affordable
 }
 
+void shiftPlacing() {
+	CHECK(shiftQueues(true, 0x19) && shiftQueues(true, 0x1E) && shiftQueues(true, 0x1F));
+	CHECK(!shiftQueues(false, 0x1E));	//plain placement
+	CHECK(!shiftQueues(true, 0x24) && !shiftQueues(true, 0x47) && !shiftQueues(true, 0x2E));	//addon, landing, Nydus exit
+}
+
 void minimapKeys() {
 	const u16 T = 0x54, TAB = 0x09;
 	CHECK(minimapToggleFor(T, false, false, true) == MINIMAP_TERRAIN);		//Alt+T
@@ -414,6 +420,7 @@ u32 selfTest(u32* firstFailedLine) {
 	buildPicks();
 	buildReview();
 	prepaid();
+	shiftPlacing();
 	*firstFailedLine = firstLine;
 	return failures;
 }

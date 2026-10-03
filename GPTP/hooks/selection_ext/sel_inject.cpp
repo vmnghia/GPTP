@@ -837,6 +837,24 @@ void __declspec(naked) openSubmenuStub() {
 	}
 }
 
+//0x48E594, the end of 0x48E4E0 (the placement click's finish, called only
+//from the click handler before it sends): vanilla's call 0x48E310 ends
+//placing. A Shift-queued build keeps placing (the cursor keeps the building).
+const u32 Func_EndPlacing = 0x0048E310;
+void __declspec(naked) finishPlacementStub() {
+	static u32 keep;
+	__asm PUSHAD
+	keep = selbuild::keepsPlacing();
+	__asm {
+		POPAD
+		CMP DWORD PTR keep, 0
+		JE endPlacing
+		RETN
+	endPlacing:
+		JMP Func_EndPlacing
+	}
+}
+
 //0x48DDA0 (can the builder still place it; EAX out): any member of the
 //active subgroup, not the portrait only.
 void __declspec(naked) placementStillValidWrapper() {
@@ -941,6 +959,7 @@ void injectSmartBuildHooks() {
 	//Placing: Shift sends 0x3D and keeps placing; any member may place.
 	jmpPatch(placeSendStub,					0x0048E62E, 7);
 	jmpPatch(placementStillValidWrapper,	0x0048DDA0, 2);
+	callPatch(finishPlacementStub,			0x0048E594, 0);
 	jmpPatch(openSubmenuStub,				0x00459AF0, 2);
 	//Prepaid Shift-placements: paid once, on arrival vanilla's spend nets out.
 	callPatch(arrivalPayStub,				0x00468064, 0);
