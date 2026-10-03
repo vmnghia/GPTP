@@ -263,4 +263,138 @@ size_t freadExe(void* data, size_t size, size_t count, FILE* file) {
 	return freadFn(data, size, count, file);
 }
 
+//-------- Smart-build: the build receive path --------//
+
+bool placeBuildingAllowed(CUnit* unit, u8 order, u16 unitType) {
+	static u32 result;
+	const u32 Func = 0x0048DBD0;
+	__asm {
+		PUSHAD
+		MOV AX, unitType
+		MOV DL, order
+		MOV ECX, unit
+		CALL Func
+		MOV result, EAX
+		POPAD
+	}
+	return result != 0;
+}
+
+void placeBuilding(u8 order, u16 unitType, u32 tiles) {
+	const u32 Func = 0x0048E190;
+	__asm {
+		PUSHAD
+		PUSH tiles
+		MOV AX, unitType
+		MOV CL, order
+		CALL Func
+		POPAD
+	}
+}
+
+u32 placementCheck(CUnit* builder, u8 player, s32 tileX, s32 tileY, u16 type) {
+	static u32 result;
+	const u32 Func = 0x00473FB0;
+	const u32 player32 = player, type32 = type;
+	__asm {
+		PUSHAD
+		PUSH 0
+		PUSH 0
+		PUSH 0
+		PUSH 1
+		PUSH type32
+		PUSH tileY
+		PUSH tileX
+		PUSH player32
+		PUSH builder
+		CALL Func
+		MOV result, EAX
+		POPAD
+	}
+	return result;
+}
+
+bool placementMessage(u32 code) {
+	static u32 result;
+	const u32 Func = 0x0048D930;
+	__asm {
+		PUSHAD
+		MOV EAX, code
+		CALL Func
+		MOV result, EAX
+		POPAD
+	}
+	return result != 0;
+}
+
+bool hasSupplies(u16 type, u8 player) {
+	static u32 result;
+	const u32 Func = 0x0042CF70;
+	const u32 player32 = player, type32 = type;
+	__asm {
+		PUSHAD
+		PUSH 1
+		PUSH type32
+		PUSH player32
+		CALL Func
+		MOV result, EAX
+		POPAD
+	}
+	return result != 0;
+}
+
+void refundQueueSlots(CUnit* unit) {
+	const u32 Func = 0x00466E80;
+	__asm {
+		PUSHAD
+		MOV EAX, unit
+		CALL Func
+		POPAD
+	}
+}
+
+bool fillBuildSlot(CUnit* unit, u16 type) {
+	static u32 result;
+	const u32 Func = 0x00467250;
+	const u32 type32 = type;
+	__asm {
+		PUSHAD
+		PUSH type32
+		MOV EDI, unit
+		CALL Func
+		MOV result, EAX
+		POPAD
+	}
+	return result != 0;
+}
+
+bool withinReach(CUnit* unit, s32 x, s32 y, u32 distance) {
+	static u32 result;
+	const u32 Func = 0x00401240;
+	__asm {
+		PUSHAD
+		PUSH x
+		PUSH distance
+		MOV EAX, y
+		MOV ECX, unit
+		CALL Func
+		MOV result, EAX
+		POPAD
+	}
+	return result != 0;
+}
+
+void showStatTextTo(u32 stringId, u8 player) {
+	const char* const text = statTxtTbl->getString((u16)stringId);
+	const u32 player32 = player;
+	const u32 Func = 0x0048CF00;
+	__asm {
+		PUSHAD
+		MOV ECX, player32
+		MOV EAX, text
+		CALL Func
+		POPAD
+	}
+}
+
 } //selexe

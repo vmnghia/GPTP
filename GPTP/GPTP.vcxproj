@@ -335,6 +335,7 @@
     <ClCompile Include="hooks\selection_ext\sel_panel.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_groups.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_subgroups.cpp" />
+    <ClCompile Include="hooks\selection_ext\sel_build.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_Selection.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_Selection_inject.cpp" />
     <ClCompile Include="hooks\recv_commands\CMDRECV_ResearchUpgrade.cpp" />
@@ -519,6 +520,7 @@
     <ClInclude Include="hooks\selection_ext\sel_panel.h" />
     <ClInclude Include="hooks\selection_ext\sel_groups.h" />
     <ClInclude Include="hooks\selection_ext\sel_subgroups.h" />
+    <ClInclude Include="hooks\selection_ext\sel_build.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_Selection.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_ResearchUpgrade.h" />
     <ClInclude Include="hooks\recv_commands\CMDRECV_Stimpack.h" />

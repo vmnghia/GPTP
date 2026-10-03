@@ -43,4 +43,26 @@ bool readCompressed(FILE* file, void* data, u32 size);			//0x4C3280
 size_t fwriteExe(const void* data, size_t size, size_t count, FILE* file);	//0x411931
 size_t freadExe(void* data, size_t size, size_t count, FILE* file);			//0x4117DE
 
+//-------- Smart-build: the build receive path --------//
+
+//Whether unit may take this build order for type (0x48DBD0).
+bool placeBuildingAllowed(CUnit* unit, u8 order, u16 type);
+//Vanilla's build placement for the current command's selection (0x48E190):
+//tiles = x tile | y tile << 16.
+void placeBuilding(u8 order, u16 type, u32 tiles);
+//The placement check for builder at a tile position (0x473FB0, as 0x48E010
+//calls it): 0 or a placement code (7 = couldn't reach the site).
+u32 placementCheck(CUnit* builder, u8 player, s32 tileX, s32 tileY, u16 type);
+//Shows a placement code's message to its player (0x48D930); true if 0.
+bool placementMessage(u32 code);
+//Whether player has the supply for type, showing the error if not (0x42CF70).
+bool hasSupplies(u16 type, u8 player);
+void refundQueueSlots(CUnit* unit);							//0x466E80
+//Puts type in unit's build slot (0x467250).
+bool fillBuildSlot(CUnit* unit, u16 type);
+//Whether unit is within distance of (x, y) (0x401240).
+bool withinReach(CUnit* unit, s32 x, s32 y, u32 distance);
+//Shows stat_txt string stringId (1-based) to player's screen (0x48CF00).
+void showStatTextTo(u32 stringId, u8 player);
+
 } //selexe

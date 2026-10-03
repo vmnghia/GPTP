@@ -2,6 +2,7 @@
 #include "sel_exe.h"
 #include "sel_send.h"
 #include "sel_subgroups.h"
+#include "sel_build.h"
 #include <SCBW/selection_ext.h>
 #include <cstring>
 
@@ -213,6 +214,7 @@ void reselectAtStart() {
 void gameStartClear() {
 	clearAll();
 	selsub::reset();
+	selbuild::reset();
 }
 
 void gameStartKeepLocal() {

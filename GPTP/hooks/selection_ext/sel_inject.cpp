@@ -8,6 +8,7 @@
 #include "sel_panel.h"
 #include "sel_groups.h"
 #include "sel_subgroups.h"
+#include "sel_build.h"
 #include <SCBW/selection_ext.h>
 #include <hook_tools.h>
 
@@ -287,12 +288,19 @@ void __cdecl recvSelectChunkC(const u8* packet) {
 	selsync::recvSelectChunk(packet);
 }
 
+void __cdecl recvQueuedBuildC(const u8* packet) {
+	selbuild::recvQueuedBuild(packet);
+}
+
 //Dispatch slot 50 of the executor 0x4865D0 (ids 0x3C-0x44, 0x48, 0x5B). ESI =
 //command, EAX = bytes left, [EBP+8] = bytes left, [EBP-4] = command size.
+//0x3C: the select chunk; 0x3D: smart-build's queued build (8 bytes).
 const u32 Back_CommandDone = 0x00486D7A;	//records the command and advances
 const u32 Back_CommandBad = 0x00486DA3;		//vanilla's exit for these ids
 void __declspec(naked) selectChunkDispatch() {
 	__asm {
+		CMP BYTE PTR [ESI], 0x3D
+		JE queuedBuild
 		CMP BYTE PTR [ESI], 0x3C
 		JNE notOurs
 		CMP EAX, 3
@@ -306,6 +314,18 @@ void __declspec(naked) selectChunkDispatch() {
 		PUSHAD
 		PUSH ESI
 		CALL recvSelectChunkC
+		ADD ESP, 4
+		POPAD
+		JMP Back_CommandDone
+	queuedBuild:
+		CMP EAX, 8
+		JL notOurs
+		SUB EAX, 8
+		MOV [EBP+8], EAX
+		MOV DWORD PTR [EBP-4], 8
+		PUSHAD
+		PUSH ESI
+		CALL recvQueuedBuildC
 		ADD ESP, 4
 		POPAD
 		JMP Back_CommandDone
@@ -629,6 +649,57 @@ void __declspec(naked) canCreateWorkerStub() {
 	}
 }
 
+//0x4C23C0 (Build receive, command 0x0C): ESI = the packet.
+void __declspec(naked) recvBuildWrapper() {
+	static const u8* packet;
+	__asm {
+		MOV packet, ESI
+		PUSHAD
+	}
+	selbuild::recvBuild(packet);
+	__asm {
+		POPAD
+		RETN
+	}
+}
+
+//The builder 0x48E010 / 0x48E0A0 take from the selection (their call of the
+//iterator 0x49A850 right after the cursor reset): the picked one during a
+//smart-build, else vanilla's first selected unit.
+const u32 Func_NextSelected = 0x0049A850;
+CUnit** const CHOSEN_BUILDER = &selbuild::chosenBuilder;
+void __declspec(naked) builderStub() {
+	__asm {
+		MOV EAX, CHOSEN_BUILDER
+		MOV EAX, [EAX]
+		TEST EAX, EAX
+		JZ vanilla
+		RETN
+	vanilla:
+		JMP Func_NextSelected
+	}
+}
+
+//0x4EC4D0, the main order dispatcher (EAX = unit): sets up a queued build
+//that just became current, then vanilla's first 8 bytes and on.
+const u32 OrderDispatchBack = 0x004EC4D8;
+void __declspec(naked) orderRootStub() {
+	static CUnit* unit;
+	__asm {
+		MOV unit, EAX
+		PUSHAD
+	}
+	selbuild::beforeOrder(unit);
+	__asm {
+		POPAD
+		PUSH EBX
+		PUSH ESI
+		MOV ESI, EAX
+		MOVZX EAX, BYTE PTR [ESI+0x4D]
+		JMP OrderDispatchBack
+	}
+}
+
 } //unnamed namespace
 
 namespace hooks {
@@ -708,6 +779,11 @@ void injectSmartBuildHooks() {
 	memoryPatch(0x00428C3E, NOP2, 2);	//Drone basic
 	memoryPatch(0x00428CBE, NOP2, 2);	//Drone advanced
 	jmpPatch(canCreateWorkerStub,	0x00428E89, 3);
+	//Receive: the nearest able builder; 0x3D (dispatch slot 50, with 0x3C).
+	jmpPatch(recvBuildWrapper,		0x004C23C0, 3);
+	callPatch(builderStub,			0x0048E01E, 0);
+	callPatch(builderStub,			0x0048E0B1, 0);
+	jmpPatch(orderRootStub,			0x004EC4D0, 3);
 }
 
 } //hooks
