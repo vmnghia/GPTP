@@ -377,10 +377,14 @@ subgroup is **active**, and the card shows that subgroup's buttons.
 - **Build** with several workers selected stays hidden, as vanilla, until smart-build
   (a separate feature, below).
 - Replays: the card is unchanged (the replay set). Tab still moves the highlight.
-- **Tab is also vanilla's** (minimap key handler 0x4A5900, hard-coded at 0x4A5938, not
-  from stat_txt): Tab toggles minimap terrain and Shift+Tab cycles the 3-step ally colour
-  mode, so both still fire with the subgroup cycling. Left as is for now (user,
-  2026-10-03); see Known issues.
+- **Tab was also vanilla's** (minimap key handler 0x4A5900, hard-coded at 0x4A5938, not
+  from stat_txt): Tab toggled minimap terrain and Shift+Tab cycled the 3-step ally colour
+  mode. They moved (user, 2026-10-03): **Alt+T** terrain, **Ctrl+Shift+T** ally colours,
+  caught as key-downs at 0x484350 (the minimap handler only sees typed characters, and
+  Ctrl/Alt type none it knows), which enter the handler's own toggle code with the
+  minimap dialog (0x59CB5C); the handler no longer takes Tab. Holding Ctrl or Alt
+  keeps the card's hotkeys from firing (they also go by typed characters). stat_txt
+  810/811's "(Tab)" is the user's to change.
 
 **Verified (2026-10-02)**
 - `BUTTON_SET` (12 bytes at 0x5187E8 + 12 × set): button count, first `BUTTON` (20
@@ -493,8 +497,6 @@ Each stage ends with a build and a numbered in-game test round, using hero units
   lengths 0x654AA8; referenced at 0x487150/0x487155/0x48715A and 0x4871B3/0x4871E8/
   0x4871F1/0x487203) before several players can send full turns of chunks in one frame.
 - Page buttons, page indicator.
-- Tab / Shift+Tab also toggle minimap terrain and ally colours (vanilla 0x4A5938):
-  patch that check (moving the toggles to other keys) or give subgroups another key.
 - Smart-build (stage 5 section). On/off buttons side by side (button editor).
 - Stage 5 minors: a wireframe Shift/Ctrl-click sends the list in the panel's sorted
   order (the synced selection then follows it; deterministic); Tab while aiming a
