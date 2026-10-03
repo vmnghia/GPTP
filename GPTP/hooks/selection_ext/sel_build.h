@@ -40,5 +40,10 @@ bool placementStillValid();
 //Every frame: Shift released while Shift-placing ends placing; the build
 //menu stays.
 void frame();
+//Local: the build menu (a special button set) last opened by a button
+//(0x459AF0), shown again after a Shift-placement and when Shift is released.
+extern u16 lastSubmenu;
+//After the placement click sent a queued build: the build menu again.
+void afterQueuedSend();
 
 } //selbuild

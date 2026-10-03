@@ -255,10 +255,27 @@ const u32* const PLACING			= (const u32*)	0x00640880;
 const u16* const PLACING_TYPE		= (const u16*)	0x0064088A;
 const u8* const PLACING_ORDER		= (const u8*)	0x0064088D;
 bool shiftPlacing;	//local: placing goes on after a Shift-placement
+u16* const SPECIAL_BUTTON_SET		= (u16*)		0x0068C1C8;	//a build menu, Cancel, ...
+const u16 NO_BUTTON_SET				= 0xE4;
+
+//Shows the last build menu as its button would (0x459AF0: the special set,
+//then 0x4599A0).
+void showLastSubmenu() {
+	if (selbuild::lastSubmenu == NO_BUTTON_SET)
+		return;
+	*SPECIAL_BUTTON_SET = selbuild::lastSubmenu;
+	selexe::refreshButtonSet();
+}
 
 } //unnamed namespace
 
 namespace selbuild {
+
+u16 lastSubmenu = NO_BUTTON_SET;
+
+void afterQueuedSend() {
+	showLastSubmenu();
+}
 
 bool sendAsQueued(u8* cmd) {
 	if (!*SHIFT_HELD || !isBuildOrder(cmd[1]))
@@ -289,6 +306,7 @@ void frame() {
 	if (!*SHIFT_HELD) {
 		shiftPlacing = false;
 		selexe::cancelPlacement();
+		showLastSubmenu();
 	}
 }
 

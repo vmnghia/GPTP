@@ -751,11 +751,33 @@ void __declspec(naked) placeSendStub() {
 		POPAD
 		CALL Func_QueueCommandSend
 		CMP DWORD PTR queued, 0
-		JNE back
+		JNE queuedSent
 		PUSH 0
 		CALL Func_SetInputMode
-	back:
 		JMP PlaceSendBack
+	queuedSent:
+		PUSHAD
+	}
+	selbuild::afterQueuedSend();
+	__asm {
+		POPAD
+		JMP PlaceSendBack
+	}
+}
+
+//0x459AF0, the action of a build-menu button (CX = the menu's button set):
+//remembers it for smart-build, then vanilla (special set, 0x4599A0).
+const u32 Func_RefreshButtonSet = 0x004599A0;
+u16* const LAST_SUBMENU = &selbuild::lastSubmenu;
+void __declspec(naked) openSubmenuStub() {
+	__asm {
+		PUSH EAX
+		MOV EAX, LAST_SUBMENU
+		MOV [EAX], CX
+		MOV EAX, 0x0068C1C8
+		MOV [EAX], CX
+		POP EAX
+		JMP Func_RefreshButtonSet
 	}
 }
 
@@ -863,6 +885,7 @@ void injectSmartBuildHooks() {
 	//Placing: Shift sends 0x3D and keeps placing; any member may place.
 	jmpPatch(placeSendStub,					0x0048E62E, 7);
 	jmpPatch(placementStillValidWrapper,	0x0048DDA0, 2);
+	jmpPatch(openSubmenuStub,				0x00459AF0, 2);
 }
 
 } //hooks
