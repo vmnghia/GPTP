@@ -1,5 +1,6 @@
 #include "sel_save.h"
 #include "sel_exe.h"
+#include "sel_build.h"
 #include <SCBW/selection_ext.h>
 #include <cstring>
 
@@ -9,7 +10,8 @@ namespace {
 
 const u32 MAGIC = 0x584C4553;	//"SELX"
 //1: selections (stages 1-3). 2: selections, then control groups (stage 4).
-const u16 VERSION = 2;
+//3: as 2, then a second compressed block: smart-build's stamps.
+const u16 VERSION = 3;
 
 #pragma pack(push, 1)
 struct Header {
@@ -28,6 +30,13 @@ const u32 LISTS_V1 = PLAYERS;
 const u32 LISTS_V2 = PLAYERS * (1 + GROUP_COUNT);
 
 u16 payload[LISTS_V2][SEL_MAX];
+
+//Version 3's second block.
+struct BuildStamps {
+	u32 stamps[UNIT_ARRAY_LENGTH];
+	u32 lastStamp[8];
+};
+BuildStamps buildStamps;
 
 //An old save: the selections are vanilla's 12.
 void selectionsFromVanilla() {
@@ -101,6 +110,10 @@ size_t __cdecl writeLastAndExtension(const void* data, size_t size, size_t count
 		return 0;
 	if (!selexe::writeCompressed(file, payload, sizeof(payload)))
 		return 0;
+	memcpy(buildStamps.stamps, selbuild::stamps, sizeof(buildStamps.stamps));
+	memcpy(buildStamps.lastStamp, selbuild::lastStamp, sizeof(buildStamps.lastStamp));
+	if (!selexe::writeCompressed(file, &buildStamps, sizeof(buildStamps)))
+		return 0;
 	return count;
 }
 
@@ -109,21 +122,29 @@ size_t __cdecl readLastAndExtension(void* data, size_t size, size_t count, FILE*
 		return 0;
 	Header header;
 	if (selexe::freadExe(&header, sizeof(header), 1, file) != 1
-		|| header.magic != MAGIC || (header.version != 1 && header.version != 2))
+		|| header.magic != MAGIC || header.version < 1 || header.version > 3)
 	{
 		selectionsFromVanilla();
 		groupsFromVanilla();
 		return count;
 	}
 	const u32 limit = header.limit;
-	const u32 lists = header.version == 2 ? LISTS_V2 : LISTS_V1;
+	const u32 lists = header.version >= 2 ? LISTS_V2 : LISTS_V1;
 	if (limit == 0 || header.payloadBytes != lists * limit * sizeof(u16))
 		return 0;
 	u16* saved = new u16[lists * limit];
-	const bool ok = selexe::readCompressed(file, saved, header.payloadBytes);
+	bool ok = selexe::readCompressed(file, saved, header.payloadBytes);
 	if (ok)
-		decode(saved, limit, header.version == 2);
+		decode(saved, limit, header.version >= 2);
 	delete[] saved;
+	//Smart-build stamps: version 3, else none (ties go to the lowest index).
+	if (ok && header.version >= 3) {
+		ok = selexe::readCompressed(file, &buildStamps, sizeof(buildStamps));
+		if (ok) {
+			memcpy(selbuild::stamps, buildStamps.stamps, sizeof(buildStamps.stamps));
+			memcpy(selbuild::lastStamp, buildStamps.lastStamp, sizeof(buildStamps.lastStamp));
+		}
+	}
 	return ok ? count : 0;
 }
 
