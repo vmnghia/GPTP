@@ -1,6 +1,6 @@
 # Smart-build (several workers build, Shift queues buildings)
 
-Status: designed 2026-10-03, not built. Branch `feature/smart-build`.
+Status: built and tested in game (2026-10-04, final build 12:59). Branch `feature/smart-build`.
 Builds on the extended selection (`2026-09-30-extended-selection-design.md`, stage 5:
 subgroups, the per-member button conditions, the select-chunk command and its length
 hooks, the SELX save chunk).
@@ -129,8 +129,10 @@ SC2-style building with several workers selected:
   `mov ecx, esi; call 0x4753A0` (toIdle: the next queued order, silently). A failed
   createUnit shows the error (0x49E530) and calls 0x475310 at 0x468125 (ESI unit, CL the
   idle order: replaces every order, so the queue is lost). Probe order 0x4E4D00: a
-  failed warp shows the error and tail-jumps to toIdle (0x4E4E5E); the give-up exit is
-  0x4E4EDB `call 0x4753A0` (ECX unit). The only uses of "Couldn't reach the building
+  failed warp shows the error and tail-jumps to toIdle (0x4E4E5E). A vanilla Probe
+  never gives up: in its move state 0x401DC0 says 0 moving, 1 stopped, 2 stopped and
+  stuck (Unmovable), and it moves again on any stop (0x4E4D98); the stub at 0x4E4D90
+  gives up on 2 (0x4E4EDB is the exit after a warp, not a give-up). The only uses of "Couldn't reach the building
   site." are the click's (0x48E50F, 0x48E665); nothing shows it once a worker is on its
   way.
 - Holding Ctrl or Alt keeps the card's hotkeys from firing (they work from typed

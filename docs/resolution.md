@@ -351,7 +351,7 @@ starfield handled (§5). Features 1 and 2 below are done.
 4. **Extended unit selection** `[BUILT]`: more than 12 selected units. Stages 1–5
    (storage, the iterator, every writer, circles, saves, the chunked select command,
    panel pages, control groups, SC2-style subgroups and command card) are built and
-   tested; smart-build is next; see `docs/superpowers/specs/2026-09-30-extended-selection-design.md`. Unlike the
+   tested; smart-build (`docs/superpowers/specs/2026-10-03-smart-build-design.md`) is built and tested too; see `docs/superpowers/specs/2026-09-30-extended-selection-design.md`. Unlike the
    view, selections are sent as network commands and recorded in replays, so this touches
    synced game state, unlike everything above.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
