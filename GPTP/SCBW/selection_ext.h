@@ -183,6 +183,11 @@ u32 pageAfterTab(u32 tab, u32 page, u32 pages);
 //The page after a click on an arrow (up: the previous page), stopping at
 //the ends.
 u32 pageAfterArrow(u32 page, u32 pages, bool up);
+//Whether page control id with these flags is under the cursor when the
+//cursor is over it (the dialog's hit test, user event 4): visible tabs and
+//arrows yes, the page number never. The game's default answer (0x418030)
+//also wants flag 0x10, which statdata.bin's buttons lack.
+bool pageControlTakesHits(u32 id, u32 flags);
 //Lays out StatData's controls in its .bin as read from disk (before the
 //game turns offsets into pointers): the wireframes, tabs and arrows get
 //their rects, vanilla's own controls move down VANILLA_CONTROLS_DROP. The

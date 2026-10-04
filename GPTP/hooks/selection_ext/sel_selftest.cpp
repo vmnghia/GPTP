@@ -229,6 +229,11 @@ void panelLayout() {
 	CHECK(pageAfterTab(3, 0, 6) == 3 && pageAfterTab(9, 2, 6) == 2);	//past the last page: no change
 	CHECK(pageAfterArrow(0, 23, true) == 0 && pageAfterArrow(0, 23, false) == 1);
 	CHECK(pageAfterArrow(22, 23, false) == 22 && pageAfterArrow(22, 23, true) == 21);
+	//Under the cursor (user event 4): visible tabs and arrows, never the
+	//page number (flag 8 is Visible; 0x400 is what statdata.bin's buttons have).
+	CHECK(pageControlTakesHits(PAGE_TAB_FIRST_ID, 0x408) && pageControlTakesHits(PAGE_DOWN_ID, 0x408));
+	CHECK(!pageControlTakesHits(PAGE_TAB_FIRST_ID, 0x400));
+	CHECK(!pageControlTakesHits(PAGE_LABEL_ID, 0x408));
 	//Ids.
 	CHECK(PAGE_TAB_FIRST_ID == 0xB1 && PAGE_UP_ID == 0xC1 && PAGE_LABEL_ID == 0xC2 && PAGE_DOWN_ID == 0xC3);
 }

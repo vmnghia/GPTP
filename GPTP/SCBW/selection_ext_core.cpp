@@ -218,6 +218,11 @@ u32 pageAfterTab(u32 tab, u32 page, u32 pages) {
 	return tab < pages ? tab : page;
 }
 
+bool pageControlTakesHits(u32 id, u32 flags) {
+	const u32 VISIBLE = 0x8;
+	return id != PAGE_LABEL_ID && (flags & VISIBLE) != 0;
+}
+
 u32 pageAfterArrow(u32 page, u32 pages, bool up) {
 	if (up)
 		return page > 0 ? page - 1 : 0;

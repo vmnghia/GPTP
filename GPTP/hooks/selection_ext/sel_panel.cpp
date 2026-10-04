@@ -243,11 +243,14 @@ void pageButtonClicked(s32 id) {
 
 //The interact proc of the tabs and arrows, called like 0x4583E0: ecx the
 //control, edx the event (+0x0C its number, 0x0E a user event; +0 the user
-//event's kind: 0 create, 2 activate). Anything else goes to the default
-//handler of the control's type, as 0x4583E0 does.
+//event's kind: 0 create, 2 activate, 4 the hit test: is it the control
+//under the cursor). Anything else goes to the default handler of the
+//control's type, as 0x4583E0 does; it answers the hit test itself too
+//(0x45845D), since the default answer needs a flag the controls lack.
 const u16 EVENT_USER = 0x0E;
 const u32 USER_CREATE = 0;
 const u32 USER_ACTIVATE = 2;
+const u32 USER_HIT_TEST = 4;
 typedef u32 (__fastcall* DialogHandler)(BinDlg* control, u8* event);
 const DialogHandler* const DEFAULT_HANDLERS = (const DialogHandler*)0x005014AC;
 
@@ -260,6 +263,8 @@ u32 __fastcall pageButtonInteract(BinDlg* control, u8* event) {
 			pageButtonClicked(control->index);
 			return 1;
 		}
+		else if (kind == USER_HIT_TEST)
+			return pageControlTakesHits(control->index, control->flags) ? 1 : 0;
 	}
 	return DEFAULT_HANDLERS[control->controlType](control, event);
 }
