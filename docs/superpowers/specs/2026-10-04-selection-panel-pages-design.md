@@ -157,11 +157,14 @@ separate step after the widening, so a replacement console can skip it:
   bar and Zerg's tube on the right, Zerg's stretched left wall, the replay
   console's left slope. Accepted (section 1).
 - **Decorative pieces (StatFluf)** paint the art at their own rects, so
-  `buildFlufTable` splits every piece at the span's edges and **grows the part
-  inside the span 24 px upward** (its bottom stays). Every raised pixel came
-  from 24 px lower, where a piece covered it, so the grown piece covers it
-  again; the extra rows it also covers repaint the same image. All vanilla
-  pieces end above y 388, so above the cut.
+  `buildFlufTable` splits every piece at the span's edges and **moves the part
+  inside the span 24 px up**, like the art it paints. Every raised pixel came
+  from 24 px lower, where a piece covered it, so the moved piece covers it
+  again. Moved, not grown: a grown piece would keep covering rows 364-387,
+  the top of the raised StatData, and paint the art over its tabs, arrow and
+  first wireframe row (as pieces over the command card once did). All
+  vanilla pieces end by y 389, above the cut (corrected after the final
+  review, 2026-10-04).
 - **Follows by itself**, since it is built from the image: the console's
   transparency mask (0x41D640), its hit test lines (0x4D11A0), and StatData's
   background (0x4C35F0). Clicks in the raised strip go to the panel.
@@ -214,7 +217,9 @@ In `selection_ext_core.cpp`, covered by `sel_selftest.cpp`:
 - 11.4 640x480 with 400 units: arrows with "1/23"; ▲ greyed; ▼ to 23/23, then
   ▼ greyed.
 - 11.5 The raised box in each race (Terran, Protoss, Zerg) and a replay:
-  no holes or stale pixels around the box, decorative pieces in place.
+  no holes or stale pixels around the box, decorative pieces in place; the
+  ▲ arrow, tabs 1 and 9 and the top wireframe row fully drawn, no flicker,
+  clickable.
 - 11.6 Click in the raised strip: nothing happens on the map; the map just
   above it still takes clicks.
 - 11.7 One unit selected: its display centred in the taller box; no tabs.

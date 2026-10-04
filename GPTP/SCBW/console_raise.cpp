@@ -36,6 +36,8 @@ u32 raisePiece(Piece piece, Span span, s32 cutRow, s32 raise, Piece out[3]) {
 	out[n].left = piece.left > span.left ? piece.left : span.left;
 	out[n].right = piece.right < span.right ? piece.right : span.right;
 	out[n].top = piece.top - raise > 0 ? piece.top - raise : 0;
+	if (piece.bottom <= cutRow)
+		out[n].bottom = piece.bottom - raise;
 	n++;
 	if (piece.right > span.right) {
 		out[n] = piece;

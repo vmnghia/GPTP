@@ -34,8 +34,12 @@ struct Piece {
 };
 
 //A decorative piece for the raised art: split at the span's edges, and the
-//part inside grown raise rows upward (top clamped at 0) if it starts above
-//cutRow. Writes up to 3 pieces to out; returns how many.
+//part inside moved raise rows up (top clamped at 0) if it starts above
+//cutRow, like the art it paints. Moved, not grown: a grown piece would
+//reach into the raised StatData and paint the art over its controls. Every
+//raised pixel came from raise rows lower, where the piece covered it, so
+//the moved piece covers it again. Writes up to 3 pieces to out; returns
+//how many.
 u32 raisePiece(Piece piece, Span span, s32 cutRow, s32 raise, Piece out[3]);
 
 } //consoleraise

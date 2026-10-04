@@ -332,7 +332,8 @@ this order:
   raised 24 px and made 24 px taller (`raiseStatData`).
 - The decorative pieces (StatFluf) paint the parts no panel covers. The
   plugin gives each race its own table (`buildFlufTable`): each vanilla piece
-  is split at the raised span's edges with the inside part grown 24 px up,
+  is split at the raised span's edges with the inside part moved 24 px up
+  (moved, not grown, so no piece reaches into the raised StatData),
   mapped like the art, and cut around the dense card.
 - The console's transparency mask (0x41D640) and the hit test lines
   (0x4D11A0) are built from the image, so they follow by themselves.

@@ -534,22 +534,23 @@ void consoleRaise() {
 	CHECK(art[6 * 6 + 2] == 10 * 6 + 3 && art[9 * 6 + 3] == 10 * 9 + 4);	//from the cut down: unchanged
 	CHECK(art[0 * 6 + 1] == 2 && art[3 * 6 + 4] == 10 * 3 + 5);			//outside the span: unchanged
 
-	//Pieces: split at the span's edges, the part inside grows up.
+	//Pieces: split at the span's edges, the part inside moves up (it must
+	//not reach into the raised StatData, which starts 24 px higher).
 	Piece out[3];
 	const Piece across = { 130, 367, 450, 388 };
 	const Span terran = SPANS[1];
 	CHECK(raisePiece(across, terran, CUT_ROW, 24, out) == 3);
 	CHECK(out[0].left == 130 && out[0].right == 143 && out[0].top == 367 && out[0].bottom == 388);
-	CHECK(out[1].left == 143 && out[1].right == 407 && out[1].top == 343 && out[1].bottom == 388);
+	CHECK(out[1].left == 143 && out[1].right == 407 && out[1].top == 343 && out[1].bottom == 364);
 	CHECK(out[2].left == 407 && out[2].right == 450 && out[2].top == 367);
 	const Piece inside = { 200, 350, 300, 380 };
-	CHECK(raisePiece(inside, terran, CUT_ROW, 24, out) == 1 && out[0].top == 326 && out[0].bottom == 380);
+	CHECK(raisePiece(inside, terran, CUT_ROW, 24, out) == 1 && out[0].top == 326 && out[0].bottom == 356);
 	const Piece outside = { 0, 293, 23, 315 };
 	CHECK(raisePiece(outside, terran, CUT_ROW, 24, out) == 1 && out[0].top == 293 && out[0].left == 0);
 	const Piece below = { 200, 430, 300, 440 };
 	CHECK(raisePiece(below, terran, CUT_ROW, 24, out) == 1 && out[0].top == 430);
 	const Piece high = { 200, 10, 300, 40 };
-	CHECK(raisePiece(high, terran, CUT_ROW, 24, out) == 1 && out[0].top == 0);	//clamped
+	CHECK(raisePiece(high, terran, CUT_ROW, 24, out) == 1 && out[0].top == 0 && out[0].bottom == 16);	//clamped
 	//Every span lies inside StatData's vanilla columns [138, 408).
 	for (u32 race = 0; race < 4; race++)
 		CHECK(SPANS[race].left >= 138 && SPANS[race].right <= 408 && SPANS[race].left < SPANS[race].right);
