@@ -204,6 +204,13 @@ void placementCellCentre(u32 tileX, u32 tileY, u32 row, u32 column, s32* x, s32*
 //The placement grid's status byte of cell (row, column) of box (0: the
 //building, 1: an addon) in BW's array at 0x6408F8: 48 bytes a box, 6 a row.
 u32 placementCellIndex(u32 box, u32 row, u32 column);
+//The building's box: 0x48D7F0 draws box b with the type at 0x640888 + 2b,
+//and the building being placed is 0x64088A (box 0 is an addon's).
+const u32 PLACEMENT_BOX_BUILDING = 1;
+//Whether an order check for a unit should read it as free: a queued (Shift)
+//command to an SCV constructing (0x21) queues behind its construction;
+//anything else is vanilla's check as is.
+bool checkAsFree(bool queued, u32 currentOrder);
 //Whether two footprints (centres and sizes in pixels) overlap.
 bool footprintsOverlap(s32 x1, s32 y1, s32 w1, s32 h1, s32 x2, s32 y2, s32 w2, s32 h2);
 //A queued build order's type, marked so the order hook sets it up when it

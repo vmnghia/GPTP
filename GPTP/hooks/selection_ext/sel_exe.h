@@ -62,6 +62,8 @@ void refundQueueSlots(CUnit* unit);							//0x466E80
 bool fillBuildSlot(CUnit* unit, u16 type);
 //Whether unit is within distance of (x, y) (0x401240).
 bool withinReach(CUnit* unit, s32 x, s32 y, u32 distance);
+//Whether unit may take order, for player (0x46DC20).
+bool orderAllowed(CUnit* unit, u32 order, u32 player);
 //Takes order out of unit's queue and frees it (0x4742D0).
 void removeQueuedOrder(CUnit* unit, COrder* order);
 //Shows stat_txt string stringId (1-based) to player's screen (0x48CF00).

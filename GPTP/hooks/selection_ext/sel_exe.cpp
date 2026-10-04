@@ -384,6 +384,21 @@ bool withinReach(CUnit* unit, s32 x, s32 y, u32 distance) {
 	return result != 0;
 }
 
+bool orderAllowed(CUnit* unit, u32 order, u32 player) {
+	static u32 result;
+	const u32 Func = 0x0046DC20;
+	__asm {
+		PUSHAD
+		PUSH player
+		MOV EBX, order
+		MOV EAX, unit
+		CALL Func
+		MOV result, EAX
+		POPAD
+	}
+	return result == 1;
+}
+
 void removeQueuedOrder(CUnit* unit, COrder* order) {
 	const u32 Func = 0x004742D0;
 	__asm {

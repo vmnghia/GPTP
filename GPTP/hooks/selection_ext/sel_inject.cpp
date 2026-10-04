@@ -793,6 +793,34 @@ void __declspec(naked) placeSendStub() {
 	}
 }
 
+//0x4562BF in the right-click receive (0x4560D0): its call of OrderAllowed
+//(EAX = unit, BX = order, the player pushed; ret 4). The command's queued
+//flag is the receive's argument at [EBP+0x18]. A queued command to an SCV
+//constructing is checked as if it were free (it queues behind).
+void __declspec(naked) rightClickOrderAllowedStub() {
+	static CUnit* unit;
+	static u32 order;
+	static u32 player;
+	static u32 queued;
+	static u32 result;
+	__asm {
+		MOV unit, EAX
+		MOVZX EAX, BX
+		MOV order, EAX
+		MOV EAX, [ESP+4]
+		MOV player, EAX
+		MOVZX EAX, BYTE PTR [EBP+0x18]
+		MOV queued, EAX
+		PUSHAD
+	}
+	result = selbuild::orderAllowedForCommand(unit, order, player, queued);
+	__asm {
+		POPAD
+		MOV EAX, result
+		RETN 4
+	}
+}
+
 //0x48DE07 (each frame while placing): vanilla's placement check 0x48DCE0,
 //whose EAX goes to [0x640958]; a queued site this placement may not
 //overlap gives code 4, so the click is refused before it is sent.
@@ -968,6 +996,7 @@ void injectSmartBuildHooks() {
 	jmpPatch(placementStillValidWrapper,	0x0048DDA0, 2);
 	callPatch(finishPlacementStub,			0x0048E594, 0);
 	callPatch(placementResultStub,			0x0048DE07, 0);
+	callPatch(rightClickOrderAllowedStub,	0x004562BF, 0);
 	//Commands queue behind a construction: vanilla's return-to-idle order,
 	//queued when an SCV starts constructing with an empty queue, is gone
 	//(with the queue empty BW goes idle the same way).

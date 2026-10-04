@@ -415,6 +415,10 @@ void queuedSites() {
 	CHECK(cx == 400 && cy == 688);	//row 1, column 2: tile (12, 21)
 	CHECK(placementCellIndex(0, 0, 0) == 0 && placementCellIndex(0, 1, 2) == 8);
 	CHECK(placementCellIndex(1, 0, 0) == 48 && placementCellIndex(1, 2, 3) == 63);
+	CHECK(placementCellIndex(PLACEMENT_BOX_BUILDING, 0, 0) == 48);	//the building is box 1
+	CHECK(checkAsFree(true, 0x21));		//Shift-command to a constructing SCV
+	CHECK(!checkAsFree(false, 0x21));	//a plain one: vanilla (ignored)
+	CHECK(!checkAsFree(true, 0x06));	//not constructing: vanilla
 	//A depot cell inside a queued depot's footprint is red; one beside it isn't.
 	placementCellCentre(10, 20, 0, 0, &cx, &cy);
 	CHECK(footprintsOverlap(cx, cy, 32, 32, 352, 672, 96, 64));

@@ -456,6 +456,15 @@ u8* sendAsQueued(const u8* cmd) {
 	return queuedCommand;
 }
 
+u32 orderAllowedForCommand(CUnit* unit, u32 order, u32 player, u32 queued) {
+	const u8 current = unit->mainOrderId;
+	if (checkAsFree(queued != 0, current))
+		unit->mainOrderId = units_dat::ReturnToIdleOrder[unit->id];
+	const bool allowed = selexe::orderAllowed(unit, order, player);
+	unit->mainOrderId = current;
+	return allowed ? 1 : 0;
+}
+
 u32 placementResult(u32 code) {
 	const u16 type = *PLACING_TYPE;
 	if (type >= UNIT_TYPES)
@@ -474,7 +483,7 @@ u32 placementResult(u32 code) {
 			s32 cx, cy;
 			placementCellCentre(*PLACING_TILE_X, *PLACING_TILE_Y, row, column, &cx, &cy);
 			if (areaBlockedByQueued(*LOCAL_NATION_ID, cx, cy, 32, 32, sequence))
-				PLACEMENT_CELLS[placementCellIndex(0, row, column)] = 1;
+				PLACEMENT_CELLS[placementCellIndex(PLACEMENT_BOX_BUILDING, row, column)] = 1;
 		}
 	if (code != 0)
 		return code;	//vanilla's own reason first

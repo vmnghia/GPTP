@@ -361,6 +361,10 @@ u32 placementCellIndex(u32 box, u32 row, u32 column) {
 	return box * 48 + row * 6 + column;
 }
 
+bool checkAsFree(bool queued, u32 currentOrder) {
+	return queued && currentOrder == 0x21;	//ConstructingBuilding
+}
+
 bool footprintsOverlap(s32 x1, s32 y1, s32 w1, s32 h1, s32 x2, s32 y2, s32 w2, s32 h2) {
 	const s32 left1 = x1 - w1 / 2, top1 = y1 - h1 / 2;
 	const s32 left2 = x2 - w2 / 2, top2 = y2 - h2 / 2;

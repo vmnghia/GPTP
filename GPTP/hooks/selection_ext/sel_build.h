@@ -48,6 +48,11 @@ u8* sendAsQueued(const u8* cmd);
 //code, or 4 ("You can't build there.") over a queued site this placement may
 //not overlap.
 u32 placementResult(u32 code);
+//The right-click receive's order check (0x46DC20 at 0x4562BF, synced): a
+//queued command to an SCV constructing is checked as if it were free, so it
+//queues behind the construction; anything else is vanilla's check.
+//Returns 1 or 0 (the naked stub uses it as is).
+u32 orderAllowedForCommand(CUnit* unit, u32 order, u32 player, u32 queued);
 //At the end of the placement click (0x48E4E0, before the send): whether
 //placing goes on instead of ending (a Shift-queued build).
 bool keepsPlacing();

@@ -13,6 +13,7 @@ import sys
 ALLOWED = {
     'selectChunkDispatch': ('ebp+8', 'ebp-4'),   # the executor's bytes left / command size
     'healthBarUnitStub': ('ebp+8',),             # 0x4D6010's sprite argument
+    'rightClickOrderAllowedStub': ('ebp+18',),   # 0x4560D0's queued-command flag (read only)
 }
 
 def naked(name):
