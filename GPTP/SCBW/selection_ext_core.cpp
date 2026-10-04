@@ -126,9 +126,54 @@ u8 oldestRingSlot(const u16* stamps) {
 }
 
 u32 pageSizeFor(u32 dialogWidth, u32 wireframeControls) {
-	const u32 columns = dialogWidth > 90 ? (dialogWidth - 90) / 36 + 1 : 1;
-	const u32 size = 2 * columns;
+	const s32 room = (s32)dialogWidth - GRID_LEFT - GRID_RIGHT_MARGIN - CELL_WIDTH;
+	const u32 columns = room >= 0 ? room / CELL_WIDTH + 1 : 1;
+	const u32 size = GRID_ROWS * columns;
 	return size < wireframeControls ? size : wireframeControls;
+}
+
+namespace {
+
+PanelRect rectAt(s32 left, s32 top, s32 width, s32 height) {
+	PanelRect r;
+	r.left = (s16)left;
+	r.top = (s16)top;
+	r.right = (s16)(left + width - 1);
+	r.bottom = (s16)(top + height - 1);
+	return r;
+}
+
+//Row r's top in the tab column, from the grid's top: round(102r / 8).
+s32 tabEdge(u32 r) {
+	const s32 height = GRID_ROWS * CELL_HEIGHT;
+	return (2 * height * (s32)r + (s32)TAB_ROWS) / (2 * (s32)TAB_ROWS);
+}
+
+} //unnamed namespace
+
+PanelRect wireframeRect(u32 k) {
+	return rectAt(GRID_LEFT + CELL_WIDTH * (s32)(k / GRID_ROWS),
+	              GRID_TOP + CELL_HEIGHT * (s32)(k % GRID_ROWS), CELL_WIDTH, CELL_HEIGHT);
+}
+
+PanelRect pageTabRect(u32 tab) {
+	const u32 column = tab / TAB_ROWS, row = tab % TAB_ROWS;
+	return rectAt(TABS_LEFT + TAB_WIDTH * (s32)column, GRID_TOP + tabEdge(row),
+	              TAB_WIDTH, tabEdge(row + 1) - tabEdge(row));
+}
+
+PanelRect pageUpRect() {
+	return rectAt(TABS_LEFT, GRID_TOP, 2 * TAB_WIDTH, ARROW_HEIGHT);
+}
+
+PanelRect pageLabelRect() {
+	const s32 height = GRID_ROWS * CELL_HEIGHT;
+	return rectAt(TABS_LEFT, GRID_TOP + ARROW_HEIGHT, 2 * TAB_WIDTH, height - 2 * ARROW_HEIGHT);
+}
+
+PanelRect pageDownRect() {
+	const s32 height = GRID_ROWS * CELL_HEIGHT;
+	return rectAt(TABS_LEFT, GRID_TOP + height - ARROW_HEIGHT, 2 * TAB_WIDTH, ARROW_HEIGHT);
 }
 
 bool wireframesMissing(u32 dialogWidth, u32 wireframeControls) {
@@ -154,6 +199,56 @@ u32 pageAfterKey(u16 key, bool ctrlHeld, bool chatOpen, u32 page, u32 pages) {
 	if (key == 0x22 && page + 1 < pages)
 		return page + 1;
 	return page;
+}
+
+PageControls pageControlsFor(u32 pages) {
+	if (pages <= 1)
+		return PAGE_CONTROLS_NONE;
+	return pages <= PAGE_TABS ? PAGE_CONTROLS_TABS : PAGE_CONTROLS_ARROWS;
+}
+
+u32 pageAfterTab(u32 tab, u32 page, u32 pages) {
+	return tab < pages ? tab : page;
+}
+
+u32 pageAfterArrow(u32 page, u32 pages, bool up) {
+	if (up)
+		return page > 0 ? page - 1 : 0;
+	return page + 1 < pages ? page + 1 : page;
+}
+
+void layOutStatDataBin(u8* base) {
+	u32 offset = *(const u32*)(base + 0x42);
+	for (u32 guard = 0; offset != 0 && guard < 1000; guard++) {
+		u8* const entry = base + offset;
+		const s32 id = *(const s16*)(entry + 0x20);
+		s16* const rect = (s16*)(entry + 4);
+		PanelRect r;
+		bool placed = true;
+		if (id >= (s32)WIREFRAME_FIRST_ID && id < (s32)PAGE_TAB_FIRST_ID)
+			r = wireframeRect(id - WIREFRAME_FIRST_ID);
+		else if (id >= (s32)PAGE_TAB_FIRST_ID && id < (s32)PAGE_UP_ID)
+			r = pageTabRect(id - PAGE_TAB_FIRST_ID);
+		else if (id == (s32)PAGE_UP_ID)
+			r = pageUpRect();
+		else if (id == (s32)PAGE_LABEL_ID)
+			r = pageLabelRect();
+		else if (id == (s32)PAGE_DOWN_ID)
+			r = pageDownRect();
+		else
+			placed = false;
+		if (placed) {
+			rect[0] = r.left;
+			rect[1] = r.top;
+			rect[2] = r.right;
+			rect[3] = r.bottom;
+		}
+		else {
+			rect[1] = (s16)(rect[1] + VANILLA_CONTROLS_DROP);
+			rect[3] = (s16)(rect[3] + VANILLA_CONTROLS_DROP);
+		}
+		offset = *(const u32*)entry;
+	}
 }
 
 int newestRingGroupWith(const u16 (*ring)[SEL_MAX], const u16* stamps, u16 tag) {

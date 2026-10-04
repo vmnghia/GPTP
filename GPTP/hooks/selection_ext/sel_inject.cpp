@@ -968,8 +968,8 @@ void injectSelectionPanelHooks() {
 	//USER_CREATE: vanilla's 44 entries, then the wireframe handler.
 	memoryPatch(0x004584C3, selpanel::interactTableBytes());
 	memoryPatch(0x004584C8, (u32)selpanel::interactTable());
-	//Tooltips for every wireframe id (a sign-extended imm8, so at most 0x7F).
-	memoryPatch(0x00457D7E, (u8)(selext::WIREFRAME_FIRST_ID + selext::WIREFRAME_MAX - 1));
+	//Tooltips: replaced by wireframeTooltipStub in Task 5 (ids past 0x7F).
+	memoryPatch(0x00457D7E, (u8)0x7F);
 	jmpPatch(panelFillWrapper,		0x00425960, 6);
 	jmpPatch(panelChangedWrapper,	0x00424660, 2);
 	jmpPatch(panelClickWrapper,		0x00458220, 1);

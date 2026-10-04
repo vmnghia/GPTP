@@ -109,14 +109,51 @@ u32 commandLength(const u8* cmd);
 //higher slot; 0xFF when every stamp is 0xFFFF (vanilla 0x496560).
 u8 oldestRingSlot(const u16* stamps);
 
-//-------- Selection panel pages (stage 3) --------//
+//-------- Selection panel pages (stage 3; taller box 2026-10-04) --------//
+//Design: docs/superpowers/specs/2026-10-04-selection-panel-pages-design.md
 
-//Wireframe controls of statdata.bin: ids 0x21 onward, 2 rows, columns 36 px
-//apart from x 30 (make_statdata_wide.py writes WIREFRAME_MAX of them).
+//statdata.bin's controls (make_statdata_wide.py writes them): wireframes
+//from id 0x21, then the page tabs, then the arrows and the page number.
 const u32 WIREFRAME_FIRST_ID = 0x21;
-const u32 WIREFRAME_MAX = 90;
-//Wireframes per page: the columns that fit a StatData dialog this wide (the
-//vanilla 270 fits 6), two rows, at most the controls present.
+const u32 WIREFRAME_MAX = 144;
+const u32 PAGE_TABS = 16;
+const u32 PAGE_TAB_FIRST_ID = WIREFRAME_FIRST_ID + WIREFRAME_MAX;	//0xB1
+const u32 PAGE_UP_ID = PAGE_TAB_FIRST_ID + PAGE_TABS;				//0xC1
+const u32 PAGE_LABEL_ID = PAGE_UP_ID + 1;
+const u32 PAGE_DOWN_ID = PAGE_UP_ID + 2;
+const u32 PANEL_LAST_ID = PAGE_DOWN_ID;
+//How much higher and taller the selection box is than vanilla's.
+const s32 PANEL_RAISE = 24;
+//Vanilla's own StatData controls move down this much: centred in the box.
+const s32 VANILLA_CONTROLS_DROP = PANEL_RAISE / 2;
+//The layout, relative to the raised StatData root.
+const s32 GRID_LEFT = 58;
+const s32 GRID_TOP = 8;
+const s32 CELL_WIDTH = 33;
+const s32 CELL_HEIGHT = 34;
+const u32 GRID_ROWS = 3;
+const s32 GRID_RIGHT_MARGIN = 10;
+const s32 TABS_LEFT = 14;
+const s32 TAB_WIDTH = 20;
+const u32 TAB_ROWS = 8;
+const s32 ARROW_HEIGHT = 15;
+
+//A control's rect as a .bin stores it: inclusive, relative to the root.
+struct PanelRect {
+	s16 left, top, right, bottom;
+};
+//Wireframe k of a page: column-major, GRID_ROWS rows, edge to edge.
+PanelRect wireframeRect(u32 k);
+//Page tab 0-15: 2 columns of TAB_ROWS, column-major, together as tall as
+//the grid.
+PanelRect pageTabRect(u32 tab);
+//The arrows (level with the grid's top and bottom) and the page number
+//between them, shown instead of the tabs past PAGE_TABS pages.
+PanelRect pageUpRect();
+PanelRect pageLabelRect();
+PanelRect pageDownRect();
+//Wireframes per page: GRID_ROWS x the columns that fit a StatData dialog
+//this wide, at most the controls present.
 u32 pageSizeFor(u32 dialogWidth, u32 wireframeControls);
 //Whether statdata.bin has fewer wireframe controls than a dialog this wide
 //fits (vanilla's 12 instead of the wide file's WIREFRAME_MAX).
@@ -131,6 +168,20 @@ extern u32 selectionPage;
 //stopping at the ends; nothing else does, nor anything while chat is open.
 //(Plain PgUp/PgDn scroll the map diagonally in vanilla.)
 u32 pageAfterKey(u16 key, bool ctrlHeld, bool chatOpen, u32 page, u32 pages);
+//Which page controls show for this many pages: none for one, tabs up to
+//PAGE_TABS, arrows past that.
+enum PageControls { PAGE_CONTROLS_NONE, PAGE_CONTROLS_TABS, PAGE_CONTROLS_ARROWS };
+PageControls pageControlsFor(u32 pages);
+//The page after a click on tab (unchanged if the tab is past the last page).
+u32 pageAfterTab(u32 tab, u32 page, u32 pages);
+//The page after a click on an arrow (up: the previous page), stopping at
+//the ends.
+u32 pageAfterArrow(u32 page, u32 pages, bool up);
+//Lays out StatData's controls in its .bin as read from disk (before the
+//game turns offsets into pointers): the wireframes, tabs and arrows get
+//their rects, vanilla's own controls move down VANILLA_CONTROLS_DROP. The
+//root is the console code's (resolution_hud.cpp).
+void layOutStatDataBin(u8* base);
 
 //-------- Control groups (stage 4) --------//
 

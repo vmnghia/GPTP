@@ -171,22 +171,87 @@ void freeLists() {
 }
 
 void pages() {
-	CHECK(pageSizeFor(270, 12) == 12);		//vanilla
-	CHECK(pageSizeFor(270, WIREFRAME_MAX) == 12);
-	CHECK(pageSizeFor(910, WIREFRAME_MAX) == 46);	//23 columns
-	CHECK(pageSizeFor(1678, WIREFRAME_MAX) == 90);	//2048 wide
+	CHECK(pageSizeFor(270, WIREFRAME_MAX) == 18);	//640 wide: 6 columns
+	CHECK(pageSizeFor(910, WIREFRAME_MAX) == 75);	//1280: 25 columns
+	CHECK(pageSizeFor(1550, WIREFRAME_MAX) == 132);	//1920: 44 columns
+	CHECK(pageSizeFor(1678, WIREFRAME_MAX) == 144);	//2048: 48 columns
 	CHECK(pageSizeFor(4000, WIREFRAME_MAX) == WIREFRAME_MAX);
-	CHECK(pageSizeFor(910, 12) == 12);		//statdata.bin not repacked
-	CHECK(pageSizeFor(60, 12) == 2);		//never below one column
-	CHECK(pageCountFor(0, 12) == 1 && pageCountFor(12, 12) == 1);
-	CHECK(pageCountFor(13, 12) == 2 && pageCountFor(400, 46) == 9);
-	CHECK(clampPage(5, 13, 12) == 1 && clampPage(1, 13, 12) == 1);
-	CHECK(clampPage(3, 0, 12) == 0);
+	CHECK(pageSizeFor(910, 12) == 12);		//vanilla statdata.bin
+	CHECK(pageSizeFor(60, WIREFRAME_MAX) == 3);	//never below one column
+	CHECK(pageCountFor(0, 75) == 1 && pageCountFor(75, 75) == 1);
+	CHECK(pageCountFor(76, 75) == 2 && pageCountFor(400, 75) == 6 && pageCountFor(400, 18) == 23);
+	CHECK(clampPage(5, 76, 75) == 1 && clampPage(1, 76, 75) == 1);
+	CHECK(clampPage(5, 75, 75) == 0);		//units died: back to the last page
+	CHECK(clampPage(3, 0, 75) == 0);
 	//Fewer wireframe controls than the panel fits: statdata.bin not repacked.
 	CHECK(wireframesMissing(910, 12));
+	CHECK(wireframesMissing(270, 12));		//even at 640: 18 fit now
+	CHECK(!wireframesMissing(270, 18));
 	CHECK(!wireframesMissing(910, WIREFRAME_MAX));
-	CHECK(!wireframesMissing(270, 12));		//vanilla width fits 12
-	CHECK(!wireframesMissing(4000, WIREFRAME_MAX));	//wider than the controls go
+	CHECK(!wireframesMissing(4000, WIREFRAME_MAX));
+}
+
+bool rectIs(PanelRect r, s16 left, s16 top, s16 right, s16 bottom) {
+	return r.left == left && r.top == top && r.right == right && r.bottom == bottom;
+}
+
+void panelLayout() {
+	//Wireframes: column-major, 3 rows, 33 x 34, edge to edge.
+	CHECK(rectIs(wireframeRect(0), 58, 8, 90, 41));
+	CHECK(rectIs(wireframeRect(2), 58, 76, 90, 109));
+	CHECK(rectIs(wireframeRect(4), 91, 42, 123, 75));
+	//Tabs: 2 x 8, column-major; rows E(r) = round(102r/8) from y 8.
+	CHECK(rectIs(pageTabRect(0), 14, 8, 33, 20));		//13 tall
+	CHECK(rectIs(pageTabRect(3), 14, 46, 33, 58));		//E 38-51
+	CHECK(rectIs(pageTabRect(7), 14, 97, 33, 109));		//E 89-102: level with the grid's bottom
+	CHECK(rectIs(pageTabRect(8), 34, 8, 53, 20));
+	CHECK(rectIs(pageTabRect(15), 34, 97, 53, 109));
+	u32 total = 0;
+	for (u32 r = 0; r < TAB_ROWS; r++)
+		total += pageTabRect(r).bottom - pageTabRect(r).top + 1;
+	CHECK(total == GRID_ROWS * CELL_HEIGHT);
+	//Arrows level with the grid's top and bottom, the number between.
+	CHECK(rectIs(pageUpRect(), 14, 8, 53, 22));
+	CHECK(rectIs(pageLabelRect(), 14, 23, 53, 94));
+	CHECK(rectIs(pageDownRect(), 14, 95, 53, 109));
+	//Which controls show.
+	CHECK(pageControlsFor(0) == PAGE_CONTROLS_NONE && pageControlsFor(1) == PAGE_CONTROLS_NONE);
+	CHECK(pageControlsFor(2) == PAGE_CONTROLS_TABS && pageControlsFor(16) == PAGE_CONTROLS_TABS);
+	CHECK(pageControlsFor(17) == PAGE_CONTROLS_ARROWS);
+	//Clicks.
+	CHECK(pageAfterTab(3, 0, 6) == 3 && pageAfterTab(9, 2, 6) == 2);	//past the last page: no change
+	CHECK(pageAfterArrow(0, 23, true) == 0 && pageAfterArrow(0, 23, false) == 1);
+	CHECK(pageAfterArrow(22, 23, false) == 22 && pageAfterArrow(22, 23, true) == 21);
+	//Ids.
+	CHECK(PAGE_TAB_FIRST_ID == 0xB1 && PAGE_UP_ID == 0xC1 && PAGE_LABEL_ID == 0xC2 && PAGE_DOWN_ID == 0xC3);
+}
+
+//A .bin as read from disk: root (0x56 bytes) then children linked by file
+//offsets (root +0x42 to the first, each child +0 to the next).
+void statDataBin() {
+	static u8 bin[0x56 * 6];
+	memset(bin, 0, sizeof(bin));
+	const s16 ids[5] = { 1, (s16)(WIREFRAME_FIRST_ID + 4), (s16)(PAGE_TAB_FIRST_ID + 9),
+	                     (s16)PAGE_DOWN_ID, -5 };
+	*(u32*)(bin + 0x42) = 0x56;
+	for (u32 i = 0; i < 5; i++) {
+		u8* entry = bin + 0x56 * (i + 1);
+		*(u32*)entry = i < 4 ? 0x56 * (i + 2) : 0;
+		s16* rect = (s16*)(entry + 4);
+		rect[0] = 30; rect[1] = 10; rect[2] = 60; rect[3] = 40;
+		*(s16*)(entry + 0x20) = ids[i];
+	}
+	layOutStatDataBin(bin);
+	const s16* vanilla = (const s16*)(bin + 0x56 + 4);
+	CHECK(vanilla[0] == 30 && vanilla[1] == 22 && vanilla[2] == 60 && vanilla[3] == 52);	//down 12
+	const s16* wire = (const s16*)(bin + 0x56 * 2 + 4);
+	CHECK(wire[0] == 91 && wire[1] == 42 && wire[2] == 123 && wire[3] == 75);
+	const s16* tab = (const s16*)(bin + 0x56 * 3 + 4);
+	CHECK(tab[0] == 34 && tab[1] == 21 && tab[2] == 53 && tab[3] == 33);	//tab 9: column 1, row 1
+	const s16* down = (const s16*)(bin + 0x56 * 4 + 4);
+	CHECK(down[0] == 14 && down[1] == 95 && down[2] == 53 && down[3] == 109);
+	const s16* negative = (const s16*)(bin + 0x56 * 5 + 4);
+	CHECK(negative[1] == 22);		//vanilla controls with negative ids move too
 }
 
 void pageKeys() {
@@ -462,6 +527,8 @@ u32 selfTest(u32* firstFailedLine) {
 	ring();
 	freeLists();
 	pages();
+	panelLayout();
+	statDataBin();
 	pageKeys();
 	ringSearch();
 	subgroupKeys();
