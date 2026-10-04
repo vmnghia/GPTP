@@ -127,6 +127,20 @@ void printSettings() {
   scbw::printText(line);
 }
 
+void useVanillaSize() {
+  res_w = 640;
+  res_h = 480;
+  res_wm1 = 639;
+  res_hm1 = 479;
+  res_wHalf = 320;
+  res_hHalf = 240;
+  res_dx = 0;
+  res_dy = 0;
+  res_w64 = 704;
+  res_menuX = 0;
+  res_menuY = 0;
+}
+
 //Computes every derived size and allocates the enlarged buffers. Must run
 //before the game creates its screen, i.e. at plugin load.
 bool init() {

@@ -760,13 +760,22 @@ void patchScreenConstants() {
 namespace hooks {
 
 void injectResolutionHooks() {
-  if (!resolution::enabled())
+  if (RESOLUTION_HACK_ENABLED == 0)
     return;
+  //640x480: no larger screen, but the console's layout still runs (the
+  //selection panel's taller box and page controls need it).
+  if (!resolution::enabled()) {
+    resolution::useVanillaSize();
+    resolution::injectConsoleLayoutHooks();
+    return;
+  }
 
   if (!resolution::init()) {
     resolution::active = false;
     MessageBox(NULL, "Could not allocate the larger screen buffers; running at 640x480.",
                "StarCraft: Manifold", MB_OK | MB_ICONWARNING);
+    resolution::useVanillaSize();
+    resolution::injectConsoleLayoutHooks();
     return;
   }
 

@@ -609,7 +609,7 @@ void debugReport() {
 #endif
 }
 
-void injectHudHooks() {
+void injectConsoleLayoutHooks() {
   consoleRightX = res_dx;
   consoleGap = consoleRightX - consoleLeftX;
   consoleY = res_dy;
@@ -618,6 +618,14 @@ void injectHudHooks() {
   jmpPatch(relocateBin_4194E0, 0x004194E0, 1);
   callPatch(consoleSetup_4C3BB2, 0x004C3BB2);
   callPatch(consoleImageLoaded_4C39F5, 0x004C39F5);
+
+  //The decorative console pieces, per race.
+  for (u32 race = 0; race < 4; ++race)
+    buildFlufTable(race);
+}
+
+void injectHudHooks() {
+  injectConsoleLayoutHooks();
 
   //The minimap rect: vertical offset in its constants, horizontal in a stub.
   memoryPatch(0x004A4539 + 2, (s32)(0x13B + consoleY));   //add edx, 0x13B
@@ -650,10 +658,6 @@ void injectHudHooks() {
   memoryPatch(0x0048D090 + 7, (s16)(0x26C + resourcesX));
   jmpPatch(markMessageLine_48CB80, 0x0048CB80);
   jmpPatch(markErrorLine_4B22DB, 0x004B22DB, 2);
-
-  //The decorative console pieces, per race.
-  for (u32 race = 0; race < 4; ++race)
-    buildFlufTable(race);
 
   //The dialog blitters are compiled once at startup with SCodeCompile
   //(0x00417D70, 0x00417DA3) for at most 0xA0 iterations of 4 pixels, i.e. 640

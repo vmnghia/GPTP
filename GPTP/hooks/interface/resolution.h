@@ -122,6 +122,9 @@ void printSettings();
 //Internal to the resolution module (resolution*.cpp).
 extern bool active;
 bool init();
+//At 640x480 (or when init() fails): the sizes at their vanilla values, for
+//the console layout hooks, which run at every size.
+void useVanillaSize();
 void markDirty(s32 left, s32 top, s32 right, s32 bottom);
 bool isRectDirty(s32 left, s32 top, s32 right, s32 bottom);
 void buildHudMask(const u8* src);
@@ -131,6 +134,10 @@ void clearSurface();
 void injectTerrainHooks();
 void injectFogHooks();
 void injectHudHooks();
+//The console's layout (panel placement, its art, the decorative pieces), the
+//part of injectHudHooks that also runs at 640x480: the selection panel's
+//taller box and page controls need it at every size.
+void injectConsoleLayoutHooks();
 void debugReport();
 
 //Cursor calls routed through StarCraft.exe's own import slots, so a
