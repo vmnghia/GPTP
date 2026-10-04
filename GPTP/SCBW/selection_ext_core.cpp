@@ -251,6 +251,71 @@ void layOutStatDataBin(u8* base) {
 	}
 }
 
+bool decodeGrpFrame(const u8* grp, u32 frame, u8* out) {
+	if (frame >= *(const u16*)grp)
+		return false;
+	const u8* const entry = grp + 6 + 8 * frame;
+	const u32 fx = entry[0], fy = entry[1], fw = entry[2], fh = entry[3];
+	const u8* const data = grp + *(const u32*)(entry + 4);
+	for (u32 i = 0; i < FRAME_WIDTH * FRAME_HEIGHT; i++)
+		out[i] = 0;
+	for (u32 row = 0; row < fh; row++) {
+		const u8* p = data + *(const u16*)(data + 2 * row);
+		u32 col = 0;
+		while (col < fw) {
+			const u8 code = *p++;
+			u32 count;
+			if (code & 0x80) {
+				col += code & 0x7F;
+				continue;
+			}
+			if (code & 0x40) {
+				count = code & 0x3F;
+				const u8 value = *p++;
+				for (u32 i = 0; i < count; i++, col++)
+					if (fx + col < FRAME_WIDTH && fy + row < FRAME_HEIGHT)
+						out[(fy + row) * FRAME_WIDTH + fx + col] = value;
+				continue;
+			}
+			count = code;
+			for (u32 i = 0; i < count; i++, col++, p++)
+				if (fx + col < FRAME_WIDTH && fy + row < FRAME_HEIGHT)
+					out[(fy + row) * FRAME_WIDTH + fx + col] = *p;
+		}
+	}
+	return true;
+}
+
+u32 nineSliceSource(u32 x, u32 length, u32 size) {
+	const u32 corner = 4;
+	if (x < corner)
+		return x;
+	if (x >= length - corner)
+		return size - (length - x);
+	return corner + (x - corner) % (size - 2 * corner);
+}
+
+void drawNineSlice(const u8* frame, u8* dst, u32 pitch, u32 dstWidth, u32 dstHeight,
+                   s32 x, s32 y, u32 width, u32 height, const u8* remap) {
+	for (u32 row = 0; row < height; row++) {
+		const s32 ty = y + (s32)row;
+		if (ty < 0 || ty >= (s32)dstHeight)
+			continue;
+		const u32 sourceRow = nineSliceSource(row, height, FRAME_HEIGHT);
+		for (u32 col = 0; col < width; col++) {
+			const s32 tx = x + (s32)col;
+			if (tx < 0 || tx >= (s32)dstWidth)
+				continue;
+			u8 value = frame[sourceRow * FRAME_WIDTH + nineSliceSource(col, width, FRAME_WIDTH)];
+			if (value == 0)
+				continue;
+			if (remap != NULL)
+				value = remap[value];
+			dst[ty * pitch + tx] = value;
+		}
+	}
+}
+
 int newestRingGroupWith(const u16 (*ring)[SEL_MAX], const u16* stamps, u16 tag) {
 	int best = -1;
 	for (int k = 7; k >= 0; k--) {

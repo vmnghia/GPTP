@@ -552,6 +552,70 @@ void consoleRaise() {
 		CHECK(SPANS[race].left >= 138 && SPANS[race].right <= 408 && SPANS[race].left < SPANS[race].right);
 }
 
+void frames() {
+	//The stretch: 4 px corners as they are, the middle repeated.
+	CHECK(nineSliceSource(0, 20, 33) == 0 && nineSliceSource(3, 20, 33) == 3);
+	CHECK(nineSliceSource(4, 20, 33) == 4 && nineSliceSource(15, 20, 33) == 15);
+	CHECK(nineSliceSource(16, 20, 33) == 29 && nineSliceSource(19, 20, 33) == 32);
+	for (u32 x = 0; x < 33; x++)
+		CHECK(nineSliceSource(x, 33, 33) == x);		//full size: as it is
+	CHECK(nineSliceSource(40, 45, 33) == 4 + 36 % 25);
+
+	//A GRP with 2 frames of 33 x 34; frame 1 is all 7 but a transparent
+	//first pixel and a 4-pixel repeat of 9 on row 1.
+	static u8 grp[6 + 16 + 34 * 2 + 34 * 8];
+	memset(grp, 0, sizeof(grp));
+	*(u16*)grp = 2; *(u16*)(grp + 2) = 33; *(u16*)(grp + 4) = 34;
+	const u32 data = 6 + 16;
+	u8* f = grp + 6 + 8;
+	f[0] = 0; f[1] = 0; f[2] = 33; f[3] = 34;
+	*(u32*)(f + 4) = data;
+	u8* line = grp + data + 34 * 2;
+	for (u32 row = 0; row < 34; row++) {
+		*(u16*)(grp + data + 2 * row) = (u16)(line - (grp + data));
+		if (row == 0) {
+			*line++ = 0x81;					//skip 1
+			*line++ = 0x40 | 32; *line++ = 7;	//32 x 7
+		}
+		else if (row == 1) {
+			*line++ = 0x40 | 4; *line++ = 9;	//4 x 9
+			*line++ = 0x40 | 29; *line++ = 7;
+		}
+		else {
+			*line++ = 0x40 | 33; *line++ = 7;
+		}
+	}
+	static u8 decoded[33 * 34];
+	CHECK(decodeGrpFrame(grp, 1, decoded));
+	CHECK(decoded[0] == 0 && decoded[1] == 7 && decoded[32] == 7);
+	CHECK(decoded[33] == 9 && decoded[36] == 9 && decoded[37] == 7);
+	CHECK(decoded[33 * 33 + 32] == 7);
+	CHECK(!decodeGrpFrame(grp, 2, decoded));		//no such frame
+
+	//Drawing: a frame whose pixels name their source (row band x 3 + column band).
+	static u8 frame[33 * 34];
+	for (u32 r = 0; r < 34; r++)
+		for (u32 c = 0; c < 33; c++)
+			frame[r * 33 + c] = (u8)(10 * (r < 4 ? 1 : r >= 30 ? 3 : 2) + (c < 4 ? 1 : c >= 29 ? 3 : 2));
+	frame[0] = 0;							//a transparent corner pixel
+	static u8 dst[24 * 16];
+	memset(dst, 0xEE, sizeof(dst));
+	drawNineSlice(frame, dst, 24, 24, 16, 1, 1, 20, 13, NULL);
+	CHECK(dst[1 * 24 + 1] == 0xEE);			//transparent: untouched
+	CHECK(dst[1 * 24 + 2] == 11);			//top-left corner band
+	CHECK(dst[7 * 24 + 10] == 22);			//middle
+	CHECK(dst[13 * 24 + 20] == 33);			//bottom-right corner
+	CHECK(dst[0] == 0xEE && dst[14 * 24 + 21] == 0xEE);	//outside: untouched
+	//Remap and clipping at the edges.
+	static u8 remap[256];
+	for (u32 i = 0; i < 256; i++)
+		remap[i] = (u8)i;
+	remap[22] = 5;
+	drawNineSlice(frame, dst, 24, 24, 16, -2, 10, 20, 13, remap);
+	CHECK(dst[15 * 24 + 0] != 0xEE);		//drawn up to the bottom edge
+	CHECK(dst[15 * 24 + 6] == 5);			//remapped middle (row 5, column 8)
+}
+
 u32 selfTest(u32* firstFailedLine) {
 	failures = 0;
 	firstLine = 0;
@@ -566,6 +630,7 @@ u32 selfTest(u32* firstFailedLine) {
 	panelLayout();
 	statDataBin();
 	consoleRaise();
+	frames();
 	pageKeys();
 	ringSearch();
 	subgroupKeys();

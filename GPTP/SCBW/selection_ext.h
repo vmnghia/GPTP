@@ -182,6 +182,21 @@ u32 pageAfterArrow(u32 page, u32 pages, bool up);
 //their rects, vanilla's own controls move down VANILLA_CONTROLS_DROP. The
 //root is the console code's (resolution_hud.cpp).
 void layOutStatDataBin(u8* base);
+//The wireframe's frame (frame 0x0D of the race's cmdbtns.grp, which the
+//game keeps at 0x68C1C0): tabs and arrows draw it stretched.
+const u32 FRAME_WIDTH = 33;
+const u32 FRAME_HEIGHT = 34;
+//Decodes frame (BW's GRP run-length format) into out, FRAME_WIDTH x
+//FRAME_HEIGHT, 0 where transparent. False if the GRP has no such frame.
+bool decodeGrpFrame(const u8* grp, u32 frame, u8* out);
+//Which column (or row) of a size-wide frame shows at x of a stretch length
+//long: the 4 px corners as they are, the middle repeated.
+u32 nineSliceSource(u32 x, u32 length, u32 size);
+//Draws frame stretched to width x height at (x, y) of dst (clipped to
+//dstWidth x dstHeight), each pixel through remap unless it is NULL. 0 is
+//transparent.
+void drawNineSlice(const u8* frame, u8* dst, u32 pitch, u32 dstWidth, u32 dstHeight,
+                   s32 x, s32 y, u32 width, u32 height, const u8* remap);
 
 //-------- Control groups (stage 4) --------//
 
