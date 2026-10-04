@@ -323,7 +323,9 @@ this order:
 3. **Dense command card** (not in replays). The vanilla 3x3 frame (cells
    46 x 40 apart from (496,354)) is rebuilt 5x3 with 36x34 buttons touching:
    196x114, flush with the bottom-right corner (`cardSourceColumn`,
-   `cardSourceRow`); the portrait part moves left by the difference.
+   `cardSourceRow`); the portrait part moves left by the difference, 52 px,
+   at every width (at 640 and 672, where the gap is smaller, the selection
+   box gets narrower instead: 218 px wide at 640).
 
 **What reads the image.**
 - Each panel dialog copies its background out of it at its own rect

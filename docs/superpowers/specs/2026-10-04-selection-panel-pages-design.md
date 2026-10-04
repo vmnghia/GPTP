@@ -47,14 +47,19 @@ is 24 px higher and it is 24 px taller: 116 instead of 92).
   present. Columns = (dialog width − 10 − 58 − 33) / 33 + 1 (the last box ends
   at least 10 px from the dialog's right edge, inside the box art):
 
+  StatData is 270 + (screen width − 640) − 52 wide: the portrait part always
+  moves 52 px left for the 5x3 command card (corrected 2026-10-05; the table
+  first left the 52 out, and at 640 and 672 the move was capped, so the
+  portrait sat on the card).
+
   | Screen width | StatData width | Columns | Per page | Pages for 400 |
   |---|---|---|---|---|
-  | 640 | 270 | 6 | 18 | 23 (arrows) |
-  | 1280 | 910 | 25 | 75 | 6 (tabs) |
-  | 1920 | 1550 | 44 | 132 | 4 (tabs) |
-  | 2048 (max) | 1678 | 48 | 144 | 3 (tabs) |
+  | 640 | 218 | 4 | 12 | 34 |
+  | 1280 | 858 | 23 | 69 | 6 |
+  | 1920 | 1498 | 43 | 129 | 4 |
+  | 2048 (max) | 1626 | 47 | 141 | 3 |
 
-  So `WIREFRAME_MAX` becomes **144**.
+  So `WIREFRAME_MAX` = **144** covers every width.
 - **The vanilla single-unit display** (name, portrait-side text, hit points,
   queue, progress bar; every vanilla control of StatData other than the
   wireframes) moves down **12 px**, so it sits centred in the taller box.

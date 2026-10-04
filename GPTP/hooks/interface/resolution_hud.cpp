@@ -120,11 +120,15 @@ bool usesExtendedCard(u32 race) {
   return race != 3;
 }
 
-//How far left the portrait part moves for a race's console.
+//How far left the portrait part moves for a race's console: always the
+//card's extra width, or the portrait and MENU sit on the card. Below 640 +
+//PORTRAIT_SHIFT wide (640 and 672) the gap is too small, and the selection
+//box gets narrower instead (statDataGrowth goes negative; the widening then
+//copies the right part over the box's right end).
 s32 portraitShift(u32 race) {
   if (!usesExtendedCard(race))
     return 0;
-  return PORTRAIT_SHIFT < consoleGap ? PORTRAIT_SHIFT : consoleGap;
+  return PORTRAIT_SHIFT;
 }
 
 //The layout of the console being set up, from consoleSetupStarting().
