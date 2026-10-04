@@ -142,8 +142,11 @@ const s32 ARROW_HEIGHT = 15;
 struct PanelRect {
 	s16 left, top, right, bottom;
 };
-//Wireframe k of a page: column-major, GRID_ROWS rows, edge to edge.
-PanelRect wireframeRect(u32 k);
+//The wireframe columns that fit a StatData dialog this wide.
+u32 gridColumnsFor(u32 dialogWidth);
+//Wireframe k of a page, row by row (left to right, then the next row) in
+//columns columns, edge to edge.
+PanelRect wireframeRect(u32 k, u32 columns);
 //Page tab 0-15: 2 columns of TAB_ROWS, column-major, together as tall as
 //the grid.
 PanelRect pageTabRect(u32 tab);
@@ -183,7 +186,8 @@ u32 pageAfterArrow(u32 page, u32 pages, bool up);
 //Lays out StatData's controls in its .bin as read from disk (before the
 //game turns offsets into pointers): the wireframes, tabs and arrows get
 //their rects, vanilla's own controls move down VANILLA_CONTROLS_DROP. The
-//root is the console code's (resolution_hud.cpp).
+//root is the console code's (resolution_hud.cpp), already as wide as it will
+//be: its width (at 0x36) sets the wireframe columns.
 void layOutStatDataBin(u8* base);
 //The wireframe's frame (frame 0x0D of the race's cmdbtns.grp, which the
 //game keeps at 0x68C1C0): tabs and arrows draw it stretched.

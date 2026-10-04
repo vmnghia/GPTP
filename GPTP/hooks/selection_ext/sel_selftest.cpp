@@ -200,10 +200,13 @@ bool rectIs(PanelRect r, s16 left, s16 top, s16 right, s16 bottom) {
 }
 
 void panelLayout() {
-	//Wireframes: column-major, 3 rows, 33 x 34, edge to edge.
-	CHECK(rectIs(wireframeRect(0), 58, 8, 90, 41));
-	CHECK(rectIs(wireframeRect(2), 58, 76, 90, 109));
-	CHECK(rectIs(wireframeRect(4), 91, 42, 123, 75));
+	//Wireframes: row by row (left to right, then the next row), 33 x 34,
+	//edge to edge.
+	CHECK(gridColumnsFor(270) == 6 && gridColumnsFor(910) == 25 && gridColumnsFor(60) == 1);
+	CHECK(rectIs(wireframeRect(0, 25), 58, 8, 90, 41));
+	CHECK(rectIs(wireframeRect(2, 25), 124, 8, 156, 41));
+	CHECK(rectIs(wireframeRect(25, 25), 58, 42, 90, 75));
+	CHECK(rectIs(wireframeRect(4, 2), 58, 76, 90, 109));
 	//Tabs: 2 x 8, column-major; rows E(r) = round(102r/8) from y 8.
 	CHECK(rectIs(pageTabRect(0), 14, 8, 33, 20));		//13 tall
 	CHECK(rectIs(pageTabRect(3), 14, 46, 33, 58));		//E 38-51
@@ -235,6 +238,7 @@ void panelLayout() {
 void statDataBin() {
 	static u8 bin[0x56 * 6];
 	memset(bin, 0, sizeof(bin));
+	*(u16*)(bin + 0x36) = 910;		//the root's width, grown: 25 columns
 	const s16 ids[5] = { 1, (s16)(WIREFRAME_FIRST_ID + 4), (s16)(PAGE_TAB_FIRST_ID + 9),
 	                     (s16)PAGE_DOWN_ID, -5 };
 	*(u32*)(bin + 0x42) = 0x56;
@@ -249,7 +253,7 @@ void statDataBin() {
 	const s16* vanilla = (const s16*)(bin + 0x56 + 4);
 	CHECK(vanilla[0] == 30 && vanilla[1] == 22 && vanilla[2] == 60 && vanilla[3] == 52);	//down 12
 	const s16* wire = (const s16*)(bin + 0x56 * 2 + 4);
-	CHECK(wire[0] == 91 && wire[1] == 42 && wire[2] == 123 && wire[3] == 75);
+	CHECK(wire[0] == 190 && wire[1] == 8 && wire[2] == 222 && wire[3] == 41);	//row 0, column 4
 	const s16* tab = (const s16*)(bin + 0x56 * 3 + 4);
 	CHECK(tab[0] == 34 && tab[1] == 21 && tab[2] == 53 && tab[3] == 33);	//tab 9: column 1, row 1
 	const s16* down = (const s16*)(bin + 0x56 * 4 + 4);

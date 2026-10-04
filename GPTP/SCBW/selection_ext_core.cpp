@@ -125,10 +125,13 @@ u8 oldestRingSlot(const u16* stamps) {
 	return slot;
 }
 
-u32 pageSizeFor(u32 dialogWidth, u32 wireframeControls) {
+u32 gridColumnsFor(u32 dialogWidth) {
 	const s32 room = (s32)dialogWidth - GRID_LEFT - GRID_RIGHT_MARGIN - CELL_WIDTH;
-	const u32 columns = room >= 0 ? room / CELL_WIDTH + 1 : 1;
-	const u32 size = GRID_ROWS * columns;
+	return room >= 0 ? room / CELL_WIDTH + 1 : 1;
+}
+
+u32 pageSizeFor(u32 dialogWidth, u32 wireframeControls) {
+	const u32 size = GRID_ROWS * gridColumnsFor(dialogWidth);
 	return size < wireframeControls ? size : wireframeControls;
 }
 
@@ -151,9 +154,9 @@ s32 tabEdge(u32 r) {
 
 } //unnamed namespace
 
-PanelRect wireframeRect(u32 k) {
-	return rectAt(GRID_LEFT + CELL_WIDTH * (s32)(k / GRID_ROWS),
-	              GRID_TOP + CELL_HEIGHT * (s32)(k % GRID_ROWS), CELL_WIDTH, CELL_HEIGHT);
+PanelRect wireframeRect(u32 k, u32 columns) {
+	return rectAt(GRID_LEFT + CELL_WIDTH * (s32)(k % columns),
+	              GRID_TOP + CELL_HEIGHT * (s32)(k / columns), CELL_WIDTH, CELL_HEIGHT);
 }
 
 PanelRect pageTabRect(u32 tab) {
@@ -222,6 +225,7 @@ u32 pageAfterArrow(u32 page, u32 pages, bool up) {
 }
 
 void layOutStatDataBin(u8* base) {
+	const u32 columns = gridColumnsFor(*(const u16*)(base + 0x36));
 	u32 offset = *(const u32*)(base + 0x42);
 	for (u32 guard = 0; offset != 0 && guard < 1000; guard++) {
 		u8* const entry = base + offset;
@@ -230,7 +234,7 @@ void layOutStatDataBin(u8* base) {
 		PanelRect r;
 		bool placed = true;
 		if (id >= (s32)WIREFRAME_FIRST_ID && id < (s32)PAGE_TAB_FIRST_ID)
-			r = wireframeRect(id - WIREFRAME_FIRST_ID);
+			r = wireframeRect(id - WIREFRAME_FIRST_ID, columns);
 		else if (id >= (s32)PAGE_TAB_FIRST_ID && id < (s32)PAGE_UP_ID)
 			r = pageTabRect(id - PAGE_TAB_FIRST_ID);
 		else if (id == (s32)PAGE_UP_ID)
