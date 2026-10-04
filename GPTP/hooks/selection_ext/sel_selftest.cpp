@@ -384,6 +384,7 @@ void shiftPlacing() {
 	CHECK(placingHolds(false, true, 3));
 	CHECK(!placingHolds(false, false, 3));	//no Shift, nobody can: vanilla cancels
 	CHECK(!placingHolds(true, true, 0));	//nothing selected any more
+	CHECK(placingHolds(false, true, 0));	//an addon or a landing: the building can, no worker needed
 	CHECK(ableToQueue(true, false, true));
 	CHECK(ableToQueue(false, true, true));	//constructing SCV: queues behind
 	CHECK(!ableToQueue(false, true, false));	//can't make it at all
@@ -419,6 +420,10 @@ void queuedSites() {
 	CHECK(checkAsFree(true, 0x21));		//Shift-command to a constructing SCV
 	CHECK(!checkAsFree(false, 0x21));	//a plain one: vanilla (ignored)
 	CHECK(!checkAsFree(true, 0x06));	//not constructing: vanilla
+	CHECK(!rightClickRefusedFor(false, 0x55) && !rightClickRefusedFor(true, 0x55));	//mining SCV: always sent
+	CHECK(!rightClickRefusedFor(false, 0x03));	//idle SCV
+	CHECK(rightClickRefusedFor(false, 0x21));	//constructing, no Shift: vanilla refuses
+	CHECK(!rightClickRefusedFor(true, 0x21));	//constructing, Shift: queues
 	//A depot cell inside a queued depot's footprint is red; one beside it isn't.
 	placementCellCentre(10, 20, 0, 0, &cx, &cy);
 	CHECK(footprintsOverlap(cx, cy, 32, 32, 352, 672, 96, 64));

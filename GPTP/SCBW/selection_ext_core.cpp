@@ -321,7 +321,7 @@ bool shiftQueues(bool shiftHeld, u32 order) {
 }
 
 bool placingHolds(bool shiftQueuing, bool anyMemberCan, u32 members) {
-	return members != 0 && (shiftQueuing || anyMemberCan);
+	return shiftQueuing ? members != 0 : anyMemberCan;
 }
 
 bool ableToQueue(bool allowedNow, bool holdingBuild, bool canMake) {
@@ -359,6 +359,10 @@ void placementCellCentre(u32 tileX, u32 tileY, u32 row, u32 column, s32* x, s32*
 
 u32 placementCellIndex(u32 box, u32 row, u32 column) {
 	return box * 48 + row * 6 + column;
+}
+
+bool rightClickRefusedFor(bool shiftHeld, u32 currentOrder) {
+	return currentOrder == 0x21 && !checkAsFree(shiftHeld, currentOrder);
 }
 
 bool checkAsFree(bool queued, u32 currentOrder) {

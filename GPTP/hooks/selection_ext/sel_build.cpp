@@ -16,6 +16,7 @@ u32 paidMinerals[UNIT_ARRAY_LENGTH];
 u32 paidGas[UNIT_ARRAY_LENGTH];
 u16 paidCurrentType[UNIT_ARRAY_LENGTH];
 u8 buildSequence[UNIT_ARRAY_LENGTH];
+u8 paidPlayer[UNIT_ARRAY_LENGTH];
 CUnit* chosenBuilder;
 
 } //selbuild
@@ -309,6 +310,7 @@ void recvQueuedBuild(const u8* packet) {
 			resources->gas[player] -= costG;
 			paidMinerals[index] += costM;
 			paidGas[index] += costG;
+			paidPlayer[index] = player;
 			paidCurrentType[index] = cmd.type;
 		}
 		return;
@@ -326,6 +328,7 @@ void recvQueuedBuild(const u8* packet) {
 	resources->gas[player] -= costG;
 	paidMinerals[index] += costM;
 	paidGas[index] += costG;
+	paidPlayer[index] = player;
 	//An SCV that started constructing with an empty queue has its idle order
 	//queued after it; a build behind that would never run.
 	COrder* const last = unit->orderQueueTail;
@@ -340,8 +343,26 @@ void recvQueuedBuild(const u8* packet) {
 
 namespace {
 
-//What the unit has paid for but no longer holds goes back to its owner.
+//What the unit has paid for but no longer holds goes back to the player who
+//paid. A unit that changed owner (mind control) gives its payer everything
+//back and drops the prepaid builds it still has queued.
 void reconcile(CUnit* unit, u32 index) {
+	const u8 payer = selbuild::paidPlayer[index];
+	if (unit->playerId != payer) {
+		resources->minerals[payer] += selbuild::paidMinerals[index];
+		resources->gas[payer] += selbuild::paidGas[index];
+		selbuild::paidMinerals[index] = 0;
+		selbuild::paidGas[index] = 0;
+		selbuild::paidCurrentType[index] = NOT_PAID;
+		COrder* order = unit->orderQueueHead;
+		while (order != NULL) {
+			COrder* const next = order->next;
+			if (order->unitId != UnitId::None && (order->unitId & QUEUED_BUILD_MARK))
+				selexe::removeQueuedOrder(unit, order);
+			order = next;
+		}
+		return;
+	}
 	u32 heldM = 0, heldG = 0;
 	u16* const current = &selbuild::paidCurrentType[index];
 	if (*current != NOT_PAID) {
@@ -360,8 +381,8 @@ void reconcile(CUnit* unit, u32 index) {
 	u32 refundM, refundG;
 	reconcilePaid(&selbuild::paidMinerals[index], &selbuild::paidGas[index], heldM, heldG,
 	              &refundM, &refundG);
-	resources->minerals[unit->playerId] += refundM;
-	resources->gas[unit->playerId] += refundG;
+	resources->minerals[payer] += refundM;
+	resources->gas[payer] += refundG;
 }
 
 } //unnamed namespace
@@ -375,8 +396,8 @@ void arriving(CUnit* unit) {
 		return;
 	//Its cost goes back just before vanilla's own check spends it.
 	const u32 costM = mineralCost(type), costG = gasCost(type);
-	resources->minerals[unit->playerId] += costM;
-	resources->gas[unit->playerId] += costG;
+	resources->minerals[paidPlayer[index]] += costM;
+	resources->gas[paidPlayer[index]] += costG;
 	paidMinerals[index] -= costM < paidMinerals[index] ? costM : paidMinerals[index];
 	paidGas[index] -= costG < paidGas[index] ? costG : paidGas[index];
 	paidCurrentType[index] = NOT_PAID;
@@ -422,6 +443,7 @@ void reset() {
 	memset(paidGas, 0, sizeof(paidGas));
 	memset(paidCurrentType, 0xFF, sizeof(paidCurrentType));
 	memset(buildSequence, 0, sizeof(buildSequence));
+	memset(paidPlayer, 0, sizeof(paidPlayer));
 	chosenBuilder = NULL;
 }
 
@@ -457,7 +479,7 @@ u8* sendAsQueued(const u8* cmd) {
 }
 
 u32 rightClickRefuses(CUnit* unit) {
-	return checkAsFree(*SHIFT_HELD != 0, unit->mainOrderId) ? 0 : 1;
+	return rightClickRefusedFor(*SHIFT_HELD != 0, unit->mainOrderId) ? 1 : 0;
 }
 
 u32 orderAllowedForCommand(CUnit* unit, u32 order, u32 player, u32 queued) {
@@ -585,8 +607,9 @@ struct DrawGhost {
 		if (grp == NULL || grp->frameCount == 0)
 			return;
 		GrpFrame* const frame = &grp->frames[0];
-		s32 left = x - grp->width / 2 + frame->x - *screenX;
-		s32 top = y - grp->height / 2 + frame->y - *screenY;
+		//GRP frame offsets are unsigned (GrpFrame declares them s8).
+		s32 left = x - grp->width / 2 + (u8)frame->x - *screenX;
+		s32 top = y - grp->height / 2 + (u8)frame->y - *screenY;
 		struct { s32 left, top, width, height; } part = { 0, 0, (u8)frame->width, (u8)frame->height };
 		if (left < 0) { part.left = -left; part.width += left; left = 0; }
 		if (top < 0) { part.top = -top; part.height += top; top = 0; }

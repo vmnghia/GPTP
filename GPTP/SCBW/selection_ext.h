@@ -211,6 +211,9 @@ const u32 PLACEMENT_BOX_BUILDING = 1;
 //command to an SCV constructing (0x21) queues behind its construction;
 //anything else is vanilla's check as is.
 bool checkAsFree(bool queued, u32 currentOrder);
+//The right-click's send check for an SCV (0x4556D0): refused only when it is
+//constructing and Shift is not held (vanilla); any other SCV goes on.
+bool rightClickRefusedFor(bool shiftHeld, u32 currentOrder);
 //Whether two footprints (centres and sizes in pixels) overlap.
 bool footprintsOverlap(s32 x1, s32 y1, s32 w1, s32 h1, s32 x2, s32 y2, s32 w2, s32 h2);
 //A queued build order's type, marked so the order hook sets it up when it
@@ -249,8 +252,9 @@ void reconcilePaid(u32* paidM, u32* paidG, u32 heldM, u32 heldG, u32* refundM, u
 //landing.
 bool shiftQueues(bool shiftHeld, u32 order);
 //Whether placing goes on when the game asks (0x48DDA0, e.g. as a building
-//starts): with members selected, while Shift-queuing (as SC2: the cursor
-//stays while Shift is held), else if any member can still place it.
+//starts): while Shift-queuing, as long as a worker is selected (as SC2: the
+//cursor stays while Shift is held); else if any member can still place it
+//(vanilla's question, also for an addon or a landing).
 bool placingHolds(bool shiftQueuing, bool anyMemberCan, u32 members);
 //Whether a worker can take a Shift-queued build: free to take it now
 //(0x48DBD0), or already building and its type can make it (it queues).

@@ -18,6 +18,8 @@ extern u32 paidGas[UNIT_ARRAY_LENGTH];
 extern u16 paidCurrentType[UNIT_ARRAY_LENGTH];
 //Synced, per unit: the Shift sequence of its current build (0: plain). Saved.
 extern u8 buildSequence[UNIT_ARRAY_LENGTH];
+//Synced, per unit: the player who paid its prepaid builds (refunds go there).
+extern u8 paidPlayer[UNIT_ARRAY_LENGTH];
 //While 0x48E190 runs for a picked builder, the builder 0x48E010/0x48E0A0
 //take instead of the selection's first unit; NULL otherwise.
 extern CUnit* chosenBuilder;

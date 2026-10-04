@@ -39,6 +39,7 @@ struct BuildStamps {
 	u32 paidGas[UNIT_ARRAY_LENGTH];
 	u16 paidCurrentType[UNIT_ARRAY_LENGTH];
 	u8 buildSequence[UNIT_ARRAY_LENGTH];
+	u8 paidPlayer[UNIT_ARRAY_LENGTH];
 };
 BuildStamps buildStamps;
 
@@ -120,6 +121,7 @@ size_t __cdecl writeLastAndExtension(const void* data, size_t size, size_t count
 	memcpy(buildStamps.paidGas, selbuild::paidGas, sizeof(buildStamps.paidGas));
 	memcpy(buildStamps.paidCurrentType, selbuild::paidCurrentType, sizeof(buildStamps.paidCurrentType));
 	memcpy(buildStamps.buildSequence, selbuild::buildSequence, sizeof(buildStamps.buildSequence));
+	memcpy(buildStamps.paidPlayer, selbuild::paidPlayer, sizeof(buildStamps.paidPlayer));
 	if (!selexe::writeCompressed(file, &buildStamps, sizeof(buildStamps)))
 		return 0;
 	return count;
@@ -155,6 +157,7 @@ size_t __cdecl readLastAndExtension(void* data, size_t size, size_t count, FILE*
 			memcpy(selbuild::paidGas, buildStamps.paidGas, sizeof(buildStamps.paidGas));
 			memcpy(selbuild::paidCurrentType, buildStamps.paidCurrentType, sizeof(buildStamps.paidCurrentType));
 			memcpy(selbuild::buildSequence, buildStamps.buildSequence, sizeof(buildStamps.buildSequence));
+			memcpy(selbuild::paidPlayer, buildStamps.paidPlayer, sizeof(buildStamps.paidPlayer));
 		}
 	}
 	return ok ? count : 0;
