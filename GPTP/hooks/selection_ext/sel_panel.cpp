@@ -4,6 +4,8 @@
 #include "sel_send.h"
 #include "sel_subgroups.h"
 #include <SCBW/selection_ext.h>
+#include <definitions.h>
+#include <cstdio>
 
 using namespace selext;
 
@@ -34,6 +36,7 @@ u32 interact[WIREFRAME_FIRST_ID - 1 + WIREFRAME_MAX];
 bool interactBuilt;
 
 u32 pageSize = VANILLA_MAX;		//of the last fill
+bool missingWarned;				//this game
 u32 shownStamp;					//selsub::activeStamp() at the last fill
 u32 shownStart;
 u32 shownCount;
@@ -95,6 +98,12 @@ void fill(BinDlg* dialog) {
 	static BinDlg* wireframes[WIREFRAME_MAX];
 	const u32 controls = collectWireframes(dialog, wireframes);
 	pageSize = pageSizeFor(dialog->bounds.width, controls);
+	if (!missingWarned && wireframesMissing(dialog->bounds.width, controls)) {
+		static char text[96];
+		sprintf_s(text, sizeof(text), PLUGIN_NAME ": statdata.bin not repacked: %u wireframes", controls);
+		scbw::printText(text, GameTextColor::Yellow);
+		missingWarned = true;
+	}
 	selectionPage = clampPage(selectionPage, clientCount, pageSize);
 	shownStart = selectionPage * pageSize;
 
@@ -209,6 +218,10 @@ void keyDown(const u8* event) {
 		return;
 	selectionPage = page;
 	*REFRESH_STAT_DATA = 1;
+}
+
+void reset() {
+	missingWarned = false;
 }
 
 const u32* interactTable() {

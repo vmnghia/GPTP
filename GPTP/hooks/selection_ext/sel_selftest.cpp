@@ -182,6 +182,11 @@ void pages() {
 	CHECK(pageCountFor(13, 12) == 2 && pageCountFor(400, 46) == 9);
 	CHECK(clampPage(5, 13, 12) == 1 && clampPage(1, 13, 12) == 1);
 	CHECK(clampPage(3, 0, 12) == 0);
+	//Fewer wireframe controls than the panel fits: statdata.bin not repacked.
+	CHECK(wireframesMissing(910, 12));
+	CHECK(!wireframesMissing(910, WIREFRAME_MAX));
+	CHECK(!wireframesMissing(270, 12));		//vanilla width fits 12
+	CHECK(!wireframesMissing(4000, WIREFRAME_MAX));	//wider than the controls go
 }
 
 void pageKeys() {

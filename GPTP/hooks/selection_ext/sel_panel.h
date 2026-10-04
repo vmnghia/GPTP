@@ -15,6 +15,8 @@ bool changed();
 void click(BinDlg* control);
 //The in-game KEYDOWN proc (0x484350): Ctrl+PgUp/PgDn change the page.
 void keyDown(const u8* event);
+//At game start: warn again if statdata.bin lacks the wide panel's wireframes.
+void reset();
 //StatData's interact table, indexed by control id - 1 (for 0x4584C0).
 const u32* interactTable();
 u32 interactTableBytes();

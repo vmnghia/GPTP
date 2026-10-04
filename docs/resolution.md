@@ -329,13 +329,15 @@ starfield handled (§5). Features 1 and 2 below are done.
   the geyser as something in progress.
 
 **Next after smart-build** (user, 2026-10-03):
-- **The selection panel still shows only 12 wireframes** although it is wider (found in
-  play; stage 3 had no test that counted the wireframes on a page). The page size is
-  min(columns that fit × 2, wireframe controls in `statdata.bin`), so the game is most
-  likely loading vanilla's `rez\statdata.bin` (12 wireframes): the generated wide one,
-  `SCManifold	o-repackez\statdata.bin` (11,705 bytes, 90 wireframes, from
-  `make_statdata_wide.py`), is probably not in the repack, or not where the game looks.
-  Find out why, fix it, and add an in-game test that counts the wireframes on a page.
+- **The selection panel showed only 12 wireframes** `[FIXED 2026-10-04]`: the repack
+  had no `rez\statdata.bin`, so the game loaded vanilla's (12 wireframes; the page size is
+  min(columns that fit × 2, wireframe controls)). Adding the generated file
+  (`SCManifold\to-repack\rez\statdata.bin`, 11,705 bytes, 90 wireframes, from
+  `make_statdata_wide.py`) to the repack fixed it (test 10.1: 30 Zerglings fill the whole
+  width). The panel now prints "statdata.bin not repacked: N wireframes" once per game
+  when the file has fewer wireframes than the panel fits.
+- **The game lags in proportion to the units selected** (reported 2026-10-04). Optimise
+  after the page buttons and page indicator.
 - **Fold in page buttons and a page indicator** for the selection panel (left out of
   stage 3; Ctrl+PgUp/PgDn is the only way to page now). Mock-ups first.
 

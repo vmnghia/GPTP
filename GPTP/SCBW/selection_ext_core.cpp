@@ -131,6 +131,10 @@ u32 pageSizeFor(u32 dialogWidth, u32 wireframeControls) {
 	return size < wireframeControls ? size : wireframeControls;
 }
 
+bool wireframesMissing(u32 dialogWidth, u32 wireframeControls) {
+	return wireframeControls < pageSizeFor(dialogWidth, WIREFRAME_MAX);
+}
+
 u32 pageCountFor(u32 count, u32 pageSize) {
 	if (count == 0 || pageSize == 0)
 		return 1;

@@ -118,6 +118,9 @@ const u32 WIREFRAME_MAX = 90;
 //Wireframes per page: the columns that fit a StatData dialog this wide (the
 //vanilla 270 fits 6), two rows, at most the controls present.
 u32 pageSizeFor(u32 dialogWidth, u32 wireframeControls);
+//Whether statdata.bin has fewer wireframe controls than a dialog this wide
+//fits (vanilla's 12 instead of the wide file's WIREFRAME_MAX).
+bool wireframesMissing(u32 dialogWidth, u32 wireframeControls);
 //Pages for count units (at least 1).
 u32 pageCountFor(u32 count, u32 pageSize);
 //page, moved back to the last page if it is past it.
