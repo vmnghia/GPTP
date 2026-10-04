@@ -45,10 +45,13 @@ u32 shownCount;
 s32 shownHitPoints[WIREFRAME_MAX];
 u16 shownId[WIREFRAME_MAX];
 
+//The tab set shown (PAGE_TABS tabs each), and the page it last followed.
+u32 tabSet;
+u32 tabSetPage;
 //The page controls as last drawn, to redraw them when these change.
 u32 drawnPage = 0xFFFFFFFF;
 u32 drawnPages;
-PageControls drawnMode;
+u32 drawnSet;
 
 //The current-page tab (0xA5 brighter, the fill lighter) and greyed arrows.
 u8 litRemap[256];
@@ -90,7 +93,7 @@ bool isChatOpen() {
 u32 collectControls(BinDlg* dialog, BinDlg** wireframes, BinDlg** tabs, BinDlg** arrows) {
 	for (u32 k = 0; k < WIREFRAME_MAX; k++)
 		wireframes[k] = NULL;
-	for (u32 t = 0; t < PAGE_TABS; t++)
+	for (u32 t = 0; t < PAGE_TAB_CONTROLS; t++)
 		tabs[t] = NULL;
 	for (u32 a = 0; a < 3; a++)
 		arrows[a] = NULL;
@@ -109,16 +112,20 @@ u32 collectControls(BinDlg* dialog, BinDlg** wireframes, BinDlg** tabs, BinDlg**
 	return n;
 }
 
-//Shows the tabs or the arrows for the selection's pages, and redraws them
-//when the page, the page count or the kind of control changes.
+//Shows the tab set and the arrows for the selection's pages (from 2
+//pages), and redraws them when the page, the page count or the set changes.
+//The set follows the page when the page changed; an arrow click chose it
+//otherwise. The spare controls stay hidden.
 void updatePageControls(BinDlg** tabs, BinDlg** arrows) {
 	const u32 pages = pageCountFor(clientCount, pageSize);
-	const PageControls mode = pageControlsFor(pages);
-	const bool redraw = pages != drawnPages || selectionPage != drawnPage || mode != drawnMode;
-	for (u32 t = 0; t < PAGE_TABS; t++) {
+	tabSet = tabSetFollowing(tabSet, tabSetPage, selectionPage, pages);
+	tabSetPage = selectionPage;
+	const bool shown = pageControlsShown(pages);
+	const bool redraw = pages != drawnPages || selectionPage != drawnPage || tabSet != drawnSet;
+	for (u32 t = 0; t < PAGE_TAB_CONTROLS; t++) {
 		if (tabs[t] == NULL)
 			continue;
-		if (mode == PAGE_CONTROLS_TABS && t < pages) {
+		if (shown && t < PAGE_TABS && pageOfTab(tabSet, t) < pages) {
 			selexe::showControl(tabs[t]);
 			if (redraw)
 				selexe::invalidateControl(tabs[t]);
@@ -129,7 +136,8 @@ void updatePageControls(BinDlg** tabs, BinDlg** arrows) {
 	for (u32 a = 0; a < 3; a++) {
 		if (arrows[a] == NULL)
 			continue;
-		if (mode == PAGE_CONTROLS_ARROWS) {
+		const bool spare = arrows[a]->index == (s16)PAGE_SPARE_ID;
+		if (shown && !spare) {
 			selexe::showControl(arrows[a]);
 			if (redraw)
 				selexe::invalidateControl(arrows[a]);
@@ -139,7 +147,7 @@ void updatePageControls(BinDlg** tabs, BinDlg** arrows) {
 	}
 	drawnPages = pages;
 	drawnPage = selectionPage;
-	drawnMode = mode;
+	drawnSet = tabSet;
 }
 
 struct Surface {
@@ -205,39 +213,43 @@ void __fastcall pageButtonDraw(BinDlg* control, u32, u32, void*) {
 	const u32 width = control->bounds.right - control->bounds.left + 1;
 	const u32 height = control->bounds.bottom - control->bounds.top + 1;
 	const u32 pages = pageCountFor(clientCount, pageSize);
-	if (id == (s32)PAGE_LABEL_ID) {
-		static char text[16];
-		sprintf_s(text, sizeof(text), "\x04%u/%u", selectionPage + 1, pages);
-		drawCentredText(surface, control, text);
-		return;
-	}
 	if (id == (s32)PAGE_UP_ID || id == (s32)PAGE_DOWN_ID) {
 		const bool up = id == (s32)PAGE_UP_ID;
-		const bool atEnd = up ? selectionPage == 0 : selectionPage + 1 >= pages;
+		const bool atEnd = !tabArrowActive(tabSet, pages, up);
 		drawNineSlice(frame, surface->data, surface->width, surface->width, surface->height,
 		              left, top, width, height, atEnd ? greyRemap : NULL);
 		drawTriangle(surface, left + (s32)width / 2, top + 4, up, atEnd ? 0x4A : 0x54);
 		return;
 	}
-	const u32 tab = id - PAGE_TAB_FIRST_ID;
-	const bool lit = tab == selectionPage;
+	if (id < (s32)PAGE_TAB_FIRST_ID || id >= (s32)(PAGE_TAB_FIRST_ID + PAGE_TABS))
+		return;		//a spare control
+	const u32 page = pageOfTab(tabSet, id - PAGE_TAB_FIRST_ID);
+	const bool lit = page == selectionPage;
 	drawNineSlice(frame, surface->data, surface->width, surface->width, surface->height,
 	              left, top, width, height, lit ? litRemap : NULL);
 	static char text[8];
-	sprintf_s(text, sizeof(text), lit ? "\x07%u" : "\x04%u", tab + 1);
+	sprintf_s(text, sizeof(text), lit ? "\x07%u" : "\x04%u", page + 1);
 	drawCentredText(surface, control, text);
 }
 
+//A tab shows its page; an arrow shows the previous or next tab set, the page
+//staying as it is.
 void pageButtonClicked(s32 id) {
 	const u32 pages = pageCountFor(clientCount, pageSize);
-	u32 page = selectionPage;
-	if (id >= (s32)PAGE_TAB_FIRST_ID && id < (s32)PAGE_UP_ID)
-		page = pageAfterTab(id - PAGE_TAB_FIRST_ID, selectionPage, pages);
-	else if (id == (s32)PAGE_UP_ID || id == (s32)PAGE_DOWN_ID)
-		page = pageAfterArrow(selectionPage, pages, id == (s32)PAGE_UP_ID);
-	if (page == selectionPage)
+	if (id >= (s32)PAGE_TAB_FIRST_ID && id < (s32)(PAGE_TAB_FIRST_ID + PAGE_TABS)) {
+		const u32 page = pageAfterTab(pageOfTab(tabSet, id - PAGE_TAB_FIRST_ID), selectionPage, pages);
+		if (page == selectionPage)
+			return;
+		selectionPage = page;
+	}
+	else if (id == (s32)PAGE_UP_ID || id == (s32)PAGE_DOWN_ID) {
+		const u32 set = tabSetAfterArrow(tabSet, pages, id == (s32)PAGE_UP_ID);
+		if (set == tabSet)
+			return;
+		tabSet = set;
+	}
+	else
 		return;
-	selectionPage = page;
 	*REFRESH_STAT_DATA = 1;
 }
 
@@ -284,7 +296,7 @@ void fill(BinDlg* dialog) {
 		dialog = dialog->parent;
 
 	static BinDlg* wireframes[WIREFRAME_MAX];
-	static BinDlg* tabs[PAGE_TABS];
+	static BinDlg* tabs[PAGE_TAB_CONTROLS];
 	static BinDlg* arrows[3];
 	const u32 controls = collectControls(dialog, wireframes, tabs, arrows);
 	pageSize = pageSizeFor(dialog->bounds.width, controls);
@@ -414,6 +426,8 @@ void keyDown(const u8* event) {
 
 void reset() {
 	outdatedWarned = false;
+	tabSet = 0;
+	tabSetPage = 0;
 }
 
 const u32* interactTable() {

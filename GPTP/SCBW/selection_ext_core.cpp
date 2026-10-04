@@ -146,12 +146,6 @@ PanelRect rectAt(s32 left, s32 top, s32 width, s32 height) {
 	return r;
 }
 
-//Row r's top in the tab column, from the grid's top: round(102r / 8).
-s32 tabEdge(u32 r) {
-	const s32 height = GRID_ROWS * CELL_HEIGHT;
-	return (2 * height * (s32)r + (s32)TAB_ROWS) / (2 * (s32)TAB_ROWS);
-}
-
 } //unnamed namespace
 
 PanelRect wireframeRect(u32 k, u32 columns) {
@@ -159,19 +153,14 @@ PanelRect wireframeRect(u32 k, u32 columns) {
 	              GRID_TOP + CELL_HEIGHT * (s32)(k / columns), CELL_WIDTH, CELL_HEIGHT);
 }
 
-PanelRect pageTabRect(u32 tab) {
-	const u32 column = tab / TAB_ROWS, row = tab % TAB_ROWS;
-	return rectAt(TABS_LEFT + TAB_WIDTH * (s32)column, GRID_TOP + tabEdge(row),
-	              TAB_WIDTH, tabEdge(row + 1) - tabEdge(row));
+PanelRect pageTabRect(u32 slot) {
+	const u32 column = slot / TAB_ROWS, row = slot % TAB_ROWS;
+	return rectAt(TABS_LEFT + TAB_WIDTH * (s32)column, GRID_TOP + ARROW_HEIGHT + TAB_HEIGHT * (s32)row,
+	              TAB_WIDTH, TAB_HEIGHT);
 }
 
 PanelRect pageUpRect() {
 	return rectAt(TABS_LEFT, GRID_TOP, 2 * TAB_WIDTH, ARROW_HEIGHT);
-}
-
-PanelRect pageLabelRect() {
-	const s32 height = GRID_ROWS * CELL_HEIGHT;
-	return rectAt(TABS_LEFT, GRID_TOP + ARROW_HEIGHT, 2 * TAB_WIDTH, height - 2 * ARROW_HEIGHT);
 }
 
 PanelRect pageDownRect() {
@@ -208,10 +197,35 @@ u32 pageAfterKey(u16 key, bool ctrlHeld, bool chatOpen, u32 page, u32 pages) {
 	return page;
 }
 
-PageControls pageControlsFor(u32 pages) {
-	if (pages <= 1)
-		return PAGE_CONTROLS_NONE;
-	return pages <= PAGE_TABS ? PAGE_CONTROLS_TABS : PAGE_CONTROLS_ARROWS;
+bool pageControlsShown(u32 pages) {
+	return pages >= 2;
+}
+
+u32 tabSetOf(u32 page) {
+	return page / PAGE_TABS;
+}
+
+bool tabArrowActive(u32 set, u32 pages, bool up) {
+	if (up)
+		return set > 0;
+	return (set + 1) * PAGE_TABS < pages;
+}
+
+u32 tabSetAfterArrow(u32 set, u32 pages, bool up) {
+	if (!tabArrowActive(set, pages, up))
+		return set;
+	return up ? set - 1 : set + 1;
+}
+
+u32 pageOfTab(u32 set, u32 slot) {
+	return set * PAGE_TABS + slot;
+}
+
+u32 tabSetFollowing(u32 set, u32 lastPage, u32 page, u32 pages) {
+	if (page != lastPage)
+		return tabSetOf(page);
+	const u32 last = pages > 0 ? tabSetOf(pages - 1) : 0;
+	return set < last ? set : last;
 }
 
 u32 pageAfterTab(u32 tab, u32 page, u32 pages) {
@@ -220,13 +234,8 @@ u32 pageAfterTab(u32 tab, u32 page, u32 pages) {
 
 bool pageControlTakesHits(u32 id, u32 flags) {
 	const u32 VISIBLE = 0x8;
-	return id != PAGE_LABEL_ID && (flags & VISIBLE) != 0;
-}
-
-u32 pageAfterArrow(u32 page, u32 pages, bool up) {
-	if (up)
-		return page > 0 ? page - 1 : 0;
-	return page + 1 < pages ? page + 1 : page;
+	const bool tab = id >= PAGE_TAB_FIRST_ID && id < PAGE_TAB_FIRST_ID + PAGE_TABS;
+	return (tab || id == PAGE_UP_ID || id == PAGE_DOWN_ID) && (flags & VISIBLE) != 0;
 }
 
 void layOutStatDataBin(u8* base) {
@@ -241,11 +250,11 @@ void layOutStatDataBin(u8* base) {
 		if (id >= (s32)WIREFRAME_FIRST_ID && id < (s32)PAGE_TAB_FIRST_ID)
 			r = wireframeRect(id - WIREFRAME_FIRST_ID, columns);
 		else if (id >= (s32)PAGE_TAB_FIRST_ID && id < (s32)PAGE_UP_ID)
-			r = pageTabRect(id - PAGE_TAB_FIRST_ID);
+			r = pageTabRect((id - PAGE_TAB_FIRST_ID) % PAGE_TABS);	//spares: hidden
 		else if (id == (s32)PAGE_UP_ID)
 			r = pageUpRect();
-		else if (id == (s32)PAGE_LABEL_ID)
-			r = pageLabelRect();
+		else if (id == (s32)PAGE_SPARE_ID)
+			r = pageTabRect(0);		//hidden
 		else if (id == (s32)PAGE_DOWN_ID)
 			r = pageDownRect();
 		else

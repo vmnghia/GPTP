@@ -207,35 +207,43 @@ void panelLayout() {
 	CHECK(rectIs(wireframeRect(2, 25), 124, 8, 156, 41));
 	CHECK(rectIs(wireframeRect(25, 25), 58, 42, 90, 75));
 	CHECK(rectIs(wireframeRect(4, 2), 58, 76, 90, 109));
-	//Tabs: 2 x 8, column-major; rows E(r) = round(102r/8) from y 8.
-	CHECK(rectIs(pageTabRect(0), 14, 8, 33, 20));		//13 tall
-	CHECK(rectIs(pageTabRect(3), 14, 46, 33, 58));		//E 38-51
-	CHECK(rectIs(pageTabRect(7), 14, 97, 33, 109));		//E 89-102: level with the grid's bottom
-	CHECK(rectIs(pageTabRect(8), 34, 8, 53, 20));
-	CHECK(rectIs(pageTabRect(15), 34, 97, 53, 109));
-	u32 total = 0;
-	for (u32 r = 0; r < TAB_ROWS; r++)
-		total += pageTabRect(r).bottom - pageTabRect(r).top + 1;
-	CHECK(total == GRID_ROWS * CELL_HEIGHT);
-	//Arrows level with the grid's top and bottom, the number between.
+	//Tabs: a set of 12, 2 x 6, column-major, 12 px tall, between the arrows.
+	CHECK(rectIs(pageTabRect(0), 14, 23, 33, 34));
+	CHECK(rectIs(pageTabRect(5), 14, 83, 33, 94));		//ends where the down arrow starts
+	CHECK(rectIs(pageTabRect(6), 34, 23, 53, 34));
+	CHECK(rectIs(pageTabRect(11), 34, 83, 53, 94));
+	//Arrows level with the grid's top and bottom.
 	CHECK(rectIs(pageUpRect(), 14, 8, 53, 22));
-	CHECK(rectIs(pageLabelRect(), 14, 23, 53, 94));
 	CHECK(rectIs(pageDownRect(), 14, 95, 53, 109));
-	//Which controls show.
-	CHECK(pageControlsFor(0) == PAGE_CONTROLS_NONE && pageControlsFor(1) == PAGE_CONTROLS_NONE);
-	CHECK(pageControlsFor(2) == PAGE_CONTROLS_TABS && pageControlsFor(16) == PAGE_CONTROLS_TABS);
-	CHECK(pageControlsFor(17) == PAGE_CONTROLS_ARROWS);
-	//Clicks.
+	//Shown from 2 pages; the arrows always with the tabs.
+	CHECK(!pageControlsShown(0) && !pageControlsShown(1) && pageControlsShown(2) && pageControlsShown(23));
+	//Sets of 12 tabs: the arrows move a whole set, greyed at the ends.
+	CHECK(tabSetOf(0) == 0 && tabSetOf(11) == 0 && tabSetOf(12) == 1 && tabSetOf(22) == 1);
+	CHECK(!tabArrowActive(0, 12, true) && !tabArrowActive(0, 12, false));	//one set: both greyed
+	CHECK(!tabArrowActive(0, 23, true) && tabArrowActive(0, 23, false));
+	CHECK(tabArrowActive(1, 23, true) && !tabArrowActive(1, 23, false));
+	CHECK(tabSetAfterArrow(0, 23, false) == 1 && tabSetAfterArrow(1, 23, false) == 1);
+	CHECK(tabSetAfterArrow(1, 23, true) == 0 && tabSetAfterArrow(0, 23, true) == 0);
+	CHECK(tabSetAfterArrow(0, 12, false) == 0);
+	CHECK(pageOfTab(1, 3) == 15);
+	//The set follows a page change (keys, Tab); otherwise it stays, clamped
+	//when the pages shrink.
+	CHECK(tabSetFollowing(0, 4, 14, 23) == 1);		//Ctrl+PgDn to page 15
+	CHECK(tabSetFollowing(1, 4, 4, 23) == 1);		//arrow showed set 2, page unchanged
+	CHECK(tabSetFollowing(1, 4, 4, 10) == 0);		//units died: one set left
+	//Clicks on tabs.
 	CHECK(pageAfterTab(3, 0, 6) == 3 && pageAfterTab(9, 2, 6) == 2);	//past the last page: no change
-	CHECK(pageAfterArrow(0, 23, true) == 0 && pageAfterArrow(0, 23, false) == 1);
-	CHECK(pageAfterArrow(22, 23, false) == 22 && pageAfterArrow(22, 23, true) == 21);
+	CHECK(pageAfterTab(pageOfTab(1, 10), 0, 23) == 22);			//the last page
+	CHECK(pageAfterTab(pageOfTab(1, 11), 0, 23) == 0);			//slot past the last page
 	//Under the cursor (user event 4): visible tabs and arrows, never the
-	//page number (flag 8 is Visible; 0x400 is what statdata.bin's buttons have).
+	//spare controls (flag 8 is Visible; 0x400 is what statdata.bin's buttons have).
 	CHECK(pageControlTakesHits(PAGE_TAB_FIRST_ID, 0x408) && pageControlTakesHits(PAGE_DOWN_ID, 0x408));
+	CHECK(pageControlTakesHits(PAGE_TAB_FIRST_ID + PAGE_TABS - 1, 0x408));
 	CHECK(!pageControlTakesHits(PAGE_TAB_FIRST_ID, 0x400));
-	CHECK(!pageControlTakesHits(PAGE_LABEL_ID, 0x408));
-	//Ids.
-	CHECK(PAGE_TAB_FIRST_ID == 0xB1 && PAGE_UP_ID == 0xC1 && PAGE_LABEL_ID == 0xC2 && PAGE_DOWN_ID == 0xC3);
+	CHECK(!pageControlTakesHits(PAGE_TAB_FIRST_ID + PAGE_TABS, 0x408));
+	CHECK(!pageControlTakesHits(PAGE_SPARE_ID, 0x408));
+	//Ids (statdata.bin keeps 16 tab controls; 4 are spare).
+	CHECK(PAGE_TAB_FIRST_ID == 0xB1 && PAGE_UP_ID == 0xC1 && PAGE_SPARE_ID == 0xC2 && PAGE_DOWN_ID == 0xC3);
 }
 
 //A .bin as read from disk: root (0x56 bytes) then children linked by file
@@ -260,7 +268,7 @@ void statDataBin() {
 	const s16* wire = (const s16*)(bin + 0x56 * 2 + 4);
 	CHECK(wire[0] == 190 && wire[1] == 8 && wire[2] == 222 && wire[3] == 41);	//row 0, column 4
 	const s16* tab = (const s16*)(bin + 0x56 * 3 + 4);
-	CHECK(tab[0] == 34 && tab[1] == 21 && tab[2] == 53 && tab[3] == 33);	//tab 9: column 1, row 1
+	CHECK(tab[0] == 34 && tab[1] == 59 && tab[2] == 53 && tab[3] == 70);	//tab 9: column 1, row 3
 	const s16* down = (const s16*)(bin + 0x56 * 4 + 4);
 	CHECK(down[0] == 14 && down[1] == 95 && down[2] == 53 && down[3] == 109);
 	const s16* negative = (const s16*)(bin + 0x56 * 5 + 4);

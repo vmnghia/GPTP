@@ -396,7 +396,7 @@ starfield handled (§5). Features 1 and 2 below are done.
 - **The game lags in proportion to the units selected** (reported 2026-10-04). Optimise
   after the page buttons and page indicator.
 - **Page buttons and a page indicator** `[BUILT 2026-10-04]`: the selection box is
-  raised 24 px; 3 gapless rows; tabs 2 x 8 on the left, arrows past 16 pages
+  raised 24 px; 3 gapless rows; tabs in sets of 12 on the left, arrows between sets
   (spec `docs/superpowers/specs/2026-10-04-selection-panel-pages-design.md`).
   Needs the new `rez\statdata.bin` (144 wireframes, 19 page controls) repacked.
 

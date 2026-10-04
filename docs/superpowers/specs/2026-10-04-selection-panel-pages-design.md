@@ -11,13 +11,16 @@ The final mock-up ("E", round 6), at 1280x720:
 - The selection box is **raised 24 px**. The minimap, portrait and command card
   stay where they are.
 - **Three rows of full-size wireframes with no gaps**: boxes 33x34, edge to
-  edge (33 px across, 34 px down). 75 to a page at 1280x720.
-- **Page tabs on the left**: 2 columns x 8 rows, numbered 1-16, column-major
-  (1-8 down the first column, 9-16 down the second). The tab column's top and
-  bottom are level with the grid's top and bottom.
-- **More than 16 pages: arrows instead of tabs**. A ▲ button level with the
-  grid's top, a ▼ button level with its bottom, both 15 px tall, and the page
-  number ("9/23") between them.
+  edge (33 px across, 34 px down), filled left to right, then the next row
+  (user, 2026-10-04). 75 to a page at 1280x720.
+- **Page tabs on the left, in sets of 12** (user, 2026-10-05, replacing 2 x 8
+  tabs with arrows instead past 16 pages): 2 columns x 6 rows, column-major
+  (1-6 down the first column, 7-12 down the second), between a ▲ button
+  level with the grid's top and a ▼ button level with its bottom, both 15 px
+  tall and always shown with the tabs, greyed when they can't move. The
+  arrows switch between whole sets of 12 tabs (1-12, 13-24, ...); the page
+  stays as it is. A page change (Ctrl+PgUp/PgDn, Tab) brings its set up. The
+  last set lists only its real tabs, blanks after.
 - **Tabs and arrows reuse the wireframe's frame** (section 5). The current
   page's tab has a brighter middle line, a lighter fill and a green number.
 - **The console art is raised by the plugin** (option A of 2026-10-04): no art
@@ -34,13 +37,12 @@ is 24 px higher and it is 24 px taller: 116 instead of 92).
 | Part | x | y | Size |
 |---|---|---|---|
 | Wireframe grid | 58 + 33·column | 8 + 34·row (rows 0-2) | 33 x 34 each |
-| Tabs, column c (0-1), row r (0-7) | 14 + 20·c | 8 + E(r) | 20 x (E(r+1) − E(r)) |
+| Tab slot, column c (0-1), row r (0-5) | 14 + 20·c | 8 + 15 + 12·r | 20 x 12 |
 | ▲ arrow | 14 | 8 | 40 x 15 |
-| Page number | 14 | between the arrows | 40 wide, centred |
 | ▼ arrow | 14 | 8 + 102 − 15 = 95 | 40 x 15 |
 
-- E(r) = round(102·r / 8): 0, 13, 26, 38, 51, 64, 77, 89, 102. So the tabs are
-  13 or 12 px tall and together exactly as tall as the grid (3 x 34 = 102).
+- The arrows and the 6 tab rows together are exactly as tall as the grid
+  (15 + 6 x 12 + 15 = 102 = 3 x 34).
 - **Wireframes per page** = 3 x columns, at most the wireframe controls
   present. Columns = (dialog width − 10 − 58 − 33) / 33 + 1 (the last box ends
   at least 10 px from the dialog's right edge, inside the box art):
@@ -61,12 +63,14 @@ is 24 px higher and it is 24 px taller: 116 instead of 92).
 
 ## 3. Behaviour
 
-- **Tabs.** Shown when the selection spans 2-16 pages; one tab per page. A
-  left click shows that page. No tabs with a single page (nothing to choose),
-  nor while one unit is selected (the single-unit display is up).
-- **Arrows.** Shown instead of tabs at 17 pages or more. ▲ shows the previous
-  page, ▼ the next one. At the first page ▲ is greyed and does nothing; at the
-  last page ▼ is. The page number reads "page/pages".
+- **Tabs and arrows** show from 2 pages; none with a single page (nothing to
+  choose), nor while one unit is selected (the single-unit display is up).
+- **Tabs.** One set of 12 is listed; a left click shows that page.
+- **Arrows.** ▲ lists the previous set, ▼ the next; the page shown doesn't
+  change. An arrow that can't move (the first set for ▲, the last for ▼; both
+  with 12 pages or fewer) is greyed and does nothing.
+- **The set follows the page**: when the page changes by any other means
+  (Ctrl+PgUp/PgDn, Tab, units dying past the last page), its set is listed.
 - **The current page** is the panel's existing local `selectionPage`. Tabs,
   arrows, Ctrl+PgUp/PgDn and Tab's jump to the active subgroup's page all set
   it; the tabs and arrows redraw when it changes.
@@ -82,8 +86,10 @@ is 24 px higher and it is 24 px taller: 116 instead of 92).
 - **The generator** (`SCManifold\to-repack\make_statdata_wide.py`) appends
   controls to vanilla's file and links them after its last entry, as today:
   - wireframes up to `WIREFRAME_MAX` = 144 (ids 0x21-0xB0);
-  - 16 tabs (ids 0xB1-0xC0);
-  - the ▲ arrow, the page number and the ▼ arrow (ids 0xC1-0xC3).
+  - 16 tab controls (ids 0xB1-0xC0), of which the first 12 are used;
+  - the ▲ arrow, a spare control (once the page number) and the ▼ arrow
+    (ids 0xC1-0xC3). The spare controls stay hidden; the file was not
+    regenerated for the sets of 12, so no repack was needed.
   It writes placeholder rects only. The file is then repacked by the user, as
   `rez\statdata.bin`.
 - **The plugin lays the panel out** as the `.bin` loads (the existing
@@ -200,11 +206,13 @@ In `selection_ext_core.cpp`, covered by `sel_selftest.cpp`:
 - `pageSizeFor(width, controls)`: the new formula (270 → 18, 910 → 75,
   1550 → 132, 1678 → 144, capped by the controls).
 - `wireframesMissing` keeps working with the new formula.
-- `pageControlsFor(pages)`: none (≤ 1), tabs (2-16), arrows (> 16).
-- Layout functions giving each control's rect: wireframe k (column-major, 3
-  rows), tab p (column-major, 2 x 8, E(r) heights summing to 102), the
-  arrows and page number; and the vanilla controls' offset.
-- `pageAfterTab`, `pageAfterArrow(page, pages, up)` (stops at the ends).
+- `pageControlsShown(pages)`: from 2 pages.
+- Layout functions giving each control's rect: wireframe k (row by row in
+  the columns that fit), tab slot (column-major, 2 x 6, 12 px), the arrows;
+  and the vanilla controls' offset.
+- Tab sets: `tabSetOf`, `tabArrowActive`, `tabSetAfterArrow` (stops at the
+  ends), `pageOfTab`, `tabSetFollowing` (follows a page change, clamps when
+  the pages shrink); `pageAfterTab`.
 - `nineSliceSource(x, size, 33 or 34)`: which frame column/row feeds pixel x
   of a stretched frame.
 
@@ -214,8 +222,8 @@ In `selection_ext_core.cpp`, covered by `sel_selftest.cpp`:
 - 11.2 100 units at 1280x720: tabs 1-2, page 1 lit; click 2 shows units 76-100;
   Ctrl+PgUp returns to 1 and the lit tab follows.
 - 11.3 400 units: 6 tabs; each shows its page; the last page is partial.
-- 11.4 640x480 with 400 units: arrows with "1/23"; ▲ greyed; ▼ to 23/23, then
-  ▼ greyed.
+- 11.4 640x480 with 400 units: tabs 1-12, ▲ greyed; ▼ lists 13-23 (blank
+  slot after 23), ▲ active, ▼ greyed; the page shown doesn't change.
 - 11.5 The raised box in each race (Terran, Protoss, Zerg) and a replay:
   no holes or stale pixels around the box, decorative pieces in place; the
   ▲ arrow, tabs 1 and 9 and the top wireframe row fully drawn, no flicker,

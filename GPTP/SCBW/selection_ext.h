@@ -113,13 +113,16 @@ u8 oldestRingSlot(const u16* stamps);
 //Design: docs/superpowers/specs/2026-10-04-selection-panel-pages-design.md
 
 //statdata.bin's controls (make_statdata_wide.py writes them): wireframes
-//from id 0x21, then the page tabs, then the arrows and the page number.
+//from id 0x21, then 16 tab controls, then the up arrow, a spare control (it
+//was the page number) and the down arrow. A set of PAGE_TABS tabs is shown;
+//the spare tab controls and the spare control stay hidden.
 const u32 WIREFRAME_FIRST_ID = 0x21;
 const u32 WIREFRAME_MAX = 144;
-const u32 PAGE_TABS = 16;
+const u32 PAGE_TAB_CONTROLS = 16;
+const u32 PAGE_TABS = 12;
 const u32 PAGE_TAB_FIRST_ID = WIREFRAME_FIRST_ID + WIREFRAME_MAX;	//0xB1
-const u32 PAGE_UP_ID = PAGE_TAB_FIRST_ID + PAGE_TABS;				//0xC1
-const u32 PAGE_LABEL_ID = PAGE_UP_ID + 1;
+const u32 PAGE_UP_ID = PAGE_TAB_FIRST_ID + PAGE_TAB_CONTROLS;		//0xC1
+const u32 PAGE_SPARE_ID = PAGE_UP_ID + 1;
 const u32 PAGE_DOWN_ID = PAGE_UP_ID + 2;
 const u32 PANEL_LAST_ID = PAGE_DOWN_ID;
 //How much higher and taller the selection box is than vanilla's.
@@ -135,7 +138,8 @@ const u32 GRID_ROWS = 3;
 const s32 GRID_RIGHT_MARGIN = 10;
 const s32 TABS_LEFT = 14;
 const s32 TAB_WIDTH = 20;
-const u32 TAB_ROWS = 8;
+const u32 TAB_ROWS = 6;
+const s32 TAB_HEIGHT = 12;
 const s32 ARROW_HEIGHT = 15;
 
 //A control's rect as a .bin stores it: inclusive, relative to the root.
@@ -147,13 +151,11 @@ u32 gridColumnsFor(u32 dialogWidth);
 //Wireframe k of a page, row by row (left to right, then the next row) in
 //columns columns, edge to edge.
 PanelRect wireframeRect(u32 k, u32 columns);
-//Page tab 0-15: 2 columns of TAB_ROWS, column-major, together as tall as
-//the grid.
-PanelRect pageTabRect(u32 tab);
-//The arrows (level with the grid's top and bottom) and the page number
-//between them, shown instead of the tabs past PAGE_TABS pages.
+//Tab slot 0-11 of the shown set: 2 columns of TAB_ROWS, column-major,
+//between the arrows.
+PanelRect pageTabRect(u32 slot);
+//The arrows, level with the grid's top and bottom.
 PanelRect pageUpRect();
-PanelRect pageLabelRect();
 PanelRect pageDownRect();
 //Wireframes per page: GRID_ROWS x the columns that fit a StatData dialog
 //this wide, at most the controls present.
@@ -174,18 +176,26 @@ extern u32 selectionPage;
 //stopping at the ends; nothing else does, nor anything while chat is open.
 //(Plain PgUp/PgDn scroll the map diagonally in vanilla.)
 u32 pageAfterKey(u16 key, bool ctrlHeld, bool chatOpen, u32 page, u32 pages);
-//Which page controls show for this many pages: none for one, tabs up to
-//PAGE_TABS, arrows past that.
-enum PageControls { PAGE_CONTROLS_NONE, PAGE_CONTROLS_TABS, PAGE_CONTROLS_ARROWS };
-PageControls pageControlsFor(u32 pages);
+//Whether the tabs and arrows show: from 2 pages.
+bool pageControlsShown(u32 pages);
+//The tab set (PAGE_TABS tabs each) that holds page.
+u32 tabSetOf(u32 page);
+//Whether an arrow can move the tab set (up: to the previous set); greyed
+//otherwise.
+bool tabArrowActive(u32 set, u32 pages, bool up);
+//The tab set after a click on an arrow, stopping at the ends.
+u32 tabSetAfterArrow(u32 set, u32 pages, bool up);
+//The page of tab slot in set.
+u32 pageOfTab(u32 set, u32 slot);
+//The tab set to show: the current page's set when the page changed since
+//lastPage (keys, Tab, a tab click), else set as it is (an arrow chose it),
+//moved back to the last set when the pages shrink.
+u32 tabSetFollowing(u32 set, u32 lastPage, u32 page, u32 pages);
 //The page after a click on tab (unchanged if the tab is past the last page).
 u32 pageAfterTab(u32 tab, u32 page, u32 pages);
-//The page after a click on an arrow (up: the previous page), stopping at
-//the ends.
-u32 pageAfterArrow(u32 page, u32 pages, bool up);
 //Whether page control id with these flags is under the cursor when the
 //cursor is over it (the dialog's hit test, user event 4): visible tabs and
-//arrows yes, the page number never. The game's default answer (0x418030)
+//arrows yes, the spare controls never. The game's default answer (0x418030)
 //also wants flag 0x10, which statdata.bin's buttons lack.
 bool pageControlTakesHits(u32 id, u32 flags);
 //Lays out StatData's controls in its .bin as read from disk (before the
