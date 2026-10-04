@@ -395,12 +395,20 @@ starfield handled (§5). Features 1 and 2 below are done.
   `make_statdata_wide.py`) to the repack fixed it (test 10.1: 30 Zerglings fill the whole
   width). The panel now prints "statdata.bin not repacked: N wireframes" once per game
   when the file has fewer wireframes than the panel fits.
-- **The game lags in proportion to the units selected** (reported 2026-10-04). Optimise
-  after the page buttons and page indicator.
+- **The game lags in proportion to the units selected** (reported 2026-10-04). **Next
+  item** (the page buttons are done). Measure first: find which per-frame work walks the
+  whole selection (panel `changed()`, subgroup keys, selection circles, smart-build or
+  smart-cast scans) before changing anything.
 - **Page buttons and a page indicator** `[BUILT 2026-10-04]`: the selection box is
   raised 24 px; 3 gapless rows; tabs in sets of 12 on the left, arrows between sets
   (spec `docs/superpowers/specs/2026-10-04-selection-panel-pages-design.md`).
   Needs the new `rez\statdata.bin` (144 wireframes, 19 page controls) repacked.
+  Review minors left open (none shows with vanilla art): the decoded tab frame is cached
+  by GRP pointer and never reset between games; `decodeGrpFrame` doesn't mask the frame
+  count with 0x7FFF as vanilla does; a click on a greyed arrow may still play the button
+  sound; `layOutStatDataBin` leaves the controls' .bin width/height at 33x34 (PyMS shows
+  it); `consoleRaise()`/`frames()` tests sit outside the unnamed namespace; only the box
+  raise has its own switch (`RAISE_SELECTION_BOX`), not the widening or the card rebuild.
 
 **Data edits, the user's to make:**
 - **stat_txt.tbl entries 810 and 811** ("Show/Hide Terrain in Minimap (Tab)"): change
@@ -437,6 +445,18 @@ starfield handled (§5). Features 1 and 2 below are done.
 - The game runs from `D:\Games\Starcraft 1.16.1\Starcraft.exe`, and cnc-ddraw
   (`windowed=true` with `fullscreen=true`, i.e. borderless, and `maintas=false`) goes next
   to it.
+- **A new `rez\` file must be added to the repack by hand**: the repack tool keeps its
+  own list. Check the exe with `D:\SC Moddingesexp-analysis\mpqfind.py SCManifold.exe
+  "rez\statdata.bin"` (lists the file's size in the exe's MPQ, or "missing");
+  `mpqget.py <mpq> <name> <out>` extracts a file from the game's MPQs (StormLib).
+- **At exactly 640×480 the resolution module is off**, but the console layout hooks
+  (`injectConsoleLayoutHooks`) still run; anything that depends on the console's layout
+  must be installed there, not only in `injectHudHooks`.
+- **Custom dialog controls must answer the hit test** (user event kind 4) themselves: the
+  default answer (0x418030) needs flag 0x10, which statdata.bin's buttons lack, so they
+  draw but never get clicks (see `pageButtonInteract`).
+- Compute panel sizes from the layout code, not by hand: StatData is
+  270 + (width − 640) − 52 wide (the portrait always moves 52 px for the 5x3 card).
 - To find a leftover 640×480 assumption, grep a full disassembly listing for the
   constants: `0x280`/`0x27F`, `0x1E0`/`0x1DF`, `0x190`, `0x140`/`0xC8`, and `0xA`/`6` in tiles
   (§8).
