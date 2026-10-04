@@ -132,26 +132,36 @@ All in `widenConsoleImage()` (`hooks/interface/resolution_hud.cpp`), as one
 separate step after the widening, so a replacement console can skip it:
 
 - **Per race, a column span [left, right) of the vanilla 640x480 art** is
-  raised; mapped to the wide image with `mapConsoleX`, so it covers the
-  widened box. Values from the 2026-10-04 trial on the real art:
+  raised, in the vanilla image before it is widened, so the widening copies
+  the raised box (and its strip) like any other art. Values from the
+  2026-10-04 trial on the real art:
 
   | Race (`consoleRace()`) | Art | left | right |
   |---|---|---|---|
-  | 0 Zerg | `zconsole.pcx` | 136 | 410 |
+  | 0 Zerg | `zconsole.pcx` | 138 | 408 |
   | 1 Terran | `tconsole.pcx` | 143 | 407 |
-  | 2 Protoss | `pconsole.pcx` | 143 | 410 |
-  | 3 replays | `nconsole.pcx` | to measure | to measure |
+  | 2 Protoss | `pconsole.pcx` | 143 | 408 |
+  | 3 replays | `nconsole.pcx` | 150 | 405 |
+
+  The replay console is raised too (user, 2026-10-04: replays share
+  `statdata.bin`, so their panel needs the taller box; the seam on its left
+  slope is accepted).
+- **Every span lies inside StatData's vanilla columns [138, 408)**, so the
+  rows the raise rewrites below the old box top are always painted by
+  StatData itself (section "Follows by itself").
 
 - **The cut row is 420** (inside the box's black area in all races). In those
   columns, every row above it moves up 24 px; the 24 rows freed just above
   the cut repeat row 420 (the box's black interior and its side walls).
 - **Seams** remain where the raised columns meet unraised art: Protoss's gold
-  bar and Zerg's tube on the right, Zerg's stretched left wall. Accepted
-  (section 1).
+  bar and Zerg's tube on the right, Zerg's stretched left wall, the replay
+  console's left slope. Accepted (section 1).
 - **Decorative pieces (StatFluf)** paint the art at their own rects, so
-  `buildFlufTable` moves the part of every piece inside the raised columns and
-  above the cut row up 24, splitting a piece at the span's edges as it already
-  splits pieces around the card.
+  `buildFlufTable` splits every piece at the span's edges and **grows the part
+  inside the span 24 px upward** (its bottom stays). Every raised pixel came
+  from 24 px lower, where a piece covered it, so the grown piece covers it
+  again; the extra rows it also covers repaint the same image. All vanilla
+  pieces end above y 388, so above the cut.
 - **Follows by itself**, since it is built from the image: the console's
   transparency mask (0x41D640), its hit test lines (0x4D11A0), and StatData's
   background (0x4C35F0). Clicks in the raised strip go to the panel.
