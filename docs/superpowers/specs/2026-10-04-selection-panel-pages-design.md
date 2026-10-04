@@ -1,6 +1,6 @@
 # Selection panel pages: taller box, 3 gapless rows, page tabs
 
-Status: design approved in chat 2026-10-04 (mock-up rounds 1-6), spec for review.
+Status: built 2026-10-04 (plan docs/superpowers/plans/2026-10-04-selection-panel-pages.md); in-game round 11.
 Follows stage 3 of `2026-09-30-extended-selection-design.md`, which built the
 pages (Ctrl+PgUp/PgDn only) on vanilla's 2 rows.
 

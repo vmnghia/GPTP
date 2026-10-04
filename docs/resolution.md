@@ -294,6 +294,62 @@ fixes:
 `RESOLUTION_DEBUG` in `resolution.h` prints a layout report at game frames 48 and 480: which
 panels were placed, the console image size, the screen limits and every dialog's position.
 
+### Console art reference
+
+What the plugin does to the console art, for anyone replacing it (an SC2
+console, say) without reading the code. Code: `hooks/interface/resolution_hud.cpp`
+and `SCBW/console_raise.cpp`.
+
+**The image.** `game\<race>console.pcx` (`z`, `t`, `p`; `n` in replays),
+640x480, no palette of its own: pixel values are indices into the in-game
+palette, 0 is transparent. Loaded at 0x4C3950, kept at 0x597240
+({u16 width, u16 height, u8* pixels}). After it loads (0x4C39F5),
+`widenConsoleImage()` rebuilds it at the full screen size in three steps, in
+this order:
+
+1. **Raise the selection box** (`RAISE_SELECTION_BOX`), on the vanilla
+   640x480 art. Per race, the columns of `consoleraise::SPANS` (Zerg 138-408,
+   Terran 143-407, Protoss 143-408, replays 150-405): every row above row 420
+   moves up 24 px, and rows 396-419 repeat row 420. Every span lies inside
+   StatData's vanilla columns [138, 408). Seams where raised columns meet the
+   rest: Protoss's gold bar and Zerg's tube on the right, Zerg's left wall,
+   the replay console's left slope.
+2. **Widen.** Columns left of the race's split (`consoleStretch`: 270 for
+   Zerg, Terran and replays, 210 for Protoss) go to the bottom-left corner,
+   the rest to the bottom-right one. The gap is filled with pairs of the
+   40 px strip that starts at the split: a copy, then a mirrored copy,
+   narrowed so a whole number of pairs fits and each pair ends on the split
+   column.
+3. **Dense command card** (not in replays). The vanilla 3x3 frame (cells
+   46 x 40 apart from (496,354)) is rebuilt 5x3 with 36x34 buttons touching:
+   196x114, flush with the bottom-right corner (`cardSourceColumn`,
+   `cardSourceRow`); the portrait part moves left by the difference.
+
+**What reads the image.**
+- Each panel dialog copies its background out of it at its own rect
+  (0x4C35F0): Minimap, StatData, StatPort, StatBtn, StatRes, Stat_F10,
+  TextBox, placed by `panelPlacements`. StatData is also widened by the gap,
+  raised 24 px and made 24 px taller (`raiseStatData`).
+- The decorative pieces (StatFluf) paint the parts no panel covers. The
+  plugin gives each race its own table (`buildFlufTable`): each vanilla piece
+  is split at the raised span's edges with the inside part grown 24 px up,
+  mapped like the art, and cut around the dense card.
+- The console's transparency mask (0x41D640) and the hit test lines
+  (0x4D11A0) are built from the image, so they follow by themselves.
+
+**A replacement console must provide**, at the full screen size or as
+640x480 art for the steps above:
+- the in-game palette's indices, 0 for transparent;
+- every panel's area at the place `panelPlacements` puts it, and the
+  selection box with its black area at StatData's rect: 24 px above
+  vanilla's 388, 116 tall, as wide as the gap allows;
+- the command card's 196x114 frame at the bottom-right corner;
+- art for every visible pixel that no panel covers, inside a StatFluf
+  piece's rect (or new pieces in `buildFlufTable`).
+Art drawn at the full width with its own tall box skips steps 1-3:
+`RAISE_SELECTION_BOX` off, and the widening and card rebuild replaced by a
+plain copy.
+
 ## 6. Remaining and future work
 
 State on 2026-09-29: `feature/resolution` builds and plays at any size set in
@@ -338,8 +394,10 @@ starfield handled (§5). Features 1 and 2 below are done.
   when the file has fewer wireframes than the panel fits.
 - **The game lags in proportion to the units selected** (reported 2026-10-04). Optimise
   after the page buttons and page indicator.
-- **Fold in page buttons and a page indicator** for the selection panel (left out of
-  stage 3; Ctrl+PgUp/PgDn is the only way to page now). Mock-ups first.
+- **Page buttons and a page indicator** `[BUILT 2026-10-04]`: the selection box is
+  raised 24 px; 3 gapless rows; tabs 2 x 8 on the left, arrows past 16 pages
+  (spec `docs/superpowers/specs/2026-10-04-selection-panel-pages-design.md`).
+  Needs the new `rez\statdata.bin` (144 wireframes, 19 page controls) repacked.
 
 **Data edits, the user's to make:**
 - **stat_txt.tbl entries 810 and 811** ("Show/Hide Terrain in Minimap (Tab)"): change
