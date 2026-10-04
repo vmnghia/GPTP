@@ -29,6 +29,8 @@
 #include "resolution.h"
 #include <hook_tools.h>
 #include <SCBW/api.h>
+#include <SCBW/console_raise.h>
+#include <SCBW/selection_ext.h>
 #include <cstdio>
 #include <cstring>
 
@@ -42,6 +44,11 @@ s32 consoleY;
 //The resources display (top right in vanilla) stays in the top-right corner.
 s32 resourcesX;
 s32 noOffset = 0;
+
+//The selection box is raised for the taller selection panel (Console art
+//reference in docs/resolution.md). A replacement console drawn with a tall
+//box already turns this off, and only the panel moves.
+const bool RAISE_SELECTION_BOX = true;
 
 //Where each race's art is split, and the strip that fills the gap: a plain
 //stretch of the selection box's top edge. Also where the first button sits in
@@ -175,7 +182,7 @@ static_assert(sizeof(FlufEntry) == 12, "StatFluf table entries are 12 bytes");
 
 const u32 flufVanillaTables[4] = { 0x005152A8, 0x00515300, 0x00515348, 0x00515388 };
 const u32 FLUF_TABLE_POINTERS = 0x005153E8;
-const u32 MAX_FLUF_PIECES = 31;
+const u32 MAX_FLUF_PIECES = 47;	//raised pieces split in up to three
 FlufEntry flufTables[4][MAX_FLUF_PIECES + 1];
 
 void addFluf(FlufEntry*& out, const FlufEntry* end, s32 left, s32 top, s32 right, s32 bottom) {
@@ -198,26 +205,42 @@ void buildFlufTable(u32 race) {
   const s32 cardRight = cardLeft + CARD_WIDTH;
   const s32 cardBottom = cardTop + CARD_HEIGHT;
 
-  for (const FlufEntry* piece = (const FlufEntry*)flufVanillaTables[race]; piece->x != 0xFFFF; ++piece) {
-    const s32 left = mapConsoleX(piece->x, race);
-    const s32 lastX = piece->x + piece->width - 1;
-    const s32 right = cutCard && lastX >= VANILLA_CARD_LEFT
-                        ? mapConsoleX(lastX + 1, race)  //proportional: map the end itself
-                        : mapConsoleX(lastX, race) + 1;
-    const s32 top = piece->y + consoleY;
-    s32 bottom = top + piece->height;
-    if (cutCard && piece->x + piece->width > VANILLA_CARD_LEFT)
-      bottom += CARD_DROP;
-    if (!cutCard || right <= cardLeft || left >= cardRight || bottom <= cardTop || top >= cardBottom) {
-      addFluf(out, end, left, top, right, bottom);
-      continue;
+  for (const FlufEntry* vanilla = (const FlufEntry*)flufVanillaTables[race]; vanilla->x != 0xFFFF; ++vanilla) {
+    //The raised selection box: the part of the piece over it grows up.
+    consoleraise::Piece raised[3];
+    const consoleraise::Piece whole = { vanilla->x, vanilla->y, vanilla->x + vanilla->width, vanilla->y + vanilla->height };
+    u32 count = 1;
+    raised[0] = whole;
+    if (RAISE_SELECTION_BOX)
+      count = consoleraise::raisePiece(whole, consoleraise::SPANS[race], consoleraise::CUT_ROW,
+                                       selext::PANEL_RAISE, raised);
+    for (u32 i = 0; i < count; ++i) {
+      FlufEntry pieceEntry;
+      pieceEntry.x = (u16)raised[i].left;
+      pieceEntry.y = (u16)raised[i].top;
+      pieceEntry.width = (u16)(raised[i].right - raised[i].left);
+      pieceEntry.height = (u16)(raised[i].bottom - raised[i].top);
+      const FlufEntry* const piece = &pieceEntry;
+      const s32 left = mapConsoleX(piece->x, race);
+      const s32 lastX = piece->x + piece->width - 1;
+      const s32 right = cutCard && lastX >= VANILLA_CARD_LEFT
+                          ? mapConsoleX(lastX + 1, race)  //proportional: map the end itself
+                          : mapConsoleX(lastX, race) + 1;
+      const s32 top = piece->y + consoleY;
+      s32 bottom = top + piece->height;
+      if (cutCard && piece->x + piece->width > VANILLA_CARD_LEFT)
+        bottom += CARD_DROP;
+      if (!cutCard || right <= cardLeft || left >= cardRight || bottom <= cardTop || top >= cardBottom) {
+        addFluf(out, end, left, top, right, bottom);
+        continue;
+      }
+      const s32 midTop = top > cardTop ? top : cardTop;
+      const s32 midBottom = bottom < cardBottom ? bottom : cardBottom;
+      addFluf(out, end, left, top, right, cardTop);          //above the card
+      addFluf(out, end, left, cardBottom, right, bottom);    //below it
+      addFluf(out, end, left, midTop, cardLeft, midBottom);  //left of it
+      addFluf(out, end, cardRight, midTop, right, midBottom);//right of it
     }
-    const s32 midTop = top > cardTop ? top : cardTop;
-    const s32 midBottom = bottom < cardBottom ? bottom : cardBottom;
-    addFluf(out, end, left, top, right, cardTop);          //above the card
-    addFluf(out, end, left, cardBottom, right, bottom);    //below it
-    addFluf(out, end, left, midTop, cardLeft, midBottom);  //left of it
-    addFluf(out, end, cardRight, midTop, right, midBottom);//right of it
   }
   out->x = 0xFFFF;
   memoryPatch(FLUF_TABLE_POINTERS + race * 4, (u32)flufTables[race]);
@@ -265,6 +288,17 @@ void offsetBounds(u8* dlg, s32 dx, s32 dy, s32 dw = 0) {
 u32 placedMask = 0;   //bit per panelPlacements entry, for debugReport()
 u32 widenedCount = 0;
 
+//The taller selection panel: StatData starts PANEL_RAISE higher and is as
+//much taller (the root stores height - 1 where bottom goes, and the height
+//again at 0x38); its controls are laid out by the selection code.
+void raiseStatData(u8* root, u8* base) {
+  s16* bounds = (s16*)(root + DLG_BOUNDS);
+  bounds[1] = (s16)(bounds[1] - selext::PANEL_RAISE);
+  bounds[3] = (s16)(bounds[3] + selext::PANEL_RAISE);
+  *(u16*)(root + DLG_WIDTH + 2) = (u16)(*(u16*)(root + DLG_WIDTH + 2) + selext::PANEL_RAISE);
+  selext::layOutStatDataBin(base);
+}
+
 void __cdecl placeDialog(u8* root, u8* base) {
   if (root != base || *(u16*)(root + DLG_TYPE) != 0)
     return;
@@ -280,6 +314,8 @@ void __cdecl placeDialog(u8* root, u8* base) {
     const s32 dy = *placement.dy;
     placedMask |= 1u << (&placement - panelPlacements);
     offsetBounds(root, dx, dy, *placement.dw);
+    if (strcmp(name, "StatData") == 0)
+      raiseStatData(root, base);
     return;
   }
 }
@@ -358,6 +394,13 @@ void __cdecl widenConsoleImage() {
   u8* wide = (u8*)stormMemAlloc(res_w * res_h, __FILE__, __LINE__, 0);
   if (wide == NULL)
     return;
+
+  //Step 1 of the console art (docs/resolution.md, Console art reference):
+  //raise the selection box, in the vanilla art, so the widening below
+  //copies the raised box and its strip like any other art.
+  if (RAISE_SELECTION_BOX)
+    consoleraise::raiseArt(consoleImage->pixels, 640, 480, consoleraise::SPANS[layoutRace],
+                           consoleraise::CUT_ROW, selext::PANEL_RAISE);
   memset(wide, 0, res_w * res_h);
 
   const u8* art = consoleImage->pixels;
