@@ -821,6 +821,29 @@ void __declspec(naked) rightClickOrderAllowedStub() {
 	}
 }
 
+//0x45570F in the right-click's send check 0x4556D0 (EAX = unit, CX = its
+//type): vanilla refuses an SCV constructing (cmp [eax+0x4D], 0x21 / je
+//0x455751), so nothing is sent; with Shift held it goes on (to 0x455715).
+const u32 RightClickRefused = 0x00455751;
+const u32 RightClickGoesOn = 0x00455715;
+void __declspec(naked) rightClickConstructingStub() {
+	static CUnit* unit;
+	static u32 refuse;
+	__asm {
+		MOV unit, EAX
+		PUSHAD
+	}
+	refuse = selbuild::rightClickRefuses(unit);
+	__asm {
+		POPAD
+		CMP DWORD PTR refuse, 0
+		JNE refused
+		JMP RightClickGoesOn
+	refused:
+		JMP RightClickRefused
+	}
+}
+
 //0x48DE07 (each frame while placing): vanilla's placement check 0x48DCE0,
 //whose EAX goes to [0x640958]; a queued site this placement may not
 //overlap gives code 4, so the click is refused before it is sent.
@@ -997,6 +1020,7 @@ void injectSmartBuildHooks() {
 	callPatch(finishPlacementStub,			0x0048E594, 0);
 	callPatch(placementResultStub,			0x0048DE07, 0);
 	callPatch(rightClickOrderAllowedStub,	0x004562BF, 0);
+	jmpPatch(rightClickConstructingStub,	0x0045570F, 1);
 	//Commands queue behind a construction: vanilla's return-to-idle order,
 	//queued when an SCV starts constructing with an empty queue, is gone
 	//(with the queue empty BW goes idle the same way).

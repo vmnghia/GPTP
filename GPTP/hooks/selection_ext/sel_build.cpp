@@ -456,6 +456,10 @@ u8* sendAsQueued(const u8* cmd) {
 	return queuedCommand;
 }
 
+u32 rightClickRefuses(CUnit* unit) {
+	return checkAsFree(*SHIFT_HELD != 0, unit->mainOrderId) ? 0 : 1;
+}
+
 u32 orderAllowedForCommand(CUnit* unit, u32 order, u32 player, u32 queued) {
 	const u8 current = unit->mainOrderId;
 	if (checkAsFree(queued != 0, current))

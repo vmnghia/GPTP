@@ -51,6 +51,9 @@ u32 placementResult(u32 code);
 //The right-click receive's order check (0x46DC20 at 0x4562BF, synced): a
 //queued command to an SCV constructing is checked as if it were free, so it
 //queues behind the construction; anything else is vanilla's check.
+//Local, the right-click's send check (0x4556D0) for an SCV constructing:
+//1 to refuse it (vanilla), 0 with Shift held (the command queues behind).
+u32 rightClickRefuses(CUnit* unit);
 //Returns 1 or 0 (the naked stub uses it as is).
 u32 orderAllowedForCommand(CUnit* unit, u32 order, u32 player, u32 queued);
 //At the end of the placement click (0x48E4E0, before the send): whether
