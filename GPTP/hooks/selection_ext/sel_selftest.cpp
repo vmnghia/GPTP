@@ -2,6 +2,7 @@
 //once at the start of a game, which prints the result, and in the host test
 //tests/selection_ext_test.bat.
 #include <SCBW/selection_ext.h>
+#include <SCBW/console_raise.h>
 #include <cstring>
 
 namespace selext {
@@ -516,6 +517,41 @@ void minimapKeys() {
 
 } //unnamed namespace
 
+void consoleRaise() {
+	using namespace consoleraise;
+	//6 x 10 art; column x, row y holds 10 * y + x + 1 (never 0).
+	u8 art[60];
+	for (u32 i = 0; i < 60; i++)
+		art[i] = (u8)(10 * (i / 6) + i % 6 + 1);
+	const Span span = { 2, 4 };
+	raiseArt(art, 6, 10, span, 6, 2);
+	CHECK(art[0 * 6 + 2] == 10 * 2 + 3);		//row 0 now shows row 2
+	CHECK(art[3 * 6 + 3] == 10 * 5 + 4);		//row 3 shows row 5
+	CHECK(art[4 * 6 + 2] == 10 * 6 + 3 && art[5 * 6 + 2] == 10 * 6 + 3);	//rows 4-5 repeat the cut row
+	CHECK(art[6 * 6 + 2] == 10 * 6 + 3 && art[9 * 6 + 3] == 10 * 9 + 4);	//from the cut down: unchanged
+	CHECK(art[0 * 6 + 1] == 2 && art[3 * 6 + 4] == 10 * 3 + 5);			//outside the span: unchanged
+
+	//Pieces: split at the span's edges, the part inside grows up.
+	Piece out[3];
+	const Piece across = { 130, 367, 450, 388 };
+	const Span terran = SPANS[1];
+	CHECK(raisePiece(across, terran, CUT_ROW, 24, out) == 3);
+	CHECK(out[0].left == 130 && out[0].right == 143 && out[0].top == 367 && out[0].bottom == 388);
+	CHECK(out[1].left == 143 && out[1].right == 407 && out[1].top == 343 && out[1].bottom == 388);
+	CHECK(out[2].left == 407 && out[2].right == 450 && out[2].top == 367);
+	const Piece inside = { 200, 350, 300, 380 };
+	CHECK(raisePiece(inside, terran, CUT_ROW, 24, out) == 1 && out[0].top == 326 && out[0].bottom == 380);
+	const Piece outside = { 0, 293, 23, 315 };
+	CHECK(raisePiece(outside, terran, CUT_ROW, 24, out) == 1 && out[0].top == 293 && out[0].left == 0);
+	const Piece below = { 200, 430, 300, 440 };
+	CHECK(raisePiece(below, terran, CUT_ROW, 24, out) == 1 && out[0].top == 430);
+	const Piece high = { 200, 10, 300, 40 };
+	CHECK(raisePiece(high, terran, CUT_ROW, 24, out) == 1 && out[0].top == 0);	//clamped
+	//Every span lies inside StatData's vanilla columns [138, 408).
+	for (u32 race = 0; race < 4; race++)
+		CHECK(SPANS[race].left >= 138 && SPANS[race].right <= 408 && SPANS[race].left < SPANS[race].right);
+}
+
 u32 selfTest(u32* firstFailedLine) {
 	failures = 0;
 	firstLine = 0;
@@ -529,6 +565,7 @@ u32 selfTest(u32* firstFailedLine) {
 	pages();
 	panelLayout();
 	statDataBin();
+	consoleRaise();
 	pageKeys();
 	ringSearch();
 	subgroupKeys();

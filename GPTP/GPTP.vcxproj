@@ -325,6 +325,7 @@
     <ClCompile Include="hooks\recv_commands\smart_cast.cpp" />
     <ClCompile Include="SCBW\selection_ext.cpp" />
     <ClCompile Include="SCBW\selection_ext_core.cpp" />
+    <ClCompile Include="SCBW\console_raise.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_selftest.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_exe.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_synced.cpp" />
@@ -511,6 +512,7 @@
     <ClInclude Include="hooks\recv_commands\receive_command.h" />
     <ClInclude Include="hooks\recv_commands\smart_cast.h" />
     <ClInclude Include="SCBW\selection_ext.h" />
+    <ClInclude Include="SCBW\console_raise.h" />
     <ClInclude Include="hooks\selection_ext\selection_ext_hooks.h" />
     <ClInclude Include="hooks\selection_ext\sel_exe.h" />
     <ClInclude Include="hooks\selection_ext\sel_synced.h" />
