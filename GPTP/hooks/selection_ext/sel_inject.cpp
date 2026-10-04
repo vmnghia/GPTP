@@ -963,13 +963,30 @@ void injectSelectChunkHooks() {
 	jmpPatch(addTwinWrapper,		0x0045D040, 1);
 }
 
+//0x457D7B in the StatData tooltip proc: cmp cx, 0x2C; jg 0x457DB6 (6
+//bytes), the last wireframe id as a sign-extended imm8, which cannot reach
+//past 0x7F. The ids are compared in full here.
+static_assert(selext::WIREFRAME_FIRST_ID + selext::WIREFRAME_MAX - 1 == 0xB0,
+              "wireframeTooltipStub compares with 0xB0");
+const u32 TooltipWireframe = 0x00457D81;
+const u32 TooltipOther = 0x00457DB6;
+void __declspec(naked) wireframeTooltipStub() {
+	__asm {
+		CMP CX, 0xB0
+		JG other
+		JMP TooltipWireframe
+	other:
+		JMP TooltipOther
+	}
+}
+
 void injectSelectionPanelHooks() {
 	//StatData's interact table, which 0x4584C0 passes to 0x418100 at
 	//USER_CREATE: vanilla's 44 entries, then the wireframe handler.
 	memoryPatch(0x004584C3, selpanel::interactTableBytes());
 	memoryPatch(0x004584C8, (u32)selpanel::interactTable());
-	//Tooltips: replaced by wireframeTooltipStub in Task 5 (ids past 0x7F).
-	memoryPatch(0x00457D7E, (u8)0x7F);
+	//Tooltips for every wireframe id.
+	jmpPatch(wireframeTooltipStub,	0x00457D7B, 1);
 	jmpPatch(panelFillWrapper,		0x00425960, 6);
 	jmpPatch(panelChangedWrapper,	0x00424660, 2);
 	jmpPatch(panelClickWrapper,		0x00458220, 1);

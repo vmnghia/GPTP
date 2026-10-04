@@ -158,6 +158,9 @@ u32 pageSizeFor(u32 dialogWidth, u32 wireframeControls);
 //Whether statdata.bin has fewer wireframe controls than a dialog this wide
 //fits (vanilla's 12 instead of the wide file's WIREFRAME_MAX).
 bool wireframesMissing(u32 dialogWidth, u32 wireframeControls);
+//Whether statdata.bin is older than the panel: too few wireframes for a
+//dialog this wide, or no page controls.
+bool panelFileOutdated(u32 dialogWidth, u32 wireframeControls, bool pageControlsPresent);
 //Pages for count units (at least 1).
 u32 pageCountFor(u32 count, u32 pageSize);
 //page, moved back to the last page if it is past it.

@@ -5,6 +5,8 @@
 #include "sel_subgroups.h"
 #include <SCBW/selection_ext.h>
 #include <definitions.h>
+#include <graphics/Font.h>
+#include <graphics/Bitmap.h>
 #include <cstdio>
 
 using namespace selext;
@@ -32,16 +34,33 @@ struct WireframeUser {
 	u16 pad;
 };
 
-u32 interact[WIREFRAME_FIRST_ID - 1 + WIREFRAME_MAX];
+u32 interact[PANEL_LAST_ID];
 bool interactBuilt;
 
 u32 pageSize = VANILLA_MAX;		//of the last fill
-bool missingWarned;				//this game
+bool outdatedWarned;			//this game
 u32 shownStamp;					//selsub::activeStamp() at the last fill
 u32 shownStart;
 u32 shownCount;
 s32 shownHitPoints[WIREFRAME_MAX];
 u16 shownId[WIREFRAME_MAX];
+
+//The page controls as last drawn, to redraw them when these change.
+u32 drawnPage = 0xFFFFFFFF;
+u32 drawnPages;
+PageControls drawnMode;
+
+//The current-page tab (0xA5 brighter, the fill lighter) and greyed arrows.
+u8 litRemap[256];
+u8 greyRemap[256];
+bool remapsBuilt;
+
+//Frame 0x0D of the GRP at [0x68C1C0], decoded once per GRP.
+const u8* const* const CMDBTNS_GRP = (const u8**)0x0068C1C0;
+const u32 WIREFRAME_FRAME = 0x0D;
+const u8* decodedFrom;
+u8 frame[FRAME_WIDTH * FRAME_HEIGHT];
+bool frameOk;
 
 BinDlg* firstChild(BinDlg* dialog) {
 	return *(BinDlg**)((u8*)dialog + 0x42);
@@ -66,19 +85,183 @@ bool isChatOpen() {
 	return false;
 }
 
-//The dialog's wireframe controls by id; returns how many there are.
-u32 collectWireframes(BinDlg* dialog, BinDlg** wireframes) {
+//The dialog's panel controls by id; returns how many wireframes there are
+//(the first gap ends them). Missing tabs and arrows are NULL.
+u32 collectControls(BinDlg* dialog, BinDlg** wireframes, BinDlg** tabs, BinDlg** arrows) {
 	for (u32 k = 0; k < WIREFRAME_MAX; k++)
 		wireframes[k] = NULL;
+	for (u32 t = 0; t < PAGE_TABS; t++)
+		tabs[t] = NULL;
+	for (u32 a = 0; a < 3; a++)
+		arrows[a] = NULL;
 	for (BinDlg* control = firstChild(dialog); control != NULL; control = control->next) {
-		const s32 k = control->index - (s32)WIREFRAME_FIRST_ID;
-		if (k >= 0 && k < (s32)WIREFRAME_MAX)
-			wireframes[k] = control;
+		const s32 id = control->index;
+		if (id >= (s32)WIREFRAME_FIRST_ID && id < (s32)PAGE_TAB_FIRST_ID)
+			wireframes[id - WIREFRAME_FIRST_ID] = control;
+		else if (id >= (s32)PAGE_TAB_FIRST_ID && id < (s32)PAGE_UP_ID)
+			tabs[id - PAGE_TAB_FIRST_ID] = control;
+		else if (id >= (s32)PAGE_UP_ID && id <= (s32)PAGE_DOWN_ID)
+			arrows[id - PAGE_UP_ID] = control;
 	}
 	u32 n = 0;
 	while (n < WIREFRAME_MAX && wireframes[n] != NULL)
 		n++;
 	return n;
+}
+
+//Shows the tabs or the arrows for the selection's pages, and redraws them
+//when the page, the page count or the kind of control changes.
+void updatePageControls(BinDlg** tabs, BinDlg** arrows) {
+	const u32 pages = pageCountFor(clientCount, pageSize);
+	const PageControls mode = pageControlsFor(pages);
+	const bool redraw = pages != drawnPages || selectionPage != drawnPage || mode != drawnMode;
+	for (u32 t = 0; t < PAGE_TABS; t++) {
+		if (tabs[t] == NULL)
+			continue;
+		if (mode == PAGE_CONTROLS_TABS && t < pages) {
+			selexe::showControl(tabs[t]);
+			if (redraw)
+				selexe::invalidateControl(tabs[t]);
+		}
+		else
+			selexe::hideControl(tabs[t]);
+	}
+	for (u32 a = 0; a < 3; a++) {
+		if (arrows[a] == NULL)
+			continue;
+		if (mode == PAGE_CONTROLS_ARROWS) {
+			selexe::showControl(arrows[a]);
+			if (redraw)
+				selexe::invalidateControl(arrows[a]);
+		}
+		else
+			selexe::hideControl(arrows[a]);
+	}
+	drawnPages = pages;
+	drawnPage = selectionPage;
+	drawnMode = mode;
+}
+
+struct Surface {
+	u16 width;
+	u16 height;
+	u8* data;
+};
+//The bitmap a dialog draw proc draws on (0x41C1DF sets it).
+Surface* const* const DRAW_SURFACE = (Surface**)0x006CF4A8;
+
+void buildRemaps() {
+	for (u32 i = 0; i < 256; i++)
+		litRemap[i] = greyRemap[i] = (u8)i;
+	litRemap[0xA5] = 0x7E;
+	litRemap[0x29] = 0xA0;
+	litRemap[0x2A] = 0xA0;
+	greyRemap[0xA5] = 0x91;
+	greyRemap[0xA0] = 0x43;
+	remapsBuilt = true;
+}
+
+bool frameReady() {
+	const u8* const grp = *CMDBTNS_GRP;
+	if (grp == NULL)
+		return false;
+	if (grp != decodedFrom) {
+		frameOk = decodeGrpFrame(grp, WIREFRAME_FRAME, frame);
+		decodedFrom = grp;
+	}
+	return frameOk;
+}
+
+//A triangle 11 px wide, 6 tall, pointing up or down, centred on cx.
+void drawTriangle(Surface* surface, s32 cx, s32 top, bool up, u8 colour) {
+	for (s32 i = 0; i < 6; i++) {
+		const s32 y = top + (up ? i : 5 - i);
+		if (y < 0 || y >= surface->height)
+			continue;
+		for (s32 x = cx - i; x <= cx + i; x++)
+			if (x >= 0 && x < surface->width)
+				surface->data[y * surface->width + x] = colour;
+	}
+}
+
+void drawCentredText(Surface* surface, const BinDlg* control, const char* text) {
+	const s32 width = graphics::Font::getTextWidth(text, 0);
+	const s32 height = graphics::Font::getTextHeight(text, 0);
+	const s32 x = control->bounds.left + (control->bounds.right - control->bounds.left + 1 - width) / 2;
+	const s32 y = control->bounds.top + (control->bounds.bottom - control->bounds.top + 1 - height) / 2;
+	((graphics::Bitmap*)surface)->blitString(text, x, y, 0);
+}
+
+//The draw proc of the tabs and arrows (called like 0x456F50: ecx the
+//control, two stack arguments, ret 8).
+void __fastcall pageButtonDraw(BinDlg* control, u32, u32, void*) {
+	Surface* const surface = *DRAW_SURFACE;
+	if (surface == NULL || !frameReady())
+		return;
+	if (!remapsBuilt)
+		buildRemaps();
+	const s32 id = control->index;
+	const s32 left = control->bounds.left, top = control->bounds.top;
+	const u32 width = control->bounds.right - control->bounds.left + 1;
+	const u32 height = control->bounds.bottom - control->bounds.top + 1;
+	const u32 pages = pageCountFor(clientCount, pageSize);
+	if (id == (s32)PAGE_LABEL_ID) {
+		static char text[16];
+		sprintf_s(text, sizeof(text), "\x04%u/%u", selectionPage + 1, pages);
+		drawCentredText(surface, control, text);
+		return;
+	}
+	if (id == (s32)PAGE_UP_ID || id == (s32)PAGE_DOWN_ID) {
+		const bool up = id == (s32)PAGE_UP_ID;
+		const bool atEnd = up ? selectionPage == 0 : selectionPage + 1 >= pages;
+		drawNineSlice(frame, surface->data, surface->width, surface->width, surface->height,
+		              left, top, width, height, atEnd ? greyRemap : NULL);
+		drawTriangle(surface, left + (s32)width / 2, top + 4, up, atEnd ? 0x4A : 0x54);
+		return;
+	}
+	const u32 tab = id - PAGE_TAB_FIRST_ID;
+	const bool lit = tab == selectionPage;
+	drawNineSlice(frame, surface->data, surface->width, surface->width, surface->height,
+	              left, top, width, height, lit ? litRemap : NULL);
+	static char text[8];
+	sprintf_s(text, sizeof(text), lit ? "\x07%u" : "\x04%u", tab + 1);
+	drawCentredText(surface, control, text);
+}
+
+void pageButtonClicked(s32 id) {
+	const u32 pages = pageCountFor(clientCount, pageSize);
+	u32 page = selectionPage;
+	if (id >= (s32)PAGE_TAB_FIRST_ID && id < (s32)PAGE_UP_ID)
+		page = pageAfterTab(id - PAGE_TAB_FIRST_ID, selectionPage, pages);
+	else if (id == (s32)PAGE_UP_ID || id == (s32)PAGE_DOWN_ID)
+		page = pageAfterArrow(selectionPage, pages, id == (s32)PAGE_UP_ID);
+	if (page == selectionPage)
+		return;
+	selectionPage = page;
+	*REFRESH_STAT_DATA = 1;
+}
+
+//The interact proc of the tabs and arrows, called like 0x4583E0: ecx the
+//control, edx the event (+0x0C its number, 0x0E a user event; +0 the user
+//event's kind: 0 create, 2 activate). Anything else goes to the default
+//handler of the control's type, as 0x4583E0 does.
+const u16 EVENT_USER = 0x0E;
+const u32 USER_CREATE = 0;
+const u32 USER_ACTIVATE = 2;
+typedef u32 (__fastcall* DialogHandler)(BinDlg* control, u8* event);
+const DialogHandler* const DEFAULT_HANDLERS = (const DialogHandler*)0x005014AC;
+
+u32 __fastcall pageButtonInteract(BinDlg* control, u8* event) {
+	if (*(const u16*)(event + 0x0C) == EVENT_USER) {
+		const u32 kind = *(const u32*)event;
+		if (kind == USER_CREATE)
+			control->fxnUpdate = (void*)pageButtonDraw;
+		else if (kind == USER_ACTIVATE) {
+			pageButtonClicked(control->index);
+			return 1;
+		}
+	}
+	return DEFAULT_HANDLERS[control->controlType](control, event);
 }
 
 } //unnamed namespace
@@ -96,13 +279,16 @@ void fill(BinDlg* dialog) {
 		dialog = dialog->parent;
 
 	static BinDlg* wireframes[WIREFRAME_MAX];
-	const u32 controls = collectWireframes(dialog, wireframes);
+	static BinDlg* tabs[PAGE_TABS];
+	static BinDlg* arrows[3];
+	const u32 controls = collectControls(dialog, wireframes, tabs, arrows);
 	pageSize = pageSizeFor(dialog->bounds.width, controls);
-	if (!missingWarned && wireframesMissing(dialog->bounds.width, controls)) {
-		static char text[96];
-		sprintf_s(text, sizeof(text), PLUGIN_NAME ": statdata.bin not repacked: %u wireframes", controls);
+	if (!outdatedWarned && panelFileOutdated(dialog->bounds.width, controls, arrows[2] != NULL)) {
+		static char text[112];
+		sprintf_s(text, sizeof(text), PLUGIN_NAME ": statdata.bin not repacked or out of date: %u wireframes%s",
+		          controls, arrows[2] != NULL ? "" : ", no page buttons");
 		scbw::printText(text, GameTextColor::Yellow);
-		missingWarned = true;
+		outdatedWarned = true;
 	}
 	selectionPage = clampPage(selectionPage, clientCount, pageSize);
 	shownStart = selectionPage * pageSize;
@@ -134,6 +320,7 @@ void fill(BinDlg* dialog) {
 	}
 	for (; k < controls; k++)
 		selexe::hideControl(wireframes[k]);
+	updatePageControls(tabs, arrows);
 }
 
 bool changed() {
@@ -221,15 +408,17 @@ void keyDown(const u8* event) {
 }
 
 void reset() {
-	missingWarned = false;
+	outdatedWarned = false;
 }
 
 const u32* interactTable() {
 	if (!interactBuilt) {
 		for (u32 i = 0; i < VANILLA_CONTROLS; i++)
 			interact[i] = VANILLA_INTERACT[i];
-		for (u32 id = VANILLA_CONTROLS + 1; id < WIREFRAME_FIRST_ID + WIREFRAME_MAX; id++)
+		for (u32 id = VANILLA_CONTROLS + 1; id < PAGE_TAB_FIRST_ID; id++)
 			interact[id - 1] = WIREFRAME_INTERACT;
+		for (u32 id = PAGE_TAB_FIRST_ID; id <= PANEL_LAST_ID; id++)
+			interact[id - 1] = (u32)pageButtonInteract;
 		interactBuilt = true;
 	}
 	return interact;

@@ -180,6 +180,10 @@ bool wireframesMissing(u32 dialogWidth, u32 wireframeControls) {
 	return wireframeControls < pageSizeFor(dialogWidth, WIREFRAME_MAX);
 }
 
+bool panelFileOutdated(u32 dialogWidth, u32 wireframeControls, bool pageControlsPresent) {
+	return wireframesMissing(dialogWidth, wireframeControls) || !pageControlsPresent;
+}
+
 u32 pageCountFor(u32 count, u32 pageSize) {
 	if (count == 0 || pageSize == 0)
 		return 1;

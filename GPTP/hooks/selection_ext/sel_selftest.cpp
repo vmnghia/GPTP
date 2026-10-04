@@ -190,6 +190,9 @@ void pages() {
 	CHECK(!wireframesMissing(270, 18));
 	CHECK(!wireframesMissing(910, WIREFRAME_MAX));
 	CHECK(!wireframesMissing(4000, WIREFRAME_MAX));
+	CHECK(panelFileOutdated(910, 90, false));		//today's repack: no page buttons
+	CHECK(panelFileOutdated(910, 12, true));
+	CHECK(!panelFileOutdated(910, WIREFRAME_MAX, true));
 }
 
 bool rectIs(PanelRect r, s16 left, s16 top, s16 right, s16 bottom) {
