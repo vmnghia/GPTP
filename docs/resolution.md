@@ -399,6 +399,32 @@ starfield handled (§5). Features 1 and 2 below are done.
   item** (the page buttons are done). Measure first: find which per-frame work walks the
   whole selection (panel `changed()`, subgroup keys, selection circles, smart-build or
   smart-cast scans) before changing anything.
+  **Measuring `[BUILT 2026-10-05, not yet run]`:** `hooks/selection_ext/sel_profile.*`
+  (switch `SEL_PROFILE`). Every 72 game frames (~3 s at Fastest) it prints three yellow
+  lines: the average and worst frame interval, the largest selection seen, and the
+  plugin's own total; then calls (`x`) and ms per frame for each suspect below.
+  **Ctrl+Alt+P** switches the card's subgroup checks to the leader only (debug only:
+  buttons may show wrong), to A/B the main suspect in the same run. The test: select
+  ~400 Zerglings (or a mixed army), watch a few reports, press Ctrl+Alt+P, watch a
+  few more, then the same with 12 units for a baseline. The frame interval is
+  wall time between game frames, so it is ~42 ms at Fastest whenever nothing lags.
+  If "ours" stays small while the frame time grows, the cost is in vanilla code
+  driven by the selection (circles, health bars, drawing), not in the plugin.
+  Suspects found by reading the code (unmeasured):
+  1. **The command card** (`subgroupButtonState`, `buttonsets.cpp`): each button takes
+     the best state over the active subgroup, checking members one by one until one
+     is enabled. A button no member can use (Burrow before research, a greyed spell)
+     runs `req_check` once per member: up to 15 × 400 checks per card refresh. Shown
+     as `card` and `chk`.
+  2. **The console rebuild** (`clientCopy` → `sortAndPickLeader`): `keepsActive`'s
+     `holdsAll` compares every unit with every other, O(n²), up to ~320k compares at
+     400, in a Debug build. Shown as `copy`; it matters if it runs often.
+  3. **Health bars past slot 255** (`unitForHealthBar`): `selectionIndex` is a byte,
+     so bars of units 255–399 find their unit by scanning the selection: O(n) per bar.
+     Shown as `hb` / `scan`.
+  Ruled out by reading: the selection iterator (`nextSelected`, amortised O(1)),
+  `beforeOrder` (O(1) per unit), smart-build's queued-building scan (walks units, not
+  the selection), the panel's `changed()` (one page), and the dirty-cell grid.
 - **Page buttons and a page indicator** `[BUILT 2026-10-04]`: the selection box is
   raised 24 px; 3 gapless rows; tabs in sets of 12 on the left, arrows between sets
   (spec `docs/superpowers/specs/2026-10-04-selection-panel-pages-design.md`).

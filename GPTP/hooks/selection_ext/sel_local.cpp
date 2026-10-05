@@ -4,6 +4,7 @@
 #include "sel_subgroups.h"
 #include "sel_build.h"
 #include "sel_panel.h"
+#include "sel_profile.h"
 #include <SCBW/selection_ext.h>
 #include <cstring>
 
@@ -86,9 +87,11 @@ void growImagePools() {
 }
 
 CUnit* unitForHealthBar(CSprite* sprite, u32 slot) {
+	SEL_PROFILE_COUNT(HEALTH_BAR);
 	//Below the byte's cap the slot is exact, as in vanilla.
 	if (slot < 255 && slot < SEL_MAX && activeSel[slot] != NULL)
 		return activeSel[slot];
+	SEL_PROFILE_COUNT(HEALTH_BAR_SCAN);
 	for (u32 i = 0; i < SEL_MAX && activeSel[i] != NULL; i++)
 		if (activeSel[i]->sprite == sprite)
 			return activeSel[i];
@@ -97,6 +100,7 @@ CUnit* unitForHealthBar(CSprite* sprite, u32 slot) {
 }
 
 void buildActive(CUnit** list, u32 count) {
+	SEL_PROFILE_SCOPE(BUILD_ACTIVE);
 	for (u32 i = 0; i < SEL_MAX && activeSel[i] != NULL; i++) {
 		CUnit* unit = activeSel[i];
 		activeSel[i] = NULL;
@@ -147,6 +151,7 @@ void localRemove(CUnit* unit) {
 }
 
 void redrawCircles() {
+	SEL_PROFILE_SCOPE(CIRCLES);
 	for (u32 i = 0; i < SEL_MAX && activeSel[i] != NULL; i++) {
 		CUnit* unit = parentOf(activeSel[i]);
 		activeSel[i] = unit;
@@ -165,6 +170,7 @@ void redrawCircles() {
 }
 
 void clientCopy() {
+	SEL_PROFILE_SCOPE(CLIENT_COPY);
 	memcpy(clientSel, activeSel, sizeof(clientSel));
 	clientCount = listCount(clientSel, SEL_MAX);
 	//Stage 5: the console list is sorted by subgroup, and the portrait (whose

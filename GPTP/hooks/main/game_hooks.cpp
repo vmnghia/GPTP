@@ -9,6 +9,7 @@
 #include "../recv_commands/smart_cast.h"
 #include <SCBW/selection_ext.h>
 #include "../selection_ext/sel_build.h"
+#include "../selection_ext/sel_profile.h"
 #include <cstdio>
 
 #include "../psi_field.h"
@@ -347,6 +348,9 @@ bool nextFrame()
 
     if (!scbw::isGamePaused())
     { // If the game is not paused
+
+        selprof::frame(selext::clientCount);
+        SEL_PROFILE_SCOPE(PLUGIN_FRAME);
 
         scbw::setInGameLoopState(true); // Needed for scbw::random() to work
         graphics::resetAllGraphics();

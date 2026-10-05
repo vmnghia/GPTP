@@ -1,5 +1,6 @@
 #include "sel_subgroups.h"
 #include "sel_exe.h"
+#include "sel_profile.h"
 #include <SCBW/selection_ext.h>
 #include <cstring>
 
@@ -108,6 +109,7 @@ void reset() {
 }
 
 void viewBegin() {
+	SEL_PROFILE_SCOPE(VIEW);
 	static CUnit* view[SEL_MAX];
 	u32 m = activeMembers(view);
 	//Most energy first: the check wants one unit able to cast.
@@ -135,6 +137,7 @@ bool isDimmed(CUnit* unit) {
 }
 
 void dimWireframe(CUnit* unit) {
+	SEL_PROFILE_SCOPE(WIRE_DIM);
 	if (unit == NULL || !isDimmed(unit))
 		return;
 	//Cycling entries are never a dim colour (they would shimmer) and their

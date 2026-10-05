@@ -1,5 +1,6 @@
 #include "sel_synced.h"
 #include "sel_exe.h"
+#include "sel_profile.h"
 #include <SCBW/selection_ext.h>
 #include <cstring>
 
@@ -199,6 +200,7 @@ void commitRemove(u32 player, const u16* tags, u32 count) {
 namespace selsync {
 
 CUnit* nextSelected() {
+	SEL_PROFILE_COUNT(NEXT_SELECTED);
 	if (*selectionIndexStart == 0)
 		iteratorCursor = 0;
 	*selectionIndexStart = 1;

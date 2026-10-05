@@ -1,6 +1,7 @@
 #include "buttonsets.h"
 #include <SCBW/selection_ext.h>
 #include "../selection_ext/sel_subgroups.h"
+#include "../selection_ext/sel_profile.h"
 
 //Helper functions
 
@@ -693,11 +694,12 @@ namespace hooks {
 static s32 subgroupButtonState(BUTTON* button) {
 	static CUnit* members[selext::SEL_MAX];
 	const u32 player = (u8)*LOCAL_NATION_ID;
-	if (*IS_IN_REPLAY || selext::clientCount <= 1)
+	if (*IS_IN_REPLAY || selext::clientCount <= 1 || selprof::cardLeaderOnly)
 		return req_check((u32)button->reqFunc, (u8)button->reqVar, player, *activePortraitUnit);
 	const u32 m = selsub::activeMembers(members);
 	s32 best = BUTTON_STATE::Invisible;
 	for (u32 i = 0; i < m && best != BUTTON_STATE::Enabled; i++) {
+		SEL_PROFILE_COUNT(CARD_CHECKS);
 		selext::mirrorClientView(&members[i], 1, selext::clientCount);
 		best = selext::betterButtonState(best,
 			req_check((u32)button->reqFunc, (u8)button->reqVar, player, members[i]));
@@ -707,6 +709,8 @@ static s32 subgroupButtonState(BUTTON* button) {
 }
 
 void updateButtonSet_Sub4591D0() {
+
+	SEL_PROFILE_SCOPE(CARD);
 
 	BinDlg**	const BUTTONSET_DIALOG	=				(BinDlg**)	0x0068C148;
 	u16*		const BUTTONSET_PORTRAIT_BUTTONSETID =	(u16*)		0x0068C14C;
