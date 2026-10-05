@@ -355,7 +355,7 @@ plain copy.
 
 ## 6. Remaining and future work
 
-State on 2026-09-29: `feature/resolution` builds and plays at any size set in
+State on 2026-09-29: `feature/resolution` (since merged into `master`) builds and plays at any size set in
 `Manifold.ini`, with the full-width console, and with the in-game popups, message lines and
 starfield handled (§5). Features 1 and 2 below are done.
 
@@ -465,7 +465,7 @@ starfield handled (§5). Features 1 and 2 below are done.
 
 1. Put cnc-ddraw's `ddraw.dll` and `ddraw.ini` next to the exe that runs the mod. Either
    fullscreen-upscaled or windowed works, since cnc-ddraw accepts whatever mode the game sets.
-2. Use the `GPTP.qdp` built on `feature/resolution`. It lands in `GPTP\Debug\`, and a
+2. Use the `GPTP.qdp` built from `master` (the work began on `feature/resolution`). It lands in `GPTP\Debug\`, and a
    post-build step copies it next to `SCManifold.exe` (`..\..\SCManifold\` from the solution)
    when that folder exists.
 3. One run should answer most questions:

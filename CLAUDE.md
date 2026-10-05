@@ -18,8 +18,22 @@ non-goal.
 
 Visual Studio 2026 (v145 toolset), **Win32 only**, C++17. Open `GPTP/GPTP.sln`.
 
-There is no test suite, no linter, and no CI. This is a game plugin: the only real
-verification is building it and running StarCraft. Debug is the usual configuration.
+There is no linter and no CI. This is a game plugin: the real verification is building it
+and running StarCraft. Debug is the usual configuration; the plugin lands in `GPTP\Debug\`.
+
+`tests/verify.ps1` is the one local check, run on the user's machine: it builds and runs a
+host-side test of the extended selection's pure logic (`tests/selection_ext_test.bat`),
+builds the plugin with MSBuild, then disassembles `sel_inject.obj` and runs
+`tests/check_naked_wrappers.py` over it. That script fails if a naked wrapper touches
+`[ebp…]`: a naked function has no frame of its own, so a Debug-build temporary there writes
+into the exe caller's frame. Only the offsets listed in its `ALLOWED` table are allowed.
+
+**Deploying.** A post-build step copies `GPTP.qdp` next to `SCManifold.exe`
+(`..\..\SCManifold\` from the solution) when that folder exists. The plugin must then be
+repacked into `SCManifold.exe` before testing. Any **new `rez\` file must be added to the
+repack by hand**, because the repack tool keeps its own list. A missing `rez\statdata.bin`
+once made the selection panel silently fall back to vanilla's 12 wireframes.
+`docs/resolution.md` §6 "Working tips" has the paths and helper scripts.
 
 **Claude cannot build or run this.** The remote session is Linux with no MSVC, no Windows,
 and no StarCraft install. Nothing here can be compile-checked before the user builds it.
@@ -33,10 +47,9 @@ Consequences worth internalizing:
 - Never claim a change is verified. Say what was reasoned through and what is unverified.
 
 "Is the DLL I'm running actually current?" comes up often enough to be worth settling rather
-than assuming. The convention is a `__DATE__ __TIME__` stamp in the game-start message from
-`initializeGame()` (`hooks/main/game_hooks.cpp`) — added on `feature/beam-weapon`, worth
-keeping when that branch merges. Caveat: it only refreshes when that file is recompiled, so a
-full rebuild is what makes it authoritative.
+than assuming. The game-start message from `initializeGame()` (`hooks/main/game_hooks.cpp`)
+prints a `__DATE__ __TIME__` build stamp. It only refreshes when that file is recompiled, so
+touch `game_hooks.cpp` (or do a full rebuild) before building to make it authoritative.
 
 ## Architecture
 
@@ -58,14 +71,38 @@ Patching helpers are in `hook_tools.h`: `jmpPatch`, `callPatch`, `memoryPatch`.
 
 ### `initialize.cpp` — read this before wondering why a hook never fires
 
-All `inject*Hooks()` calls are registered here. **Large stretches are commented out inside
-`/* ... */` blocks** (a deliberate "disable unused hooks" pass). A hook sitting inside one of
-those blocks is never installed, and its code will silently never run.
+All `inject*Hooks()` calls are registered here, one per line, in two lists: **ENABLED
+HOOKS** (only these run, in that order) and **DISABLED HOOKS**, where each line starts with
+`//OFF`. Keep that convention: no `/* */` blocks and nothing else on a hook's line, so a grep
+for a hook shows at once whether it runs. To turn a hook on, move its line up into the
+enabled list.
 
-This has already cost one debugging cycle: a beam spawn moved into `fireWeaponHook` produced
-no output whatsoever because `injectWeaponFireHooks()` was inside a disabled block. If a hook
-seems dead, grep `initialize.cpp` and check whether the line is commented out **before**
-suspecting the hook body.
+Most of upstream's hooks are off, including all the weapon hooks. A hook that is off never
+installs, and its code silently never runs. This has already cost one debugging cycle: a
+beam spawn moved into `fireWeaponHook` produced no output whatsoever because
+`injectWeaponFireHooks()` was disabled. If a hook seems dead, grep `initialize.cpp` for it
+**before** suspecting the hook body.
+
+Some hooks are installed from inside another module's injector rather than listed here. For
+example `resolution::injectConsoleLayoutHooks()` runs even at exactly 640×480, where the rest
+of the resolution module is off. Anything that depends on the console layout must be
+installed there, not only in `injectHudHooks`.
+
+### The fork's own modules
+
+- **Resolution** (`hooks/interface/resolution*.cpp`, spec `docs/resolution.md`): game view
+  at the size in `Manifold.ini` (next to StarCraft.exe), full-width console, 5×3 command
+  card (`hooks/interface/buttonsets.cpp`). Cosmetic. `RESOLUTION_DEBUG` in `resolution.h`.
+- **Extended selection** (`hooks/selection_ext/`, `SCBW/selection_ext*`, spec
+  `docs/superpowers/specs/2026-09-30-extended-selection-design.md`): more than 12 selected
+  units, panel pages, control groups, SC2-style subgroups. The pure logic has a host-side
+  self-test (`sel_selftest.cpp`).
+- **Smart-build** (in `hooks/selection_ext/`, spec
+  `docs/superpowers/specs/2026-10-03-smart-build-design.md`) and **smart-casting**
+  (`hooks/recv_commands/smart_cast.cpp`, `docs/selection.md` §6).
+
+Selection, smart-build and smart-casting are **synced game state**: they travel as network
+commands and are recorded in replays. See "Sync safety" below.
 
 ### `SCBW/` — reverse-engineered engine knowledge
 
@@ -83,7 +120,9 @@ FireGraft rather than hardcoding them.
 
 `plugins::nextFrame()` in `hooks/main/game_hooks.cpp` runs every frame and iterates visible
 units. This is the place for continuous behaviour, and — importantly — it is **live**, unlike
-much of the hook registry.
+much of the hook registry. Its cost is paid every frame: with selections of up to 400 units,
+anything here that walks the whole selection scales with it (the open lag report in
+`docs/resolution.md` §6 is exactly this kind of problem).
 
 ## Working agreements
 
@@ -105,6 +144,21 @@ that was never explained; routing through the engine's table made it correct by 
 multiplayer and replays desync. Cosmetic-only code (spawning overlay images, drawing) is safe;
 keep it that way and never let a visual effect feed back into damage, orders, or timing.
 
+The selection is synced state too: in BW a selection is sent as a command and replayed, and
+orders act on the selected units. Changes to what is selected, or to which unit receives a
+command (smart-build, smart-casting), must go through the command path so every client and
+the replay see the same thing. Local-only state (panel page, highlight, cursor) must never
+decide an order. Save-file formats are versioned (the extended selection's chunk is at
+version 3); bump the version when the layout changes.
+
+**Naked asm wrappers.** Keep C++ statements with temporaries out of `__declspec(naked)`
+functions: in a Debug build the compiler spills them to `[ebp-N]`, which is the exe caller's
+frame. `tests/check_naked_wrappers.py` catches this for `sel_inject.cpp`.
+
+**Custom dialog controls must answer the hit test** (user event kind 4) themselves: the
+default answer (0x418030) needs flag 0x10, which `statdata.bin`'s buttons lack, so they draw
+but never get clicks (see `pageButtonInteract`).
+
 ## Debugging in-game
 
 `scbw::printText()` writes to the in-game message area and works in **every** build
@@ -117,19 +171,33 @@ static counter so a screenful of units doesn't flood the message area.
 
 ## Repository layout
 
-- `master` — stable line
+- `master` — main line. Resolution, the 5×3 command card, extended selection, smart-build
+  and smart-casting all landed here.
 - `feature/beam-weapon` — in-memory GRP beam rendering (see `docs/beam-weapons.md`)
-- `feature/buttonset-extended` — extending the command card past its 9-button cap; incomplete
 - `wip` — archival: the original unsplit dump, kept for reference
 
-Feature branches rebase onto `master`. Build artifacts (`Release/`, `.vs/`, `*.obj`) are
+Feature branches rebase onto `master`. Older docs and spec headers mention branches such as
+`feature/resolution`, `feature/smart-build` and `feature/selection-pages`; those were local
+and are merged into `master`. Build artifacts (`Release/`, `.vs/`, `*.obj`) are
 gitignored — an early commit tracked ~280 of them plus a machine-specific `StarCraft.sln`
 containing a local install path, which is why `.gitignore` is now broad.
 
 ## Design notes
 
-Longer-lived plans and specs live in `docs/`. `docs/beam-weapons.md` covers the beam weapon
-system: engine constraints, what is built versus proposed, and the staged roadmap. It uses
-`[BUILT]` / `[PROPOSED]` / `[VERIFY]` tags — keep that distinction when editing, since
-conflating "works today" with "seems like it should work" is exactly what the tagging exists
-to prevent.
+Longer-lived plans and specs live in `docs/`:
+
+- `docs/resolution.md` — the larger game view, full-width console and 5×3 card, with the
+  exe's patch map. **§6 is the project's running TODO**: known bugs, the next item, data
+  edits the user has to make, the feature order, and working tips. Read it first when
+  picking up work.
+- `docs/selection.md` — the original survey for 400-unit selection, pages and smart-casting.
+  Where it disagrees with the extended-selection spec, the spec wins.
+- `docs/superpowers/specs/` — one design spec per feature; `docs/superpowers/plans/` — the
+  step-by-step implementation plans. Plans are historical records of how a feature was
+  built; specs carry the current status.
+- `docs/beam-weapons.md` — the beam weapon system: engine constraints, what is built versus
+  proposed, and the staged roadmap. The current copy is on `feature/beam-weapon`.
+
+The docs use `[BUILT]` / `[PROPOSED]` / `[VERIFY]` tags — keep that distinction when
+editing, since conflating "works today" with "seems like it should work" is exactly what the
+tagging exists to prevent.

@@ -1,7 +1,7 @@
 # Resolution settings (Manifold.ini)
 
 Status: built, tested in game
-Branch: `feature/resolution`
+Branch: `feature/resolution` (merged into `master`)
 Detailed notes: `docs/resolution.md` §4, §6 item 1
 
 ## Goal

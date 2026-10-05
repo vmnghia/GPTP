@@ -1,7 +1,7 @@
 # Larger game view
 
 Status: built, tested in game
-Branch: `feature/resolution`
+Branch: `feature/resolution` (merged into `master`)
 Detailed notes: `docs/resolution.md` §3–§4, §5 "Also moved or fixed"
 
 ## Goal

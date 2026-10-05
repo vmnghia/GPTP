@@ -1,6 +1,6 @@
 # Smart-build (several workers build, Shift queues buildings)
 
-Status: built and tested in game (2026-10-04, final build 12:59). Branch `feature/smart-build`.
+Status: built and tested in game (2026-10-04, final build 12:59). Branch `feature/smart-build` (merged into `master`).
 Builds on the extended selection (`2026-09-30-extended-selection-design.md`, stage 5:
 subgroups, the per-member button conditions, the select-chunk command and its length
 hooks, the SELX save chunk).

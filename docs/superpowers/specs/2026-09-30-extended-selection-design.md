@@ -11,7 +11,7 @@ plan: `docs/superpowers/plans/2026-09-30-extended-selection-stage-1-2.md`.
 Found during testing and review (details in the stage sections): the health-bar lookup
 0x4D603C, the 80-circle and 12-health-bar image pools, and chunks needing an index so a
 lost middle chunk drops the packet.
-Branch: stages 1–4 on `master` (local); stage 5 on `feature/command-card`
+Branch: stages 1–4 on `master` (local); stage 5 on `feature/command-card`. All merged into `master`.
 Detailed notes: `docs/selection.md` §1–§5 (the first survey; where it and this spec
 disagree, this spec wins, because every address below was re-checked in the exe)
 

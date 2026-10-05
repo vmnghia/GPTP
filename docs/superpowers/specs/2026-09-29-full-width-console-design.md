@@ -1,7 +1,7 @@
 # Full-width console
 
 Status: built, tested in game
-Branch: `feature/resolution`
+Branch: `feature/resolution` (merged into `master`)
 Detailed notes: `docs/resolution.md` §5
 
 ## Goal

@@ -12,7 +12,12 @@ selection panel gets pages. Particular spells use SC2-style smart-casting.
 
 Tags as in `resolution.md`: `[BUILT]` works today, `[PROPOSED]` planned, `[VERIFY]` inferred
 but not confirmed. Everything below comes from a survey of StarCraft.exe 1.16.1 on
-2026-09-29. Nothing is built yet.
+2026-09-29, before anything was built.
+
+> **Status (2026-10-05):** all of it is now built and tested: the extended selection
+> (stages 1–5, see the spec), panel pages, control groups, subgroups, smart-casting (§6) and
+> smart-build (`docs/superpowers/specs/2026-10-03-smart-build-design.md`). Open items are in
+> `docs/resolution.md` §6.
 
 ## 1. Why selection is synced game state
 
