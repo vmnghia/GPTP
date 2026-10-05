@@ -400,11 +400,14 @@ starfield handled (§5). Features 1 and 2 below are done.
   whole selection (panel `changed()`, subgroup keys, selection circles, smart-build or
   smart-cast scans) before changing anything.
   **Measuring `[BUILT 2026-10-05, not yet run]`:** `hooks/selection_ext/sel_profile.*`
-  (switch `SEL_PROFILE`). Every 72 game frames (~3 s at Fastest) it prints three yellow
-  lines: the average and worst frame interval, the largest selection seen, and the
-  plugin's own total; then calls (`x`) and ms per frame for each suspect below.
+  (switch `SEL_PROFILE`). Every 72 game frames (~3 s at Fastest) it appends a row to
+  `Manifold-profile.csv` next to the running exe (the path is printed once): time, card
+  mode, the average and worst frame interval, the largest selection seen, the plugin's
+  own total, and calls and ms per frame for each suspect below. Each row is written and
+  the file closed, so a crash keeps what came before. One summary line shows on screen.
   **Ctrl+Alt+P** switches the card's subgroup checks to the leader only (debug only:
-  buttons may show wrong), to A/B the main suspect in the same run. The test: select
+  buttons may show wrong; the row's `card_mode` column says which), to A/B the main
+  suspect in the same run. The test: select
   ~400 Zerglings (or a mixed army), watch a few reports, press Ctrl+Alt+P, watch a
   few more, then the same with 12 units for a baseline. The frame interval is
   wall time between game frames, so it is ~42 ms at Fastest whenever nothing lags.

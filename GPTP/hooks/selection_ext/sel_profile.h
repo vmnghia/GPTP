@@ -1,6 +1,7 @@
 //Measures the lag that grows with the selection (docs/resolution.md §6).
-//Every PRINT_FRAMES game frames it prints the average frame time and, per
-//suspect, its calls and milliseconds per frame. Ctrl+Alt+P toggles the
+//Every PRINT_FRAMES game frames it appends a row to Manifold-profile.csv next
+//to the running exe: the frame time and, per suspect, its calls and
+//milliseconds per frame; one summary line goes on screen. Ctrl+Alt+P toggles the
 //command card's subgroup checks to the leader only, for an A/B in one run.
 //
 //Local only: nothing here may feed back into game state. Set SEL_PROFILE to
@@ -36,7 +37,7 @@ Ticks now();
 void add(Slot slot, Ticks elapsed);
 void count(Slot slot);
 //Once per game frame, from plugins::nextFrame: records the frame interval and
-//prints the report every PRINT_FRAMES frames.
+//logs the report every PRINT_FRAMES frames.
 void frame(u32 selected);
 
 //Ctrl+Alt+P: the card checks the leader alone, as with one unit selected.
