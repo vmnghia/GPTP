@@ -4,6 +4,8 @@ $ErrorActionPreference = "Continue"
 $root = Split-Path -Parent $PSScriptRoot
 & "$PSScriptRoot\selection_ext_test.bat" 2>$null
 if ($LASTEXITCODE -ne 0) { Write-Output "host test FAILED"; exit 1 }
+& "$PSScriptRoot\buttonsets_file_test.bat" 2>$null
+if ($LASTEXITCODE -ne 0) { Write-Output "button set file test FAILED"; exit 1 }
 New-Item -ItemType Directory -Force "$PSScriptRoot\out" | Out-Null
 $log = "$PSScriptRoot\out\build-plugin.log"
 & "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" "$root\GPTP\GPTP.sln" /p:Configuration=Debug /p:Platform=Win32 /nologo /v:minimal > $log
