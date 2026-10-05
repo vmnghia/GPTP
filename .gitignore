@@ -7,3 +7,6 @@
 
 /tests/out
 /.superpowers
+
+/tools/ManifoldEditor/**/bin/
+/tools/ManifoldEditor/**/obj/
