@@ -1,0 +1,33 @@
+namespace Manifold.Core.Data;
+
+/// <summary>An MPQ (or anything holding game files) the editor reads from.</summary>
+public interface IArchive
+{
+    /// <summary>Shown in the status bar: where a resource came from.</summary>
+    string Name { get; }
+    byte[]? TryRead(string path);
+}
+
+/// <summary>The mod exe's MPQ, which the editor also writes to.</summary>
+public interface IWritableArchive : IArchive
+{
+    /// <summary>
+    /// Writes one file in a single open-write-close. Throws <see cref="ArchiveBusyException"/>
+    /// when the exe is held by another program; nothing is written then.
+    /// </summary>
+    void Write(string path, byte[] data);
+}
+
+public sealed class ArchiveBusyException(string message) : Exception(message);
+
+/// <summary>Looks a file up in the archives in order: the mod exe first, then the vanilla MPQs.</summary>
+public sealed class ResourceResolver(IReadOnlyList<IArchive> archives)
+{
+    public (byte[] Data, string Source)? Find(string path)
+    {
+        foreach (var archive in archives)
+            if (archive.TryRead(path) is { } data)
+                return (data, archive.Name);
+        return null;
+    }
+}

@@ -24,3 +24,19 @@ static class Make
 
     public static ButtonSet[] EmptySets() => Enumerable.Repeat(ButtonSet.Empty, Card.SetCount).ToArray();
 }
+
+sealed class FakeArchive(string name, Dictionary<string, byte[]>? files = null) : IWritableArchive
+{
+    public Dictionary<string, byte[]> Files { get; } = files ?? new();
+    public bool Busy { get; set; }
+    public int Writes { get; private set; }
+    public string Name => name;
+    public byte[]? TryRead(string path) => Files.TryGetValue(path, out var data) ? data : null;
+
+    public void Write(string path, byte[] data)
+    {
+        if (Busy) throw new ArchiveBusyException("the exe is open in another program (FireGraft?)");
+        Files[path] = data;
+        Writes++;
+    }
+}
