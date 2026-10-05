@@ -413,6 +413,20 @@ starfield handled (§5). Features 1 and 2 below are done.
   wall time between game frames, so it is ~42 ms at Fastest whenever nothing lags.
   If "ours" stays small while the frame time grows, the cost is in vanilla code
   driven by the selection (circles, health bars, drawing), not in the plugin.
+  **Measured 2026-10-06** (`Manifold-profile.csv`, 89 windows, 400 Zerglings and 12
+  units, both card modes, Fast then Fastest): game frames are **not** slowed; the
+  interval matches the game speed (56 ms Fast, 42 ms Fastest) at every selection size.
+  The CPU goes to the command card: it is rebuilt on every pass of the main loop
+  (700-11,000 times per game frame; the rebuild-every-pass flow is upstream GPTP's
+  `updateCurrentButtonset`, not stage 5), and with 400 units each rebuild ran ~800
+  condition checks: **40-49 ms of each 56 ms frame** (24-30 ms at Fastest); leader-only
+  6-16 ms. Everything else measured stayed near zero (console copy, panel, dimming,
+  circles, health-bar scans, the iterator).
+  **Fix `[BUILT 2026-10-06, not yet run]`:** `subgroupButtonState` keeps each button's
+  result until the game frame, the selection (`selsub::selectionVersion`), the active
+  subgroup or the card's set changes, so a subgroup is scanned at most once per button
+  per game frame. Next run: the `card` ms/frame and `chk` should fall to a few
+  hundred checks per frame, and the lag should be gone or show what is left.
   Suspects found by reading the code (unmeasured):
   1. **The command card** (`subgroupButtonState`, `buttonsets.cpp`): each button takes
      the best state over the active subgroup, checking members one by one until one

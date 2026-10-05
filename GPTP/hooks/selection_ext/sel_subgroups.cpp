@@ -14,6 +14,7 @@ u32 previousCount;
 u32 activeKey;
 bool freshPending;	//set by markFresh, used by the next sort
 u32 stamp;			//changes with activeKey
+u32 version;		//changes with every sort of the console list
 
 //The panel highlight: the wireframe colour remap and the game palette.
 u8* const WIRE_REMAP = (u8*)0x0050CE80;
@@ -51,6 +52,7 @@ u32 keyOf(CUnit* unit) {
 }
 
 CUnit* sortAndPickLeader(u32 n) {
+	version++;
 	if (n == 0) {
 		previousCount = 0;
 		return NULL;
@@ -106,6 +108,7 @@ void reset() {
 	freshPending = false;
 	dimBuilt = false;
 	stamp++;
+	version++;
 }
 
 void viewBegin() {
@@ -161,6 +164,10 @@ void dimWireframe(CUnit* unit) {
 
 u32 activeStamp() {
 	return stamp;
+}
+
+u32 selectionVersion() {
+	return version;
 }
 
 } //selsub

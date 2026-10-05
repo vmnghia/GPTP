@@ -687,6 +687,31 @@ namespace hooks {
 
 	;
 
+//The card is rebuilt on every pass of the game's main loop, thousands of
+//times per game frame (profile of 2026-10-06, docs/resolution.md §6), and a
+//subgroup button below can check every member. Conditions read game state,
+//which changes only when a game frame runs, so each button's result is kept
+//for the rest of the frame: until the frame, the selection, the active
+//subgroup or the set on the card changes.
+namespace {
+
+const u32 STATE_CACHE_SIZE = 32;	//more than a set's buttons
+
+struct ButtonStateCache {
+	u32 frame;
+	u32 activeStamp;
+	u32 selectionVersion;
+	u32 clientCount;
+	u32 setId;
+	u32 used;
+	BUTTON* buttons[STATE_CACHE_SIZE];
+	s32 states[STATE_CACHE_SIZE];
+};
+
+ButtonStateCache stateCache;
+
+} //unnamed namespace
+
 //Stage 5: with several units selected, a button takes the best result of
 //its condition over the active subgroup's members, each checked alone (the
 //client mirror holds only that member; its count stays the real selection's,
@@ -696,6 +721,24 @@ static s32 subgroupButtonState(BUTTON* button) {
 	const u32 player = (u8)*LOCAL_NATION_ID;
 	if (*IS_IN_REPLAY || selext::clientCount <= 1 || selprof::cardLeaderOnly)
 		return req_check((u32)button->reqFunc, (u8)button->reqVar, player, *activePortraitUnit);
+
+	const u32 setId = *(const u16*)0x0068C14C;	//BUTTONSET_PORTRAIT_BUTTONSETID: the set on the card
+	ButtonStateCache& cache = stateCache;
+	if (cache.frame != *elapsedTimeFrames || cache.activeStamp != selsub::activeStamp()
+		|| cache.selectionVersion != selsub::selectionVersion()
+		|| cache.clientCount != selext::clientCount || cache.setId != setId)
+	{
+		cache.frame = *elapsedTimeFrames;
+		cache.activeStamp = selsub::activeStamp();
+		cache.selectionVersion = selsub::selectionVersion();
+		cache.clientCount = selext::clientCount;
+		cache.setId = setId;
+		cache.used = 0;
+	}
+	for (u32 k = 0; k < cache.used; k++)
+		if (cache.buttons[k] == button)
+			return cache.states[k];
+
 	const u32 m = selsub::activeMembers(members);
 	s32 best = BUTTON_STATE::Invisible;
 	for (u32 i = 0; i < m && best != BUTTON_STATE::Enabled; i++) {
@@ -705,6 +748,12 @@ static s32 subgroupButtonState(BUTTON* button) {
 			req_check((u32)button->reqFunc, (u8)button->reqVar, player, members[i]));
 	}
 	selext::mirrorClient();
+
+	if (cache.used < STATE_CACHE_SIZE) {
+		cache.buttons[cache.used] = button;
+		cache.states[cache.used] = best;
+		cache.used++;
+	}
 	return best;
 }
 
