@@ -446,7 +446,7 @@ starfield handled (§5). Features 1 and 2 below are done.
   (`windowed=true` with `fullscreen=true`, i.e. borderless, and `maintas=false`) goes next
   to it.
 - **A new `rez\` file must be added to the repack by hand**: the repack tool keeps its
-  own list. Check the exe with `D:\SC Moddingesexp-analysis\mpqfind.py SCManifold.exe
+  own list. Check the exe with `D:\SC Modding\resexp-analysis\mpqfind.py SCManifold.exe
   "rez\statdata.bin"` (lists the file's size in the exe's MPQ, or "missing");
   `mpqget.py <mpq> <name> <out>` extracts a file from the game's MPQs (StormLib).
 - **At exactly 640×480 the resolution module is off**, but the console layout hooks
