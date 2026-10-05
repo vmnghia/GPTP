@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Manifold.Core", "Manifold.C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Manifold.Core.Tests", "Manifold.Core.Tests\Manifold.Core.Tests.csproj", "{F5EE04B5-FC6C-4715-89FE-3682021D6F3F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Manifold.Storm", "Manifold.Storm\Manifold.Storm.csproj", "{A08812D0-2BDC-402F-964A-0B7F441134E3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{F5EE04B5-FC6C-4715-89FE-3682021D6F3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F5EE04B5-FC6C-4715-89FE-3682021D6F3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F5EE04B5-FC6C-4715-89FE-3682021D6F3F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A08812D0-2BDC-402F-964A-0B7F441134E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A08812D0-2BDC-402F-964A-0B7F441134E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A08812D0-2BDC-402F-964A-0B7F441134E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A08812D0-2BDC-402F-964A-0B7F441134E3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
