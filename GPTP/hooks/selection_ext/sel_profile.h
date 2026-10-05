@@ -1,5 +1,5 @@
 //Measures the lag that grows with the selection (docs/resolution.md §6).
-//Every PRINT_FRAMES game frames it appends a row to Manifold-profile.csv next
+//Every PRINT_FRAMES game frames it appends a row to Manifold-profile-v2.csv next
 //to the running exe: the frame time and, per suspect, its calls and
 //milliseconds per frame; one summary line goes on screen. Ctrl+Alt+P toggles the
 //command card's subgroup checks to the leader only, for an A/B in one run.
@@ -30,6 +30,8 @@ enum Slot {
 	NEXT_SELECTED,	//selsync::nextSelected (count only)
 	VIEW,			//selsub::viewBegin
 	PLUGIN_FRAME,	//plugins::nextFrame's own work
+	LOCAL_REMOVE,	//sellocal::localRemove: a selected unit died or left (local)
+	REMOVE_ALL,		//selsync::removeFromAllSelections: the same, every player (synced)
 	SLOT_COUNT
 };
 

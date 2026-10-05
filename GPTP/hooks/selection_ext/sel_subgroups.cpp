@@ -2,6 +2,7 @@
 #include "sel_exe.h"
 #include "sel_profile.h"
 #include <SCBW/selection_ext.h>
+#include <algorithm>
 #include <cstring>
 
 using namespace selext;
@@ -28,6 +29,11 @@ const u8 DIM_ENTRIES[] = { 0x01, 0x02, 0x11, 0x12, 0x13, 0x14, 0x19, 0x1A, 0x1B,
 u8 paletteSeen[256 * 4];
 u8 dimOf[256];
 bool dimBuilt;
+
+//Most energy first; equal energy keeps the selection's order.
+bool moreEnergy(const CUnit* a, const CUnit* b) {
+	return a->energy > b->energy;
+}
 
 void setActiveKey(u32 key) {
 	if (key != activeKey)
@@ -116,13 +122,7 @@ void viewBegin() {
 	static CUnit* view[SEL_MAX];
 	u32 m = activeMembers(view);
 	//Most energy first: the check wants one unit able to cast.
-	for (u32 i = 1; i < m; i++) {
-		CUnit* const unit = view[i];
-		u32 j = i;
-		for (; j > 0 && view[j - 1]->energy < unit->energy; j--)
-			view[j] = view[j - 1];
-		view[j] = unit;
-	}
+	std::stable_sort(view, view + m, moreEnergy);
 	for (u32 i = 0; i < clientCount && m < VANILLA_MAX; i++)
 		if (keys[i] != activeKey)
 			view[m++] = clientSel[i];

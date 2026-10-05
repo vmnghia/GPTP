@@ -21,6 +21,59 @@ bool isDying(const CUnit* unit) {
 	return unit->mainOrderId == OrderId::Die && unit->mainOrderState == 1;
 }
 
+//Marks on units by index, for one pass over a command: "already in the
+//list" is one lookup instead of a scan of a selection that can be far
+//longer than vanilla's 12. Plain data, so every client gets the same answer.
+u32 markStamp;
+u32 marks[UNIT_ARRAY_LENGTH + 1];
+u16 markedTag[UNIT_ARRAY_LENGTH + 1];
+
+void newMarks() {
+	if (++markStamp == 0) {
+		memset(marks, 0, sizeof(marks));
+		markStamp = 1;
+	}
+}
+
+u32 markIndexOf(const CUnit* unit) {
+	const u32 index = unit->getIndex();
+	return index <= (u32)UNIT_ARRAY_LENGTH ? index : 0;
+}
+
+void mark(const CUnit* unit) {
+	const u32 index = markIndexOf(unit);
+	if (index != 0)
+		marks[index] = markStamp;
+}
+
+//Whether unit is in list (count entries), by its mark when it has an index.
+bool marked(const CUnit* unit, CUnit* const* list, u32 count) {
+	const u32 index = markIndexOf(unit);
+	if (index == 0)
+		return listFind(list, count, unit) >= 0;
+	return marks[index] == markStamp;
+}
+
+//The same for tags (index in the low 11 bits): marked with the whole tag.
+void markTag(u16 tag) {
+	const u32 index = tag & 0x7FF;
+	if (index != 0 && index <= (u32)UNIT_ARRAY_LENGTH) {
+		marks[index] = markStamp;
+		markedTag[index] = tag;
+	}
+}
+
+bool tagMarked(u16 tag, const u16* slots, u32 count) {
+	const u32 index = tag & 0x7FF;
+	if (index == 0 || index > (u32)UNIT_ARRAY_LENGTH) {
+		for (u32 k = 0; k < count; k++)
+			if (slots[k] == tag)
+				return true;
+		return false;
+	}
+	return marks[index] == markStamp && markedTag[index] == tag;
+}
+
 u16* groupSlots(u32 player, u32 group) {
 	return groupsExt[player][group];
 }
@@ -62,6 +115,9 @@ void assignSlots(u32 player, u16* slots, bool replace) {
 	}
 	else
 		memset(slots, 0, SEL_MAX * sizeof(u16));
+	newMarks();
+	for (u32 k = 0; k < n; k++)
+		markTag(slots[k]);
 	for (u32 j = 0; j < SEL_MAX; j++) {
 		CUnit* unit = playersSel[player][j];
 		if (unit == NULL || unit->playerId != *ACTIVE_NATION_ID)
@@ -70,15 +126,13 @@ void assignSlots(u32 player, u16* slots, bool replace) {
 		if (tag == 0)
 			continue;
 		if (!replace && n > 0) {
-			bool present = false;
-			for (u32 k = 0; k < n && !present; k++)
-				present = (slots[k] == tag);
-			if (present || !selexe::canMultiSelect(unit))
+			if (tagMarked(tag, slots, n) || !selexe::canMultiSelect(unit))
 				continue;
 		}
 		if (n >= SEL_MAX)
 			return;	//vanilla writes one past the group here
 		slots[n++] = tag;
+		markTag(tag);
 		if (n >= SEL_MAX)
 			return;
 	}
@@ -140,14 +194,17 @@ void commitReplace(u32 player, const u16* tags, u32 count) {
 	if (player >= PLAYERS)
 		return;
 	u32 added = 0;
+	newMarks();
 	for (u32 i = 0; i < count; i++) {
 		CUnit* unit = unitOfTag(tags[i]);
-		if (unit == NULL || listFind(playersSel[player], SEL_MAX, unit) >= 0)
+		if (unit == NULL || marked(unit, playersSel[player], added))
 			continue;
 		if (unit->id == UnitId::TerranNuclearMissile)
 			continue;
-		if (addUnit(player, unit, added))
+		if (addUnit(player, unit, added)) {
+			mark(unit);
 			added++;
+		}
 	}
 	mirrorPlayer(player);
 	if (added > 1)
@@ -161,35 +218,53 @@ void commitAdd(u32 player, const u16* tags, u32 count) {
 	u32 current = listCount(playersSel[player], SEL_MAX);
 	if (count + current > SEL_MAX)
 		return;
+	newMarks();
+	for (u32 j = 0; j < current; j++)
+		mark(playersSel[player][j]);
 	for (u32 i = 0; i < count; i++) {
 		CUnit* unit = unitOfTag(tags[i]);
-		if (unit == NULL || listFind(playersSel[player], SEL_MAX, unit) >= 0)
+		if (unit == NULL || marked(unit, playersSel[player], current))
 			continue;
-		if (addUnit(player, unit, current))
+		if (addUnit(player, unit, current)) {
+			mark(unit);
 			current++;
+		}
 	}
 	mirrorPlayer(player);
 	if (current > 1)
 		ringPush(player);
 }
 
-//The rules of 0x0B (vanilla 0x4BFB40).
+//The rules of 0x0B (vanilla 0x4BFB40). The units are marked, then the list
+//is compacted once, keeping its order, instead of once per unit.
 void commitRemove(u32 player, const u16* tags, u32 count) {
-	u32 left = 0;
+	if (player >= PLAYERS)
+		return;
+	CUnit** const list = playersSel[player];
+	newMarks();
+	bool anyUnit = false;
 	for (u32 i = 0; i < count; i++) {
 		CUnit* unit = unitOfTag(tags[i]);
 		if (unit == NULL)
 			continue;
-		if (player >= PLAYERS) {
-			left = 0;
-			continue;
-		}
+		anyUnit = true;
 		if (selexe::isTeamAlly(player))
 			dropDashedCircle(unit->sprite);
-		left = listRemove(playersSel[player], SEL_MAX, unit);
+		if (markIndexOf(unit) != 0)
+			mark(unit);
+		else
+			listRemove(list, SEL_MAX, unit);
 	}
-	if (player >= PLAYERS)
-		return;
+	u32 kept = 0;
+	for (u32 j = 0; j < SEL_MAX && list[j] != NULL; j++) {
+		CUnit* const unit = list[j];
+		if (markIndexOf(unit) == 0 || marks[markIndexOf(unit)] != markStamp)
+			list[kept++] = unit;
+	}
+	for (u32 j = kept; j < SEL_MAX && list[j] != NULL; j++)
+		list[j] = NULL;
+	//As vanilla's count: the length after the last unit removed, 0 if none was named.
+	const u32 left = anyUnit ? kept : 0;
 	mirrorPlayer(player);
 	if (left > 1)
 		ringPush(player);
@@ -223,6 +298,7 @@ CUnit* nextSelected() {
 }
 
 void removeFromAllSelections(CUnit* unit) {
+	SEL_PROFILE_SCOPE(REMOVE_ALL);
 	for (u32 p = 0; p < PLAYERS; p++) {
 		listRemove(playersSel[p], SEL_MAX, unit);
 		mirrorPlayer(p);

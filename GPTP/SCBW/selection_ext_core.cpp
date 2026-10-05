@@ -1,6 +1,7 @@
 //The pure logic of the extended selection: it touches no game memory, so the
 //host test in tests/ builds it on its own.
 #include "selection_ext.h"
+#include <algorithm>
 #include <cstring>
 
 namespace selext {
@@ -367,28 +368,24 @@ u32 subgroupKey(u16 priority, u16 type, bool hallucination) {
 	return ((u32)(0xFFFF - priority) << 10) | ((u32)(type & 0x1FF) << 1) | (hallucination ? 1 : 0);
 }
 
-void sortBySubgroup(CUnit** units, u32* keys, u32 n) {
-	for (u32 i = 1; i < n; i++) {
-		CUnit* const unit = units[i];
-		const u32 key = keys[i];
-		u32 j = i;
-		for (; j > 0 && keys[j - 1] > key; j--) {
-			units[j] = units[j - 1];
-			keys[j] = keys[j - 1];
-		}
-		units[j] = unit;
-		keys[j] = key;
-	}
-}
-
 namespace {
 
-bool holdsAll(CUnit* const* big, u32 nb, CUnit* const* small, u32 ns) {
+struct KeyedUnit {
+	u32 key;
+	CUnit* unit;
+};
+
+bool byKey(const KeyedUnit& a, const KeyedUnit& b) {
+	return a.key < b.key;
+}
+
+//Whether every unit of small is in big. Both are sorted (by address).
+bool holdsAllSorted(CUnit* const* big, u32 nb, CUnit* const* small, u32 ns) {
+	u32 j = 0;
 	for (u32 i = 0; i < ns; i++) {
-		bool found = false;
-		for (u32 j = 0; j < nb && !found; j++)
-			found = big[j] == small[i];
-		if (!found)
+		while (j < nb && big[j] < small[i])
+			j++;
+		if (j == nb || big[j] != small[i])
 			return false;
 	}
 	return true;
@@ -396,10 +393,40 @@ bool holdsAll(CUnit* const* big, u32 nb, CUnit* const* small, u32 ns) {
 
 } //unnamed namespace
 
+//A stable sort, not an insertion sort: the selection can be far larger than
+//vanilla's 12, and this runs every time the console list is rebuilt.
+void sortBySubgroup(CUnit** units, u32* keys, u32 n) {
+	static KeyedUnit sorted[SEL_MAX];
+	if (n > SEL_MAX)
+		n = SEL_MAX;
+	for (u32 i = 0; i < n; i++) {
+		sorted[i].key = keys[i];
+		sorted[i].unit = units[i];
+	}
+	std::stable_sort(sorted, sorted + n, byKey);
+	for (u32 i = 0; i < n; i++) {
+		keys[i] = sorted[i].key;
+		units[i] = sorted[i].unit;
+	}
+}
+
+//Sorted copies, then one merge pass each way, instead of comparing every
+//unit with every other.
 bool keepsActive(bool fresh, CUnit* const* before, u32 nb, CUnit* const* after, u32 na) {
 	if (fresh)
 		return false;
-	return holdsAll(after, na, before, nb) || holdsAll(before, nb, after, na);
+	static CUnit* sortedBefore[SEL_MAX];
+	static CUnit* sortedAfter[SEL_MAX];
+	if (nb > SEL_MAX)
+		nb = SEL_MAX;
+	if (na > SEL_MAX)
+		na = SEL_MAX;
+	std::copy(before, before + nb, sortedBefore);
+	std::copy(after, after + na, sortedAfter);
+	std::sort(sortedBefore, sortedBefore + nb);
+	std::sort(sortedAfter, sortedAfter + na);
+	return holdsAllSorted(sortedAfter, na, sortedBefore, nb)
+		|| holdsAllSorted(sortedBefore, nb, sortedAfter, na);
 }
 
 u32 activeKeyAfter(const u32* keys, u32 n, u32 oldKey, bool keep) {

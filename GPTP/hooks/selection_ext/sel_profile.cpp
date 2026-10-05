@@ -41,9 +41,10 @@ u32 callsPerFrame(selprof::Slot slot) {
 const char* const SLOT_NAMES[selprof::SLOT_COUNT] = {
 	"card", "card_checks", "client_copy", "panel_changed", "panel_fill", "wire_dim",
 	"health_bar", "health_bar_scan", "circles", "build_active", "next_selected", "view",
-	"plugin_frame"
+	"plugin_frame", "local_remove", "remove_all"
 };
-const char* const LOG_NAME = "Manifold-profile.csv";
+//v2: local_remove and remove_all added (columns differ from v1).
+const char* const LOG_NAME = "Manifold-profile-v2.csv";
 
 //The log, next to the running exe (not the working directory, which is
 //wherever the game was started from). Empty if the path doesn't fit.
@@ -71,7 +72,8 @@ double ourMsPerFrame() {
 	using namespace selprof;
 	return msPerFrame(PLUGIN_FRAME) + msPerFrame(CARD) + msPerFrame(CLIENT_COPY)
 		+ msPerFrame(PANEL_FILL) + msPerFrame(WIRE_DIM) + msPerFrame(CIRCLES)
-		+ msPerFrame(BUILD_ACTIVE) + msPerFrame(VIEW);
+		+ msPerFrame(BUILD_ACTIVE) + msPerFrame(VIEW) + msPerFrame(REMOVE_ALL);
+	//LOCAL_REMOVE is left out: it contains a BUILD_ACTIVE, already counted.
 }
 
 //One row per window, appended and closed each time so a crash keeps every
@@ -83,8 +85,8 @@ void writeRow() {
 	FILE* file = NULL;
 	if (path[0] == 0 || fopen_s(&file, path, "a") != 0 || file == NULL) {
 		if (!failed) {
-			scbw::printText(PLUGIN_NAME ": profile: can't write " "Manifold-profile.csv"
-				" next to the exe", GameTextColor::Red);
+			scbw::printText(PLUGIN_NAME ": profile: can't write Manifold-profile-v2.csv next to the exe",
+				GameTextColor::Red);
 			failed = true;
 		}
 		return;

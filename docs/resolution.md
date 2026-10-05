@@ -427,6 +427,21 @@ starfield handled (§5). Features 1 and 2 below are done.
   subgroup or the card's set changes, so a subgroup is scanned at most once per button
   per game frame. Next run: the `card` ms/frame and `chk` should fall to a few
   hundred checks per frame, and the lag should be gone or show what is left.
+  **Second run, 2026-10-06:** the fix works: checks fell from 250,000-630,000 to at most
+  ~405 per game frame with 400 selected, and the lag is gone in play. The card still
+  costs 3-20 ms per frame, from upstream's rebuild on every loop pass, now the same at
+  any selection size.
+  **Scaling past 400 `[BUILT 2026-10-06, not yet run]`** (for a higher `SEL_MAX`, up to
+  1700, the unit limit): work that grew with the square of the selection is gone.
+  `buildActive` re-creates only circles whose slot changes (a death no longer rebuilds
+  every circle); health bars past slot 255 find their unit by sprite index; the subgroup
+  sort, `viewBegin`'s energy sort and `keepsActive` no longer compare every unit with
+  every other; the synced select commands (`commitReplace`, `commitAdd`, `commitRemove`,
+  `assignSlots`) mark units by index instead of scanning the selection per unit. The
+  profiler now times `localRemove` and `removeFromAllSelections` and writes
+  `Manifold-profile-v2.csv`. Not addressed: the card still checks a subgroup once per
+  button per game frame (15 x 1700 at the limit), and a big reselect in multiplayer
+  takes 14 select chunks; BW's per-turn command space is unchecked `[VERIFY]`.
   Suspects found by reading the code (unmeasured):
   1. **The command card** (`subgroupButtonState`, `buttonsets.cpp`): each button takes
      the best state over the active subgroup, checking members one by one until one
