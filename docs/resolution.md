@@ -355,7 +355,7 @@ plain copy.
 
 ## 6. Remaining and future work
 
-State on 2026-09-29: `feature/resolution` builds and plays at any size set in
+State on 2026-09-29: `feature/resolution` (since merged into `master`) builds and plays at any size set in
 `Manifold.ini`, with the full-width console, and with the in-game popups, message lines and
 starfield handled (§5). Features 1 and 2 below are done.
 
@@ -395,10 +395,73 @@ starfield handled (§5). Features 1 and 2 below are done.
   `make_statdata_wide.py`) to the repack fixed it (test 10.1: 30 Zerglings fill the whole
   width). The panel now prints "statdata.bin not repacked: N wireframes" once per game
   when the file has fewer wireframes than the panel fits.
-- **The game lags in proportion to the units selected** (reported 2026-10-04). **Next
-  item** (the page buttons are done). Measure first: find which per-frame work walks the
+- **The game lags in proportion to the units selected** (reported 2026-10-04).
+  `[FIXED 2026-10-06]`, tested in game with 400 units: idle, fighting, mass deaths,
+  burrowing 400 Zerglings and sieging 400 tanks; circles stay right. The cause was the
+  command card (below). The original plan was to measure first: find which per-frame work walks the
   whole selection (panel `changed()`, subgroup keys, selection circles, smart-build or
   smart-cast scans) before changing anything.
+  **Measuring `[BUILT 2026-10-05, used 2026-10-06]`:** `hooks/selection_ext/sel_profile.*`
+  (switch `SEL_PROFILE`). Every 72 game frames (~3 s at Fastest) it appends a row to
+  `Manifold-profile.csv` next to the running exe (the path is printed once): time, card
+  mode, the average and worst frame interval, the largest selection seen, the plugin's
+  own total, and calls and ms per frame for each suspect below. Each row is written and
+  the file closed, so a crash keeps what came before. One summary line shows on screen.
+  **Ctrl+Alt+P** switches the card's subgroup checks to the leader only (debug only:
+  buttons may show wrong; the row's `card_mode` column says which), to A/B the main
+  suspect in the same run. The test: select
+  ~400 Zerglings (or a mixed army), watch a few reports, press Ctrl+Alt+P, watch a
+  few more, then the same with 12 units for a baseline. The frame interval is
+  wall time between game frames, so it is ~42 ms at Fastest whenever nothing lags.
+  If "ours" stays small while the frame time grows, the cost is in vanilla code
+  driven by the selection (circles, health bars, drawing), not in the plugin.
+  **Measured 2026-10-06** (`Manifold-profile.csv`, 89 windows, 400 Zerglings and 12
+  units, both card modes, Fast then Fastest): game frames are **not** slowed; the
+  interval matches the game speed (56 ms Fast, 42 ms Fastest) at every selection size.
+  The CPU goes to the command card: it is rebuilt on every pass of the main loop
+  (700-11,000 times per game frame; the rebuild-every-pass flow is upstream GPTP's
+  `updateCurrentButtonset`, not stage 5), and with 400 units each rebuild ran ~800
+  condition checks: **40-49 ms of each 56 ms frame** (24-30 ms at Fastest); leader-only
+  6-16 ms. Everything else measured stayed near zero (console copy, panel, dimming,
+  circles, health-bar scans, the iterator).
+  **Fix `[BUILT, tested 2026-10-06]`:** `subgroupButtonState` keeps each button's
+  result until the game frame, the selection (`selsub::selectionVersion`), the active
+  subgroup or the card's set changes, so a subgroup is scanned at most once per button
+  per game frame. Next run: the `card` ms/frame and `chk` should fall to a few
+  hundred checks per frame, and the lag should be gone or show what is left.
+  **Second run, 2026-10-06:** the fix works: checks fell from 250,000-630,000 to at most
+  ~405 per game frame with 400 selected, and the lag is gone in play. The card still
+  costs 3-20 ms per frame, from upstream's rebuild on every loop pass, now the same at
+  any selection size.
+  **Scaling past 400 `[BUILT, tested at 400 on 2026-10-06; 1700 not tried]`** (for a higher `SEL_MAX`, up to
+  1700, the unit limit): work that grew with the square of the selection is gone.
+  `buildActive` re-creates only circles whose slot changes (a death no longer rebuilds
+  every circle); health bars past slot 255 find their unit by sprite index; the subgroup
+  sort, `viewBegin`'s energy sort and `keepsActive` no longer compare every unit with
+  every other; the synced select commands (`commitReplace`, `commitAdd`, `commitRemove`,
+  `assignSlots`) mark units by index instead of scanning the selection per unit. The
+  profiler now times `localRemove` and `removeFromAllSelections` and writes
+  `Manifold-profile-v2.csv`. The third run (fights, a mass death 400 -> 62) showed
+  no spikes when selected units die (worst frame 49-54 ms at Fastest, was 81-94) and
+  removals at 0.03-0.4 ms per frame. The profiler is now off (`SEL_PROFILE 0`); set it to
+  1 to measure again. Not addressed: the card still checks a subgroup once per
+  button per game frame (15 x 1700 at the limit), and a big reselect in multiplayer
+  takes 14 select chunks; BW's per-turn command space is unchecked `[VERIFY]`.
+  Suspects found by reading the code (unmeasured):
+  1. **The command card** (`subgroupButtonState`, `buttonsets.cpp`): each button takes
+     the best state over the active subgroup, checking members one by one until one
+     is enabled. A button no member can use (Burrow before research, a greyed spell)
+     runs `req_check` once per member: up to 15 × 400 checks per card refresh. Shown
+     as `card` and `chk`.
+  2. **The console rebuild** (`clientCopy` → `sortAndPickLeader`): `keepsActive`'s
+     `holdsAll` compares every unit with every other, O(n²), up to ~320k compares at
+     400, in a Debug build. Shown as `copy`; it matters if it runs often.
+  3. **Health bars past slot 255** (`unitForHealthBar`): `selectionIndex` is a byte,
+     so bars of units 255–399 find their unit by scanning the selection: O(n) per bar.
+     Shown as `hb` / `scan`.
+  Ruled out by reading: the selection iterator (`nextSelected`, amortised O(1)),
+  `beforeOrder` (O(1) per unit), smart-build's queued-building scan (walks units, not
+  the selection), the panel's `changed()` (one page), and the dirty-cell grid.
 - **Page buttons and a page indicator** `[BUILT 2026-10-04]`: the selection box is
   raised 24 px; 3 gapless rows; tabs in sets of 12 on the left, arrows between sets
   (spec `docs/superpowers/specs/2026-10-04-selection-panel-pages-design.md`).
@@ -446,7 +509,7 @@ starfield handled (§5). Features 1 and 2 below are done.
   (`windowed=true` with `fullscreen=true`, i.e. borderless, and `maintas=false`) goes next
   to it.
 - **A new `rez\` file must be added to the repack by hand**: the repack tool keeps its
-  own list. Check the exe with `D:\SC Moddingesexp-analysis\mpqfind.py SCManifold.exe
+  own list. Check the exe with `D:\SC Modding\resexp-analysis\mpqfind.py SCManifold.exe
   "rez\statdata.bin"` (lists the file's size in the exe's MPQ, or "missing");
   `mpqget.py <mpq> <name> <out>` extracts a file from the game's MPQs (StormLib).
 - **At exactly 640×480 the resolution module is off**, but the console layout hooks
@@ -465,7 +528,7 @@ starfield handled (§5). Features 1 and 2 below are done.
 
 1. Put cnc-ddraw's `ddraw.dll` and `ddraw.ini` next to the exe that runs the mod. Either
    fullscreen-upscaled or windowed works, since cnc-ddraw accepts whatever mode the game sets.
-2. Use the `GPTP.qdp` built on `feature/resolution`. It lands in `GPTP\Debug\`, and a
+2. Use the `GPTP.qdp` built from `master` (the work began on `feature/resolution`). It lands in `GPTP\Debug\`, and a
    post-build step copies it next to `SCManifold.exe` (`..\..\SCManifold\` from the solution)
    when that folder exists.
 3. One run should answer most questions:

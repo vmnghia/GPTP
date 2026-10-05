@@ -1,7 +1,7 @@
 # Extended command card (dense 5×3)
 
 Status: built, tested in game; buttons to be rearranged SC2-style later
-Branch: `feature/resolution`
+Branch: `feature/resolution` (merged into `master`)
 Detailed notes: `docs/resolution.md` §5a
 
 ## Goal

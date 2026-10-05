@@ -320,6 +320,21 @@ void subgroupSort() {
 	CHECK(keys[0] == 1 && keys[1] == 3 && keys[2] == 3 && keys[3] == 7 && keys[4] == 7);
 	CHECK(units[0] == fake(5) && units[1] == fake(2) && units[2] == fake(4));	//stable
 	CHECK(units[3] == fake(1) && units[4] == fake(3));
+
+	//A full-size selection: three keys, interleaved, stay in their order.
+	static CUnit* big[SEL_MAX];
+	static u32 bigKeys[SEL_MAX];
+	for (u32 i = 0; i < SEL_MAX; i++) {
+		big[i] = fake(i + 1);
+		bigKeys[i] = 9 - (i % 3) * 4;	//9, 5, 1, 9, 5, 1, ...
+	}
+	sortBySubgroup(big, bigKeys, SEL_MAX);
+	bool sortedOk = true;
+	for (u32 i = 1; i < SEL_MAX; i++)
+		if (bigKeys[i - 1] > bigKeys[i] || (bigKeys[i - 1] == bigKeys[i] && big[i - 1] >= big[i]))
+			sortedOk = false;
+	CHECK(sortedOk);
+	CHECK(bigKeys[0] == 1 && big[0] == fake(3));
 }
 
 void subgroupActive() {
@@ -335,6 +350,19 @@ void subgroupActive() {
 	//still starts at the top subgroup.
 	CHECK(!keepsActive(true, before, 3, added, 4));
 	CHECK(!keepsActive(true, before, 3, removed, 2));
+	//Full-size selections, in any order: one death keeps the subgroup, a
+	//swap of one unit for another doesn't.
+	static CUnit* all[SEL_MAX];
+	static CUnit* oneDead[SEL_MAX];
+	for (u32 i = 0; i < SEL_MAX; i++)
+		all[i] = fake((i * 7) % SEL_MAX + 1);
+	for (u32 i = 0, j = 0; i < SEL_MAX; i++)
+		if (i != SEL_MAX / 2)
+			oneDead[j++] = all[SEL_MAX - 1 - i];
+	CHECK(keepsActive(false, all, SEL_MAX, oneDead, SEL_MAX - 1));
+	CHECK(keepsActive(false, oneDead, SEL_MAX - 1, all, SEL_MAX));
+	oneDead[0] = fake(SEL_MAX + 5);
+	CHECK(!keepsActive(false, all, SEL_MAX, oneDead, SEL_MAX - 1));
 	const u32 keys[5] = { 2, 2, 5, 9, 9 };
 	CHECK(activeKeyAfter(keys, 5, 5, true) == 5);
 	CHECK(activeKeyAfter(keys, 5, 5, false) == 2);

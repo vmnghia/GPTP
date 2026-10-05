@@ -1,6 +1,8 @@
 #include "sel_subgroups.h"
 #include "sel_exe.h"
+#include "sel_profile.h"
 #include <SCBW/selection_ext.h>
+#include <algorithm>
 #include <cstring>
 
 using namespace selext;
@@ -13,6 +15,7 @@ u32 previousCount;
 u32 activeKey;
 bool freshPending;	//set by markFresh, used by the next sort
 u32 stamp;			//changes with activeKey
+u32 version;		//changes with every sort of the console list
 
 //The panel highlight: the wireframe colour remap and the game palette.
 u8* const WIRE_REMAP = (u8*)0x0050CE80;
@@ -26,6 +29,11 @@ const u8 DIM_ENTRIES[] = { 0x01, 0x02, 0x11, 0x12, 0x13, 0x14, 0x19, 0x1A, 0x1B,
 u8 paletteSeen[256 * 4];
 u8 dimOf[256];
 bool dimBuilt;
+
+//Most energy first; equal energy keeps the selection's order.
+bool moreEnergy(const CUnit* a, const CUnit* b) {
+	return a->energy > b->energy;
+}
 
 void setActiveKey(u32 key) {
 	if (key != activeKey)
@@ -50,6 +58,7 @@ u32 keyOf(CUnit* unit) {
 }
 
 CUnit* sortAndPickLeader(u32 n) {
+	version++;
 	if (n == 0) {
 		previousCount = 0;
 		return NULL;
@@ -105,19 +114,15 @@ void reset() {
 	freshPending = false;
 	dimBuilt = false;
 	stamp++;
+	version++;
 }
 
 void viewBegin() {
+	SEL_PROFILE_SCOPE(VIEW);
 	static CUnit* view[SEL_MAX];
 	u32 m = activeMembers(view);
 	//Most energy first: the check wants one unit able to cast.
-	for (u32 i = 1; i < m; i++) {
-		CUnit* const unit = view[i];
-		u32 j = i;
-		for (; j > 0 && view[j - 1]->energy < unit->energy; j--)
-			view[j] = view[j - 1];
-		view[j] = unit;
-	}
+	std::stable_sort(view, view + m, moreEnergy);
 	for (u32 i = 0; i < clientCount && m < VANILLA_MAX; i++)
 		if (keys[i] != activeKey)
 			view[m++] = clientSel[i];
@@ -135,6 +140,7 @@ bool isDimmed(CUnit* unit) {
 }
 
 void dimWireframe(CUnit* unit) {
+	SEL_PROFILE_SCOPE(WIRE_DIM);
 	if (unit == NULL || !isDimmed(unit))
 		return;
 	//Cycling entries are never a dim colour (they would shimmer) and their
@@ -158,6 +164,10 @@ void dimWireframe(CUnit* unit) {
 
 u32 activeStamp() {
 	return stamp;
+}
+
+u32 selectionVersion() {
+	return version;
 }
 
 } //selsub

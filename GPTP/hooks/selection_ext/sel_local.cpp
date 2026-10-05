@@ -4,6 +4,7 @@
 #include "sel_subgroups.h"
 #include "sel_build.h"
 #include "sel_panel.h"
+#include "sel_profile.h"
 #include <SCBW/selection_ext.h>
 #include <cstring>
 
@@ -54,6 +55,42 @@ CImage extraHealthBars[SEL_MAX];
 const u32 HEALTH_BAR_FRAME_BYTES = 14;
 u8 extraHealthBarFrames[SEL_MAX][HEALTH_BAR_FRAME_BYTES];
 
+//The unit each sprite's circle was last made for, by sprite index: past slot
+//255 the sprite's byte can't say which unit a health bar belongs to.
+CUnit* spriteUnit[SPRITE_ARRAY_LENGTH];
+
+u32 spriteIndexOf(const CSprite* sprite) {
+	return (u32)(sprite - spriteTable);
+}
+
+//Records the unit before its circle (and health bar) is made.
+void createCircle(CUnit* unit, u32 slot) {
+	const u32 index = spriteIndexOf(unit->sprite);
+	if (index < (u32)SPRITE_ARRAY_LENGTH)
+		spriteUnit[index] = unit;
+	selexe::createSelectionCircle(unit, slot);
+}
+
+//buildActive's scratch, by unit index (1-based): a unit's circle slot + 1 in
+//the old selection, and whether the new one keeps it there. Zero between calls.
+u16 oldSlotPlusOne[UNIT_ARRAY_LENGTH + 1];
+bool keepsCircle[UNIT_ARRAY_LENGTH + 1];
+
+//Whether the unit's sprite still has the circle createCircle made for it: a
+//sprite replaced (a morph) or deselected by the exe since then gets a new one.
+bool hasOurCircle(CUnit* unit) {
+	CSprite* const sprite = unit->sprite;
+	if (sprite == NULL || !(sprite->flags & CSprite_Flags::Selected))
+		return false;
+	const u32 index = spriteIndexOf(sprite);
+	return index < (u32)SPRITE_ARRAY_LENGTH && spriteUnit[index] == unit;
+}
+
+u32 unitIndexOf(CUnit* unit) {
+	const u32 index = unit->getIndex();
+	return index <= (u32)UNIT_ARRAY_LENGTH ? index : 0;
+}
+
 } //unnamed namespace
 
 namespace sellocal {
@@ -72,6 +109,7 @@ void growImagePools() {
 	memset(extraCircles, 0, sizeof(extraCircles));
 	memset(extraHealthBars, 0, sizeof(extraHealthBars));
 	memset(extraHealthBarFrames, 0, sizeof(extraHealthBarFrames));
+	memset(spriteUnit, 0, sizeof(spriteUnit));
 	//As the pool init does for vanilla's 12 (0x4D68C0), then each gets its own frame.
 	for (u32 i = 0; i < SEL_MAX; i++) {
 		selexe::initHealthBarImage(&extraHealthBars[i]);
@@ -86,9 +124,15 @@ void growImagePools() {
 }
 
 CUnit* unitForHealthBar(CSprite* sprite, u32 slot) {
+	SEL_PROFILE_COUNT(HEALTH_BAR);
 	//Below the byte's cap the slot is exact, as in vanilla.
 	if (slot < 255 && slot < SEL_MAX && activeSel[slot] != NULL)
 		return activeSel[slot];
+	//Past it, the unit its circle was made for.
+	const u32 index = spriteIndexOf(sprite);
+	if (index < (u32)SPRITE_ARRAY_LENGTH && spriteUnit[index] != NULL && spriteUnit[index]->sprite == sprite)
+		return spriteUnit[index];
+	SEL_PROFILE_COUNT(HEALTH_BAR_SCAN);
 	for (u32 i = 0; i < SEL_MAX && activeSel[i] != NULL; i++)
 		if (activeSel[i]->sprite == sprite)
 			return activeSel[i];
@@ -96,26 +140,49 @@ CUnit* unitForHealthBar(CSprite* sprite, u32 slot) {
 	return slot < VANILLA_MAX ? vanillaActive[slot] : activeSel[0];
 }
 
+//Only the circles that change are made again: a unit whose circle slot is
+//the same in both selections keeps its circle. A death or a Shift-removal
+//moves only the units after it, and past slot 255 (the byte's cap) none.
 void buildActive(CUnit** list, u32 count) {
-	for (u32 i = 0; i < SEL_MAX && activeSel[i] != NULL; i++) {
-		CUnit* unit = activeSel[i];
-		activeSel[i] = NULL;
-		selexe::removeSelectionCircle(parentOf(unit));
-	}
-	mirrorActive();
+	SEL_PROFILE_SCOPE(BUILD_ACTIVE);
 	if (count > SEL_MAX)
 		count = SEL_MAX;
+	static CUnit* old[SEL_MAX];
+	const u32 oldCount = listCount(activeSel, SEL_MAX);
+	memcpy(old, activeSel, oldCount * sizeof(CUnit*));
+	for (u32 i = 0; i < oldCount; i++)
+		oldSlotPlusOne[unitIndexOf(old[i])] = (u16)(circleSlot(i) + 1);
+	for (u32 i = 0; i < count; i++) {
+		list[i] = parentOf(list[i]);
+		const u32 index = unitIndexOf(list[i]);
+		keepsCircle[index] = index != 0 && oldSlotPlusOne[index] == circleSlot(i) + 1
+			&& hasOurCircle(list[i]);
+	}
+
+	for (u32 i = 0; i < oldCount; i++) {
+		activeSel[i] = NULL;
+		if (!keepsCircle[unitIndexOf(old[i])])
+			selexe::removeSelectionCircle(old[i]);
+	}
+	mirrorActive();
 	CUnit** const vanillaActive = (CUnit**)0x006284B8;
 	for (u32 i = 0; i < count; i++) {
-		CUnit* unit = parentOf(list[i]);
+		CUnit* const unit = list[i];
 		activeSel[i] = unit;
 		//Vanilla fills each slot before its circle is made; keep the mirror so.
 		if (i < VANILLA_MAX)
 			vanillaActive[i] = unit;
-		selexe::createSelectionCircle(unit, circleSlot(i));
-		list[i] = unit;
+		if (!keepsCircle[unitIndexOf(unit)])
+			createCircle(unit, circleSlot(i));
 	}
 	mirrorActive();
+
+	for (u32 i = 0; i < oldCount; i++)
+		oldSlotPlusOne[unitIndexOf(old[i])] = 0;
+	for (u32 i = 0; i < count; i++)
+		keepsCircle[unitIndexOf(list[i])] = false;
+	oldSlotPlusOne[0] = 0;
+	keepsCircle[0] = false;
 }
 
 void buildActiveNewSelection(CUnit** list, u32 count) {
@@ -128,6 +195,7 @@ void buildActiveNewSelection(CUnit** list, u32 count) {
 }
 
 void localRemove(CUnit* unit) {
+	SEL_PROFILE_SCOPE(LOCAL_REMOVE);
 	if (!(unit->sprite->flags & CSprite_Flags::Selected))
 		return;
 	CUnit* list[SEL_MAX];
@@ -147,10 +215,11 @@ void localRemove(CUnit* unit) {
 }
 
 void redrawCircles() {
+	SEL_PROFILE_SCOPE(CIRCLES);
 	for (u32 i = 0; i < SEL_MAX && activeSel[i] != NULL; i++) {
 		CUnit* unit = parentOf(activeSel[i]);
 		activeSel[i] = unit;
-		selexe::createSelectionCircle(unit, circleSlot(i));
+		createCircle(unit, circleSlot(i));
 	}
 	mirrorActive();
 	const u32 local = (u32)*LOCAL_HUMAN_ID;
@@ -165,6 +234,7 @@ void redrawCircles() {
 }
 
 void clientCopy() {
+	SEL_PROFILE_SCOPE(CLIENT_COPY);
 	memcpy(clientSel, activeSel, sizeof(clientSel));
 	clientCount = listCount(clientSel, SEL_MAX);
 	//Stage 5: the console list is sorted by subgroup, and the portrait (whose

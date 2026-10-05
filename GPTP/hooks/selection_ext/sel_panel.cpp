@@ -3,6 +3,7 @@
 #include "sel_local.h"
 #include "sel_send.h"
 #include "sel_subgroups.h"
+#include "sel_profile.h"
 #include <SCBW/selection_ext.h>
 #include <definitions.h>
 #include <graphics/Font.h>
@@ -286,6 +287,7 @@ u32 __fastcall pageButtonInteract(BinDlg* control, u8* event) {
 namespace selpanel {
 
 void fill(BinDlg* dialog) {
+	SEL_PROFILE_SCOPE(PANEL_FILL);
 	if (*LAYOUT != 1) {
 		for (BinDlg* control = dialog->controlType ? dialog : firstChild(dialog);
 			 control != NULL; control = control->next)
@@ -341,6 +343,7 @@ void fill(BinDlg* dialog) {
 }
 
 bool changed() {
+	SEL_PROFILE_COUNT(PANEL_CHANGED);
 	//A new active subgroup or palette changes the dimmed wireframes.
 	if (selsub::activeStamp() != shownStamp)
 		return true;
@@ -396,6 +399,8 @@ void keyDown(const u8* event) {
 	const u16 key = *(const u16*)(event + 8);
 	//The chat box lets PgUp/PgDn through to here while it is open.
 	const bool chatOpen = isChatOpen();
+	if (!chatOpen && selprof::keyDown(key, *SHIFT_HELD != 0, *CTRL_HELD != 0, *ALT_HELD != 0))
+		return;
 	//Stage 5: Tab / Shift+Tab activate the next / previous subgroup, and the
 	//panel turns to the page of its first unit.
 	//The minimap's vanilla Tab toggles, moved off Tab: Alt+T and Ctrl+Shift+T

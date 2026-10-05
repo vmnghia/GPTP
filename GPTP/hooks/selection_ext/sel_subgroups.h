@@ -36,5 +36,8 @@ bool isDimmed(CUnit* unit);
 void dimWireframe(CUnit* unit);
 //Changes whenever the active subgroup does (for the panel's redraw).
 u32 activeStamp();
+//Changes whenever the console list is rebuilt (clientCopy), so a cache of
+//anything computed from its units knows to drop it.
+u32 selectionVersion();
 
 } //selsub

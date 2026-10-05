@@ -1,7 +1,7 @@
 # Smart-casting
 
 Status: built, tested in game (2026-09-30)
-Branch: `feature/resolution`
+Branch: `feature/resolution` (merged into `master`)
 Detailed notes: `docs/selection.md` §6
 
 ## Goal
