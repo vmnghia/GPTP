@@ -395,11 +395,13 @@ starfield handled (§5). Features 1 and 2 below are done.
   `make_statdata_wide.py`) to the repack fixed it (test 10.1: 30 Zerglings fill the whole
   width). The panel now prints "statdata.bin not repacked: N wireframes" once per game
   when the file has fewer wireframes than the panel fits.
-- **The game lags in proportion to the units selected** (reported 2026-10-04). **Next
-  item** (the page buttons are done). Measure first: find which per-frame work walks the
+- **The game lags in proportion to the units selected** (reported 2026-10-04).
+  `[FIXED 2026-10-06]`, tested in game with 400 units: idle, fighting, mass deaths,
+  burrowing 400 Zerglings and sieging 400 tanks; circles stay right. The cause was the
+  command card (below). The original plan was to measure first: find which per-frame work walks the
   whole selection (panel `changed()`, subgroup keys, selection circles, smart-build or
   smart-cast scans) before changing anything.
-  **Measuring `[BUILT 2026-10-05, not yet run]`:** `hooks/selection_ext/sel_profile.*`
+  **Measuring `[BUILT 2026-10-05, used 2026-10-06]`:** `hooks/selection_ext/sel_profile.*`
   (switch `SEL_PROFILE`). Every 72 game frames (~3 s at Fastest) it appends a row to
   `Manifold-profile.csv` next to the running exe (the path is printed once): time, card
   mode, the average and worst frame interval, the largest selection seen, the plugin's
@@ -422,7 +424,7 @@ starfield handled (§5). Features 1 and 2 below are done.
   condition checks: **40-49 ms of each 56 ms frame** (24-30 ms at Fastest); leader-only
   6-16 ms. Everything else measured stayed near zero (console copy, panel, dimming,
   circles, health-bar scans, the iterator).
-  **Fix `[BUILT 2026-10-06, not yet run]`:** `subgroupButtonState` keeps each button's
+  **Fix `[BUILT, tested 2026-10-06]`:** `subgroupButtonState` keeps each button's
   result until the game frame, the selection (`selsub::selectionVersion`), the active
   subgroup or the card's set changes, so a subgroup is scanned at most once per button
   per game frame. Next run: the `card` ms/frame and `chk` should fall to a few
@@ -431,7 +433,7 @@ starfield handled (§5). Features 1 and 2 below are done.
   ~405 per game frame with 400 selected, and the lag is gone in play. The card still
   costs 3-20 ms per frame, from upstream's rebuild on every loop pass, now the same at
   any selection size.
-  **Scaling past 400 `[BUILT 2026-10-06, not yet run]`** (for a higher `SEL_MAX`, up to
+  **Scaling past 400 `[BUILT, tested at 400 on 2026-10-06; 1700 not tried]`** (for a higher `SEL_MAX`, up to
   1700, the unit limit): work that grew with the square of the selection is gone.
   `buildActive` re-creates only circles whose slot changes (a death no longer rebuilds
   every circle); health bars past slot 255 find their unit by sprite index; the subgroup
@@ -439,7 +441,10 @@ starfield handled (§5). Features 1 and 2 below are done.
   every other; the synced select commands (`commitReplace`, `commitAdd`, `commitRemove`,
   `assignSlots`) mark units by index instead of scanning the selection per unit. The
   profiler now times `localRemove` and `removeFromAllSelections` and writes
-  `Manifold-profile-v2.csv`. Not addressed: the card still checks a subgroup once per
+  `Manifold-profile-v2.csv`. The third run (fights, a mass death 400 -> 62) showed
+  no spikes when selected units die (worst frame 49-54 ms at Fastest, was 81-94) and
+  removals at 0.03-0.4 ms per frame. The profiler is now off (`SEL_PROFILE 0`); set it to
+  1 to measure again. Not addressed: the card still checks a subgroup once per
   button per game frame (15 x 1700 at the limit), and a big reselect in multiplayer
   takes 14 select chunks; BW's per-turn command space is unchecked `[VERIFY]`.
   Suspects found by reading the code (unmeasured):

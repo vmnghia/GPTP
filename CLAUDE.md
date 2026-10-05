@@ -121,8 +121,11 @@ FireGraft rather than hardcoding them.
 `plugins::nextFrame()` in `hooks/main/game_hooks.cpp` runs every frame and iterates visible
 units. This is the place for continuous behaviour, and — importantly — it is **live**, unlike
 much of the hook registry. Its cost is paid every frame: with selections of up to 400 units,
-anything here that walks the whole selection scales with it (the open lag report in
-`docs/resolution.md` §6 is exactly this kind of problem).
+anything here that walks the whole selection scales with it. So does anything called on
+every pass of the main loop, thousands of times per game frame: the command card's rebuild
+was, and caused the lag fixed on 2026-10-06 (`docs/resolution.md` §6). To measure, set
+`SEL_PROFILE` to 1 in `hooks/selection_ext/sel_profile.h`: it logs per-feature ms per frame
+to `Manifold-profile-v2.csv` next to the exe.
 
 ## Working agreements
 
