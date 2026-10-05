@@ -10,6 +10,13 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-05-button-set-editor-design.md`.
 
+**As built (2026-10-06), where it differs from the tasks below:** Task 9's window is
+built in C# without `.xaml` (it compiles on Linux with `dotnet msbuild -t:Compile`), and
+its logic went into `Manifold.Core/Editor/` with tests (`EditorTests.cs`), so Core has 52
+tests, not 42. The solution now holds the app, so on Linux the tests run with
+`dotnet test tools/ManifoldEditor/Manifold.Core.Tests`, not the `.sln`. Task 8's project
+sets `EnableWindowsTargeting` and copies `lib/StormLib.dll` only when present.
+
 ## Where each task runs
 
 | Tasks | Where | Check |

@@ -474,6 +474,10 @@ starfield handled (§5). Features 1 and 2 below are done.
   raise has its own switch (`RAISE_SELECTION_BOX`), not the widening or the card rebuild.
 
 **Data edits, the user's to make:**
+- **Add `Manifold\buttonsets.bin` to the repack tool's list** once the Manifold Editor has
+  saved one into `SCManifold.exe` (`tools/ManifoldEditor/README.md`). The repack tool keeps
+  its own list; without it, the next repack drops the file and the game silently goes
+  back to FireGraft's button sets.
 - **stat_txt.tbl entries 810 and 811** ("Show/Hide Terrain in Minimap (Tab)"): change
   "(Tab)" to "(Alt+T)". The minimap terrain toggle moved to Alt+T on 2026-10-03 (Tab now
   cycles selection subgroups; the ally colours moved to Ctrl+Shift+T, which has no string).
@@ -495,6 +499,9 @@ starfield handled (§5). Features 1 and 2 below are done.
    tested; smart-build (`docs/superpowers/specs/2026-10-03-smart-build-design.md`) is built and tested too; see `docs/superpowers/specs/2026-09-30-extended-selection-design.md`. Unlike the
    view, selections are sent as network commands and recorded in replays, so this touches
    synced game state, unlike everything above.
+   **Button set editor** (Manifold Editor part 1) `[BUILT 2026-10-06, not yet run]`:
+   `tools/ManifoldEditor/` and the loader `hooks/interface/buttonsets_loader.cpp`; spec
+   `docs/superpowers/specs/2026-10-05-button-set-editor-design.md`, round in its §7.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
    first game frame; every client applies it in the same frame; replays record it. This
    needs the view size switchable at game start. The buffers would be allocated for the

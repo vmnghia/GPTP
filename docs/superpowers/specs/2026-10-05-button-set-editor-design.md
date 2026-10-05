@@ -1,6 +1,6 @@
 # Button set editor (Manifold Editor, part 1: core and button sets)
 
-Status: design approved 2026-10-05, not built. Replaces the abandoned FireGraftEx WPF
+Status: design approved 2026-10-05; built 2026-10-06 (plan `docs/superpowers/plans/2026-10-05-button-set-editor.md`), not yet run on Windows. Replaces the abandoned FireGraftEx WPF
 skeleton (`D:\SC Modding\FireGraftEx`, outside git; only its `Data\FireGraft\*Func.txt`
 lists are reused).
 
@@ -32,13 +32,16 @@ Scope: StarCraft 1.16.1 and the Manifold mod only.
   `Firegraft\*`. The real `D:\Games\Starcraft 1.16.1\StarCraft.exe` is never modified.
 - FireGraft's project is inside that MPQ as `Firegraft\SCManifold.fgp` ("FgPa", version 7,
   "1.16.1"), a list of sections, each `char[4] tag, u32 length, data`: `Unit`, `Buts`,
-  `UntR`, `UpgR`, `TecR`, `TecU`, `OrdR`, `ExEd`, `SUni`. FireGraft's runtime applies it
+  `UntR`, `UpgR`, `TecR`, `TecU`, `OrdR`, `ExEd`, `SUni`, then `SBut`, `SUnD`, `SUpg`, `SRes`,
+  `SUse`, `SOrd`, `SExe` (only `Buts` is used). FireGraft's runtime applies it
   when the plugins load, before any game starts. This is assumed, not traced: the plan's
   loader task confirms it with an on-screen trace of the table entry before and after.
 - `Buts` holds only the changed sets: `u16 setCount`, then per set `u8 setId, u8
   buttonCount`, then 20-byte buttons `u16 position, u16 icon, u32 conditionIndex, u32
-  actionIndex, u16 conditionVar, u16 actionVar, u16 disabledStringId, u16
-  enabledStringId`. The real file parses exactly (18 sets, 2438 of 2438 bytes): sets 11,
+  actionIndex, u16 conditionVar, u16 actionVar, u16 enabledStringId, u16
+  disabledStringId` (corrected 2026-10-06: 0x10 is the enabled tooltip, whose first
+  character is the hotkey; 0x12 the disabled text; every button has the first, only
+  buttons that can be disabled the second). The real file parses exactly (18 sets, 2438 of 2438 bytes): sets 11,
   12, 13, 15, 22, 67-70, 73-80, 90, positions 1-9 only.
 - The indexes count from 0 in FireGraft's lists. `FireGraftConFunc.txt` (67 lines) and
   `FireGraftActFunc.txt` (60 lines) give name and address per index: set 11's first
@@ -67,7 +70,9 @@ self-contained, x86 so it can load the 32-bit `StormLib.dll` that PyMS ships). L
 - **Model**: 250 sets, each an ordered list of buttons. Move, swap, copy, paste, delete,
   revert and field edits are operations here, each with its inverse, so undo, redo and
   tests do not need the UI.
-- **UI**: the window in §5.
+- **UI**: the window in §5. Built (2026-10-06) in C# with no `.xaml` files, so it compiles
+  outside Windows too; its logic (set list, card cells, commands, check box text) lives in
+  `Manifold.Core/Editor/` with the other tested code.
 - **Tests**: a C# test project for Data and Model (§7).
 
 Settings are the StarCraft folder (from the registry, overridable) and the last exe
@@ -89,7 +94,7 @@ header  char[4] "MBTS", u16 version = 1, u16 setCount = 250
 per set u16 buttonCount, u16 reserved = 0, u32 connectedUnit
         buttonCount x button (20 bytes)
 button  u16 position, u16 iconID, u32 condition, u32 action,
-        u16 conditionVar, u16 actionVar, u16 disabledStringID, u16 enabledStringID
+        u16 conditionVar, u16 actionVar, u16 enabledStringID, u16 disabledStringID
 ```
 
 - The button record is GPTP's `BUTTON` byte for byte; condition and action are
