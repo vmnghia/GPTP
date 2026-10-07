@@ -55,7 +55,7 @@ sets `EnableWindowsTargeting` and copies `lib/StormLib.dll` only when present.
 - **[VERIFY] PyMS's StormLib build** (Task 8): ANSI or Unicode paths, and stdcall. Pinned by Task 8's first check.
 - **[VERIFY] The `.fgp`'s name inside the exe** (Task 9): `Firegraft\SCManifold.fgp` per the spec; the app derives it from the exe's file name.
 - **[VERIFY] `stat_txt.tbl` ids count from 1** (Task 9 check: set 11's first button shows "Move"), and **`cmdicons.grp` takes `ticon.pcx`'s palette directly** (Task 9 check: icons look right).
-- **Repacking can drop the editor's file.** The repack tool keeps its own list (CLAUDE.md, Deploying). Until `Manifold\buttonsets.bin` is on that list, a repack of `SCManifold.exe` silently returns the game to FireGraft's sets. Task 11 records this in `docs/resolution.md` §6 and the user adds it to the list.
+- **Repacking can drop the editor's file.** ~~The repack tool keeps its own list~~ (2026-10-07: wrong guess; the user adds files with PyMPQ, which replaces in place and keeps the editor's file). As built, the save also implodes the file (PKWARE) instead of the zlib below: 1.16.1's Storm has no zlib and stopped the game with "The file data is corrupt".
 
 ## Review focus
 

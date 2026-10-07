@@ -69,6 +69,12 @@ Scope: StarCraft 1.16.1 and the Manifold mod only.
 - **The `.fgp`** is found by listing `Firegraft\*.fgp` when it isn't named after the exe (a
   renamed copy). The `.fgp` holds only the sets changed in FireGraft: 18 here.
 - **The window** works built in C# without `.xaml`.
+- **Compression**: StarCraft 1.16.1's Storm has no zlib. A zlib-compressed
+  `Manifold\buttonsets.bin` let the exe start (Storm only decompresses on read) but stopped
+  the game at the loader's read with "The file data is corrupt". The editor now implodes
+  it (PKWARE), as the game's own MPQs do.
+- **Repacking** is done by hand with PyMPQ, which adds files in place, so the editor's file
+  survives adding a new `GPTP.qdp`.
 
 ## 3. Pieces
 

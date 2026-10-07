@@ -47,5 +47,7 @@ changes it). An exe without `Manifold\buttonsets.bin` opens as vanilla plus its 
 project's button sets; saving writes the file, which is then the source.
 
 Saving adds the file to a copy of the exe and swaps the copy in, keeping the previous exe as
-`<name>.bak`. **Add `Manifold\buttonsets.bin` to the repack tool's list**, or the next repack
-drops it and the game goes back to FireGraft's sets.
+`<name>.bak`. The file is PKWARE-imploded, the compression StarCraft 1.16.1's Storm reads
+(an earlier build used zlib, which the game rejects with "The file data is corrupt": save
+once more with this build to fix such an exe). Adding files with PyMPQ afterwards keeps it;
+just don't save while PyMPQ has the exe open.

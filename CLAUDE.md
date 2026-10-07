@@ -31,8 +31,10 @@ into the exe caller's frame. Only the offsets listed in its `ALLOWED` table are 
 
 **Deploying.** A post-build step copies `GPTP.qdp` next to `SCManifold.exe`
 (`..\..\SCManifold\` from the solution) when that folder exists. The plugin must then be
-repacked into `SCManifold.exe` before testing. Any **new `rez\` file must be added to the
-repack by hand**, because the repack tool keeps its own list. A missing `rez\statdata.bin`
+repacked into `SCManifold.exe` before testing: the user adds files from
+`SCManifold\to-repack\` into the exe's MPQ by hand with PyMPQ, so any **new `rez\` file must
+be added by hand too**. Adding replaces files in place; it doesn't rebuild the MPQ, so files
+already in it (such as the Manifold Editor's `Manifold\buttonsets.bin`) stay. A missing `rez\statdata.bin`
 once made the selection panel silently fall back to vanilla's 12 wireframes.
 `docs/resolution.md` §6 "Working tips" has the paths and helper scripts.
 

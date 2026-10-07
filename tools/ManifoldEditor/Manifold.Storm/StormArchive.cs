@@ -85,16 +85,16 @@ public sealed class StormArchive(string path, string? name = null) : IWritableAr
         try
         {
             if (!Native.SFileCreateFile(mpq, file, 0, (uint)data.Length, 0,
-                    Native.MPQ_FILE_COMPRESS | Native.MPQ_FILE_REPLACEEXISTING, out var handle))
+                    Native.MPQ_FILE_IMPLODE | Native.MPQ_FILE_REPLACEEXISTING, out var handle))
             {
                 int error = Marshal.GetLastWin32Error();
                 // A full hash table: make room once, then try again.
                 if (error != ERROR_DISK_FULL || !Native.SFileSetMaxFileCount(mpq, 4096) ||
                     !Native.SFileCreateFile(mpq, file, 0, (uint)data.Length, 0,
-                        Native.MPQ_FILE_COMPRESS | Native.MPQ_FILE_REPLACEEXISTING, out handle))
+                        Native.MPQ_FILE_IMPLODE | Native.MPQ_FILE_REPLACEEXISTING, out handle))
                     throw new Win32Exception(error, $"cannot add {file}");
             }
-            bool written = Native.SFileWriteFile(handle, data, (uint)data.Length, Native.MPQ_COMPRESSION_ZLIB);
+            bool written = Native.SFileWriteFile(handle, data, (uint)data.Length, 0); // implode ignores it
             bool finished = Native.SFileFinishFile(handle);
             if (!written || !finished || !Native.SFileFlushArchive(mpq))
                 throw new Win32Exception(Marshal.GetLastWin32Error(), $"cannot write {file}");

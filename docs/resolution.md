@@ -474,10 +474,9 @@ starfield handled (§5). Features 1 and 2 below are done.
   raise has its own switch (`RAISE_SELECTION_BOX`), not the widening or the card rebuild.
 
 **Data edits, the user's to make:**
-- **Add `Manifold\buttonsets.bin` to the repack tool's list** once the Manifold Editor has
-  saved one into `SCManifold.exe` (`tools/ManifoldEditor/README.md`). The repack tool keeps
-  its own list; without it, the next repack drops the file and the game silently goes
-  back to FireGraft's button sets.
+- **Don't save in the Manifold Editor while PyMPQ has `SCManifold.exe` open** (the editor
+  reports it busy and keeps the edits). Repacking with PyMPQ adds files in place, so the
+  editor's `Manifold\buttonsets.bin` survives a repack of `GPTP.qdp`.
 - **stat_txt.tbl entries 810 and 811** ("Show/Hide Terrain in Minimap (Tab)"): change
   "(Tab)" to "(Alt+T)". The minimap terrain toggle moved to Alt+T on 2026-10-03 (Tab now
   cycles selection subgroups; the ally colours moved to Ctrl+Shift+T, which has no string).

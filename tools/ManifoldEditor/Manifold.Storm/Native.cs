@@ -12,9 +12,11 @@ static class Native
 {
     const string Dll = "StormLib.dll";
     public const uint STREAM_FLAG_READ_ONLY = 0x00000100;
-    public const uint MPQ_FILE_COMPRESS = 0x00000200;
+    // PKWARE implode: the one compression StarCraft 1.16.1's storm.dll reads for
+    // ordinary files. It has no zlib, and a zlib file stops the game with
+    // "The file data is corrupt".
+    public const uint MPQ_FILE_IMPLODE = 0x00000100;
     public const uint MPQ_FILE_REPLACEEXISTING = 0x80000000;
-    public const uint MPQ_COMPRESSION_ZLIB = 0x02;
 
     [DllImport(Dll, SetLastError = true, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Winapi)]
     [return: MarshalAs(UnmanagedType.U1)]
