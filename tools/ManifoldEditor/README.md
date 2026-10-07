@@ -35,6 +35,10 @@ On Windows: open `ManifoldEditor.sln` in Visual Studio, pick the **x86** platfor
 `ManifoldEditor.App` as the startup project, and run. Put PyMS's 32-bit `StormLib.dll` in
 `lib/` first (see `lib/README.md`).
 
+The MSIX/PRI build tasks come from the `Microsoft.Windows.SDK.BuildTools.MSIX` package, so
+no extra Visual Studio component is needed. (Without it, the build fails with MSB4062:
+`Microsoft.Build.Packaging.Pri.Tasks.dll` not found in Visual Studio's `AppxPackage` folder.)
+
 ## Using it
 
 The first exe opened is remembered (`%LOCALAPPDATA%\ManifoldEditor\settings.json`), with the
