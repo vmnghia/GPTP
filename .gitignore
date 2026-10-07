@@ -10,3 +10,7 @@
 
 /tools/ManifoldEditor/**/bin/
 /tools/ManifoldEditor/**/obj/
+
+# Left by a Visual Studio solution upgrade.
+/tools/ManifoldEditor/Backup/
+/tools/ManifoldEditor/UpgradeLog*.htm
