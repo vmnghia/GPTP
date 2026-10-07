@@ -64,6 +64,21 @@ public class PeImageTests
         Assert.Empty(sets[0].Buttons);
     }
 
+    [Fact]
+    public void A_table_that_is_not_1_16_1s_is_refused_with_where_it_went_wrong()
+    {
+        var bytes = MinimalExe((b, offsetOf) =>
+        {
+            int entry = offsetOf(VanillaSets.TableAddress + 7 * 12);
+            BitConverter.TryWriteBytes(b.AsSpan(entry), 0xC0DE0000u);     // a count no set has
+            BitConverter.TryWriteBytes(b.AsSpan(entry + 4), 0x519400u);
+        });
+        var e = Assert.Throws<InvalidDataException>(() => VanillaSets.Read(new PeImage(bytes)));
+        Assert.Contains("set 7", e.Message);
+        Assert.Contains("0x51883C", e.Message);
+        Assert.Contains("1.16.1", e.Message);
+    }
+
     [SkippableFact]
     public void Reads_StarCraft_exe()
     {

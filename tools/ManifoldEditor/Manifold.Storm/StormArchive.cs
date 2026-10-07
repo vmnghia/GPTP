@@ -10,6 +10,9 @@ public sealed class StormArchive(string path, string? name = null) : IWritableAr
     const int ERROR_FILE_NOT_FOUND = 2, ERROR_ACCESS_DENIED = 5, ERROR_SHARING_VIOLATION = 32,
         ERROR_LOCK_VIOLATION = 33, ERROR_DISK_FULL = 112;
 
+    /// <summary>SFileGetFileSize's failure value (SFILE_INVALID_SIZE).</summary>
+    const uint SizeError = 0xFFFFFFFF;
+
     public string Name { get; } = name ?? Path.GetFileName(path);
 
     public byte[]? TryRead(string file)
@@ -22,6 +25,8 @@ public sealed class StormArchive(string path, string? name = null) : IWritableAr
             try
             {
                 uint size = Native.SFileGetFileSize(handle, IntPtr.Zero);
+                if (size == SizeError)
+                    throw new Win32Exception(Marshal.GetLastWin32Error(), $"{Name}: StormLib can't tell the size of {file}");
                 var data = new byte[size];
                 if (!Native.SFileReadFile(handle, data, size, out var read, IntPtr.Zero) || read != size)
                     throw new Win32Exception(Marshal.GetLastWin32Error(), $"{Name}: cannot read {file}");

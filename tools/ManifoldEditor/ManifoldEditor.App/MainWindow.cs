@@ -255,7 +255,7 @@ public sealed class MainWindow : Window
         }
         catch (Exception e)
         {
-            await Message("Can't open the exe", e.Message);
+            await Message("Can't open the exe", e.Message, e.ToString());
             return;
         }
         icons = new IconCache(opened.Resources);
@@ -279,7 +279,7 @@ public sealed class MainWindow : Window
         }
         catch (Exception e)
         {
-            error = e.Message;
+            error = e.ToString();
         }
         if (error is not null)
         {
@@ -323,12 +323,21 @@ public sealed class MainWindow : Window
         }
     }
 
-    async Task Message(string title, string text)
+    /// <summary>A message, with optional details (an exception) in selectable text to copy.</summary>
+    async Task Message(string title, string text, string? details = null)
     {
+        var body = new StackPanel { Spacing = 8 };
+        body.Children.Add(new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true });
+        if (details is not null)
+            body.Children.Add(new TextBox
+            {
+                Text = details, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, AcceptsReturn = true,
+                FontFamily = new FontFamily("Consolas"), FontSize = 11, MaxHeight = 320,
+            });
         var dialog = new ContentDialog
         {
             XamlRoot = Content.XamlRoot, Title = title,
-            Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap },
+            Content = new ScrollViewer { Content = body, MaxHeight = 420 },
             CloseButtonText = "OK",
         };
         await dialog.ShowAsync();

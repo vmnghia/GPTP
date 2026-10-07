@@ -72,6 +72,8 @@ public static class VanillaSets
 {
     /// <summary>buttonSetTable (GPTP scbwdata.h): 250 x {u32 count, BUTTON* first, u32 unit}.</summary>
     public const uint TableAddress = 0x005187E8;
+    /// <summary>More than any set holds; FireGraft stores a set's count in a byte.</summary>
+    const uint MaxButtons = 255;
 
     public static ButtonSet[] Read(PeImage exe)
     {
@@ -81,6 +83,10 @@ public static class VanillaSets
         {
             uint count = BitConverter.ToUInt32(table[(s * 12)..]);
             uint first = BitConverter.ToUInt32(table[(s * 12 + 4)..]);
+            if (first != 0 && count > MaxButtons)
+                throw new InvalidDataException(
+                    $"set {s} has {count} buttons (table entry at 0x{TableAddress + s * 12:X}): " +
+                    "this exe's button set table is not where StarCraft 1.16.1 has it");
             uint unit = BitConverter.ToUInt32(table[(s * 12 + 8)..]);
             var buttons = new Button[first == 0 ? 0 : count];
             if (buttons.Length > 0)

@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using Manifold.Core.Data;
 using Manifold.Core.Editor;
 using Manifold.Core.Model;
@@ -11,9 +10,29 @@ namespace ManifoldEditor.App.Services;
 public sealed record OpenedExe(StormArchive Archive, EditorState State, EditorResources Resources,
     SetCatalog Catalog, IReadOnlyList<string> Status);
 
+/// <summary>An exception while opening, with the step it happened in.</summary>
+public sealed class OpenStepException(string step, Exception inner)
+    : Exception($"{step}: {inner.Message}", inner)
+{
+    public string Step { get; } = step;
+}
+
 /// <summary>Everything the window opens with (spec §5, plan Task 9 step 1).</summary>
 public static class Workspace
 {
+    /// <summary>Runs one step of opening; a failure names the step.</summary>
+    static T Step<T>(string step, Func<T> work)
+    {
+        try
+        {
+            return work();
+        }
+        catch (Exception e) when (e is not OpenStepException)
+        {
+            throw new OpenStepException(step, e);
+        }
+    }
+
     const string DefaultStarCraftDir = @"D:\Games\Starcraft 1.16.1";
     static readonly string[] VanillaMpqs = { "patch_rt.mpq", "BrooDat.mpq", "StarDat.mpq" };
 
@@ -63,25 +82,20 @@ public static class Workspace
             string path = Path.Combine(starCraftDir, mpq);
             if (File.Exists(path)) archives.Add(new StormArchive(path));
         }
-        var resources = EditorResources.Load(new ResourceResolver(archives));
+        var resources = Step("Reading stat_txt.tbl, cmdicons.grp, ticon.pcx and units.dat",
+            () => EditorResources.Load(new ResourceResolver(archives)));
 
         string starCraftExe = Path.Combine(starCraftDir, "StarCraft.exe");
         if (!File.Exists(starCraftExe))
             throw new FileNotFoundException($"StarCraft.exe was not found in {starCraftDir}. Set the StarCraft folder first.");
-        var vanilla = VanillaSets.Read(new PeImage(File.ReadAllBytes(starCraftExe)));
+        var vanilla = Step($"Reading the vanilla button sets from {starCraftExe}",
+            () => VanillaSets.Read(new PeImage(File.ReadAllBytes(starCraftExe))));
 
-        var conditions = LoadTable("FireGraftConFunc.txt");
-        var actions = LoadTable("FireGraftActFunc.txt");
+        var conditions = Step("Reading Data\\FireGraftConFunc.txt", () => LoadTable("FireGraftConFunc.txt"));
+        var actions = Step("Reading Data\\FireGraftActFunc.txt", () => LoadTable("FireGraftActFunc.txt"));
         string fgp = $"Firegraft\\{Path.GetFileNameWithoutExtension(exePath)}.fgp";
-        EditorSession.Opened opened;
-        try
-        {
-            opened = EditorSession.Open(exe, fgp, vanilla, conditions, actions);
-        }
-        catch (Win32Exception e)
-        {
-            throw new InvalidDataException($"{Path.GetFileName(exePath)} has no MPQ that StormLib can open ({e.Message}).", e);
-        }
+        var opened = Step($"Reading the button sets in {Path.GetFileName(exePath)} ({ButtonSetFile.ArchivePath} or {fgp})",
+            () => EditorSession.Open(exe, fgp, vanilla, conditions, actions));
 
         var state = new EditorState(opened.Document, Path.GetFileName(exePath), resources.Text, conditions, actions);
         var status = opened.Status.Concat(resources.Sources).Concat(resources.Notes).ToArray();
