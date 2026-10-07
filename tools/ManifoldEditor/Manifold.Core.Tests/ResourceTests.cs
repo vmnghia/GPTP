@@ -37,6 +37,41 @@ public class ResourceTests
     }
 
     [Fact]
+    public void A_button_string_split_by_a_nul_after_its_hotkey_is_joined()
+    {
+        // As vanilla stores Move: "m", NUL, then the text. Stim Packs has no NUL. Then a
+        // genuine one-character string, followed directly by another string.
+        var strings = new[] { "m\0\u0003M\u0001ove", "t\u0003Use S\u0003t\u0001im Packs", "x", "Next" };
+        var body = new List<byte>();
+        var offsets = new List<int>();
+        int start = 2 + 2 * strings.Length;
+        foreach (var s in strings)
+        {
+            offsets.Add(start + body.Count);
+            body.AddRange(System.Text.Encoding.Latin1.GetBytes(s));
+            body.Add(0);
+        }
+        var bytes = new List<byte> { (byte)strings.Length, 0 };
+        foreach (var o in offsets) { bytes.Add((byte)o); bytes.Add((byte)(o >> 8)); }
+        bytes.AddRange(body);
+        var text = StatTxt.Parse(bytes.ToArray());
+        Assert.Equal("m\u0003M\u0001ove", text.Get(1));
+        Assert.Equal('M', StatTxt.HotkeyOf(text.Get(1)));
+        Assert.Equal("t\u0003Use S\u0003t\u0001im Packs", text.Get(2));
+        Assert.Equal("x", text.Get(3));                     // its NUL is followed by string 4
+        Assert.Equal("Next", text.Get(4));
+    }
+
+    [Fact]
+    public void Icons_pal_is_a_raw_256_colour_palette()
+    {
+        var palette = RawPalette.Read(Fixtures.Bytes("Icons.pal"));
+        Assert.Equal(256, palette.Length);
+        Assert.All(palette, c => Assert.Equal(0xFF000000u, c & 0xFF000000u));
+        Assert.Throws<InvalidDataException>(() => RawPalette.Read(new byte[100]));
+    }
+
+    [Fact]
     public void Decodes_a_grp_frame_with_skips_repeats_and_copies()
     {
         // One 4x2 frame at (0,0): row 0 = skip 1, repeat 7 x2, copy [9]; row 1 = copy [1,2,3,4]

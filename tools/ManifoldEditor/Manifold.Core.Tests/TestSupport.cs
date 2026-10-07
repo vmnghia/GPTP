@@ -33,6 +33,15 @@ sealed class FakeArchive(string name, Dictionary<string, byte[]>? files = null) 
     public string Name => name;
     public byte[]? TryRead(string path) => Files.TryGetValue(path, out var data) ? data : null;
 
+    /// <summary>Files matching "folder\\*.ext" (the only masks the editor uses).</summary>
+    public IReadOnlyList<string> List(string mask)
+    {
+        int star = mask.IndexOf('*');
+        string prefix = mask[..star], suffix = mask[(star + 1)..];
+        return Files.Keys.Where(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            && k.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)).OrderBy(k => k).ToArray();
+    }
+
     public void Write(string path, byte[] data)
     {
         if (Busy) throw new ArchiveBusyException("the exe is open in another program (FireGraft?)");

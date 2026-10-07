@@ -6,6 +6,9 @@ public interface IArchive
     /// <summary>Shown in the status bar: where a resource came from.</summary>
     string Name { get; }
     byte[]? TryRead(string path);
+
+    /// <summary>The files matching a mask such as "Firegraft\\*.fgp", if the archive can list them.</summary>
+    IReadOnlyList<string> List(string mask) => Array.Empty<string>();
 }
 
 /// <summary>The mod exe's MPQ, which the editor also writes to.</summary>

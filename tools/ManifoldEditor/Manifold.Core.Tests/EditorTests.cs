@@ -103,6 +103,15 @@ public class EditorTests
     }
 
     [Fact]
+    public void Hotkeys_have_readable_labels()
+    {
+        Assert.Equal("M", ButtonText.HotkeyLabel('M'));
+        Assert.Equal("Esc", ButtonText.HotkeyLabel('\u001b'));
+        Assert.Equal("", ButtonText.HotkeyLabel(null));
+        Assert.Equal("ESC - Cancel", ButtonText.Display("\u001b\u0003ESC\u0001 - Cancel"));
+    }
+
+    [Fact]
     public void Button_text_drops_the_hotkey_and_control_codes()
     {
         Assert.Equal("Move", ButtonText.Display("m\u0001Move"));
@@ -214,7 +223,8 @@ public class EditorTests
             [EditorResources.StatTxtPath] = BuildTbl("Terran Marine"),
             [EditorResources.UnitsDatPath] = new byte[Data.UnitsDat.FileSize],
         });
-        var resources = EditorResources.Load(new ResourceResolver(new IArchive[] { mod, stardat }));
+        var resources = EditorResources.Load(new ResourceResolver(new IArchive[] { mod, stardat }),
+            RawPalette.Read(Fixtures.Bytes("Icons.pal")));
         Assert.Equal("Terran Marine", resources.Strings!.Get(1));
         Assert.NotNull(resources.Units);
         Assert.Null(resources.Icons);

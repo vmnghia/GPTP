@@ -10,6 +10,15 @@ public static class ButtonText
     public static string Display(string? buttonString) =>
         string.IsNullOrEmpty(buttonString) ? "" : Clean(buttonString[1..]);
 
+    /// <summary>A hotkey as shown: the key, "Esc" for ESC, "" for none.</summary>
+    public static string HotkeyLabel(char? hotkey) => hotkey switch
+    {
+        null => "",
+        '\u001b' => "Esc",
+        < ' ' => $"^{(char)(hotkey + '@')}",
+        _ => hotkey.Value.ToString(),
+    };
+
     /// <summary>The string without control codes, trimmed.</summary>
     public static string Clean(string? text) =>
         text is null ? "" : new string(text.Where(c => c >= ' ').ToArray()).Trim();

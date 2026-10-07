@@ -3,8 +3,9 @@ using Manifold.Core.Data;
 namespace Manifold.Core.Editor;
 
 /// <summary>
-/// The game files the editor shows: strings, icons with their palette, and units.dat.
-/// Each is looked up through the resolver (the mod exe first, then the vanilla MPQs). One
+/// The game files the editor shows: strings, icons, and units.dat. Each is looked up
+/// through the resolver (the mod exe first, then the vanilla MPQs); the icons' palette is
+/// PyMS's Icons.pal, passed in (ticon.pcx only recolours highlighted icons). One
 /// that is missing or unreadable is left null and noted: the editor still opens, showing
 /// ids and numbers in its place (spec §6).
 /// </summary>
@@ -12,7 +13,6 @@ public sealed class EditorResources
 {
     public const string StatTxtPath = "rez\\stat_txt.tbl";
     public const string IconsPath = "unit\\cmdbtns\\cmdicons.grp";
-    public const string IconPalettePath = "unit\\cmdbtns\\ticon.pcx";
     public const string UnitsDatPath = "arr\\units.dat";
 
     public StatTxt? Strings { get; private set; }
@@ -24,12 +24,12 @@ public sealed class EditorResources
     /// <summary>What is missing or could not be read.</summary>
     public List<string> Notes { get; } = new();
 
-    public static EditorResources Load(ResourceResolver resolver)
+    public static EditorResources Load(ResourceResolver resolver, uint[]? iconPalette)
     {
-        var r = new EditorResources();
+        var r = new EditorResources { IconPalette = iconPalette };
+        if (iconPalette is null) r.Notes.Add("Icons.pal: not found; icon numbers are shown instead of icons");
         r.Strings = r.Get(resolver, StatTxtPath, StatTxt.Parse, "string ids are shown instead of text");
         r.Icons = r.Get(resolver, IconsPath, bytes => new Grp(bytes), "icon numbers are shown instead of icons");
-        r.IconPalette = r.Get(resolver, IconPalettePath, PcxPalette.Read, "icon numbers are shown instead of icons");
         r.Units = r.Get(resolver, UnitsDatPath, UnitsDat.Parse, "the set list is not grouped by race");
         return r;
     }

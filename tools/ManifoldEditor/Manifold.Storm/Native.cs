@@ -48,4 +48,23 @@ static class Native
     [DllImport(Dll, SetLastError = true, CallingConvention = CallingConvention.Winapi)]
     [return: MarshalAs(UnmanagedType.U1)]
     public static extern bool SFileSetMaxFileCount(IntPtr mpq, uint maxFileCount);
+
+    /// <summary>SFILE_FIND_DATA, as PyMS declares it.</summary>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    public struct FindData
+    {
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 1024)] public string FileName;
+        public IntPtr PlainName;
+        public uint HashIndex, BlockIndex, FileSize, FileFlags, CompressedSize, FileTimeLo, FileTimeHi, Locale;
+    }
+
+    /// <summary>A find handle, or NULL (0 or -1 in practice) when nothing matches.</summary>
+    [DllImport(Dll, SetLastError = true, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Winapi)]
+    public static extern IntPtr SFileFindFirstFile(IntPtr mpq, string mask, out FindData data, string? listFile);
+    [DllImport(Dll, SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    public static extern bool SFileFindNextFile(IntPtr find, out FindData data);
+    [DllImport(Dll, SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    public static extern bool SFileFindClose(IntPtr find);
 }

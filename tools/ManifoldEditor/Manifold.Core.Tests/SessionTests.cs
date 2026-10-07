@@ -61,6 +61,15 @@ public class SessionTests
     }
 
     [Fact]
+    public void The_project_is_found_whatever_the_exe_is_called()
+    {
+        var exe = ModExe();
+        Assert.Equal(FgpPath, EditorSession.FindFgp(exe, "SCManifold.exe"));
+        Assert.Equal(FgpPath, EditorSession.FindFgp(exe, "SCManifold - Copy.exe"));
+        Assert.Equal("Firegraft\\Other.fgp", EditorSession.FindFgp(ModExe(withFgp: false), "Other.exe"));
+    }
+
+    [Fact]
     public void No_project_means_vanilla()
     {
         var opened = Open(ModExe(withFgp: false));

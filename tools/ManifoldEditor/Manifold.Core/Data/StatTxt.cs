@@ -4,7 +4,9 @@ namespace Manifold.Core.Data;
 
 /// <summary>
 /// A .tbl string table (rez\stat_txt.tbl): u16 count, count u16 offsets, NUL-terminated
-/// strings. Button string ids count from 1; 0 means none.
+/// strings. Button string ids count from 1; 0 means none. Many button strings are stored as
+/// the hotkey, a NUL, then the text (vanilla's Move is "m", NUL, "\x03M\x01ove"); those are
+/// joined, unless another string starts right after the NUL.
 /// </summary>
 public sealed class StatTxt
 {
@@ -14,16 +16,27 @@ public sealed class StatTxt
 
     public int Count => strings.Length;
 
+    static int EndOf(byte[] bytes, int start)
+    {
+        int end = Array.IndexOf(bytes, (byte)0, start);
+        return end < 0 ? bytes.Length : end;
+    }
+
     public static StatTxt Parse(byte[] bytes)
     {
         int count = BitConverter.ToUInt16(bytes, 0);
+        var starts = new HashSet<int>();
+        for (int i = 0; i < count; i++)
+            starts.Add(BitConverter.ToUInt16(bytes, 2 + i * 2));
         var strings = new string[count];
         for (int i = 0; i < count; i++)
         {
             int start = BitConverter.ToUInt16(bytes, 2 + i * 2);
-            int end = Array.IndexOf(bytes, (byte)0, start);
-            if (end < 0) end = bytes.Length;
-            strings[i] = Encoding.Latin1.GetString(bytes, start, end - start);
+            int end = EndOf(bytes, start);
+            string text = Encoding.Latin1.GetString(bytes, start, end - start);
+            if (end == start + 1 && end + 1 < bytes.Length && !starts.Contains(end + 1))
+                text += Encoding.Latin1.GetString(bytes, end + 1, EndOf(bytes, end + 1) - (end + 1));
+            strings[i] = text;
         }
         return new StatTxt(strings);
     }

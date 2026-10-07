@@ -56,6 +56,20 @@ public sealed class Grp
     }
 }
 
+/// <summary>A raw palette (.pal, .act): 256 RGB triples, 768 bytes. PyMS's Icons.pal is one.</summary>
+public static class RawPalette
+{
+    /// <summary>ARGB, opaque, 256 entries.</summary>
+    public static uint[] Read(byte[] pal)
+    {
+        if (pal.Length != 768) throw new InvalidDataException($"a raw palette is 768 bytes, not {pal.Length}");
+        var palette = new uint[256];
+        for (int i = 0; i < 256; i++)
+            palette[i] = 0xFF000000u | (uint)pal[i * 3] << 16 | (uint)pal[i * 3 + 1] << 8 | pal[i * 3 + 2];
+        return palette;
+    }
+}
+
 /// <summary>The 256-colour palette at the end of a PCX file (0x0C, then 768 RGB bytes).</summary>
 public static class PcxPalette
 {

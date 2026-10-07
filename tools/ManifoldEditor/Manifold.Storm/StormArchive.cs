@@ -37,6 +37,28 @@ public sealed class StormArchive(string path, string? name = null) : IWritableAr
         finally { Native.SFileCloseArchive(mpq); }
     }
 
+    /// <summary>The archive's files matching the mask (needs the archive's listfile).</summary>
+    public IReadOnlyList<string> List(string mask)
+    {
+        if (!Native.SFileOpenArchive(path, 0, Native.STREAM_FLAG_READ_ONLY, out var mpq))
+            throw new Win32Exception(Marshal.GetLastWin32Error(), $"{Name}: cannot open its MPQ");
+        var names = new List<string>();
+        try
+        {
+            var find = Native.SFileFindFirstFile(mpq, mask, out var data, null);
+            if (find == IntPtr.Zero || find == new IntPtr(-1)) return names;
+            try
+            {
+                do names.Add(data.FileName);
+                while (Native.SFileFindNextFile(find, out data));
+            }
+            finally { Native.SFileFindClose(find); }
+        }
+        finally { Native.SFileCloseArchive(mpq); }
+        names.Sort(StringComparer.OrdinalIgnoreCase);
+        return names;
+    }
+
     /// <summary>Adds or replaces one file: on a copy of the archive, swapped in at the end.</summary>
     public void Write(string file, byte[] data)
     {

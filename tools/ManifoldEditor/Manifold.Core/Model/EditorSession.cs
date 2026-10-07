@@ -8,6 +8,18 @@ public static class EditorSession
     public sealed record Opened(ButtonSetDocument Document, IReadOnlyList<string> Status);
 
     /// <summary>
+    /// The FireGraft project in the exe: the one named after the exe, else the first
+    /// Firegraft\*.fgp it holds (a renamed copy keeps the original's project), else the
+    /// exe's name, reported missing when opened.
+    /// </summary>
+    public static string FindFgp(IArchive modExe, string exeFileName)
+    {
+        string named = $"Firegraft\\{Path.GetFileNameWithoutExtension(exeFileName)}.fgp";
+        if (modExe.TryRead(named) is not null) return named;
+        return modExe.List("Firegraft\\*.fgp").FirstOrDefault() ?? named;
+    }
+
+    /// <summary>
     /// The sets of the mod exe: its <c>Manifold\buttonsets.bin</c> if it has one; else
     /// vanilla plus the FireGraft project's <c>Buts</c> sets. A file that fails its
     /// checks is reported and the sets fall back the same way.

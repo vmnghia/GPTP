@@ -82,8 +82,10 @@ public static class Workspace
             string path = Path.Combine(starCraftDir, mpq);
             if (File.Exists(path)) archives.Add(new StormArchive(path));
         }
-        var resources = Step("Reading stat_txt.tbl, cmdicons.grp, ticon.pcx and units.dat",
-            () => EditorResources.Load(new ResourceResolver(archives)));
+        string palettePath = Path.Combine(AppContext.BaseDirectory, "Data", "Icons.pal");
+        uint[]? iconPalette = File.Exists(palettePath) ? RawPalette.Read(File.ReadAllBytes(palettePath)) : null;
+        var resources = Step("Reading stat_txt.tbl, cmdicons.grp and units.dat",
+            () => EditorResources.Load(new ResourceResolver(archives), iconPalette));
 
         string starCraftExe = Path.Combine(starCraftDir, "StarCraft.exe");
         if (!File.Exists(starCraftExe))
@@ -93,7 +95,8 @@ public static class Workspace
 
         var conditions = Step("Reading Data\\FireGraftConFunc.txt", () => LoadTable("FireGraftConFunc.txt"));
         var actions = Step("Reading Data\\FireGraftActFunc.txt", () => LoadTable("FireGraftActFunc.txt"));
-        string fgp = $"Firegraft\\{Path.GetFileNameWithoutExtension(exePath)}.fgp";
+        string fgp = Step("Looking for the FireGraft project (Firegraft\\*.fgp)",
+            () => EditorSession.FindFgp(exe, Path.GetFileName(exePath)));
         var opened = Step($"Reading the button sets in {Path.GetFileName(exePath)} ({ButtonSetFile.ArchivePath} or {fgp})",
             () => EditorSession.Open(exe, fgp, vanilla, conditions, actions));
 

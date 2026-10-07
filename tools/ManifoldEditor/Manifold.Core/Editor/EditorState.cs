@@ -81,7 +81,7 @@ public sealed class EditorState(ButtonSetDocument document, string exeName, Func
     {
         var keys = CardChecks.Hotkeys(SelectedSet, strings);
         return Enumerable.Range(0, SelectedSet.Buttons.Count)
-            .Select(i => $"{SelectedSet.Buttons[i].Position}  {keys[i]?.ToString() ?? " "}  {NameOf(i)}")
+            .Select(i => $"{SelectedSet.Buttons[i].Position}  {(keys[i] is null ? " " : ButtonText.HotkeyLabel(keys[i]))}  {NameOf(i)}")
             .ToArray();
     }
 
@@ -90,7 +90,7 @@ public sealed class EditorState(ButtonSetDocument document, string exeName, Func
     {
         var lines = new List<string>();
         foreach (var clash in CardChecks.Clashes(SelectedSet, strings))
-            lines.Add($"{clash.Hotkey}: " + string.Join(", ", clash.ButtonIndexes.Select(Describe)));
+            lines.Add($"{ButtonText.HotkeyLabel(clash.Hotkey)}: " + string.Join(", ", clash.ButtonIndexes.Select(Describe)));
         var hidden = CardChecks.HiddenInReplays(SelectedSet);
         if (hidden.Count > 0)
             lines.Add("Not shown in replays: " + string.Join(", ", hidden.Select(Describe)));

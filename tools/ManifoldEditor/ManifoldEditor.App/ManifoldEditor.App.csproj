@@ -40,9 +40,9 @@
     <ProjectReference Include="..\Manifold.Storm\Manifold.Storm.csproj" />
   </ItemGroup>
 
-  <!-- FireGraft's condition and action lists, and PyMS's icon names. -->
+  <!-- FireGraft's condition and action lists, and PyMS's icon names and icon palette. -->
   <ItemGroup>
-    <Content Include="..\fixtures\FireGraftConFunc.txt;..\fixtures\FireGraftActFunc.txt;..\fixtures\Icons.txt"
+    <Content Include="..\fixtures\FireGraftConFunc.txt;..\fixtures\FireGraftActFunc.txt;..\fixtures\Icons.txt;..\fixtures\Icons.pal"
              Link="Data\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

@@ -63,8 +63,9 @@ Scope: StarCraft 1.16.1 and the Manifold mod only.
 self-contained, x86 so it can load the 32-bit `StormLib.dll` that PyMS ships). Layers:
 - **Data** (no UI): MPQ access through StormLib; the button set file (§4); the `Buts`
   import; vanilla sets read from `StarCraft.exe`'s file image at 0x5187E8; `stat_txt.tbl`;
-  `unit\cmdbtns\cmdicons.grp` drawn with `unit\cmdbtns\ticon.pcx` as its palette (as
-  PyMS's `PyDAT/IconData.py` does). Resources are looked up in the mod exe's MPQ first,
+  `unit\cmdbtns\cmdicons.grp` drawn with PyMS's `Palettes/Icons.pal`, as PyMS's
+  `PyDAT/DataContext.py` does (corrected 2026-10-07: `ticon.pcx`'s pixels only recolour
+  highlighted icons). Button strings are often stored as the hotkey, a NUL, then the text. Resources are looked up in the mod exe's MPQ first,
   then `patch_rt.mpq`, `BrooDat.mpq`, `StarDat.mpq`. Icon names come from PyMS's
   `Data/Icons.txt`, copied into the repo (in place of FireGraft's `iconlist.tbl`).
 - **Model**: 250 sets, each an ordered list of buttons. Move, swap, copy, paste, delete,
