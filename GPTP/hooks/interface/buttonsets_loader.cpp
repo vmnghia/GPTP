@@ -8,7 +8,7 @@
 
 namespace {
 
-//storm.dll's file API, by ordinal as BWAPI's storm.h has it [VERIFY].
+//storm.dll's file API, by ordinal as BWAPI's storm.h has it (checked in game 2026-10-07).
 typedef BOOL (__stdcall* SFileOpenFileExFn)(HANDLE mpq, const char* name, DWORD scope, HANDLE* file);
 typedef DWORD (__stdcall* SFileGetFileSizeFn)(HANDLE file, DWORD* high);
 typedef BOOL (__stdcall* SFileReadFileFn)(HANDLE file, void* buffer, DWORD toRead, DWORD* read, LPOVERLAPPED overlapped);

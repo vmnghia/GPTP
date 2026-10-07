@@ -1,6 +1,6 @@
 # Button set editor (Manifold Editor, part 1: core and button sets)
 
-Status: design approved 2026-10-05; built 2026-10-06 (plan `docs/superpowers/plans/2026-10-05-button-set-editor.md`). The editor is tested on Windows (2026-10-07, §7 steps 1, 2 and 5's save side; see "Settled in testing"); the GPTP loader is not yet built into the plugin. Replaces the abandoned FireGraftEx WPF
+Status: design approved 2026-10-05; built 2026-10-06 (plan `docs/superpowers/plans/2026-10-05-button-set-editor.md`). The editor is tested on Windows (2026-10-07, §7 steps 1, 2 and 5's save side; see "Settled in testing"); the GPTP loader is built and tested in game (2026-10-07, §7 steps 1-3; step 4, a corrupt file, not yet run). Replaces the abandoned FireGraftEx WPF
 skeleton (`D:\SC Modding\FireGraftEx`, outside git; only its `Data\FireGraft\*Func.txt`
 lists are reused).
 
@@ -73,6 +73,10 @@ Scope: StarCraft 1.16.1 and the Manifold mod only.
   `Manifold\buttonsets.bin` let the exe start (Storm only decompresses on read) but stopped
   the game at the loader's read with "The file data is corrupt". The editor now implodes
   it (PKWARE), as the game's own MPQs do.
+- **The loader**: storm.dll's file functions by ordinal (253, 265, 268, 269) work, and Storm
+  finds `Manifold\buttonsets.bin` in the launcher's MPQ at game start. A moved button
+  shows on the card with its enabled and disabled strings, its hotkey works, and a replay
+  keeps the 3x3 card.
 - **Repacking** is done by hand with PyMPQ, which adds files in place, so the editor's file
   survives adding a new `GPTP.qdp`.
 
