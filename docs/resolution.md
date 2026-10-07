@@ -499,7 +499,7 @@ starfield handled (§5). Features 1 and 2 below are done.
    tested; smart-build (`docs/superpowers/specs/2026-10-03-smart-build-design.md`) is built and tested too; see `docs/superpowers/specs/2026-09-30-extended-selection-design.md`. Unlike the
    view, selections are sent as network commands and recorded in replays, so this touches
    synced game state, unlike everything above.
-   **Button set editor** (Manifold Editor part 1) `[BUILT 2026-10-06, not yet run]`:
+   **Button set editor** (Manifold Editor part 1) `[BUILT 2026-10-06; editor tested 2026-10-07, loader not yet]`:
    `tools/ManifoldEditor/` and the loader `hooks/interface/buttonsets_loader.cpp`; spec
    `docs/superpowers/specs/2026-10-05-button-set-editor-design.md`, round in its §7.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the

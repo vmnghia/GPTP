@@ -1,6 +1,6 @@
 # Button set editor (Manifold Editor, part 1: core and button sets)
 
-Status: design approved 2026-10-05; built 2026-10-06 (plan `docs/superpowers/plans/2026-10-05-button-set-editor.md`), not yet run on Windows. Replaces the abandoned FireGraftEx WPF
+Status: design approved 2026-10-05; built 2026-10-06 (plan `docs/superpowers/plans/2026-10-05-button-set-editor.md`). The editor is tested on Windows (2026-10-07, §7 steps 1, 2 and 5's save side; see "Settled in testing"); the GPTP loader is not yet built into the plugin. Replaces the abandoned FireGraftEx WPF
 skeleton (`D:\SC Modding\FireGraftEx`, outside git; only its `Data\FireGraft\*Func.txt`
 lists are reused).
 
@@ -56,6 +56,19 @@ Scope: StarCraft 1.16.1 and the Manifold mod only.
 - FireGraft's inputs (its Options page): the StarCraft exe path (from the registry),
   `rez\stat_txt.tbl`, `unit\cmdbtns\cmdicons.grp`, `Firegraft\iconlist.tbl`, each "from
   MPQ". `SCManifold.exe` has none of the three, so they come from the vanilla MPQs.
+
+### Settled in testing (2026-10-07)
+
+- **Saving grows the MPQ inside the exe safely**: a copy of `SCManifold.exe` saved by the
+  editor still starts and plays a custom game.
+- **PyMS's `StormLib.dll`**: stdcall, ANSI paths, and its success flags are C++ `bool` (one
+  byte), not Win32 `BOOL`; read as four bytes, a failed open came back true.
+- **`stat_txt.tbl`** ids count from 1; many button strings are the hotkey, a NUL, then the
+  text (Move: `m`, NUL, `\x03M\x01ove`).
+- **Icons** are drawn with PyMS's `Icons.pal`, not `ticon.pcx`'s palette.
+- **The `.fgp`** is found by listing `Firegraft\*.fgp` when it isn't named after the exe (a
+  renamed copy). The `.fgp` holds only the sets changed in FireGraft: 18 here.
+- **The window** works built in C# without `.xaml`.
 
 ## 3. Pieces
 

@@ -35,6 +35,26 @@ public sealed class EditorState(ButtonSetDocument document, string exeName, Func
         IsPosition(from) && IsPosition(to) &&
         Apply(s => copy ? CardEdits.CopyCell(s, from, to) : CardEdits.MoveCell(s, from, to), copy ? "Copy" : "Move");
 
+    /// <summary>
+    /// Drop, then the button to show in the panel: a copy lands as new buttons at the end of
+    /// the set (the first of them); a move keeps the dragged button's place in the list.
+    /// Null when nothing changed.
+    /// </summary>
+    public int? DropAndSelect(ushort from, ushort to, bool copy)
+    {
+        if (!IsPosition(from)) return null;
+        int dragged = -1;
+        int draggedCount = 0;
+        for (int i = 0; i < SelectedSet.Buttons.Count; i++)
+            if (SelectedSet.Buttons[i].Position == from)
+            {
+                if (dragged < 0) dragged = i;
+                draggedCount++;
+            }
+        if (dragged < 0 || !Drop(from, to, copy)) return null;
+        return copy ? SelectedSet.Buttons.Count - draggedCount : dragged;
+    }
+
     public void CopyButton(int index)
     {
         if (IsIndex(index)) clipboardButton = SelectedSet.Buttons[index];

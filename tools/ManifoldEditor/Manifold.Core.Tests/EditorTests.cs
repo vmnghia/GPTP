@@ -162,6 +162,24 @@ public class EditorTests
     }
 
     [Fact]
+    public void A_drop_selects_the_button_that_landed()
+    {
+        // 1: A, 2: B (the target of the drops below already holds B).
+        var state = State(Make.Set(Make.Button(1, icon: 10), Make.Button(2, icon: 20)));
+        state.SelectedSetId = 5;
+        // A copy lands as a new button at the end: that is the one to edit next.
+        Assert.Equal(2, state.DropAndSelect(1, 2, copy: true));
+        Assert.Equal((ushort)2, state.SelectedSet.Buttons[2].Position);
+        Assert.Equal(10, state.SelectedSet.Buttons[2].Icon);
+        // A move (here a swap) keeps the dragged button where it was in the list.
+        Assert.Equal(0, state.DropAndSelect(1, 3, copy: false));
+        Assert.Equal((ushort)3, state.SelectedSet.Buttons[0].Position);
+        // Nothing to drag, or no change: nothing selected.
+        Assert.Null(state.DropAndSelect(7, 8, copy: false));
+        Assert.Null(state.DropAndSelect(3, 3, copy: true));
+    }
+
+    [Fact]
     public void Editing_a_button_is_one_step()
     {
         var state = State(Make.Set(Make.Button(1, icon: 3)));

@@ -532,8 +532,12 @@ public sealed class MainWindow : Window
             ushort from = dragFrom;
             dragFrom = 0;
             if (from == 0) return;
-            selectedPosition = cell.Position;
-            Run(s => s.Drop(from, cell.Position, copy));
+            if (opened!.State.DropAndSelect(from, cell.Position, copy) is int landed)
+            {
+                selectedPosition = cell.Position;
+                selectedButton = landed;
+                Refresh();
+            }
         };
 
         var menu = new MenuFlyout();
