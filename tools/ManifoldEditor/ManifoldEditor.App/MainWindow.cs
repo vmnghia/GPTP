@@ -186,6 +186,8 @@ public sealed class MainWindow : Window
         status.Margin = new Thickness(0, 10, 0, 0);
         root.Children.Add(status);
 
+        // The toolbar already names the shortcuts; no floating accelerator tooltips.
+        root.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.S, async () => await Save()));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Z, Undo));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Y, Redo));
@@ -583,8 +585,13 @@ public sealed class MainWindow : Window
         foreach (var child in panel.Children.OfType<Control>()) child.IsEnabled = has;
         if (!has)
         {
+            // Empty, not the last button's values greyed out.
             panelTitle.Text = "Select a button";
             iconButton.Content = null;
+            conditionBox.ItemsSource = null;
+            actionBox.ItemsSource = null;
+            foreach (var box in new[] { conditionVar, actionVar, enabledString, disabledString })
+                box.Value = double.NaN;
             enabledText.Text = disabledText.Text = "";
             updating = false;
             return;
