@@ -12,6 +12,16 @@ public static class ButtonSetFile
     public const ushort Version = 1;
     static readonly byte[] Magic = Encoding.ASCII.GetBytes("MBTS");
 
+    /// <summary>
+    /// The order the game needs: by position, keeping the order of buttons that share one.
+    /// The card's draw loop (updateButtonSet_Sub4591D0, 0x4591D0) walks slots 1-15 and the
+    /// set's buttons together, placing a button when the slot reaches its position; a button
+    /// listed after a higher position lands in a later slot. Vanilla's and FireGraft's sets
+    /// are always sorted; the editor's moves only change positions (found 2026-10-09).
+    /// </summary>
+    public static IEnumerable<Button> InGameOrder(IEnumerable<Button> buttons) =>
+        buttons.OrderBy(b => b.Position);   // OrderBy is stable
+
     public static byte[] Write(IReadOnlyList<ButtonSet> sets)
     {
         if (sets.Count != Card.SetCount)
@@ -28,7 +38,7 @@ public static class ButtonSetFile
             BitConverter.TryWriteBytes(span[at..], checked((ushort)set.Buttons.Count));
             BitConverter.TryWriteBytes(span[(at + 4)..], set.ConnectedUnit);
             at += 8;
-            foreach (var button in set.Buttons)
+            foreach (var button in InGameOrder(set.Buttons))
             {
                 button.Write(span[at..]);
                 at += Button.Size;

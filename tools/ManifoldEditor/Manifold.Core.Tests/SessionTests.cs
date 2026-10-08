@@ -35,7 +35,9 @@ public class SessionTests
         exe.Files.Remove(FgpPath);
         var reopened = Open(exe);
         Assert.Contains($"Button sets from {ButtonSetFile.ArchivePath}", reopened.Status);
-        Assert.Equal(12, reopened.Document[0].Buttons[0].Position);
+        // Move, now at 12, is written last: the game needs the buttons sorted by position.
+        Assert.Equal(12, reopened.Document[0].Buttons[^1].Position);
+        Assert.Equal(228, reopened.Document[0].Buttons[^1].Icon);
     }
 
     [Fact]

@@ -29,7 +29,8 @@ public class ButtonSetFileTests
         var sets = ButtonSetFile.Read(bytes, out var error);
         Assert.Null(error);
         Assert.Equal(bytes, ButtonSetFile.Write(sets!));
-        Assert.True(sets![5].SameAs(Sample()[5]));
+        // Read back in the game's order: by position, shared slots in their order.
+        Assert.Equal(ButtonSetFile.InGameOrder(Sample()[5].Buttons), sets![5].Buttons);
         Assert.Equal(8 + 250 * 8 + 4 * 20, bytes.Length);
     }
 
@@ -76,5 +77,23 @@ public class ButtonSetFileTests
         Assert.Null(ButtonSetFile.Read(bytes, out var error, codeStart: 0x401000, codeEnd: 0x500000));
         Assert.Equal("set 5: address outside the code", error);
         Assert.NotNull(ButtonSetFile.Read(bytes, out _));
+    }
+}
+
+public class InGameOrderTests
+{
+    [Fact]
+    public void Sets_are_written_sorted_by_position_keeping_shared_slots_in_order()
+    {
+        // As the Zergling was after moves: Move 1, Stop 2, Hold 5, Patrol 4, Attack 3, then
+        // Unburrow and Burrow sharing 14 (Unburrow listed first).
+        var zergling = Make.Set(Make.Button(1, icon: 228), Make.Button(2, icon: 229), Make.Button(5, icon: 230),
+            Make.Button(4, icon: 254), Make.Button(3, icon: 255), Make.Button(14, icon: 260), Make.Button(14, icon: 259));
+        var sets = Make.EmptySets();
+        sets[37] = zergling;
+        var read = ButtonSetFile.Read(ButtonSetFile.Write(sets), out var error)!;
+        Assert.Null(error);
+        Assert.Equal([1, 2, 3, 4, 5, 14, 14], read[37].Buttons.Select(b => (int)b.Position));
+        Assert.Equal([228, 229, 255, 254, 230, 260, 259], read[37].Buttons.Select(b => (int)b.Icon));
     }
 }

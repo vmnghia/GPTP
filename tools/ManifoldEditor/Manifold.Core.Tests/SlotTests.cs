@@ -63,7 +63,7 @@ public class SlotTests
     public void The_slot_box_moves_one_button_and_says_what_shares_the_slot()
     {
         var state = State();
-        Assert.Equal("Shares the slot with Siege Mode; the first in the list whose condition passes shows.", state.SlotNote(1, 1));
+        Assert.StartsWith("Shares the slot with Siege Mode. The first in the list whose condition passes shows;", state.SlotNote(1, 1));
         Assert.Equal("", state.SlotNote(1, 4));
         Assert.Contains("Not shown in replays", state.SlotNote(1, 12));
         Assert.True(state.SetSlot(1, 2));                             // a taken slot: stacks, no swap

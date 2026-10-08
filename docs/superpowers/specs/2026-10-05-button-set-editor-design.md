@@ -149,8 +149,15 @@ button  u16 position, u16 iconID, u32 condition, u32 action,
 - The button record is GPTP's `BUTTON` byte for byte; condition and action are
   `StarCraft.exe` 1.16.1 addresses. All 250 sets are written, not only the changed ones,
   so the game never mixes these sets with FireGraft's or vanilla's.
-- Button order is kept. Buttons may share a position; the first whose condition passes
-  is shown, as in vanilla.
+- Buttons may share a position; the first whose condition passes is shown, as in vanilla
+  (a second one that passes too spills into the next slot).
+- **Corrected 2026-10-09: the file holds each set sorted by position**, buttons sharing
+  one in their order. The game's card loop (0x4591D0) walks slots 1-15 and the buttons
+  together and places a button when the slot reaches its position, so a button listed
+  after a higher position lands in a later slot. The editor's moves only change
+  positions, and writing the list as it stood put Attack and Patrol at 6-7 on the
+  Zergling, the Hive's research on the bottom row, and so on. The editor still keeps its
+  own order while editing; the file is sorted when written.
 - Saving: StormLib opens the exe's MPQ, writes the file in one operation, and closes it.
   The exe is not held open between opening and saving.
 

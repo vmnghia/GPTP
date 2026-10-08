@@ -104,7 +104,8 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
             .Where(i => i != index && SelectedSet.Buttons[i].Position == position).ToArray();
         if (others.Length > 0)
             notes.Add("Shares the slot with " + string.Join(", ", others.Select(NameOf)) +
-                      "; the first in the list whose condition passes shows.");
+                      ". The first in the list whose condition passes shows; if another one's passes too, " +
+                      "the game puts it in the next slot, as vanilla does.");
         if (position > Card.ReplayMaxPosition) notes.Add("Not shown in replays (they show slots 1-9).");
         return string.Join(" ", notes);
     }
