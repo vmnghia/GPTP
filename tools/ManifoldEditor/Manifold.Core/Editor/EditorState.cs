@@ -175,6 +175,9 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
     /// <summary>A string as part 1 shows it (first part; hotkey, type and text joined), or null.</summary>
     public string? Text(ushort id) => Document.Strings is StringTable t ? StatTxt.Of(t).Get(id) : null;
 
+    /// <summary>A unit's name with its subname, for the set list; null without strings.</summary>
+    public string? UnitName(int unit) => Document.Strings is StringTable t ? StatTxt.Of(t).UnitName(unit) : null;
+
     /// <summary>The other button fields pointing at the string this field points at.</summary>
     public IReadOnlyList<ButtonRef> SharedWith(int index, StringField field)
     {

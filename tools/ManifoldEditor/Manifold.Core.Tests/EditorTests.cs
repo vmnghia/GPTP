@@ -65,10 +65,11 @@ public class EditorTests
             b[Data.UnitsDat.GroupFlagsOffset + 20] = 0x02;
             BitConverter.TryWriteBytes(b.AsSpan(Data.UnitsDat.BasePropertyOffset + 20 * 4), 0x40u);
         }));
-        var strings = Strings((1, "Terran Marine"), (21, "Jim Raynor (Marine)"), (38, "Zerg Zergling"));
-        var catalog = SetCatalog.Build(id => strings.Get(id), units);
+        var strings = Strings((1, "Terran Marine\0*\0Ground Units"), (21, "Jim Raynor\0Marine\0Heroes"), (38, "Zerg Zergling"));
+        var catalog = SetCatalog.Build(strings.UnitName, units);
         Assert.Equal(Card.SetCount, catalog.Entries.Count);
-        Assert.Equal(new SetEntry(0, "Terran Marine", SetGroup.Terran), catalog.Entries[0]);
+        Assert.Equal(new SetEntry(0, "Terran Marine", SetGroup.Terran, Race.Terran, UnitKind.Unit), catalog.Entries[0]);
+        Assert.Equal("Jim Raynor (Marine)", catalog.Entries[20].Name);   // the subname, unless "*"
         Assert.Equal(SetGroup.NeutralAndHeroes, catalog.Entries[20].Group);
         Assert.Equal(SetGroup.Zerg, catalog.Entries[37].Group);
         Assert.Equal(SetGroup.Menus, catalog.Entries[230].Group);
@@ -82,8 +83,17 @@ public class EditorTests
         Assert.Equal(new[] { 37 }, catalog.Filter("37").SelectMany(g => g.Entries).Select(e => e.Id));
         Assert.Equal(new[] { SetGroup.Terran, SetGroup.Zerg, SetGroup.NeutralAndHeroes, SetGroup.Menus },
             catalog.Filter("").Select(g => g.Group));
+        // Filters: race, type, only sets with buttons.
+        int[] Ids(SetFilter f, Func<int, bool>? has = null) => catalog.Filter("", f, has).SelectMany(g => g.Entries).Select(e => e.Id).ToArray();
+        Assert.Equal([37], Ids(new SetFilter(Race: Race.Zerg)));
+        Assert.Equal([0, 20], Ids(new SetFilter(Race: Race.Terran)));
+        Assert.Equal([20], Ids(new SetFilter(Kind: UnitKind.Hero)));
+        Assert.Equal([0], Ids(new SetFilter(Race: Race.Terran, Kind: UnitKind.Unit)));
+        Assert.Equal(22, Ids(new SetFilter(Kind: UnitKind.Card)).Length);
+        Assert.DoesNotContain(230, Ids(new SetFilter(Race: Race.None)));      // "Neutral" is units without a race, not the cards
+        Assert.Equal([0, 37], Ids(new SetFilter(WithButtons: true), id => id is 0 or 37));
         // Without units.dat: one group for every unit set.
-        var flat = SetCatalog.Build(id => strings.Get(id), null);
+        var flat = SetCatalog.Build(strings.UnitName, null);
         Assert.Equal(SetGroup.Units, flat.Entries[37].Group);
     }
 
@@ -257,5 +267,39 @@ public class EditorTests
         bytes.AddRange(System.Text.Encoding.Latin1.GetBytes(s));
         bytes.Add(0);
         return bytes.ToArray();
+    }
+}
+
+public class UnitKindTests
+{
+    [Fact]
+    public void Units_dat_flags_give_the_type()
+    {
+        var bytes = new byte[Data.UnitsDat.FileSize];
+        void Flags(int unit, uint value) => BitConverter.TryWriteBytes(bytes.AsSpan(Data.UnitsDat.BasePropertyOffset + unit * 4), value);
+        Flags(106, 0x01);          // Command Center: building
+        Flags(107, 0x03);          // Comsat Station: building and add-on
+        Flags(20, 0x40);           // a hero
+        Flags(6, 0x10);            // a turret
+        var units = Data.UnitsDat.Parse(bytes);
+        Assert.Equal(Data.UnitKind.Building, units.KindOf(106));
+        Assert.Equal(Data.UnitKind.Addon, units.KindOf(107));
+        Assert.Equal(Data.UnitKind.Hero, units.KindOf(20));
+        Assert.Equal(Data.UnitKind.Subunit, units.KindOf(6));
+        Assert.Equal(Data.UnitKind.Unit, units.KindOf(0));
+        Assert.Equal(Data.UnitKind.Card, units.KindOf(230));
+    }
+
+    [Fact]
+    public void A_unit_name_takes_its_subname()
+    {
+        var table = StringTable.Parse(Tbl.Build("Terran Siege Tank\0Tank Mode\0Ground Units\0",
+            "Edmund Duke\0Siege Mode\0Heroes\0", "Terran Marine\0*\0Ground Units\0", "\u0003Plain\0"));
+        var strings = StatTxt.Of(table);
+        Assert.Equal("Terran Siege Tank (Tank Mode)", strings.UnitName(0));
+        Assert.Equal("Edmund Duke (Siege Mode)", strings.UnitName(1));
+        Assert.Equal("Terran Marine", strings.UnitName(2));
+        Assert.Equal("Plain", strings.UnitName(3));
+        Assert.Null(strings.UnitName(4));
     }
 }

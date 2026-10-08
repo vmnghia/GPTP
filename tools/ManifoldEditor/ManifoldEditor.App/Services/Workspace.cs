@@ -102,6 +102,6 @@ public static class Workspace
 
         var state = new EditorState(opened.Document, Path.GetFileName(exePath), conditions, actions);
         var status = opened.Status.Concat(resources.Sources).Concat(resources.Notes).ToArray();
-        return new OpenedExe(exePath, exe, state, resources, SetCatalog.Build(state.Text, resources.Units), status);
+        return new OpenedExe(exePath, exe, state, resources, SetCatalog.Build(state.UnitName, resources.Units), status);
     }
 }

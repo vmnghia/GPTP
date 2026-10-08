@@ -39,6 +39,14 @@ public sealed class MainWindow : Window
     bool closeConfirmed;
 
     readonly TextBox search = new() { PlaceholderText = "Search sets (name or id)" };
+    readonly ComboBox raceFilter = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
+    readonly ComboBox kindFilter = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
+    readonly CheckBox withButtonsFilter = new() { Content = "Only sets with buttons" };
+    static readonly (string Label, Race? Race)[] RaceChoices =
+        [("All races", null), ("Terran", Race.Terran), ("Zerg", Race.Zerg), ("Protoss", Race.Protoss), ("Neutral", Race.None)];
+    static readonly (string Label, UnitKind? Kind)[] KindChoices =
+        [("All types", null), ("Units", UnitKind.Unit), ("Buildings", UnitKind.Building), ("Add-ons", UnitKind.Addon),
+         ("Heroes", UnitKind.Hero), ("Turrets and subunits", UnitKind.Subunit), ("Cards 228-249", UnitKind.Card)];
     readonly ListView setList = new() { SelectionMode = ListViewSelectionMode.Single };
     readonly Dictionary<int, ListViewItem> setItems = new();
     readonly TextBlock setTitle = new() { FontSize = 20, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8) };
@@ -154,7 +162,19 @@ public sealed class MainWindow : Window
         left.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         left.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         search.TextChanged += (_, _) => FillSetList();
-        left.Children.Add(search);
+        foreach (var (label, _) in RaceChoices) raceFilter.Items.Add(label);
+        foreach (var (label, _) in KindChoices) kindFilter.Items.Add(label);
+        raceFilter.SelectedIndex = kindFilter.SelectedIndex = 0;
+        raceFilter.SelectionChanged += (_, _) => FillSetList();
+        kindFilter.SelectionChanged += (_, _) => FillSetList();
+        withButtonsFilter.Click += (_, _) => FillSetList();
+        var filters = new Grid { ColumnSpacing = 6 };
+        filters.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        filters.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        filters.Children.Add(raceFilter);
+        Grid.SetColumn(kindFilter, 1);
+        filters.Children.Add(kindFilter);
+        left.Children.Add(new StackPanel { Spacing = 6, Children = { search, filters, withButtonsFilter } });
         Grid.SetRow(setList, 1);
         setList.SelectionChanged += OnSetSelected;
         left.Children.Add(setList);
@@ -767,7 +787,10 @@ public sealed class MainWindow : Window
         updating = true;
         setList.Items.Clear();
         setItems.Clear();
-        foreach (var group in opened.Catalog.Filter(search.Text))
+        var filter = new SetFilter(RaceChoices[Math.Max(0, raceFilter.SelectedIndex)].Race,
+            KindChoices[Math.Max(0, kindFilter.SelectedIndex)].Kind, withButtonsFilter.IsChecked == true);
+        var document = opened.State.Document;
+        foreach (var group in opened.Catalog.Filter(search.Text, filter, id => document[id].Buttons.Count > 0))
         {
             setList.Items.Add(new ListViewItem
             {
@@ -825,7 +848,7 @@ public sealed class MainWindow : Window
         {
             // Unit names are strings: rename the sets when they change.
             catalogStrings = state.Strings;
-            opened = opened with { Catalog = SetCatalog.Build(state.Text, opened.Resources.Units) };
+            opened = opened with { Catalog = SetCatalog.Build(state.UnitName, opened.Resources.Units) };
         }
         if (stringsPage.Root.Visibility == Visibility.Visible) stringsPage.Refresh();
         foreach (var id in setItems.Keys) UpdateSetItem(id);

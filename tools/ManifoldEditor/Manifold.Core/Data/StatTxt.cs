@@ -37,6 +37,21 @@ public sealed class StatTxt
         return text;
     }
 
+    /// <summary>
+    /// A unit's name for lists: its name, then its subname in brackets unless it is "*"
+    /// (unit strings are Name, NUL, Subname, NUL, StarEdit group: "Terran Siege Tank
+    /// (Siege Mode)", "Edmund Duke (Siege Tank)"). Control codes are left out; null without a string.
+    /// </summary>
+    public string? UnitName(int unit)
+    {
+        if (unit < 0 || unit + 1 > Table.Count) return null;
+        var parts = Encoding.Latin1.GetString(Table.Segment(unit + 1)).Split('\0')
+            .Select(p => new string(p.Where(c => c >= ' ').ToArray()).Trim()).ToArray();
+        string name = parts[0];
+        if (parts.Length > 1 && parts[1].Length > 0 && parts[1] != "*") name += $" ({parts[1]})";
+        return name;
+    }
+
     static int EndOf(byte[] bytes, int start)
     {
         int end = Array.IndexOf(bytes, (byte)0, start);
