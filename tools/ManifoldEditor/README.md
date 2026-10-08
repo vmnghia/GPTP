@@ -69,8 +69,8 @@ again.
 **Moving buttons.** A drag moves one button: the selected one, or the icon you press in a
 stack (shared slots fan out, the button the game prefers in front). Dropping on a filled
 slot swaps; **Alt** stacks onto it, **Ctrl** copies the button, **Shift** moves the whole
-slot (**Ctrl+Shift** copies it). Rows of the button list can be dragged onto the card too,
-and the panel's **Slot** box puts the selected button in an exact slot.
+slot (**Ctrl+Shift** copies it). The panel's **Slot** box puts the selected button in an
+exact slot.
 
 **Shortcuts** (on the button sets page, outside text fields): Ctrl+C / Ctrl+V copy the
 selected button and paste it into the selected slot (sharing the slot if it is taken),

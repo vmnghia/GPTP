@@ -104,7 +104,8 @@ Scope: StarCraft 1.16.1 and the Manifold mod only.
   type and "only sets with buttons" filters work.
 - In game (2026-10-09), once sets were written sorted: every set checked matches the
   editor, re-imported ones included. Copy and paste shortcuts passed.
-- Not yet run: separating buttons that share a slot (the 2026-10-08 change in §5).
+- Separating buttons that share a slot (the 2026-10-08 change in §5) passed on 2026-10-09:
+  dragging an icon out of a stack, swap, Alt, Ctrl, Shift, and the Slot box.
 
 ## 3. Pieces
 
@@ -201,7 +202,8 @@ Mock-up shown to the user on 2026-10-05 (dark theme, three columns):
      moves one button, not the slot: the selected button if it is in the dragged cell,
      else the icon pressed. A filled target swaps (its buttons go where the button came
      from); Alt+drop stacks onto it; Ctrl copies the button; Shift moves the whole slot
-     and Ctrl+Shift copies it. Rows of the button list drag onto the card the same way.
+     and Ctrl+Shift copies it. (Dragging rows of the button list onto the card was tried
+     and didn't work in testing; removed 2026-10-09, the stack's icons do the same.)
      A shared cell draws its first three buttons as a fanned stack, the first (the one the
      game prefers) in front; clicking or dragging an icon picks that button. The button
      panel has a **Slot** box (1-15) that moves the selected button alone, stacking when
