@@ -175,6 +175,15 @@ Mock-up shown to the user on 2026-10-05 (dark theme, three columns):
    - Copy set / Paste set work on whole sets, between any two sets.
    - Revert set: to the version opened from the exe, or to vanilla.
    - A cell holding several buttons shows a count badge; selecting it lists them in order.
+   - **Changed 2026-10-08 (the user's choice), for slots several buttons share:** a drag
+     moves one button, not the slot: the selected button if it is in the dragged cell,
+     else the icon pressed. A filled target swaps (its buttons go where the button came
+     from); Alt+drop stacks onto it; Ctrl copies the button; Shift moves the whole slot
+     and Ctrl+Shift copies it. Rows of the button list drag onto the card the same way.
+     A shared cell draws its first three buttons as a fanned stack, the first (the one the
+     game prefers) in front; clicking or dragging an icon picks that button. The button
+     panel has a **Slot** box (1-15) that moves the selected button alone, stacking when
+     the slot is taken, with a note naming what shares it and slots replays hide.
 4. **Check box**: the card's hotkeys, a warning when two shown buttons share one, and the
    buttons a replay's 3x3 card will not show.
 5. **Button panel**: icon (picked from a grid of icons), condition and action (dropdowns

@@ -4,6 +4,12 @@ using Manifold.Core.Model;
 namespace Manifold.Core.Editor;
 
 /// <summary>
+/// What a drag onto the card does: Move (none; a filled slot swaps), Join (Alt: stack),
+/// Copy (Ctrl), MoveSlot (Shift: the whole slot), CopySlot (Ctrl+Shift).
+/// </summary>
+public enum ButtonDrop { Move, Join, Copy, MoveSlot, CopySlot }
+
+/// <summary>
 /// What the window shows and does, without the window: the selected set, the clipboards,
 /// every command, the title and the check box. Each command returns whether it changed
 /// anything, so the window knows to redraw. Strings are read from the document, so names
@@ -56,6 +62,51 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
             }
         if (dragged < 0 || !Drop(from, to, copy)) return null;
         return copy ? SelectedSet.Buttons.Count - draggedCount : dragged;
+    }
+
+    /// <summary>
+    /// A button dragged onto the card (spec §5 as changed on 2026-10-08). Returns the index of
+    /// the button to keep selected, or null when nothing changed.
+    /// </summary>
+    public int? DropButton(int index, ushort to, ButtonDrop drop)
+    {
+        if (!IsIndex(index) || !IsPosition(to)) return null;
+        ushort from = SelectedSet.Buttons[index].Position;
+        switch (drop)
+        {
+            case ButtonDrop.Move:
+            case ButtonDrop.Join:
+                return Apply(s => CardEdits.MoveButton(s, index, to, drop == ButtonDrop.Join), drop == ButtonDrop.Join ? "Stack" : "Move")
+                    ? index : null;
+            case ButtonDrop.Copy:
+                return Apply(s => CardEdits.Paste(s, s.Buttons[index], to), "Copy") ? SelectedSet.Buttons.Count - 1 : null;
+            case ButtonDrop.MoveSlot:
+            case ButtonDrop.CopySlot:
+                // The whole slot; the dragged button stays selected (a copy: its copy).
+                int before = SelectedSet.Buttons.Count;
+                int offset = SelectedSet.Buttons.Take(index).Count(b => b.Position == from);
+                if (!Drop(from, to, drop == ButtonDrop.CopySlot)) return null;
+                return drop == ButtonDrop.CopySlot ? before + offset : index;
+        }
+        return null;
+    }
+
+    /// <summary>The slot box: the button alone to another slot (stacking if it is taken).</summary>
+    public bool SetSlot(int index, ushort position) =>
+        IsIndex(index) && IsPosition(position) && Apply(s => CardEdits.MoveButton(s, index, position, join: true), "Slot");
+
+    /// <summary>What the slot box warns about for a slot: buttons already there, replays.</summary>
+    public string SlotNote(int index, ushort position)
+    {
+        if (!IsIndex(index) || !IsPosition(position)) return "Slots are 1-15.";
+        var notes = new List<string>();
+        var others = Enumerable.Range(0, SelectedSet.Buttons.Count)
+            .Where(i => i != index && SelectedSet.Buttons[i].Position == position).ToArray();
+        if (others.Length > 0)
+            notes.Add("Shares the slot with " + string.Join(", ", others.Select(NameOf)) +
+                      "; the first in the list whose condition passes shows.");
+        if (position > Card.ReplayMaxPosition) notes.Add("Not shown in replays (they show slots 1-9).");
+        return string.Join(" ", notes);
     }
 
     public void CopyButton(int index)

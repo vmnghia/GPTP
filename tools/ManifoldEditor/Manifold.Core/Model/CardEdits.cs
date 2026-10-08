@@ -34,6 +34,24 @@ public static class CardEdits
         return set with { Buttons = set.Buttons.Concat(copies).ToArray() };
     }
 
+    /// <summary>
+    /// Drag one button onto a slot. With <paramref name="join"/> (Alt) it simply goes there,
+    /// sharing the slot with whatever is there. Otherwise a filled slot swaps: its buttons go
+    /// where the dragged button was. Order in the set is kept, so the button keeps its index.
+    /// </summary>
+    public static ButtonSet MoveButton(ButtonSet set, int index, ushort to, bool join)
+    {
+        CheckIndex(set, index); CheckPosition(to);
+        ushort from = set.Buttons[index].Position;
+        if (from == to) return set;
+        return set with
+        {
+            Buttons = set.Buttons.Select((b, i) =>
+                i == index ? b with { Position = to } :
+                !join && b.Position == to ? b with { Position = from } : b).ToArray()
+        };
+    }
+
     /// <summary>Paste: the button goes to <paramref name="to"/>, after the set's other buttons.</summary>
     public static ButtonSet Paste(ButtonSet set, Button button, ushort to)
     {

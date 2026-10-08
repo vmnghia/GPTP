@@ -34,7 +34,7 @@ public sealed class MainWindow : Window
 
     ushort selectedPosition;          // 0: no cell selected, all buttons listed
     int selectedButton = -1;          // index in the set, -1: none
-    ushort dragFrom;
+    int dragButton = -1;              // the button being dragged (index in the set), -1: none
     bool updating;                    // true while controls are filled from the state
     bool closeConfirmed;
 
@@ -57,6 +57,8 @@ public sealed class MainWindow : Window
     readonly GridView iconGrid = new() { IsItemClickEnabled = true, SelectionMode = ListViewSelectionMode.None, Width = 560, Height = 420 };
     readonly ComboBox conditionBox = new() { Header = "Condition", HorizontalAlignment = HorizontalAlignment.Stretch };
     readonly ComboBox actionBox = new() { Header = "Action", HorizontalAlignment = HorizontalAlignment.Stretch };
+    readonly NumberBox slotBox = Number("Slot (1-15)");
+    readonly TextBlock slotNote = Small();
     readonly NumberBox conditionVar = Number("Condition var");
     readonly NumberBox actionVar = Number("Action var");
     readonly NumberBox enabledString = Number("Enabled string id (the tooltip, with the hotkey)");
@@ -183,6 +185,15 @@ public sealed class MainWindow : Window
 
         middle.Children.Add(buttonListTitle);
         buttonList.SelectionChanged += OnButtonSelected;
+        // Drag a row onto the card: that button alone (the same drops as dragging on the card).
+        buttonList.CanDragItems = true;
+        buttonList.DragItemsStarting += (_, e) =>
+        {
+            if (e.Items.FirstOrDefault() is not ListViewItem { Tag: int index }) { e.Cancel = true; return; }
+            dragButton = index;
+            e.Data.SetText(index.ToString());
+            e.Data.RequestedOperation = DataPackageOperation.Move | DataPackageOperation.Copy;
+        };
         middle.Children.Add(buttonList);
         middle.Children.Add(checks);
         Grid.SetColumn(middle, 1);
@@ -195,6 +206,20 @@ public sealed class MainWindow : Window
         iconButton.Flyout.Opening += (_, _) => FillIconGrid();
         panel.Children.Add(new TextBlock { Text = "Icon" });
         panel.Children.Add(iconButton);
+        slotBox.Maximum = Card.MaxPosition;
+        slotBox.Minimum = 1;
+        slotBox.ValueChanged += (_, _) =>
+        {
+            if (updating || opened is null || selectedButton < 0) return;
+            ushort slot = Value(slotBox);
+            if (opened.State.SetSlot(selectedButton, slot))
+            {
+                selectedPosition = slot;
+                Refresh();
+            }
+        };
+        panel.Children.Add(slotBox);
+        panel.Children.Add(slotNote);
         conditionBox.SelectionChanged += (_, _) => EditSelected(b => b with { Condition = Pick(conditionBox, opened!.State.Conditions, b.Condition) });
         actionBox.SelectionChanged += (_, _) => EditSelected(b => b with { Action = Pick(actionBox, opened!.State.Actions, b.Action) });
         panel.Children.Add(conditionBox);
@@ -837,16 +862,26 @@ public sealed class MainWindow : Window
     {
         var state = opened!.State;
         var content = new Grid();
-        if (cell.Icon is int icon)
+        // The icons: one fills the cell, a stack fans out with the first button in front.
+        var stack = new Canvas();
+        foreach (var slot in CardLayout.StackIcons(cell, CellSize).Reverse())
         {
-            if (icons?.Get(icon) is { } bitmap)
-                content.Children.Add(new Image { Source = bitmap, Stretch = Stretch.Uniform, Margin = new Thickness(6) });
-            else
-                content.Children.Add(new TextBlock
-                {
-                    Text = $"#{icon}", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
-                });
+            ushort frame = state.SelectedSet.Buttons[slot.ButtonIndex].Icon;
+            FrameworkElement view = icons?.Get(frame) is { } bitmap
+                ? new Image { Source = bitmap, Stretch = Stretch.Uniform }
+                : new TextBlock { Text = $"#{frame}", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+            var frameBorder = new Border
+            {
+                Width = slot.Size, Height = slot.Size, Child = view,
+                BorderThickness = new Thickness(slot.ButtonIndex == selectedButton && cell.Count > 1 ? 1.5 : 0),
+                BorderBrush = new SolidColorBrush(Colors.DodgerBlue),
+                Background = cell.Count > 1 ? new SolidColorBrush(Color(0xC0, 0x18, 0x18, 0x18)) : null,
+            };
+            Canvas.SetLeft(frameBorder, slot.Left);
+            Canvas.SetTop(frameBorder, slot.Top);
+            stack.Children.Add(frameBorder);
         }
+        content.Children.Add(stack);
         if (cell.Count > 1)
             content.Children.Add(new Border
             {
@@ -874,31 +909,48 @@ public sealed class MainWindow : Window
         ToolTipService.SetToolTip(border, cell.Count == 0 ? $"Position {cell.Position}: empty"
             : $"Position {cell.Position}: " + string.Join(", ", cell.ButtonIndexes.Select(state.NameOf)));
 
+        // The button under the pointer: in a stack, the icon pressed (front first).
+        int pressed = cell.Count > 0 ? cell.ButtonIndexes[0] : -1;
+        // handledEventsToo: the drag machinery may mark the press handled.
+        border.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((_, e) =>
+        {
+            var at = e.GetCurrentPoint(content).Position;
+            pressed = CardLayout.Hit(cell, CellSize, at.X, at.Y) ?? -1;
+        }), handledEventsToo: true);
         border.Tapped += (_, _) =>
         {
             selectedPosition = cell.Position;
-            selectedButton = cell.Count > 0 ? cell.ButtonIndexes[0] : -1;
+            selectedButton = pressed;
             Refresh();
         };
         border.DragStarting += (_, e) =>
         {
-            dragFrom = cell.Position;
-            e.Data.SetText(cell.Position.ToString());
+            // One button: the selected one if it is in this cell, else the icon pressed.
+            dragButton = cell.ButtonIndexes.Contains(selectedButton) ? selectedButton : pressed;
+            if (dragButton < 0) { e.Cancel = true; return; }
+            e.Data.SetText(dragButton.ToString());
             e.Data.RequestedOperation = DataPackageOperation.Move | DataPackageOperation.Copy;
         };
         border.DragOver += (_, e) =>
         {
-            bool copy = (e.Modifiers & DragDropModifiers.Control) != 0;
+            var drop = DropKind(e.Modifiers);
+            bool copy = drop is ButtonDrop.Copy or ButtonDrop.CopySlot;
             e.AcceptedOperation = copy ? DataPackageOperation.Copy : DataPackageOperation.Move;
-            e.DragUIOverride.Caption = copy ? $"Copy to {cell.Position}" : $"Move to {cell.Position}";
+            e.DragUIOverride.Caption = drop switch
+            {
+                ButtonDrop.Join => $"Stack on {cell.Position}",
+                ButtonDrop.Copy => $"Copy to {cell.Position}",
+                ButtonDrop.MoveSlot => $"Move the slot to {cell.Position}",
+                ButtonDrop.CopySlot => $"Copy the slot to {cell.Position}",
+                _ => cell.Count > 0 ? $"Swap with {cell.Position}" : $"Move to {cell.Position}",
+            };
         };
         border.Drop += (_, e) =>
         {
-            bool copy = (e.Modifiers & DragDropModifiers.Control) != 0;
-            ushort from = dragFrom;
-            dragFrom = 0;
-            if (from == 0) return;
-            if (opened!.State.DropAndSelect(from, cell.Position, copy) is int landed)
+            int index = dragButton;
+            dragButton = -1;
+            if (index < 0) return;
+            if (opened!.State.DropButton(index, cell.Position, DropKind(e.Modifiers)) is int landed)
             {
                 selectedPosition = cell.Position;
                 selectedButton = landed;
@@ -921,6 +973,15 @@ public sealed class MainWindow : Window
     }
 
     static Windows.UI.Color Color(byte a, byte r, byte g, byte b) => Windows.UI.Color.FromArgb(a, r, g, b);
+
+    /// <summary>A drop's kind from its keys: Alt stacks, Ctrl copies, Shift takes the whole slot.</summary>
+    static ButtonDrop DropKind(DragDropModifiers keys)
+    {
+        bool ctrl = (keys & DragDropModifiers.Control) != 0, shift = (keys & DragDropModifiers.Shift) != 0;
+        if (shift) return ctrl ? ButtonDrop.CopySlot : ButtonDrop.MoveSlot;
+        if (ctrl) return ButtonDrop.Copy;
+        return (keys & DragDropModifiers.Alt) != 0 ? ButtonDrop.Join : ButtonDrop.Move;
+    }
 
     /// <summary>The selected cell's buttons, in order; or all of the set's.</summary>
     void FillButtonList()
@@ -960,8 +1021,9 @@ public sealed class MainWindow : Window
             iconButton.Content = null;
             conditionBox.ItemsSource = null;
             actionBox.ItemsSource = null;
-            foreach (var box in new[] { conditionVar, actionVar, enabledString, disabledString })
+            foreach (var box in new[] { slotBox, conditionVar, actionVar, enabledString, disabledString })
                 box.Value = double.NaN;
+            slotNote.Text = "";
             enabledEditor.ShowNone("");
             disabledEditor.ShowNone("");
             updating = false;
@@ -979,6 +1041,8 @@ public sealed class MainWindow : Window
         iconButton.Content = iconRow;
         FillFunctions(conditionBox, state.Conditions, b.Condition, state.ConditionLabel);
         FillFunctions(actionBox, state.Actions, b.Action, state.ActionLabel);
+        slotBox.Value = b.Position;
+        slotNote.Text = state.SlotNote(selectedButton, b.Position);
         conditionVar.Value = b.ConditionVar;
         actionVar.Value = b.ActionVar;
         enabledString.Value = b.EnabledString;
