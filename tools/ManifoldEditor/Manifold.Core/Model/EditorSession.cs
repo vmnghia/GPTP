@@ -58,20 +58,37 @@ public static class EditorSession
     }
 
     /// <summary>
-    /// Writes the 250 sets in one operation. On a busy exe nothing is written, the
-    /// document stays dirty, and the reason is returned.
+    /// Writes the 250 sets, and stat_txt.tbl when the strings changed, in one operation:
+    /// both or neither. The table must pass its self-check first (spec §3). On a busy exe or
+    /// a failed check nothing is written, the document stays dirty, and the reason is
+    /// returned. <paramref name="stringsWritten"/> is the table written, for the to-repack
+    /// copy; null when the strings were not saved.
     /// </summary>
-    public static string? Save(IWritableArchive modExe, ButtonSetDocument document)
+    public static string? Save(IWritableArchive modExe, ButtonSetDocument document, out byte[]? stringsWritten)
     {
+        stringsWritten = null;
+        var files = new List<(string, byte[])> { (ButtonSetFile.ArchivePath, ButtonSetFile.Write(document.Sets)) };
+        if (document.StringsDirty && document.Strings is StringTable strings)
+        {
+            byte[] table;
+            try { table = strings.Write(); }
+            catch (InvalidOperationException e) { return $"{StringTable.ArchivePath}: {e.Message}. Nothing was saved."; }
+            if (strings.CheckWritten(table) is string error) return $"{StringTable.ArchivePath}: {error}. Nothing was saved.";
+            files.Add((StringTable.ArchivePath, table));
+            stringsWritten = table;
+        }
         try
         {
-            modExe.Write(ButtonSetFile.ArchivePath, ButtonSetFile.Write(document.Sets));
+            modExe.Write(files);
         }
         catch (ArchiveBusyException e)
         {
+            stringsWritten = null;
             return e.Message;
         }
         document.MarkSaved();
         return null;
     }
+
+    public static string? Save(IWritableArchive modExe, ButtonSetDocument document) => Save(modExe, document, out _);
 }

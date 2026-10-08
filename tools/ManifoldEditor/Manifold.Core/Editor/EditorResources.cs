@@ -11,7 +11,7 @@ namespace Manifold.Core.Editor;
 /// </summary>
 public sealed class EditorResources
 {
-    public const string StatTxtPath = "rez\\stat_txt.tbl";
+    public const string StatTxtPath = StringTable.ArchivePath;
     public const string IconsPath = "unit\\cmdbtns\\cmdicons.grp";
     public const string UnitsDatPath = "arr\\units.dat";
 

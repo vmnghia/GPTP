@@ -15,10 +15,13 @@ public interface IArchive
 public interface IWritableArchive : IArchive
 {
     /// <summary>
-    /// Writes one file in a single open-write-close. Throws <see cref="ArchiveBusyException"/>
-    /// when the exe is held by another program; nothing is written then.
+    /// Writes the files in a single operation: all of them or none. Throws
+    /// <see cref="ArchiveBusyException"/> when the exe is held by another program; nothing
+    /// is written then.
     /// </summary>
-    void Write(string path, byte[] data);
+    void Write(IReadOnlyList<(string Path, byte[] Data)> files);
+
+    void Write(string path, byte[] data) => Write([(path, data)]);
 }
 
 public sealed class ArchiveBusyException(string message) : Exception(message);

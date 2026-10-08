@@ -59,15 +59,15 @@ public sealed class StormArchive(string path, string? name = null) : IWritableAr
         return names;
     }
 
-    /// <summary>Adds or replaces one file: on a copy of the archive, swapped in at the end.</summary>
-    public void Write(string file, byte[] data)
+    /// <summary>Adds or replaces the files: on a copy of the archive, swapped in at the end.</summary>
+    public void Write(IReadOnlyList<(string Path, byte[] Data)> files)
     {
         string temp = path + ".saving";
         try
         {
             try { File.Copy(path, temp, overwrite: true); }
             catch (IOException e) when (IsBusy(e)) { throw Busy(); }
-            WriteInto(temp, file, data);
+            WriteInto(temp, files);
             try { File.Replace(temp, path, path + ".bak"); }
             catch (IOException e) when (IsBusy(e)) { throw Busy(); }
             catch (UnauthorizedAccessException) { throw Busy(); }
@@ -78,28 +78,35 @@ public sealed class StormArchive(string path, string? name = null) : IWritableAr
         }
     }
 
-    static void WriteInto(string archive, string file, byte[] data)
+    static void WriteInto(string archive, IReadOnlyList<(string Path, byte[] Data)> files)
     {
         if (!Native.SFileOpenArchive(archive, 0, 0, out var mpq))
             throw new Win32Exception(Marshal.GetLastWin32Error(), "cannot open the MPQ for writing");
         try
         {
-            if (!Native.SFileCreateFile(mpq, file, 0, (uint)data.Length, 0,
-                    Native.MPQ_FILE_IMPLODE | Native.MPQ_FILE_REPLACEEXISTING, out var handle))
-            {
-                int error = Marshal.GetLastWin32Error();
-                // A full hash table: make room once, then try again.
-                if (error != ERROR_DISK_FULL || !Native.SFileSetMaxFileCount(mpq, 4096) ||
-                    !Native.SFileCreateFile(mpq, file, 0, (uint)data.Length, 0,
-                        Native.MPQ_FILE_IMPLODE | Native.MPQ_FILE_REPLACEEXISTING, out handle))
-                    throw new Win32Exception(error, $"cannot add {file}");
-            }
-            bool written = Native.SFileWriteFile(handle, data, (uint)data.Length, 0); // implode ignores it
-            bool finished = Native.SFileFinishFile(handle);
-            if (!written || !finished || !Native.SFileFlushArchive(mpq))
-                throw new Win32Exception(Marshal.GetLastWin32Error(), $"cannot write {file}");
+            foreach (var (file, data) in files) Add(mpq, file, data);
+            if (!Native.SFileFlushArchive(mpq))
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "cannot write the MPQ");
         }
         finally { Native.SFileCloseArchive(mpq); }
+    }
+
+    static void Add(IntPtr mpq, string file, byte[] data)
+    {
+        if (!Native.SFileCreateFile(mpq, file, 0, (uint)data.Length, 0,
+                Native.MPQ_FILE_IMPLODE | Native.MPQ_FILE_REPLACEEXISTING, out var handle))
+        {
+            int error = Marshal.GetLastWin32Error();
+            // A full hash table: make room once, then try again.
+            if (error != ERROR_DISK_FULL || !Native.SFileSetMaxFileCount(mpq, 4096) ||
+                !Native.SFileCreateFile(mpq, file, 0, (uint)data.Length, 0,
+                    Native.MPQ_FILE_IMPLODE | Native.MPQ_FILE_REPLACEEXISTING, out handle))
+                throw new Win32Exception(error, $"cannot add {file}");
+        }
+        bool written = Native.SFileWriteFile(handle, data, (uint)data.Length, 0); // implode ignores it
+        bool finished = Native.SFileFinishFile(handle);
+        if (!written || !finished)
+            throw new Win32Exception(Marshal.GetLastWin32Error(), $"cannot write {file}");
     }
 
     static bool IsBusy(IOException e) =>

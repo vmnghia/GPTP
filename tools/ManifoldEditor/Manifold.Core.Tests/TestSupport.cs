@@ -42,10 +42,10 @@ sealed class FakeArchive(string name, Dictionary<string, byte[]>? files = null) 
             && k.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)).OrderBy(k => k).ToArray();
     }
 
-    public void Write(string path, byte[] data)
+    public void Write(IReadOnlyList<(string Path, byte[] Data)> files)
     {
         if (Busy) throw new ArchiveBusyException("the exe is open in another program (FireGraft?)");
-        Files[path] = data;
+        foreach (var (path, data) in files) Files[path] = data;
         Writes++;
     }
 }

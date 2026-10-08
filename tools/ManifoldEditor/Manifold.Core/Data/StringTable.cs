@@ -10,6 +10,9 @@ namespace Manifold.Core.Data;
 /// </summary>
 public sealed class StringTable
 {
+    /// <summary>The game's strings, in the mod exe's MPQ and the vanilla ones.</summary>
+    public const string ArchivePath = "rez\\stat_txt.tbl";
+
     /// <summary>Offsets are 16-bit: every string must start below this.</summary>
     public const int Limit = 65536;
 

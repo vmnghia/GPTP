@@ -54,6 +54,17 @@ public sealed class ButtonSetDocument
         this.savedStrings = savedStrings ?? strings;
     }
 
+    /// <summary>
+    /// On opening, before any edit: edit <paramref name="strings"/> instead (the user chose
+    /// the to-repack copy over the exe's). The exe's table stays the saved one, so the
+    /// strings count as unsaved.
+    /// </summary>
+    public void UseOpenedStrings(StringTable strings)
+    {
+        if (history.Count > 0) throw new InvalidOperationException("only before any edit");
+        Strings = OpenedStrings = strings;
+    }
+
     public IReadOnlyList<ButtonSet> Sets => sets;
     public ButtonSet this[int setId] => sets[setId];
 
