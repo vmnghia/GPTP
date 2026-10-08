@@ -14,11 +14,14 @@ public sealed class EditorResources
     public const string StatTxtPath = StringTable.ArchivePath;
     public const string IconsPath = "unit\\cmdbtns\\cmdicons.grp";
     public const string UnitsDatPath = "arr\\units.dat";
+    public const string TfontgamPath = "game\\tfontgam.pcx";
 
     public StatTxt? Strings { get; private set; }
     public Grp? Icons { get; private set; }
     public uint[]? IconPalette { get; private set; }
     public UnitsDat? Units { get; private set; }
+    /// <summary>The preview's colour for each text code; vanilla's when tfontgam.pcx can't be read.</summary>
+    public uint[] TextColours { get; private set; } = TextColors.Default;
     /// <summary>"path: archive", for the status bar.</summary>
     public List<string> Sources { get; } = new();
     /// <summary>What is missing or could not be read.</summary>
@@ -31,6 +34,9 @@ public sealed class EditorResources
         r.Strings = r.Get(resolver, StatTxtPath, StatTxt.Parse, "string ids are shown instead of text");
         r.Icons = r.Get(resolver, IconsPath, bytes => new Grp(bytes), "icon numbers are shown instead of icons");
         r.Units = r.Get(resolver, UnitsDatPath, UnitsDat.Parse, "the set list is not grouped by race");
+        if (r.Get(resolver, TfontgamPath, bytes => TextColors.FromTfontgam(new Pcx(bytes)),
+                "string previews use vanilla's colours") is { } colours)
+            r.TextColours = colours;
         return r;
     }
 
