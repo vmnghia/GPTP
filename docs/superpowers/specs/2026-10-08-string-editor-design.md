@@ -63,7 +63,7 @@ from the vanilla `stat_txt.tbl` that PyMS ships (`PyMS/MPQ/rez/`), read on 2026-
   and unit names (id = unit id + 1, units 0-227). `.dat` labels (weapons, upgrades,
   techs, ...) and ids hardcoded in the exe and GPTP (777 "Damage:", 1301 "per rocket")
   also point into the table; they are not tracked in this part.
-- Vanilla uses 40,398 of the 65,536 bytes. The mod's table is larger by its own strings
+- Vanilla uses 40,398 of the 65,536 bytes; strings the mod adds come on top
   (§8, step 0 measures it). **Measured 2026-10-09** (`tools/ManifoldEditor/reports/stat_txt-report.txt`):
   the mod's `to-repack\rez\stat_txt.tbl` is as regular as vanilla's. It has 1,547 strings
   and 40,398 bytes (25,147 left), offsets in id order, none shared, none running on, and
