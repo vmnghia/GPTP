@@ -3,7 +3,9 @@
 Status: design 2026-10-08, from the user's three answers that day (edit from the button
 panel and from a Strings view; save into the exe and mirror to `to-repack\`; add strings
 and copy shared ones); approved 2026-10-08, with the instruction to follow PyMS's PyTBL.
-Not yet planned. Builds on part 1,
+Built 2026-10-08 (plan `docs/superpowers/plans/2026-10-08-string-editor.md`): the table,
+history, save, to-repack copy and preview are tested on Linux; the window compiles but has
+not run. Not yet tested on Windows or in game (§8). Builds on part 1,
 `docs/superpowers/specs/2026-10-05-button-set-editor-design.md`, whose §5 listed editing
 `stat_txt.tbl` as out of scope.
 

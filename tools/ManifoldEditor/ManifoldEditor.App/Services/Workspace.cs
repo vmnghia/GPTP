@@ -7,7 +7,7 @@ using Microsoft.Win32;
 namespace ManifoldEditor.App.Services;
 
 /// <summary>An exe opened in the editor: its archive, its sets, and the resources shown with them.</summary>
-public sealed record OpenedExe(StormArchive Archive, EditorState State, EditorResources Resources,
+public sealed record OpenedExe(string ExePath, StormArchive Archive, EditorState State, EditorResources Resources,
     SetCatalog Catalog, IReadOnlyList<string> Status);
 
 /// <summary>An exception while opening, with the step it happened in.</summary>
@@ -102,6 +102,6 @@ public static class Workspace
 
         var state = new EditorState(opened.Document, Path.GetFileName(exePath), conditions, actions);
         var status = opened.Status.Concat(resources.Sources).Concat(resources.Notes).ToArray();
-        return new OpenedExe(exe, state, resources, SetCatalog.Build(resources.Text, resources.Units), status);
+        return new OpenedExe(exePath, exe, state, resources, SetCatalog.Build(state.Text, resources.Units), status);
     }
 }

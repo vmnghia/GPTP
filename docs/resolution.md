@@ -501,6 +501,9 @@ starfield handled (§5). Features 1 and 2 below are done.
    **Button set editor** (Manifold Editor part 1) `[BUILT 2026-10-06; tested in game 2026-10-07]`:
    `tools/ManifoldEditor/` and the loader `hooks/interface/buttonsets_loader.cpp`; spec
    `docs/superpowers/specs/2026-10-05-button-set-editor-design.md`, round in its §7.
+   **String editor** (part 2, `stat_txt.tbl`, after PyMS's PyTBL) `[BUILT 2026-10-08; not yet
+   run on Windows]`: spec `docs/superpowers/specs/2026-10-08-string-editor-design.md`, round
+   in its §8.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
    first game frame; every client applies it in the same frame; replays record it. This
    needs the view size switchable at game start. The buffers would be allocated for the

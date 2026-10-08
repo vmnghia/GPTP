@@ -1,8 +1,11 @@
 # Manifold Editor
 
-A FireGraft replacement for the Manifold mod, part 1: button sets on the 5x3 command card.
-Spec: `docs/superpowers/specs/2026-10-05-button-set-editor-design.md`; plan:
-`docs/superpowers/plans/2026-10-05-button-set-editor.md`.
+A FireGraft replacement for the Manifold mod. Part 1: button sets on the 5x3 command card
+(spec `docs/superpowers/specs/2026-10-05-button-set-editor-design.md`, plan
+`docs/superpowers/plans/2026-10-05-button-set-editor.md`). Part 2: the strings of
+`rez\stat_txt.tbl`, written as PyMS's PyTBL writes them (spec
+`docs/superpowers/specs/2026-10-08-string-editor-design.md`, plan
+`docs/superpowers/plans/2026-10-08-string-editor.md`).
 
 | Project | What | Builds on |
 |---|---|---|
@@ -20,6 +23,16 @@ dotnet test tools/ManifoldEditor/Manifold.Core.Tests
 ```
 
 `MANIFOLD_SC_DIR=<StarCraft folder>` also runs the test that reads the real `StarCraft.exe`.
+`MANIFOLD_STAT_TXT=<a stat_txt.tbl>` runs the report test, which writes
+`tools/ManifoldEditor/reports/stat_txt-report.txt` (the string table's size, shared and
+run-on entries, the mod's own strings; with `MANIFOLD_SC_DIR` too, the tooltip types of
+vanilla's buttons). In PowerShell:
+
+```
+$env:MANIFOLD_STAT_TXT = "D:\SC Modding\SCManifold\to-repack\rez\stat_txt.tbl"
+$env:MANIFOLD_SC_DIR = "D:\Games\Starcraft 1.16.1"
+dotnet test tools/ManifoldEditor/Manifold.Core.Tests --filter StatTxtReport
+```
 Don't run `dotnet test` on the whole `.sln` outside Windows: the app's packaging steps need
 Windows tools.
 
@@ -51,3 +64,17 @@ Saving adds the file to a copy of the exe and swaps the copy in, keeping the pre
 (an earlier build used zlib, which the game rejects with "The file data is corrupt": save
 once more with this build to fix such an exe). Adding files with PyMPQ afterwards keeps it;
 just don't save while PyMPQ has the exe open.
+
+**Strings.** The button panel edits a button's two strings: the tooltip (hotkey, tooltip
+type, text) and the disabled text, with Pick... to point at another string and New string
+for an empty field. A string other buttons share is read-only until **Edit for all** or
+**Make a separate copy**. The **Strings** page lists the whole table as PyTBL does, with
+search (`#id` goes to an id), filters, the code list, a preview in the game's colours
+(`game\tfontgam.pcx`), where each string is used, Add and Revert. Text uses PyTBL's `<N>`
+codes, so strings copy between the two.
+
+A save that changed strings writes `rez\stat_txt.tbl` into the exe with the button sets (both
+or neither). The first such save asks whether to also write it to
+`<exe folder>\to-repack\rez\stat_txt.tbl` (kept as `.bak`), so a later PyMPQ add of the
+to-repack copy doesn't bring the old strings back; the answer is kept per exe. When an exe
+opens and its to-repack copy differs (edited in PyTBL, say), the editor asks which to edit.

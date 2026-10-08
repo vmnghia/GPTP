@@ -102,8 +102,10 @@ installed there, not only in `injectHudHooks`.
   self-test (`sel_selftest.cpp`).
 - **Manifold Editor** (`tools/ManifoldEditor/`, spec
   `docs/superpowers/specs/2026-10-05-button-set-editor-design.md`): a C# FireGraft
-  replacement, part 1 button sets, saved as `Manifold\buttonsets.bin` in the mod exe's MPQ
-  and applied at game start by `hooks/interface/buttonsets_loader.cpp`. Unlike the plugin,
+  replacement: part 1 button sets, saved as `Manifold\buttonsets.bin` in the mod exe's MPQ
+  and applied at game start by `hooks/interface/buttonsets_loader.cpp`; part 2 the strings
+  of `rez\stat_txt.tbl` (spec `docs/superpowers/specs/2026-10-08-string-editor-design.md`),
+  which follows PyMS's PyTBL. Unlike the plugin,
   most of it **can** be checked in the Linux session: `dotnet test
   tools/ManifoldEditor/Manifold.Core.Tests` (after `apt-get install -y dotnet-sdk-8.0`),
   and the WinUI window compiles with `dotnet msbuild -restore -t:Compile

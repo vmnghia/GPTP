@@ -58,10 +58,22 @@ public sealed class MainWindow : Window
     readonly ComboBox actionBox = new() { Header = "Action", HorizontalAlignment = HorizontalAlignment.Stretch };
     readonly NumberBox conditionVar = Number("Condition var");
     readonly NumberBox actionVar = Number("Action var");
-    readonly NumberBox enabledString = Number("Enabled string (tooltip; first character = hotkey)");
-    readonly NumberBox disabledString = Number("Disabled string");
-    readonly TextBlock enabledText = Small();
-    readonly TextBlock disabledText = Small();
+    readonly NumberBox enabledString = Number("Enabled string id (the tooltip, with the hotkey)");
+    readonly NumberBox disabledString = Number("Disabled string id");
+    readonly StringEditorView enabledEditor = new(offerCopy: true);
+    readonly StringEditorView disabledEditor = new(offerCopy: true);
+    readonly Button enabledNew = new() { Content = "New string" };
+    readonly Button disabledNew = new() { Content = "New string" };
+    /// <summary>Shared strings the user chose to edit for every button using them (Edit for all).</summary>
+    readonly HashSet<int> unlockedStrings = new();
+
+    // The pages: button sets, strings (spec §6).
+    readonly SelectorBar pages = new();
+    readonly SelectorBarItem setsPageItem = new() { Text = "Button sets", IsSelected = true };
+    readonly SelectorBarItem stringsPageItem = new() { Text = "Strings" };
+    Grid setsPage = null!;
+    StringsPage stringsPage = null!;
+    StringTable? catalogStrings;
 
     public MainWindow()
     {
@@ -101,6 +113,7 @@ public sealed class MainWindow : Window
     {
         var root = new Grid { Padding = new Thickness(12) };
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
@@ -112,11 +125,24 @@ public sealed class MainWindow : Window
         toolbar.Children.Add(ToolButton("StarCraft folder...", async (_, _) => await PickStarCraftDir()));
         root.Children.Add(toolbar);
 
+        pages.Items.Add(setsPageItem);
+        pages.Items.Add(stringsPageItem);
+        pages.SelectionChanged += (_, _) => ShowPage();
+        pages.Margin = new Thickness(0, 0, 0, 8);
+        Grid.SetRow(pages, 1);
+        root.Children.Add(pages);
+
+        stringsPage = new StringsPage(() => opened, Refresh, (title, text) => Message(title, text), JumpToButton);
+        Grid.SetRow(stringsPage.Root, 2);
+        stringsPage.Root.Visibility = Visibility.Collapsed;
+        root.Children.Add(stringsPage.Root);
+
         var body = new Grid { ColumnSpacing = 16 };
+        setsPage = body;
         body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(300) });
         body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(380) });
-        Grid.SetRow(body, 1);
+        Grid.SetRow(body, 2);
         root.Children.Add(body);
 
         // Set list.
@@ -174,15 +200,13 @@ public sealed class MainWindow : Window
         disabledString.ValueChanged += (_, _) => EditSelected(b => b with { DisabledString = Value(disabledString) });
         panel.Children.Add(conditionVar);
         panel.Children.Add(actionVar);
-        panel.Children.Add(enabledString);
-        panel.Children.Add(enabledText);
-        panel.Children.Add(disabledString);
-        panel.Children.Add(disabledText);
+        panel.Children.Add(StringRow(StringField.Enabled, enabledString, enabledNew, enabledEditor));
+        panel.Children.Add(StringRow(StringField.Disabled, disabledString, disabledNew, disabledEditor));
         var right = new ScrollViewer { Content = panel };
         Grid.SetColumn(right, 2);
         body.Children.Add(right);
 
-        Grid.SetRow(status, 2);
+        Grid.SetRow(status, 3);
         status.Margin = new Thickness(0, 10, 0, 0);
         root.Children.Add(status);
 
@@ -192,6 +216,97 @@ public sealed class MainWindow : Window
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Z, Undo));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Y, Redo));
         return root;
+    }
+
+    /// <summary>
+    /// A button's string field in the panel: the id, Pick... and New string, then the
+    /// string's own fields (spec §5).
+    /// </summary>
+    FrameworkElement StringRow(StringField field, NumberBox id, Button newString, StringEditorView editor)
+    {
+        var pick = new Button { Content = "Pick..." };
+        pick.Flyout = PickFlyout(field);
+        newString.Click += async (_, _) =>
+        {
+            if (opened is null || selectedButton < 0) return;
+            if (opened.State.NewStringForButton(selectedButton, field, out var refused) is int) Refresh();
+            else if (refused is not null) await Message("No new string", refused);
+        };
+        editor.Committed += bytes =>
+        {
+            if (opened is null || selectedButton < 0) return;
+            ushort stringId = StringUses.IdOf(opened.State.SelectedSet.Buttons[selectedButton], field);
+            if (opened.State.EditString(stringId, bytes, out var refused)) Refresh();
+            else if (refused is not null) editor.ShowError(refused);
+        };
+        editor.EditForAll += () =>
+        {
+            if (opened is null || selectedButton < 0) return;
+            unlockedStrings.Add(StringUses.IdOf(opened.State.SelectedSet.Buttons[selectedButton], field));
+            Refresh();
+        };
+        editor.MakeCopy += async () =>
+        {
+            if (opened is null || selectedButton < 0) return;
+            if (opened.State.CopyStringForButton(selectedButton, field, out var refused) is int) Refresh();
+            else if (refused is not null) await Message("No copy made", refused);
+        };
+        var idRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        idRow.Children.Add(id);
+        idRow.Children.Add(pick.Also(b => b.VerticalAlignment = VerticalAlignment.Bottom));
+        idRow.Children.Add(newString.Also(b => b.VerticalAlignment = VerticalAlignment.Bottom));
+        var row = new StackPanel { Spacing = 6, Margin = new Thickness(0, 8, 0, 0) };
+        row.Children.Add(idRow);
+        row.Children.Add(editor.Root);
+        return row;
+    }
+
+    /// <summary>The string list as a picker for a field: strings used by buttons, or all.</summary>
+    Flyout PickFlyout(StringField field)
+    {
+        var query = new TextBox { PlaceholderText = "Search text, or #id" };
+        var all = new CheckBox { Content = "All strings, not only those buttons use" };
+        var rows = new ListView { IsItemClickEnabled = true, SelectionMode = ListViewSelectionMode.None, Height = 380, Width = 620,
+            FontFamily = new FontFamily("Consolas") };
+        var flyout = new Flyout { Content = new StackPanel { Spacing = 6, Children = { query, all, rows } } };
+        void Fill()
+        {
+            if (opened?.State.Strings is not StringTable table) { rows.ItemsSource = null; return; }
+            rows.ItemsSource = StringList.Rows(table, opened.State.Document.Sets, query.Text, false,
+                all.IsChecked == true ? StringFilter.All : StringFilter.UsedByButtons, id => opened.Catalog.Entries[id].Name);
+        }
+        query.TextChanged += (_, _) => Fill();
+        all.Click += (_, _) => Fill();
+        flyout.Opening += (_, _) => Fill();
+        rows.ItemClick += (_, e) =>
+        {
+            if (e.ClickedItem is not StringRow row) return;
+            EditSelected(b => StringUses.WithId(b, field, (ushort)row.Id));
+            flyout.Hide();
+        };
+        return flyout;
+    }
+
+    void ShowPage()
+    {
+        if (setsPage is null || stringsPage is null) return;   // a selection event while the layout is built
+        bool strings = pages.SelectedItem == stringsPageItem;
+        setsPage.Visibility = strings ? Visibility.Collapsed : Visibility.Visible;
+        stringsPage.Root.Visibility = strings ? Visibility.Visible : Visibility.Collapsed;
+        if (strings) stringsPage.Refresh();
+        else Refresh();
+    }
+
+    /// <summary>From the Strings page's "used by": show that set and button.</summary>
+    void JumpToButton(ButtonRef r)
+    {
+        if (opened is null) return;
+        pages.SelectedItem = setsPageItem;
+        opened.State.SelectedSetId = r.SetId;
+        selectedButton = r.Index;
+        selectedPosition = opened.State.SelectedSet.Buttons[r.Index].Position;
+        SelectSet(r.SetId);
+        Refresh();
     }
 
     static MenuFlyoutItem Item(string text, Action click)
@@ -263,6 +378,9 @@ public sealed class MainWindow : Window
         icons = new IconCache(opened.Resources);
         settings = settings with { LastExe = path };
         settings.Save(Workspace.SettingsPath);
+        unlockedStrings.Clear();
+        catalogStrings = opened.State.Strings;
+        await OfferRepackStrings(path);
         selectedPosition = 0;
         selectedButton = -1;
         panel.Visibility = Visibility.Visible;
@@ -275,9 +393,10 @@ public sealed class MainWindow : Window
     {
         if (opened is null) return false;
         string? error;
+        byte[]? strings = null;
         try
         {
-            error = EditorSession.Save(opened.Archive, opened.State.Document);
+            error = EditorSession.Save(opened.Archive, opened.State.Document, out strings);
         }
         catch (Exception e)
         {
@@ -288,8 +407,126 @@ public sealed class MainWindow : Window
             await Message("Not saved", error);
             return false;
         }
+        if (strings is not null) await WriteRepackStrings(strings);
         Refresh();
         return true;
+    }
+
+    // -------- The to-repack copy of stat_txt.tbl (spec §7) --------
+
+    /// <summary>After a save that wrote strings: the same table to the exe's to-repack copy, asked once per exe.</summary>
+    async Task WriteRepackStrings(byte[] table)
+    {
+        string exePath = opened!.ExePath;
+        string? mirror = settings.MirrorFor(exePath);
+        if (mirror is null)
+        {
+            mirror = await AskRepackPath(exePath);
+            if (mirror is null) return;   // asked again next time
+            settings = settings.WithMirror(exePath, mirror);
+            settings.Save(Workspace.SettingsPath);
+        }
+        if (mirror.Length == 0) return;
+        try
+        {
+            StringMirror.Write(mirror, table);
+        }
+        catch (Exception e)
+        {
+            await Message("to-repack copy not written",
+                $"{opened.State.ExeName} is saved, but {mirror} could not be written ({e.Message}). The two now differ: " +
+                "save again, or put the exe's rez\\stat_txt.tbl there by hand before the next repack.", e.ToString());
+        }
+    }
+
+    /// <summary>Where to also write the strings: a path, "" for nowhere, null to ask next time.</summary>
+    async Task<string?> AskRepackPath(string exePath)
+    {
+        string suggested = StringMirror.DefaultPath(exePath);
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Title = "Also write stat_txt.tbl to to-repack?",
+            Content = new TextBlock
+            {
+                TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true,
+                Text = $"So that adding to-repack's stat_txt.tbl with PyMPQ later doesn't put the old strings back, the editor can " +
+                       $"write the same table to:\n\n{suggested}\n\nThe previous file is kept as stat_txt.tbl.bak. The answer is " +
+                       $"remembered for {Path.GetFileName(exePath)}.",
+            },
+            PrimaryButtonText = "Yes, for this exe",
+            SecondaryButtonText = "Choose folder...",
+            CloseButtonText = "Not for this exe",
+            DefaultButton = ContentDialogButton.Primary,
+        };
+        switch (await dialog.ShowAsync())
+        {
+            case ContentDialogResult.Primary:
+                return suggested;
+            case ContentDialogResult.Secondary:
+                var picker = new FolderPicker();
+                picker.FileTypeFilter.Add("*");
+                WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(this));
+                var folder = await picker.PickSingleFolderAsync();
+                return folder is null ? null : Path.Combine(folder.Path, "stat_txt.tbl");
+            default:
+                return "";
+        }
+    }
+
+    /// <summary>
+    /// On opening: when the exe's to-repack copy differs from the table in the exe (edited
+    /// in PyTBL, say), the user picks which one to edit.
+    /// </summary>
+    async Task OfferRepackStrings(string exePath)
+    {
+        var state = opened!.State;
+        if (state.Strings is null) return;
+        string? mirror = settings.MirrorFor(exePath);
+        if (mirror is null)
+        {
+            string suggested = StringMirror.DefaultPath(exePath);
+            mirror = File.Exists(suggested) ? suggested : "";
+        }
+        if (mirror.Length == 0) return;
+        byte[]? exeTable;
+        try
+        {
+            exeTable = opened.Archive.TryRead(StringTable.ArchivePath);
+            if (StringMirror.Compare(exeTable, mirror) != StringMirror.State.Differs) return;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            return;
+        }
+        string newer = StringMirror.IsNewerThan(mirror, exePath) ? "The to-repack copy" : "The exe";
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Title = "Two different stat_txt.tbl",
+            Content = new TextBlock
+            {
+                TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true,
+                Text = $"{mirror}\ndiffers from the stat_txt.tbl in {state.ExeName}" +
+                       (exeTable is null ? " (the exe has none; the editor read vanilla's)" : "") +
+                       $". {newer} was changed more recently.\n\nWhich one do you want to edit? Choosing to-repack's " +
+                       "puts it into the exe at the next save.",
+            },
+            PrimaryButtonText = "The exe's",
+            SecondaryButtonText = "to-repack's",
+            DefaultButton = ContentDialogButton.Primary,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Secondary) return;
+        try
+        {
+            state.Document.UseOpenedStrings(StringTable.Parse(File.ReadAllBytes(mirror)));
+            catalogStrings = null;
+            opened = opened with { Status = opened.Status.Append($"Strings from {mirror} (not yet saved into the exe)").ToArray() };
+        }
+        catch (Exception e) when (e is InvalidDataException or IOException or UnauthorizedAccessException)
+        {
+            await Message("Can't read the to-repack copy", $"{mirror}: {e.Message}. Editing the exe's strings.");
+        }
     }
 
     /// <summary>With unsaved changes: Save, Don't save or Cancel. True to go on.</summary>
@@ -358,8 +595,10 @@ public sealed class MainWindow : Window
 
     bool KeepSelection(bool changed)
     {
-        if (changed) SelectSet(opened!.State.SelectedSetId);
-        return changed;
+        if (!changed) return false;
+        SelectSet(opened!.State.SelectedSetId);
+        if (opened.State.LastStringId is int id && stringsPage.Root.Visibility == Visibility.Visible) stringsPage.Select(id);
+        return true;
     }
 
     void EditSelected(Func<Manifold.Core.Data.Button, Manifold.Core.Data.Button> edit)
@@ -441,6 +680,13 @@ public sealed class MainWindow : Window
         if (opened is null) return;
         var state = opened.State;
         Title = state.Title;
+        if (!ReferenceEquals(catalogStrings, state.Strings))
+        {
+            // Unit names are strings: rename the sets when they change.
+            catalogStrings = state.Strings;
+            opened = opened with { Catalog = SetCatalog.Build(state.Text, opened.Resources.Units) };
+        }
+        if (stringsPage.Root.Visibility == Visibility.Visible) stringsPage.Refresh();
         foreach (var id in setItems.Keys) UpdateSetItem(id);
         var entry = opened.Catalog.Entries[state.SelectedSetId];
         setTitle.Text = $"{state.SelectedSetId}  {entry.Name}";
@@ -596,7 +842,8 @@ public sealed class MainWindow : Window
             actionBox.ItemsSource = null;
             foreach (var box in new[] { conditionVar, actionVar, enabledString, disabledString })
                 box.Value = double.NaN;
-            enabledText.Text = disabledText.Text = "";
+            enabledEditor.ShowNone("");
+            disabledEditor.ShowNone("");
             updating = false;
             return;
         }
@@ -616,9 +863,27 @@ public sealed class MainWindow : Window
         actionVar.Value = b.ActionVar;
         enabledString.Value = b.EnabledString;
         disabledString.Value = b.DisabledString;
-        enabledText.Text = state.StringLabel(b.EnabledString);
-        disabledText.Text = state.StringLabel(b.DisabledString);
+        ShowString(enabledEditor, enabledNew, StringField.Enabled, b.EnabledString);
+        ShowString(disabledEditor, disabledNew, StringField.Disabled, b.DisabledString);
         updating = false;
+    }
+
+    /// <summary>A field's string in its editor, locked while other buttons share it (spec §5).</summary>
+    void ShowString(StringEditorView editor, Button newString, StringField field, ushort id)
+    {
+        var state = opened!.State;
+        newString.Visibility = id == 0 && state.Strings is not null ? Visibility.Visible : Visibility.Collapsed;
+        if (state.Strings is not StringTable table) { editor.ShowNone("No stat_txt.tbl: strings can't be edited"); return; }
+        if (id == 0) { editor.ShowNone("No string"); return; }
+        if (id > table.Count) { editor.ShowNone($"String {id} is past the end of stat_txt.tbl ({table.Count})"); return; }
+        var others = state.SharedWith(selectedButton, field);
+        var sets = state.Document.Sets;
+        string shared = others.Count == 0 && StringUses.UnitOf(id) is null ? ""
+            : StringList.UsesLabel(id, others, sets, s => opened.Catalog.Entries[s].Name)
+              + (others.Count > 0 ? $" ({others.Count} other button{(others.Count == 1 ? "" : "s")})" : "");
+        editor.Show(field == StringField.Enabled ? $"Tooltip, string {id}" : $"Disabled text, string {id}",
+            table.Segment(id), field == StringField.Enabled, shared, shared.Length > 0 && !unlockedStrings.Contains(id),
+            opened.Resources.TextColours);
     }
 
     /// <summary>The table's functions as "name (address)"; an address not in it is added last.</summary>
