@@ -1,0 +1,2 @@
+# Visual Studio treats a .sln without CRLF as needing an upgrade.
+*.sln text eol=crlf

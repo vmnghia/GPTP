@@ -380,12 +380,15 @@ starfield handled (§5). Features 1 and 2 below are done.
 - **Restarting a game confines the cursor** to a 640×480 area in the centre of the screen.
 - **Opening the menu (F10) in a replay is very laggy.**
 - **Build and training progress bars show over enemy buildings and construction
-  sites** (reported 2026-10-04). Only the current player's and allies' should show.
-  The bars come from `plugins::drawBuildProgress(unit)`, called for every unit in
-  `nextFrame()` (`hooks/main/game_hooks.cpp`).
+  sites** (reported 2026-10-04) `[FIXED 2026-10-08, tested in game 2026-10-09]`. Only the current
+  player's and allies' should show. The bars come from `plugins::drawBuildProgress(unit)`,
+  called for every unit in `nextFrame()` (`hooks/main/game_hooks.cpp`);
+  `showsBuildProgress` now allows the local player's units, allies' units the local
+  player can see, and every player's in a replay.
 - **A destroyed Refinery, Assimilator or Extractor leaves a progress bar at 0% over its
-  Vespene Geyser** (reported 2026-10-04). Probably the same drawing, which still sees
-  the geyser as something in progress.
+  Vespene Geyser** (reported 2026-10-04) `[FIXED 2026-10-08, tested in game 2026-10-09]`. The geyser
+  belongs to the neutral player, whose units never get a bar now; and a unit with no order
+  and build time left only counts as building while it isn't completed.
 
 **Next after smart-build** (user, 2026-10-03):
 - **The selection panel showed only 12 wireframes** `[FIXED 2026-10-04]`: the repack
@@ -474,6 +477,9 @@ starfield handled (§5). Features 1 and 2 below are done.
   raise has its own switch (`RAISE_SELECTION_BOX`), not the widening or the card rebuild.
 
 **Data edits, the user's to make:**
+- **Don't save in the Manifold Editor while PyMPQ has `SCManifold.exe` open** (the editor
+  reports it busy and keeps the edits). Repacking with PyMPQ adds files in place, so the
+  editor's `Manifold\buttonsets.bin` survives a repack of `GPTP.qdp`.
 - **stat_txt.tbl entries 810 and 811** ("Show/Hide Terrain in Minimap (Tab)"): change
   "(Tab)" to "(Alt+T)". The minimap terrain toggle moved to Alt+T on 2026-10-03 (Tab now
   cycles selection subgroups; the ally colours moved to Ctrl+Shift+T, which has no string).
@@ -495,6 +501,15 @@ starfield handled (§5). Features 1 and 2 below are done.
    tested; smart-build (`docs/superpowers/specs/2026-10-03-smart-build-design.md`) is built and tested too; see `docs/superpowers/specs/2026-09-30-extended-selection-design.md`. Unlike the
    view, selections are sent as network commands and recorded in replays, so this touches
    synced game state, unlike everything above.
+   **Button set editor** (Manifold Editor part 1) `[BUILT 2026-10-06; tested in game 2026-10-07]`:
+   `tools/ManifoldEditor/` and the loader `hooks/interface/buttonsets_loader.cpp`; spec
+   `docs/superpowers/specs/2026-10-05-button-set-editor-design.md`, round in its §7.
+   **The FireGraft import put FireGraft's 18 sets on the wrong units** (its set numbers
+   are not unit ids) `[FIXED 2026-10-08, re-import tested in the editor 2026-10-08]`: open the exe, use **Re-import
+   FireGraft's sets...**, redo the editor's own edits (the Marine's Stim Packs), save.
+   **String editor** (part 2, `stat_txt.tbl`, after PyMS's PyTBL) `[BUILT 2026-10-08; not yet
+   run on Windows]`: spec `docs/superpowers/specs/2026-10-08-string-editor-design.md`, round
+   in its §8.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
    first game frame; every client applies it in the same frame; replays record it. This
    needs the view size switchable at game start. The buffers would be allocated for the

@@ -129,8 +129,24 @@ void initializeGame()
     }
 }
 
+// Whose bars show: the local player's, and allies' where the local player sees them;
+// every player's in a replay; never the neutral player's (a geyser) or an enemy's.
+// Drawing only: nothing here feeds game state.
+bool showsBuildProgress(const CUnit *unit)
+{
+    if (unit->playerId >= PLAYABLE_PLAYER_COUNT)
+        return false;
+    if (scbw::isInReplay() || unit->playerId == *LOCAL_NATION_ID)
+        return true;
+    const u8 local = (u8)*LOCAL_NATION_ID;
+    return scbw::isAlliedTo(local, unit->playerId) && unit->isVisibleTo(local);
+}
+
 void drawBuildProgress(CUnit *unit)
 {
+    if (!showsBuildProgress(unit))
+        return;
+
     int width = unit->getRight() - unit->getLeft();
     int height = 4;
     int left = unit->getLeft();
@@ -151,7 +167,8 @@ void drawBuildProgress(CUnit *unit)
         unit->mainOrderId == OrderId::ResearchTech || unit->mainOrderId == OrderId::Upgrade && !isTraining;
     bool isBuildingSelf = unit->mainOrderId == OrderId::BuildSelf1 || unit->mainOrderId == OrderId::BuildSelf2 ||
                           unit->mainOrderId == OrderId::Morph2 ||
-                          (unit->mainOrderId == OrderId::Nothing2 && unit->remainingBuildTime > 0);
+                          (unit->mainOrderId == OrderId::Nothing2 && unit->remainingBuildTime > 0 &&
+                           !(unit->status & UnitStatus::Completed));
 
     if (units_dat::BaseProperty[unit->id] & UnitProperty::Addon)
     {

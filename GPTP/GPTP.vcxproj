@@ -156,6 +156,7 @@
     <ClCompile Include="hooks\interface\btns_cond.cpp" />
     <ClCompile Include="hooks\interface\btns_cond_inject.cpp" />
     <ClCompile Include="hooks\interface\buttonsets.cpp" />
+    <ClCompile Include="hooks\interface\buttonsets_loader.cpp" />
     <ClCompile Include="hooks\interface\buttonsets_inject.cpp" />
     <ClCompile Include="hooks\interface\resolution.cpp" />
     <ClCompile Include="hooks\interface\resolution_hud.cpp" />
@@ -325,6 +326,7 @@
     <ClCompile Include="hooks\recv_commands\smart_cast.cpp" />
     <ClCompile Include="SCBW\selection_ext.cpp" />
     <ClCompile Include="SCBW\selection_ext_core.cpp" />
+    <ClCompile Include="SCBW\buttonsets_file.cpp" />
     <ClCompile Include="SCBW\console_raise.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_selftest.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_exe.cpp" />
@@ -433,6 +435,7 @@
     <ClInclude Include="hooks\harvest.h" />
     <ClInclude Include="hooks\interface\btns_cond.h" />
     <ClInclude Include="hooks\interface\buttonsets.h" />
+    <ClInclude Include="hooks\interface\buttonsets_loader.h" />
     <ClInclude Include="hooks\interface\resolution.h" />
     <ClInclude Include="hooks\interface\selection.h" />
     <ClInclude Include="hooks\interface\select_larva.h" />
@@ -513,6 +516,7 @@
     <ClInclude Include="hooks\recv_commands\receive_command.h" />
     <ClInclude Include="hooks\recv_commands\smart_cast.h" />
     <ClInclude Include="SCBW\selection_ext.h" />
+    <ClInclude Include="SCBW\buttonsets_file.h" />
     <ClInclude Include="SCBW\console_raise.h" />
     <ClInclude Include="hooks\selection_ext\selection_ext_hooks.h" />
     <ClInclude Include="hooks\selection_ext\sel_exe.h" />

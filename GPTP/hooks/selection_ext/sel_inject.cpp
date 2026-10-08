@@ -9,6 +9,7 @@
 #include "sel_groups.h"
 #include "sel_subgroups.h"
 #include "sel_build.h"
+#include "../interface/buttonsets_loader.h"
 #include <SCBW/selection_ext.h>
 #include <hook_tools.h>
 
@@ -195,6 +196,7 @@ const u32 Back_GameStartEntry = 0x004EED18;
 void __declspec(naked) gameStartEntryWrapper() {
 	__asm PUSHAD
 	sellocal::gameStartClear();
+	bsloader::applyAtGameStart();
 	__asm {
 		POPAD
 		PUSH EDI

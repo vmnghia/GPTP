@@ -21,8 +21,9 @@ Visual Studio 2026 (v145 toolset), **Win32 only**, C++17. Open `GPTP/GPTP.sln`.
 There is no linter and no CI. This is a game plugin: the real verification is building it
 and running StarCraft. Debug is the usual configuration; the plugin lands in `GPTP\Debug\`.
 
-`tests/verify.ps1` is the one local check, run on the user's machine: it builds and runs a
-host-side test of the extended selection's pure logic (`tests/selection_ext_test.bat`),
+`tests/verify.ps1` is the one local check, run on the user's machine: it builds and runs the
+host-side tests of the extended selection's pure logic (`tests/selection_ext_test.bat`) and
+of the button set file's parser (`tests/buttonsets_file_test.bat`),
 builds the plugin with MSBuild, then disassembles `sel_inject.obj` and runs
 `tests/check_naked_wrappers.py` over it. That script fails if a naked wrapper touches
 `[ebp…]`: a naked function has no frame of its own, so a Debug-build temporary there writes
@@ -30,8 +31,10 @@ into the exe caller's frame. Only the offsets listed in its `ALLOWED` table are 
 
 **Deploying.** A post-build step copies `GPTP.qdp` next to `SCManifold.exe`
 (`..\..\SCManifold\` from the solution) when that folder exists. The plugin must then be
-repacked into `SCManifold.exe` before testing. Any **new `rez\` file must be added to the
-repack by hand**, because the repack tool keeps its own list. A missing `rez\statdata.bin`
+repacked into `SCManifold.exe` before testing: the user adds files from
+`SCManifold\to-repack\` into the exe's MPQ by hand with PyMPQ, so any **new `rez\` file must
+be added by hand too**. Adding replaces files in place; it doesn't rebuild the MPQ, so files
+already in it (such as the Manifold Editor's `Manifold\buttonsets.bin`) stay. A missing `rez\statdata.bin`
 once made the selection panel silently fall back to vanilla's 12 wireframes.
 `docs/resolution.md` §6 "Working tips" has the paths and helper scripts.
 
@@ -97,6 +100,17 @@ installed there, not only in `injectHudHooks`.
   `docs/superpowers/specs/2026-09-30-extended-selection-design.md`): more than 12 selected
   units, panel pages, control groups, SC2-style subgroups. The pure logic has a host-side
   self-test (`sel_selftest.cpp`).
+- **Manifold Editor** (`tools/ManifoldEditor/`, spec
+  `docs/superpowers/specs/2026-10-05-button-set-editor-design.md`): a C# FireGraft
+  replacement: part 1 button sets, saved as `Manifold\buttonsets.bin` in the mod exe's MPQ
+  and applied at game start by `hooks/interface/buttonsets_loader.cpp`; part 2 the strings
+  of `rez\stat_txt.tbl` (spec `docs/superpowers/specs/2026-10-08-string-editor-design.md`),
+  which follows PyMS's PyTBL. Unlike the plugin,
+  most of it **can** be checked in the Linux session: `dotnet test
+  tools/ManifoldEditor/Manifold.Core.Tests` (after `apt-get install -y dotnet-sdk-8.0`),
+  and the WinUI window compiles with `dotnet msbuild -restore -t:Compile
+  -p:WindowsAppSDKSelfContained=false` in `ManifoldEditor.App/` (it has no `.xaml`, so
+  keep it that way). Running it needs Windows; see its README.
 - **Smart-build** (in `hooks/selection_ext/`, spec
   `docs/superpowers/specs/2026-10-03-smart-build-design.md`) and **smart-casting**
   (`hooks/recv_commands/smart_cast.cpp`, `docs/selection.md` §6).

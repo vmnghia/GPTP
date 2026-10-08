@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The Manifold Editor's window: WinUI 3, unpackaged and self-contained, x86 (StormLib.dll
+    is 32-bit). The UI is built in C# with no .xaml files, so the code compiles anywhere the
+    .NET SDK runs (see README.md); building and running the app needs Windows.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>ManifoldEditor.App</RootNamespace>
+    <AssemblyName>ManifoldEditor</AssemblyName>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <Platforms>x86</Platforms>
+    <PlatformTarget>x86</PlatformTarget>
+    <RuntimeIdentifier>win-x86</RuntimeIdentifier>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Program.cs has the Main; there is no App.xaml to generate one. -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250205002" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
+    <!-- The MSIX/PRI build tasks from NuGet. Without it, the resources.pri step looks for them in
+         Visual Studio's AppxPackage folder, which only the MSIX Packaging Tools component
+         installs (error MSB4062: Microsoft.Build.Packaging.Pri.Tasks.dll not found). -->
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" Version="1.7.260930100" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Manifold.Core\Manifold.Core.csproj" />
+    <ProjectReference Include="..\Manifold.Storm\Manifold.Storm.csproj" />
+  </ItemGroup>
+
+  <!-- FireGraft's condition and action lists, and PyMS's icon names and icon palette. -->
+  <ItemGroup>
+    <Content Include="..\fixtures\FireGraftConFunc.txt;..\fixtures\FireGraftActFunc.txt;..\fixtures\Icons.txt;..\fixtures\Icons.pal"
+             Link="Data\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

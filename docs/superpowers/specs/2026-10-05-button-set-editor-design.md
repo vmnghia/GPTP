@@ -1,6 +1,6 @@
 # Button set editor (Manifold Editor, part 1: core and button sets)
 
-Status: design approved 2026-10-05, not built. Replaces the abandoned FireGraftEx WPF
+Status: design approved 2026-10-05; built 2026-10-06 (plan `docs/superpowers/plans/2026-10-05-button-set-editor.md`). The editor is tested on Windows (2026-10-07, §7 steps 1, 2 and 5's save side; see "Settled in testing"); the GPTP loader is built and tested in game (2026-10-07, §7 steps 1-3; step 4, a corrupt file, not yet run). Replaces the abandoned FireGraftEx WPF
 skeleton (`D:\SC Modding\FireGraftEx`, outside git; only its `Data\FireGraft\*Func.txt`
 lists are reused).
 
@@ -32,14 +32,28 @@ Scope: StarCraft 1.16.1 and the Manifold mod only.
   `Firegraft\*`. The real `D:\Games\Starcraft 1.16.1\StarCraft.exe` is never modified.
 - FireGraft's project is inside that MPQ as `Firegraft\SCManifold.fgp` ("FgPa", version 7,
   "1.16.1"), a list of sections, each `char[4] tag, u32 length, data`: `Unit`, `Buts`,
-  `UntR`, `UpgR`, `TecR`, `TecU`, `OrdR`, `ExEd`, `SUni`. FireGraft's runtime applies it
+  `UntR`, `UpgR`, `TecR`, `TecU`, `OrdR`, `ExEd`, `SUni`, then `SBut`, `SUnD`, `SUpg`, `SRes`,
+  `SUse`, `SOrd`, `SExe` (only `Buts` is used). FireGraft's runtime applies it
   when the plugins load, before any game starts. This is assumed, not traced: the plan's
   loader task confirms it with an on-screen trace of the table entry before and after.
 - `Buts` holds only the changed sets: `u16 setCount`, then per set `u8 setId, u8
   buttonCount`, then 20-byte buttons `u16 position, u16 icon, u32 conditionIndex, u32
-  actionIndex, u16 conditionVar, u16 actionVar, u16 disabledStringId, u16
-  enabledStringId`. The real file parses exactly (18 sets, 2438 of 2438 bytes): sets 11,
+  actionIndex, u16 conditionVar, u16 actionVar, u16 enabledStringId, u16
+  disabledStringId` (corrected 2026-10-06: 0x10 is the enabled tooltip, whose first
+  character is the hotkey; 0x12 the disabled text; every button has the first, only
+  buttons that can be disabled the second). The real file parses exactly (18 sets, 2438 of 2438 bytes): sets 11,
   12, 13, 15, 22, 67-70, 73-80, 90, positions 1-9 only.
+- **Corrected 2026-10-08: those set ids are FireGraft's own numbers, not unit ids.** The
+  first import put them on table entries 11, 12, ... (the Dropship, the Battlecruiser,
+  ...), which was wrong. FireGraft keeps a tree of named, shared sets (`SBut`: "[11] Mixed
+  Group", "[68] Marine/Firebat + Heroes", "[76] Siege Tank + Heroes", ...), and its `Unit`
+  section links table entries to them: `u16 count`, then per record `u8 entry, u8
+  buttonCount, u8 FireGraft set + 1, u16 connectedUnit (0xFFFF none), u8 n`, then `n`
+  three-byte items of unknown meaning. The user's project has 64 records: Marine, Gui
+  Montag, Firebat and the Firebat hero use 68; the Siege Tanks and Duke use 76; the
+  mixed-group card (244) uses 11. The import now gives each linked entry its own copy of
+  the set (one set per unit, the user's choice on 2026-10-08), and **Re-import
+  FireGraft's sets** repairs an exe saved with the first import.
 - The indexes count from 0 in FireGraft's lists. `FireGraftConFunc.txt` (67 lines) and
   `FireGraftActFunc.txt` (60 lines) give name and address per index: set 11's first
   button is condition 6 (`Mixed Group - Move/Patrol/Hold Position`, 0x428DA0), action 9
@@ -54,20 +68,62 @@ Scope: StarCraft 1.16.1 and the Manifold mod only.
   `rez\stat_txt.tbl`, `unit\cmdbtns\cmdicons.grp`, `Firegraft\iconlist.tbl`, each "from
   MPQ". `SCManifold.exe` has none of the three, so they come from the vanilla MPQs.
 
+### Settled in testing (2026-10-07)
+
+- **Saving grows the MPQ inside the exe safely**: a copy of `SCManifold.exe` saved by the
+  editor still starts and plays a custom game.
+- **PyMS's `StormLib.dll`**: stdcall, ANSI paths, and its success flags are C++ `bool` (one
+  byte), not Win32 `BOOL`; read as four bytes, a failed open came back true.
+- **`stat_txt.tbl`** ids count from 1; many button strings are the hotkey, a NUL, then the
+  text (Move: `m`, NUL, `\x03M\x01ove`).
+- **Icons** are drawn with PyMS's `Icons.pal`, not `ticon.pcx`'s palette.
+- **The `.fgp`** is found by listing `Firegraft\*.fgp` when it isn't named after the exe (a
+  renamed copy). The `.fgp` holds only the sets changed in FireGraft: 18 here, used by
+  64 table entries (see the 2026-10-08 correction in §2).
+- **The window** works built in C# without `.xaml`.
+- **Compression**: StarCraft 1.16.1's Storm has no zlib. A zlib-compressed
+  `Manifold\buttonsets.bin` let the exe start (Storm only decompresses on read) but stopped
+  the game at the loader's read with "The file data is corrupt". The editor now implodes
+  it (PKWARE), as the game's own MPQs do.
+- **The loader**: storm.dll's file functions by ordinal (253, 265, 268, 269) work, and Storm
+  finds `Manifold\buttonsets.bin` in the launcher's MPQ at game start. A moved button
+  shows on the card with its enabled and disabled strings, its hotkey works, and a replay
+  keeps the 3x3 card.
+- **Repacking** is done by hand with PyMPQ, which adds files in place, so the editor's file
+  survives adding a new `GPTP.qdp`.
+
+### Settled in testing (2026-10-08, in the editor)
+
+- **Re-import FireGraft's sets** lists and replaces the right sets: Marine, Firebat, both
+  Siege Tank modes, SCV, Ghost and the mixed-group card take FireGraft's layouts, the
+  Dropship and Battlecruiser vanilla's.
+- **Copy set to units** changes every set picked, and one undo takes them all back.
+- **Rename...** opens the unit's name string; the set list follows the edit.
+- **The cards 228-249** show their names.
+- **Set names** carry the subname (both Siege Tank modes, Edmund Duke's two), and the race,
+  type and "only sets with buttons" filters work.
+- In game (2026-10-09), once sets were written sorted: every set checked matches the
+  editor, re-imported ones included. Copy and paste shortcuts passed.
+- Separating buttons that share a slot (the 2026-10-08 change in §5) passed on 2026-10-09:
+  dragging an icon out of a stack, swap, Alt, Ctrl, Shift, and the Slot box.
+
 ## 3. Pieces
 
 **`tools/ManifoldEditor/`** in this repo: a WinUI 3 app (C#, .NET, unpackaged and
 self-contained, x86 so it can load the 32-bit `StormLib.dll` that PyMS ships). Layers:
 - **Data** (no UI): MPQ access through StormLib; the button set file (§4); the `Buts`
   import; vanilla sets read from `StarCraft.exe`'s file image at 0x5187E8; `stat_txt.tbl`;
-  `unit\cmdbtns\cmdicons.grp` drawn with `unit\cmdbtns\ticon.pcx` as its palette (as
-  PyMS's `PyDAT/IconData.py` does). Resources are looked up in the mod exe's MPQ first,
+  `unit\cmdbtns\cmdicons.grp` drawn with PyMS's `Palettes/Icons.pal`, as PyMS's
+  `PyDAT/DataContext.py` does (corrected 2026-10-07: `ticon.pcx`'s pixels only recolour
+  highlighted icons). Button strings are often stored as the hotkey, a NUL, then the text. Resources are looked up in the mod exe's MPQ first,
   then `patch_rt.mpq`, `BrooDat.mpq`, `StarDat.mpq`. Icon names come from PyMS's
   `Data/Icons.txt`, copied into the repo (in place of FireGraft's `iconlist.tbl`).
 - **Model**: 250 sets, each an ordered list of buttons. Move, swap, copy, paste, delete,
   revert and field edits are operations here, each with its inverse, so undo, redo and
   tests do not need the UI.
-- **UI**: the window in §5.
+- **UI**: the window in §5. Built (2026-10-06) in C# with no `.xaml` files, so it compiles
+  outside Windows too; its logic (set list, card cells, commands, check box text) lives in
+  `Manifold.Core/Editor/` with the other tested code.
 - **Tests**: a C# test project for Data and Model (§7).
 
 Settings are the StarCraft folder (from the registry, overridable) and the last exe
@@ -89,14 +145,22 @@ header  char[4] "MBTS", u16 version = 1, u16 setCount = 250
 per set u16 buttonCount, u16 reserved = 0, u32 connectedUnit
         buttonCount x button (20 bytes)
 button  u16 position, u16 iconID, u32 condition, u32 action,
-        u16 conditionVar, u16 actionVar, u16 disabledStringID, u16 enabledStringID
+        u16 conditionVar, u16 actionVar, u16 enabledStringID, u16 disabledStringID
 ```
 
 - The button record is GPTP's `BUTTON` byte for byte; condition and action are
   `StarCraft.exe` 1.16.1 addresses. All 250 sets are written, not only the changed ones,
   so the game never mixes these sets with FireGraft's or vanilla's.
-- Button order is kept. Buttons may share a position; the first whose condition passes
-  is shown, as in vanilla.
+- Buttons may share a position; the first whose condition passes is shown, as in vanilla
+  (a second one that passes too spills into the next slot).
+- **Corrected 2026-10-09: the file holds each set sorted by position**, buttons sharing
+  one in their order. The game's card loop (0x4591D0) walks slots 1-15 and the buttons
+  together and places a button when the slot reaches its position, so a button listed
+  after a higher position lands in a later slot. The editor's moves only change
+  positions, and writing the list as it stood put Attack and Patrol at 6-7 on the
+  Zergling, the Hive's research on the bottom row, and so on. The editor still keeps its
+  own order while editing; the file is sorted when written. Tested in game 2026-10-09:
+  re-saving made every set match the editor.
 - Saving: StormLib opens the exe's MPQ, writes the file in one operation, and closes it.
   The exe is not held open between opening and saving.
 
@@ -134,6 +198,16 @@ Mock-up shown to the user on 2026-10-05 (dark theme, three columns):
    - Copy set / Paste set work on whole sets, between any two sets.
    - Revert set: to the version opened from the exe, or to vanilla.
    - A cell holding several buttons shows a count badge; selecting it lists them in order.
+   - **Changed 2026-10-08 (the user's choice), for slots several buttons share:** a drag
+     moves one button, not the slot: the selected button if it is in the dragged cell,
+     else the icon pressed. A filled target swaps (its buttons go where the button came
+     from); Alt+drop stacks onto it; Ctrl copies the button; Shift moves the whole slot
+     and Ctrl+Shift copies it. (Dragging rows of the button list onto the card was tried
+     and didn't work in testing; removed 2026-10-09, the stack's icons do the same.)
+     A shared cell draws its first three buttons as a fanned stack, the first (the one the
+     game prefers) in front; clicking or dragging an icon picks that button. The button
+     panel has a **Slot** box (1-15) that moves the selected button alone, stacking when
+     the slot is taken, with a note naming what shares it and slots replays hide.
 4. **Check box**: the card's hotkeys, a warning when two shown buttons share one, and the
    buttons a replay's 3x3 card will not show.
 5. **Button panel**: icon (picked from a grid of icons), condition and action (dropdowns

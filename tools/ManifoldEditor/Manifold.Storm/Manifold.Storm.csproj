@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- StormLib.dll (from PyMS) is 32-bit. -->
+    <PlatformTarget>x86</PlatformTarget>
+    <!-- Lets the library compile in the Linux session too; it only runs on Windows. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Manifold.Core\Manifold.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('..\lib\StormLib.dll')">
+    <None Include="..\lib\StormLib.dll" Link="StormLib.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
