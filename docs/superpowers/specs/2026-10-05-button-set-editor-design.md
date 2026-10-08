@@ -102,8 +102,9 @@ Scope: StarCraft 1.16.1 and the Manifold mod only.
 - **The cards 228-249** show their names.
 - **Set names** carry the subname (both Siege Tank modes, Edmund Duke's two), and the race,
   type and "only sets with buttons" filters work.
-- Not yet run: separating buttons that share a slot (the 2026-10-08 change in §5), and the
-  in-game check of the re-imported sets.
+- In game (2026-10-09), once sets were written sorted: every set checked matches the
+  editor, re-imported ones included. Copy and paste shortcuts passed.
+- Not yet run: separating buttons that share a slot (the 2026-10-08 change in §5).
 
 ## 3. Pieces
 
@@ -157,7 +158,8 @@ button  u16 position, u16 iconID, u32 condition, u32 action,
   after a higher position lands in a later slot. The editor's moves only change
   positions, and writing the list as it stood put Attack and Patrol at 6-7 on the
   Zergling, the Hive's research on the bottom row, and so on. The editor still keeps its
-  own order while editing; the file is sorted when written.
+  own order while editing; the file is sorted when written. Tested in game 2026-10-09:
+  re-saving made every set match the editor.
 - Saving: StormLib opens the exe's MPQ, writes the file in one operation, and closes it.
   The exe is not held open between opening and saving.
 
