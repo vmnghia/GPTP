@@ -5,7 +5,9 @@ panel and from a Strings view; save into the exe and mirror to `to-repack\`; add
 and copy shared ones); approved 2026-10-08, with the instruction to follow PyMS's PyTBL.
 Built 2026-10-08 (plan `docs/superpowers/plans/2026-10-08-string-editor.md`): the table,
 history, save, to-repack copy and preview are tested on Linux; the window compiles but has
-not run. §8 step 0 done 2026-10-09; the rest not yet tested on Windows or in game. Builds on part 1,
+not run. Tested 2026-10-09: §8 step 0 (the report), the editor round (C) and the game
+round (D) passed. In game, colour codes after `<5>` are ignored, as PyMS's
+`COLOR_OVERPOWER` says, so the preview's rule stays. Builds on part 1,
 `docs/superpowers/specs/2026-10-05-button-set-editor-design.md`, whose §5 listed editing
 `stat_txt.tbl` as out of scope.
 
@@ -70,8 +72,8 @@ from the vanilla `stat_txt.tbl` that PyMS ships (`PyMS/MPQ/rez/`), read on 2026-
   274 with several NULs. The editor writes it back byte for byte and passes the self-check.
   The 238 strings vanilla's buttons show when enabled all use PyTBL's types 0-5
   (42/91/50/29/24/2).
-- Whether the game reads ids past vanilla's count without trouble is **[VERIFY]** (§8,
-  step 4). The table carries its own count, so it is expected to.
+- The game reads ids past vanilla's count: a string added past 1,547 showed in game
+  (2026-10-09).
 
 ## 3. The table model
 
