@@ -55,8 +55,8 @@ from the vanilla `stat_txt.tbl` that PyMS ships (`PyMS/MPQ/rez/`), read on 2026-
 - **Control codes** (PyTBL's reference): `<9>` tab, `<10>` newline, `<18>` right align,
   `<19>` centre; in game `<1>`/`<2>` cyan, `<3>` yellow, `<4>` white, `<5>` grey, `<6>`
   red, `<7>` green, `<8>` and `<14>`-`<27>` player colours, `<28>`-`<31>` more colours,
-  `<11>`/`<20>` invisible, `<12>` truncate. After `<5>`, `<8>`, `<11>` or `<20>` the game
-  ignores further colour codes. The menus map some codes to other colours.
+  `<11>`/`<20>` invisible, `<12>` truncate. After `<5>`, `<11>` or `<20>` the game ignores
+  further colour codes (PyMS's `COLOR_OVERPOWER`). The menus map some codes to other colours.
 - The editor knows two kinds of reference to a string id: button fields (all 250 sets)
   and unit names (id = unit id + 1, units 0-227). `.dat` labels (weapons, upgrades,
   techs, ...) and ids hardcoded in the exe and GPTP (777 "Damage:", 1301 "per rocket")
@@ -102,7 +102,8 @@ Text is written as PyTBL writes it (`decompile_string` and `compile_string`):
 
 Next to the field, **PyTBL's code reference** (§2) lists the codes; clicking one inserts
 it. Below the field, a **preview** draws the text in the game's colours, taken from
-`game\tfontgam.pcx` as PyTBL does. Line breaks and alignment are drawn too. For a hotkey
+`game\tfontgam.pcx` through PyMS's `COLOR_CODES_INGAME` map (code to row and column of
+8-pixel colour ramps), as PyTBL does; the brightest pixel of each ramp is the colour. Line breaks and alignment are drawn too. For a hotkey
 string the preview adds the cost line its type shows, as PyTBL's previewer does (sample
 values). The previewer uses a system font, not the game's `font8.fnt`/`font10.fnt`.
 
