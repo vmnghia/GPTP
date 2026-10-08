@@ -1,0 +1,19 @@
+stat_txt.tbl report, 2026-10-09 01:30
+file: D:\SC Modding\SCManifold\to-repack\rez\stat_txt.tbl
+strings: 1547 (vanilla 1547)
+size: 40398 bytes; free: 25147 of 65536
+written back unchanged: yes; self-check: passes
+offsets in id order: yes
+shared offsets: 0
+without a final NUL (run on into the next): 0
+with more than one NUL: 274
+
+vanilla buttons' enabled strings, by tooltip type (the second byte):
+  <0> Label only, no costs: 42
+  <1> Minerals, gas, supply (units, buildings): 91
+  <2> Upgrade costs: 50
+  <3> Energy (spells): 29
+  <4> Minerals, gas (technology research): 24
+  <5> Minerals, gas, no supply (Guardian, Devourer Aspect): 2
+
+strings past vanilla's 1547: 0
