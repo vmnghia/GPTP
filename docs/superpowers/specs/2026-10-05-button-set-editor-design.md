@@ -92,6 +92,19 @@ Scope: StarCraft 1.16.1 and the Manifold mod only.
 - **Repacking** is done by hand with PyMPQ, which adds files in place, so the editor's file
   survives adding a new `GPTP.qdp`.
 
+### Settled in testing (2026-10-08, in the editor)
+
+- **Re-import FireGraft's sets** lists and replaces the right sets: Marine, Firebat, both
+  Siege Tank modes, SCV, Ghost and the mixed-group card take FireGraft's layouts, the
+  Dropship and Battlecruiser vanilla's.
+- **Copy set to units** changes every set picked, and one undo takes them all back.
+- **Rename...** opens the unit's name string; the set list follows the edit.
+- **The cards 228-249** show their names.
+- **Set names** carry the subname (both Siege Tank modes, Edmund Duke's two), and the race,
+  type and "only sets with buttons" filters work.
+- Not yet run: separating buttons that share a slot (the 2026-10-08 change in §5), and the
+  in-game check of the re-imported sets.
+
 ## 3. Pieces
 
 **`tools/ManifoldEditor/`** in this repo: a WinUI 3 app (C#, .NET, unpackaged and
