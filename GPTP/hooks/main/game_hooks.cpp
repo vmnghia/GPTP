@@ -129,14 +129,17 @@ void initializeGame()
     }
 }
 
-// Whose bars show: the local player's and allies', every player's in a replay, never the
-// neutral player's (a geyser) or an enemy's.
+// Whose bars show: the local player's, and allies' where the local player sees them;
+// every player's in a replay; never the neutral player's (a geyser) or an enemy's.
+// Drawing only: nothing here feeds game state.
 bool showsBuildProgress(const CUnit *unit)
 {
     if (unit->playerId >= PLAYABLE_PLAYER_COUNT)
         return false;
-    return scbw::isInReplay() || unit->playerId == *LOCAL_NATION_ID ||
-           scbw::isAlliedTo((u8)*LOCAL_NATION_ID, unit->playerId);
+    if (scbw::isInReplay() || unit->playerId == *LOCAL_NATION_ID)
+        return true;
+    const u8 local = (u8)*LOCAL_NATION_ID;
+    return scbw::isAlliedTo(local, unit->playerId) && unit->isVisibleTo(local);
 }
 
 void drawBuildProgress(CUnit *unit)

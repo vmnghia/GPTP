@@ -380,12 +380,15 @@ starfield handled (§5). Features 1 and 2 below are done.
 - **Restarting a game confines the cursor** to a 640×480 area in the centre of the screen.
 - **Opening the menu (F10) in a replay is very laggy.**
 - **Build and training progress bars show over enemy buildings and construction
-  sites** (reported 2026-10-04). Only the current player's and allies' should show.
-  The bars come from `plugins::drawBuildProgress(unit)`, called for every unit in
-  `nextFrame()` (`hooks/main/game_hooks.cpp`).
+  sites** (reported 2026-10-04) `[FIXED 2026-10-08, not yet run]`. Only the current
+  player's and allies' should show. The bars come from `plugins::drawBuildProgress(unit)`,
+  called for every unit in `nextFrame()` (`hooks/main/game_hooks.cpp`);
+  `showsBuildProgress` now allows the local player's units, allies' units the local
+  player can see, and every player's in a replay.
 - **A destroyed Refinery, Assimilator or Extractor leaves a progress bar at 0% over its
-  Vespene Geyser** (reported 2026-10-04). Probably the same drawing, which still sees
-  the geyser as something in progress.
+  Vespene Geyser** (reported 2026-10-04) `[FIXED 2026-10-08, not yet run]`. The geyser
+  belongs to the neutral player, whose units never get a bar now; and a unit with no order
+  and build time left only counts as building while it isn't completed.
 
 **Next after smart-build** (user, 2026-10-03):
 - **The selection panel showed only 12 wireframes** `[FIXED 2026-10-04]`: the repack
