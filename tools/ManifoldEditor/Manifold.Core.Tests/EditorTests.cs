@@ -125,8 +125,8 @@ public class EditorTests
         var sets = Make.EmptySets();
         sets[5] = set5;
         var strings = Strings((1, "o\u0001Siege Mode"), (2, "t\u0001Tank Mode"), (3, "o\u0001Other"));
-        return new EditorState(new ButtonSetDocument(sets, Make.EmptySets()), "SCManifold.exe",
-            id => strings.Get(id), Fixtures.Conditions(), Fixtures.Actions());
+        return new EditorState(new ButtonSetDocument(sets, Make.EmptySets(), strings.Table), "SCManifold.exe",
+            Fixtures.Conditions(), Fixtures.Actions());
     }
 
     [Fact]

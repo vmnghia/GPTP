@@ -100,6 +100,42 @@ public sealed class StringTable
         return (new StringTable(newSegments, newOrigins, source), Count + 1);
     }
 
+    /// <summary>The same bytes for every id (edited or not).</summary>
+    public bool SameAs(StringTable other)
+    {
+        if (ReferenceEquals(this, other)) return true;
+        if (other.Count != Count) return false;
+        for (int i = 0; i < Count; i++)
+            if (!ReferenceEquals(segments[i], other.segments[i]) && !segments[i].AsSpan().SequenceEqual(other.segments[i]))
+                return false;
+        return true;
+    }
+
+    /// <summary>
+    /// The id as it is in <paramref name="opened"/>, the table this one was edited from: its
+    /// own bytes at their old place again. A string that ran on into the next gets its full
+    /// text instead, as when edited, since what followed it may have moved.
+    /// </summary>
+    public StringTable Revert(int id, StringTable opened)
+    {
+        CheckId(id);
+        if (!ReferenceEquals(opened.source, source)) throw new ArgumentException("not the table this one was edited from");
+        int origin = opened.origins[id - 1];
+        var segment = opened.segments[id - 1];
+        if (origin < 0) return With(id, segment);
+        if (segment.Length == 0 || segment[^1] != 0)
+        {
+            int nul = Array.IndexOf(source, (byte)0, origin);
+            return With(id, nul < 0 ? source[origin..] : source[origin..(nul + 1)]);
+        }
+        if (origins[id - 1] == origin) return this;
+        var newSegments = (byte[][])segments.Clone();
+        var newOrigins = (int[])origins.Clone();
+        newSegments[id - 1] = segment;
+        newOrigins[id - 1] = origin;
+        return new StringTable(newSegments, newOrigins, source);
+    }
+
     /// <summary>
     /// Before the bytes at <paramref name="origin"/> move, every unedited string that runs
     /// on into them (its segment ends where they start, without a NUL) takes its full text:
@@ -129,7 +165,8 @@ public sealed class StringTable
 
     /// <summary>
     /// The file: unedited segments in their original order (shared ones once), then the
-    /// edited and added ones in id order.
+    /// edited and added ones, shortest first, so the longest is the one that may run past
+    /// the 16-bit limit.
     /// </summary>
     (List<byte[]> Order, int[] Offsets, int Size) Layout()
     {
@@ -148,9 +185,8 @@ public sealed class StringTable
             }
             offsets[i] = offset;
         }
-        for (int i = 0; i < Count; i++)
+        foreach (int i in Enumerable.Range(0, Count).Where(i => origins[i] < 0).OrderBy(i => segments[i].Length))
         {
-            if (origins[i] >= 0) continue;
             offsets[i] = at;
             order.Add(segments[i]);
             at += segments[i].Length;
@@ -158,8 +194,19 @@ public sealed class StringTable
         return (order, offsets, at);
     }
 
-    /// <summary>What another string may still take: the budget less the table's size.</summary>
-    public int BytesFree => Limit - Layout().Size;
+    /// <summary>
+    /// The bytes that can still go in before the last string would start past the 16-bit
+    /// limit (negative when it already does).
+    /// </summary>
+    public int BytesFree
+    {
+        get
+        {
+            var (order, _, size) = Layout();
+            int lastStart = order.Count > 0 ? size - order[^1].Length : size;
+            return Limit - 1 - lastStart;
+        }
+    }
 
     /// <summary>The first id that would start past the 16-bit limit, or null when the table fits.</summary>
     public int? FirstOverLimit()

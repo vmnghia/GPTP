@@ -130,6 +130,10 @@ public class StringTableTests
         Assert.Equal(2, table.Count);
         var read = StringTable.Parse(added.Write());
         Assert.Equal(3, read.Count);
+        // Edited and added strings go after the unedited ones, shortest first.
+        var longer = added.With(1, Tbl.Latin1("a longer one"));
+        var written = longer.Write();
+        Assert.True(BitConverter.ToUInt16(written, 2) > BitConverter.ToUInt16(written, 6));
         Assert.Equal("a\0", Text(read, 1));
         Assert.Equal("c\0", Text(read, 3));
     }
@@ -137,16 +141,18 @@ public class StringTableTests
     [Fact]
     public void A_table_past_the_16_bit_limit_is_refused()
     {
-        var table = StringTable.Parse(Tbl.Build("a\0"));
-        Assert.Equal(StringTable.Limit - 6, table.BytesFree);
-        var big = table.With(1, Enumerable.Repeat((byte)'a', StringTable.Limit - 5).ToArray()); // header 4 + 65,532
-        Assert.Null(big.FirstOverLimit());
-        Assert.Equal(0, big.BytesFree);
-        var (over, id) = big.Add(Tbl.Latin1("x"));                    // starts past 65,535
-        Assert.Equal(id, over.FirstOverLimit());
-        var e = Assert.Throws<InvalidOperationException>(() => over.Write());
-        Assert.Contains("string 2", e.Message);
-        Assert.True(over.BytesFree < 0);
+        var table = StringTable.Parse(Tbl.Build("a\0", "b\0", "c\0"));
+        Assert.Equal(StringTable.Limit - 1 - 12, table.BytesFree);   // the last string starts at 12
+        byte[] Long() => Enumerable.Repeat((byte)'x', 33_000).ToArray();
+        // Two long strings fit: only the last has to start below 65,536.
+        var two = table.With(1, Long()).With(2, Long());
+        Assert.Null(two.FirstOverLimit());
+        Assert.True(two.Write().Length > StringTable.Limit);
+        var three = two.With(3, Long());
+        Assert.Equal(3, three.FirstOverLimit());
+        var e = Assert.Throws<InvalidOperationException>(() => three.Write());
+        Assert.Contains("string 3", e.Message);
+        Assert.True(three.BytesFree < 0);
     }
 
     [Fact]

@@ -39,9 +39,9 @@ public class ModelTests
         Assert.True(document.Apply(5, EditNamed(name), name));
         var after = document[5];
         Assert.False(after.SameAs(start));
-        Assert.Equal(5, document.Undo());
+        Assert.Equal(5, document.Undo()?.SetId);
         Assert.True(document[5].SameAs(start));
-        Assert.Equal(5, document.Redo());
+        Assert.Equal(5, document.Redo()?.SetId);
         Assert.True(document[5].SameAs(after));
     }
 
@@ -83,10 +83,10 @@ public class ModelTests
         document.Apply(7, s => CardEdits.Paste(s, Tank, 3), "paste");
         Assert.True(document.IsDirty);
         Assert.True(document.DiffersFromVanilla(7));
-        Assert.Equal(7, document.Undo());
-        Assert.Equal(5, document.Undo());
+        Assert.Equal(7, document.Undo()?.SetId);
+        Assert.Equal(5, document.Undo()?.SetId);
         Assert.False(document.IsDirty);
-        Assert.Null(document.Undo());
+        Assert.Null(document.Undo()?.SetId);
 
         document.Redo();
         document.MarkSaved();

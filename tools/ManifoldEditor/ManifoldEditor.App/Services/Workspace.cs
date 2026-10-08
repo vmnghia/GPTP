@@ -98,9 +98,9 @@ public static class Workspace
         string fgp = Step("Looking for the FireGraft project (Firegraft\\*.fgp)",
             () => EditorSession.FindFgp(exe, Path.GetFileName(exePath)));
         var opened = Step($"Reading the button sets in {Path.GetFileName(exePath)} ({ButtonSetFile.ArchivePath} or {fgp})",
-            () => EditorSession.Open(exe, fgp, vanilla, conditions, actions));
+            () => EditorSession.Open(exe, fgp, vanilla, conditions, actions, resources.Strings?.Table));
 
-        var state = new EditorState(opened.Document, Path.GetFileName(exePath), resources.Text, conditions, actions);
+        var state = new EditorState(opened.Document, Path.GetFileName(exePath), conditions, actions);
         var status = opened.Status.Concat(resources.Sources).Concat(resources.Notes).ToArray();
         return new OpenedExe(exe, state, resources, SetCatalog.Build(resources.Text, resources.Units), status);
     }

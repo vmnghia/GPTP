@@ -25,7 +25,7 @@ public static class EditorSession
     /// checks is reported and the sets fall back the same way.
     /// </summary>
     public static Opened Open(IArchive modExe, string fgpPath, IReadOnlyList<ButtonSet> vanilla,
-        FunctionTable conditions, FunctionTable actions)
+        FunctionTable conditions, FunctionTable actions, StringTable? strings = null, StringTable? savedStrings = null)
     {
         var status = new List<string>();
         if (modExe.TryRead(ButtonSetFile.ArchivePath) is { } file)
@@ -34,7 +34,7 @@ public static class EditorSession
             if (sets is not null)
             {
                 status.Add($"Button sets from {ButtonSetFile.ArchivePath}");
-                return new Opened(new ButtonSetDocument(sets, vanilla), status);
+                return new Opened(new ButtonSetDocument(sets, vanilla, strings, savedStrings), status);
             }
             status.Add($"{ButtonSetFile.ArchivePath}: {error}; opened vanilla and FireGraft's sets instead");
         }
@@ -54,7 +54,7 @@ public static class EditorSession
         }
         else
             status.Add($"No {fgpPath}: vanilla sets");
-        return new Opened(new ButtonSetDocument(opened, vanilla), status);
+        return new Opened(new ButtonSetDocument(opened, vanilla, strings, savedStrings), status);
     }
 
     /// <summary>

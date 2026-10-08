@@ -82,9 +82,11 @@ keeps and writes:
 - A new string gets the next id, at the end.
 - Ids are never removed or renumbered: other files refer to them.
 
-Writing lays the segments out in id order and checks the 65,536 budget. The panel and the
-Strings view show the bytes left. An edit that doesn't fit is refused with that message
-and changes nothing.
+Writing keeps the unedited segments in their original order, then puts the edited and new
+ones after them, shortest first (as built, 2026-10-08). Only a string's *start* must be
+below 65,536, so the longest string goes last and may run past it. The panel and the
+Strings view show the bytes left before the last string would start too late. An edit
+that doesn't fit is refused with that message and changes nothing.
 
 **Self-check on save**: the written table is parsed again. Every unedited entry must read
 back the same bytes from its offset to its first NUL, and through the end of its old
