@@ -5,14 +5,19 @@ namespace Manifold.Core.Model;
 /// <summary>Where a step was made: the set it changed, the string it changed, or both.</summary>
 public readonly record struct Place(int? SetId, int? StringId);
 
+/// <summary>One set before and after a step.</summary>
+public sealed record SetEdit(int SetId, ButtonSet Before, ButtonSet After);
+
 /// <summary>
-/// One step of the history: a set before and after, the string table before and after, or
-/// both (a button given a copy of its string is one step).
+/// One step of the history: sets before and after (usually one; several for Copy set to
+/// units and Re-import), the string table before and after, or both (a button given a copy
+/// of its string is one step).
 /// </summary>
-public sealed record Change(int? SetId, ButtonSet? Before, ButtonSet? After,
+public sealed record Change(IReadOnlyList<SetEdit> Sets,
     StringTable? StringsBefore, StringTable? StringsAfter, int? StringId, string Label)
 {
-    public Place Place => new(SetId, StringId);
+    /// <summary>Where the step shows: its first set (the one being edited), and its string.</summary>
+    public Place Place => new(Sets.Count > 0 ? Sets[0].SetId : null, StringId);
 }
 
 /// <summary>
@@ -88,7 +93,7 @@ public sealed class ButtonSetDocument
 
     void Put(Change change, bool after)
     {
-        if (change.SetId is int setId) sets[setId] = (after ? change.After : change.Before)!;
+        foreach (var edit in change.Sets) sets[edit.SetId] = after ? edit.After : edit.Before;
         if (change.StringsBefore is not null) Strings = after ? change.StringsAfter : change.StringsBefore;
     }
 
@@ -101,8 +106,21 @@ public sealed class ButtonSetDocument
         var before = sets[setId];
         var after = edit(before);
         if (after.SameAs(before)) return false;
-        Record(new Change(setId, before, after, null, null, null, label));
+        Record(new Change([new SetEdit(setId, before, after)], null, null, null, label));
         return true;
+    }
+
+    /// <summary>
+    /// Several sets replaced as one step; <paramref name="first"/> is shown after an undo.
+    /// Sets that don't change are left out. Returns how many changed.
+    /// </summary>
+    public int ApplySets(IReadOnlyDictionary<int, ButtonSet> replacements, string label, int? first = null)
+    {
+        var edits = replacements.OrderBy(r => r.Key == first ? -1 : r.Key)
+            .Where(r => !r.Value.SameAs(sets[r.Key]))
+            .Select(r => new SetEdit(r.Key, sets[r.Key], r.Value)).ToArray();
+        if (edits.Length > 0) Record(new Change(edits, null, null, null, label));
+        return edits.Length;
     }
 
     /// <summary>An edit of the strings as one step, made at <paramref name="stringId"/>. False without strings or when nothing changes.</summary>
@@ -111,7 +129,7 @@ public sealed class ButtonSetDocument
         if (Strings is not StringTable before) return false;
         var after = edit(before);
         if (after.SameAs(before)) return false;
-        Record(new Change(null, null, null, before, after, stringId, label));
+        Record(new Change([], before, after, stringId, label));
         return true;
     }
 
@@ -123,7 +141,7 @@ public sealed class ButtonSetDocument
         var before = sets[setId];
         var (after, stringsAfter, stringId) = edit(before, stringsBefore);
         if (after.SameAs(before) && stringsAfter.SameAs(stringsBefore)) return false;
-        Record(new Change(setId, before, after, stringsBefore, stringsAfter, stringId, label));
+        Record(new Change([new SetEdit(setId, before, after)], stringsBefore, stringsAfter, stringId, label));
         return true;
     }
 

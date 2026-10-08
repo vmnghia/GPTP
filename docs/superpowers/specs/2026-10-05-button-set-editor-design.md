@@ -43,6 +43,17 @@ Scope: StarCraft 1.16.1 and the Manifold mod only.
   character is the hotkey; 0x12 the disabled text; every button has the first, only
   buttons that can be disabled the second). The real file parses exactly (18 sets, 2438 of 2438 bytes): sets 11,
   12, 13, 15, 22, 67-70, 73-80, 90, positions 1-9 only.
+- **Corrected 2026-10-08: those set ids are FireGraft's own numbers, not unit ids.** The
+  first import put them on table entries 11, 12, ... (the Dropship, the Battlecruiser,
+  ...), which was wrong. FireGraft keeps a tree of named, shared sets (`SBut`: "[11] Mixed
+  Group", "[68] Marine/Firebat + Heroes", "[76] Siege Tank + Heroes", ...), and its `Unit`
+  section links table entries to them: `u16 count`, then per record `u8 entry, u8
+  buttonCount, u8 FireGraft set + 1, u16 connectedUnit (0xFFFF none), u8 n`, then `n`
+  three-byte items of unknown meaning. The user's project has 64 records: Marine, Gui
+  Montag, Firebat and the Firebat hero use 68; the Siege Tanks and Duke use 76; the
+  mixed-group card (244) uses 11. The import now gives each linked entry its own copy of
+  the set (one set per unit, the user's choice on 2026-10-08), and **Re-import
+  FireGraft's sets** repairs an exe saved with the first import.
 - The indexes count from 0 in FireGraft's lists. `FireGraftConFunc.txt` (67 lines) and
   `FireGraftActFunc.txt` (60 lines) give name and address per index: set 11's first
   button is condition 6 (`Mixed Group - Move/Patrol/Hold Position`, 0x428DA0), action 9
@@ -67,7 +78,8 @@ Scope: StarCraft 1.16.1 and the Manifold mod only.
   text (Move: `m`, NUL, `\x03M\x01ove`).
 - **Icons** are drawn with PyMS's `Icons.pal`, not `ticon.pcx`'s palette.
 - **The `.fgp`** is found by listing `Firegraft\*.fgp` when it isn't named after the exe (a
-  renamed copy). The `.fgp` holds only the sets changed in FireGraft: 18 here.
+  renamed copy). The `.fgp` holds only the sets changed in FireGraft: 18 here, used by
+  64 table entries (see the 2026-10-08 correction in §2).
 - **The window** works built in C# without `.xaml`.
 - **Compression**: StarCraft 1.16.1's Storm has no zlib. A zlib-compressed
   `Manifold\buttonsets.bin` let the exe start (Storm only decompresses on read) but stopped

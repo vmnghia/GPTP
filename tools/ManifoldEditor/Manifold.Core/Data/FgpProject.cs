@@ -48,10 +48,21 @@ public readonly record struct FgpButton(ushort Position, ushort Icon, uint Condi
 
 public sealed record FgpButtonSet(int SetId, IReadOnlyList<FgpButton> Buttons);
 
-/// <summary>Imports the .fgp's <c>Buts</c> section: only the sets FireGraft changed.</summary>
+/// <summary>
+/// One record of the .fgp's <c>Unit</c> section: which of FireGraft's own button sets the
+/// game's set table entry (a unit id, or 228-249) uses.
+/// </summary>
+public sealed record FgpUnitLink(int Entry, int ButtonCount, int FgSet, ushort ConnectedUnit);
+
+/// <summary>
+/// Imports FireGraft's button sets. FireGraft numbers its sets its own way (its tree, in
+/// the <c>SBut</c> section: "[11] Mixed Group", "[68] Marine/Firebat + Heroes", ...), not by
+/// unit: <c>Buts</c> holds the sets it changed, by FireGraft's number, and <c>Unit</c> says
+/// which FireGraft set each table entry uses (decoded 2026-10-08 from the user's project).
+/// </summary>
 public static class ButsImport
 {
-    /// <summary>Buts: u16 setCount, per set u8 setId, u8 buttonCount, 20-byte buttons.</summary>
+    /// <summary>Buts: u16 setCount, per set u8 FireGraft set, u8 buttonCount, 20-byte buttons.</summary>
     public static IReadOnlyList<FgpButtonSet> ParseButs(byte[] buts)
     {
         var result = new List<FgpButtonSet>();
@@ -77,18 +88,40 @@ public static class ButsImport
     }
 
     /// <summary>
-    /// Turns FireGraft's sets into address-based sets. A set with an index that has no
-    /// address, or a position outside 1-15, is left out and named in <paramref name="report"/>.
-    /// The connected unit is not in Buts: it is taken from <paramref name="connectedUnits"/>.
+    /// Unit: u16 count, then per record u8 table entry, u8 button count, u8 FireGraft set + 1
+    /// (0: none), u16 connected unit (0xFFFF: none), u8 n, then n three-byte items whose
+    /// meaning is unknown (the entry again, then two bytes, mostly 01 00) and are skipped.
     /// </summary>
-    public static Dictionary<int, ButtonSet> ToSets(IReadOnlyList<FgpButtonSet> fgpSets,
-        FunctionTable conditions, FunctionTable actions, Func<int, uint> connectedUnits,
-        List<string> report)
+    public static IReadOnlyList<FgpUnitLink> ParseUnit(byte[] unit)
     {
-        var result = new Dictionary<int, ButtonSet>();
+        if (unit.Length < 2) throw new InvalidDataException("Unit cut short");
+        int count = BitConverter.ToUInt16(unit, 0);
+        var links = new List<FgpUnitLink>();
+        int at = 2;
+        for (int r = 0; r < count; r++)
+        {
+            if (at + 6 > unit.Length) throw new InvalidDataException("Unit cut short");
+            int n = unit[at + 5];
+            if (unit[at + 2] != 0)
+                links.Add(new FgpUnitLink(unit[at], unit[at + 1], unit[at + 2] - 1, BitConverter.ToUInt16(unit, at + 3)));
+            at += 6 + 3 * n;
+            if (at > unit.Length) throw new InvalidDataException("Unit cut short");
+        }
+        if (at != unit.Length) throw new InvalidDataException("data after the last Unit record");
+        return links;
+    }
+
+    /// <summary>
+    /// FireGraft's changed sets as address-based buttons, by FireGraft's number. A set with
+    /// an index that has no address, or a position outside 1-15, is left out and named in
+    /// <paramref name="report"/>.
+    /// </summary>
+    public static Dictionary<int, IReadOnlyList<Button>> ToButtons(IReadOnlyList<FgpButtonSet> fgpSets,
+        FunctionTable conditions, FunctionTable actions, List<string> report)
+    {
+        var result = new Dictionary<int, IReadOnlyList<Button>>();
         foreach (var set in fgpSets)
         {
-            if (set.SetId >= Card.SetCount) { report.Add($"set {set.SetId}: no such set"); continue; }
             var buttons = new List<Button>();
             string? problem = null;
             foreach (var b in set.Buttons)
@@ -101,9 +134,51 @@ public static class ButsImport
                 buttons.Add(new Button(b.Position, b.Icon, condition.Address, action.Address,
                     b.ConditionVar, b.ActionVar, b.EnabledString, b.DisabledString));
             }
-            if (problem is not null) { report.Add($"set {set.SetId}: {problem}; kept vanilla"); continue; }
-            result[set.SetId] = new ButtonSet(buttons, connectedUnits(set.SetId));
+            if (problem is not null) { report.Add($"FireGraft set {set.SetId}: {problem}; not imported"); continue; }
+            result[set.SetId] = buttons;
         }
         return result;
+    }
+
+    /// <summary>
+    /// The table entries FireGraft changed: each entry linked in <c>Unit</c> to a set in
+    /// <c>Buts</c> gets a copy of that set's buttons (one set per unit). A link's connected
+    /// unit wins, except 0xFFFF (none), which keeps vanilla's. Links to a set FireGraft
+    /// didn't change, and changed sets no entry uses, are reported and leave vanilla alone.
+    /// </summary>
+    public static Dictionary<int, ButtonSet> ToSets(IReadOnlyDictionary<int, IReadOnlyList<Button>> fgSets,
+        IReadOnlyList<FgpUnitLink> links, IReadOnlyList<ButtonSet> vanilla, List<string> report)
+    {
+        var result = new Dictionary<int, ButtonSet>();
+        foreach (var link in links)
+        {
+            if (link.Entry >= Card.SetCount) { report.Add($"Unit: entry {link.Entry}: no such set"); continue; }
+            if (!fgSets.TryGetValue(link.FgSet, out var buttons))
+            {
+                report.Add($"set {link.Entry}: uses FireGraft set {link.FgSet}, which FireGraft didn't change or couldn't be imported; kept vanilla");
+                continue;
+            }
+            if (buttons.Count != link.ButtonCount)
+                report.Add($"set {link.Entry}: FireGraft set {link.FgSet} has {buttons.Count} buttons, its Unit record says {link.ButtonCount}");
+            uint connected = link.ConnectedUnit == 0xFFFF ? vanilla[link.Entry].ConnectedUnit : link.ConnectedUnit;
+            result[link.Entry] = new ButtonSet(buttons.ToArray(), connected);
+        }
+        foreach (int fgSet in fgSets.Keys.Where(f => links.All(l => l.FgSet != f)).Order())
+            report.Add($"FireGraft set {fgSet}: no unit uses it; not imported");
+        return result;
+    }
+
+    /// <summary>The whole import: the changed table entries of a FireGraft project.</summary>
+    public static Dictionary<int, ButtonSet> Import(FgpProject project, FunctionTable conditions, FunctionTable actions,
+        IReadOnlyList<ButtonSet> vanilla, List<string> report)
+    {
+        if (!project.Sections.TryGetValue("Buts", out var buts)) return new();
+        if (!project.Sections.TryGetValue("Unit", out var unit))
+        {
+            report.Add("the FireGraft project has button sets but no Unit section: they can't be placed; vanilla kept");
+            return new();
+        }
+        var fgSets = ToButtons(ParseButs(buts), conditions, actions, report);
+        return ToSets(fgSets, ParseUnit(unit), vanilla, report);
     }
 }

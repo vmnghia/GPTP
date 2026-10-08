@@ -59,6 +59,16 @@ StarCraft folder (from the registry, else `D:\Games\Starcraft 1.16.1`; "StarCraf
 changes it). An exe without `Manifold\buttonsets.bin` opens as vanilla plus its FireGraft
 project's button sets; saving writes the file, which is then the source.
 
+FireGraft numbers its button sets its own way and links units to them (its `Unit`
+section); the editor gives each unit its own copy of the set FireGraft links it to. An exe
+saved before 2026-10-08 got FireGraft's sets on the wrong units: **Re-import FireGraft's
+sets...** (toolbar) puts every set back to vanilla plus the FireGraft project, as one undo
+step, after listing what changes. Edits made in the editor to those sets have to be made
+again.
+
+One set per unit: **Copy set to units...** gives other sets a copy of this one (one undo
+step). A unit's set is named by the unit: **Rename...** opens the unit's name string.
+
 Saving adds the file to a copy of the exe and swaps the copy in, keeping the previous exe as
 `<name>.bak`. The file is PKWARE-imploded, the compression StarCraft 1.16.1's Storm reads
 (an earlier build used zlib, which the game rejects with "The file data is corrupt": save

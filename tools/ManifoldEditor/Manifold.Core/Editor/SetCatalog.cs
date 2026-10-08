@@ -29,7 +29,7 @@ public sealed class SetCatalog
         {
             if (id >= UnitsDat.UnitCount)
             {
-                entries[id] = new SetEntry(id, id == UnitsDat.UnitCount ? "(empty)" : $"Card {id}", SetGroup.Menus);
+                entries[id] = new SetEntry(id, CardNames[id - UnitsDat.UnitCount], SetGroup.Menus);
                 continue;
             }
             string name = ButtonText.Clean(strings((ushort)(id + 1)));
@@ -47,6 +47,17 @@ public sealed class SetCatalog
         }
         return new SetCatalog(entries);
     }
+
+    /// <summary>The cards 228-249, as GPTP's UnitId names them (Buttons_*).</summary>
+    public static readonly IReadOnlyList<string> CardNames =
+    [
+        "Blank", "Cancel", "Cancel place building / add-on / land", "Cancel construction",
+        "Cancel construction + rally", "Cancel mutation", "Cancel mutation + rally", "Cancel infestation",
+        "Hatchery (morphing)", "Cancel nuke strike", "Basic Zerg buildings", "Basic Terran buildings",
+        "Basic Protoss buildings", "Advanced Zerg buildings", "Advanced Terran buildings",
+        "Advanced Protoss buildings", "Mixed group", "Peon group", "Cloaker group", "Burrower group",
+        "Replay: paused", "Replay: playing",
+    ];
 
     /// <summary>
     /// The groups that have matches, in order. A number matches that set id; anything else

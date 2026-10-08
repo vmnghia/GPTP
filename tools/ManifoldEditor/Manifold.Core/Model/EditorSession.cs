@@ -38,23 +38,30 @@ public static class EditorSession
             }
             status.Add($"{ButtonSetFile.ArchivePath}: {error}; opened vanilla and FireGraft's sets instead");
         }
-        var opened = vanilla.ToArray();
-        if (modExe.TryRead(fgpPath) is { } fgpBytes)
-        {
-            var report = new List<string>();
-            var project = FgpProject.Parse(fgpBytes);
-            if (project.Sections.TryGetValue("Buts", out var buts))
-            {
-                var imported = ButsImport.ToSets(ButsImport.ParseButs(buts), conditions, actions,
-                    id => vanilla[id].ConnectedUnit, report);
-                foreach (var (id, set) in imported) opened[id] = set;
-                status.Add($"Imported {imported.Count} sets from {fgpPath}");
-            }
-            status.AddRange(report);
-        }
-        else
-            status.Add($"No {fgpPath}: vanilla sets");
+        var opened = ImportFireGraft(modExe, fgpPath, vanilla, conditions, actions, status);
         return new Opened(new ButtonSetDocument(opened, vanilla, strings, savedStrings), status);
+    }
+
+    /// <summary>
+    /// Vanilla's sets with the FireGraft project's changes placed on the units that use
+    /// them (spec §2 as corrected 2026-10-08): what an exe without buttonsets.bin opens as,
+    /// and what Re-import FireGraft's sets gives back.
+    /// </summary>
+    public static ButtonSet[] ImportFireGraft(IArchive modExe, string fgpPath, IReadOnlyList<ButtonSet> vanilla,
+        FunctionTable conditions, FunctionTable actions, List<string> status)
+    {
+        var sets = vanilla.ToArray();
+        if (modExe.TryRead(fgpPath) is not { } fgpBytes)
+        {
+            status.Add($"No {fgpPath}: vanilla sets");
+            return sets;
+        }
+        var report = new List<string>();
+        var imported = ButsImport.Import(FgpProject.Parse(fgpBytes), conditions, actions, vanilla, report);
+        foreach (var (id, set) in imported) sets[id] = set;
+        status.Add($"Imported FireGraft's button sets for {imported.Count} sets from {fgpPath}");
+        status.AddRange(report);
+        return sets;
     }
 
     /// <summary>

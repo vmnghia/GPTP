@@ -31,15 +31,32 @@ public class FgpImportTests
     }
 
     [Fact]
-    public void Set_11s_first_button_is_vanilla_Move()
+    public void FireGrafts_sets_go_to_the_units_its_Unit_section_names()
     {
         var project = FgpProject.Parse(Fixtures.Bytes("SCManifold.fgp"));
+        var links = ButsImport.ParseUnit(project.Sections["Unit"]);
+        Assert.Equal(64, links.Count);
+        Assert.Equal(new FgpUnitLink(0, 6, 68, 0xFFFF), links[0]);            // Marine: [68] Marine/Firebat + Heroes
+        Assert.Equal(new FgpUnitLink(16, 8, 74, 1), links.Single(l => l.Entry == 16)); // Sarah Kerrigan, connected to the Ghost
+        Assert.Equal(new FgpUnitLink(244, 5, 11, 0xFFFF), links.Single(l => l.Entry == 244)); // the mixed-group card: [11]
+
+        var vanilla = Make.EmptySets();
+        vanilla[16] = new ButtonSet([], 1);
         var report = new List<string>();
-        var sets = ButsImport.ToSets(ButsImport.ParseButs(project.Sections["Buts"]),
-            Fixtures.Conditions(), Fixtures.Actions(), _ => 0, report);
+        var sets = ButsImport.Import(project, Fixtures.Conditions(), Fixtures.Actions(), vanilla, report);
         Assert.Empty(report);
-        Assert.Equal(18, sets.Count);
-        Assert.Equal(new Button(1, 228, 0x428DA0, 0x424440, 0, 0, 664, 0), sets[11].Buttons[0]);
+        Assert.Equal(64, sets.Count);
+        // One set per unit: Marine, Gui Montag, Firebat and the Firebat hero each get a copy of [68].
+        var marine = ButsImport.ToButtons(ButsImport.ParseButs(project.Sections["Buts"]), Fixtures.Conditions(),
+            Fixtures.Actions(), report)[68];
+        foreach (int unit in new[] { 0, 10, 20, 32 })
+            Assert.Equal(marine, sets[unit].Buttons);
+        Assert.Equal(sets[5].Buttons, sets[30].Buttons);                    // Siege Tank, both modes: [76]
+        Assert.Equal(new Button(1, 228, 0x428DA0, 0x424440, 0, 0, 664, 0), sets[244].Buttons[0]);
+        Assert.False(sets.ContainsKey(11));                                   // the Dropship keeps vanilla's
+        Assert.Equal(sets[3].Buttons, sets[68].Buttons);                      // Goliath and unit 68 share [12] Basic Commands
+        Assert.Equal(1u, sets[16].ConnectedUnit);
+        Assert.Equal(0u, sets[0].ConnectedUnit);                              // 0xFFFF keeps vanilla's
     }
 
     [Fact]
@@ -56,9 +73,25 @@ public class FgpImportTests
         AddSet(30, 1, 67);   // condition 67: in reqlist.txt but with no address
         AddSet(31, 16, 6);   // position 16
         var report = new List<string>();
-        var sets = ButsImport.ToSets(ButsImport.ParseButs(buts.ToArray()),
-            Fixtures.Conditions(), Fixtures.Actions(), _ => 0, report);
+        var sets = ButsImport.ToButtons(ButsImport.ParseButs(buts.ToArray()), Fixtures.Conditions(), Fixtures.Actions(), report);
         Assert.Empty(sets);
-        Assert.Equal(new[] { "set 30: condition 67 has no address; kept vanilla", "set 31: position 16; kept vanilla" }, report);
+        Assert.Equal(new[] { "FireGraft set 30: condition 67 has no address; not imported", "FireGraft set 31: position 16; not imported" }, report);
+    }
+
+    [Fact]
+    public void Links_to_unchanged_sets_and_unused_sets_are_reported()
+    {
+        // Unit: 2 records: entry 3 -> FireGraft set 40 (not in Buts); entry 250 -> set 5.
+        byte[] unit = [2, 0, 3, 5, 41, 0xFF, 0xFF, 1, 3, 1, 0, 250, 1, 6, 0xFF, 0xFF, 0];
+        var links = ButsImport.ParseUnit(unit);
+        var fgSets = new Dictionary<int, IReadOnlyList<Button>> { [5] = [Make.Button(1)], [7] = [Make.Button(1)] };
+        var report = new List<string>();
+        var sets = ButsImport.ToSets(fgSets, links, Make.EmptySets(), report);
+        Assert.Empty(sets);
+        Assert.Equal([
+            "set 3: uses FireGraft set 40, which FireGraft didn't change or couldn't be imported; kept vanilla",
+            "Unit: entry 250: no such set",
+            "FireGraft set 7: no unit uses it; not imported"], report);
+        Assert.Throws<InvalidDataException>(() => ButsImport.ParseUnit([1, 0, 3, 5, 41, 0xFF, 0xFF, 2, 0]));
     }
 }

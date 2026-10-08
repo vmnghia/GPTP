@@ -48,6 +48,7 @@ public sealed class MainWindow : Window
     readonly TextBlock checks = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0) };
     readonly TextBlock status = new() { TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis };
     readonly Button pasteSetButton = new() { Content = "Paste set" };
+    readonly Button renameButton = new() { Content = "Rename..." };
 
     // The button panel.
     readonly StackPanel panel = new() { Spacing = 8 };
@@ -123,6 +124,7 @@ public sealed class MainWindow : Window
         toolbar.Children.Add(ToolButton("Undo (Ctrl+Z)", (_, _) => Undo()));
         toolbar.Children.Add(ToolButton("Redo (Ctrl+Y)", (_, _) => Redo()));
         toolbar.Children.Add(ToolButton("StarCraft folder...", async (_, _) => await PickStarCraftDir()));
+        toolbar.Children.Add(ToolButton("Re-import FireGraft's sets...", async (_, _) => await ReimportFireGraft()));
         root.Children.Add(toolbar);
 
         pages.Items.Add(setsPageItem);
@@ -173,7 +175,10 @@ public sealed class MainWindow : Window
         var revert = new MenuFlyout();
         revert.Items.Add(Item("To the version opened", () => Run(s => s.Revert(toVanilla: false))));
         revert.Items.Add(Item("To vanilla", () => Run(s => s.Revert(toVanilla: true))));
-        setCommands.Children.Add(new DropDownButton { Content = "Revert set", Flyout = revert });
+        setCommands.Children.Add(new DropDownButton { Content = "Revert set", Flyout = revert, Margin = new Thickness(0, 0, 6, 0) });
+        setCommands.Children.Add(ToolButton("Copy set to units...", async (_, _) => await CopySetToUnits()));
+        renameButton.Click += (_, _) => RenameSet();
+        setCommands.Children.Add(renameButton);
         middle.Children.Add(setCommands);
 
         middle.Children.Add(buttonListTitle);
@@ -295,6 +300,117 @@ public sealed class MainWindow : Window
         stringsPage.Root.Visibility = strings ? Visibility.Visible : Visibility.Collapsed;
         if (strings) stringsPage.Refresh();
         else Refresh();
+    }
+
+    /// <summary>Copy set to units: pick the sets that take a copy of this one (one undo step).</summary>
+    async Task CopySetToUnits()
+    {
+        if (opened is null) return;
+        var state = opened.State;
+        var query = new TextBox { PlaceholderText = "Search sets (name or id)" };
+        var list = new ListView { SelectionMode = ListViewSelectionMode.Multiple, Height = 420, Width = 460 };
+        var picked = new HashSet<int>();
+        bool filling = false;
+        void Fill()
+        {
+            filling = true;
+            list.Items.Clear();
+            foreach (var group in opened.Catalog.Filter(query.Text))
+                foreach (var entry in group.Entries.Where(e => e.Id != state.SelectedSetId))
+                {
+                    var item = new ListViewItem { Content = $"{entry.Id,3}  {entry.Name}", Tag = entry.Id };
+                    list.Items.Add(item);
+                    if (picked.Contains(entry.Id)) list.SelectedItems.Add(item);
+                }
+            filling = false;
+        }
+        list.SelectionChanged += (_, e) =>
+        {
+            if (filling) return;
+            foreach (var item in e.AddedItems.OfType<ListViewItem>()) picked.Add((int)item.Tag);
+            foreach (var item in e.RemovedItems.OfType<ListViewItem>()) picked.Remove((int)item.Tag);
+        };
+        query.TextChanged += (_, _) => Fill();
+        Fill();
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Title = $"Copy {state.SelectedSetId} {opened.Catalog.Entries[state.SelectedSetId].Name} to...",
+            Content = new StackPanel
+            {
+                Spacing = 8,
+                Children =
+                {
+                    new TextBlock { Text = "Each set picked gets a copy of this set's buttons (it keeps its own connected unit). Undo takes them all back.", TextWrapping = TextWrapping.Wrap },
+                    query, list,
+                },
+            },
+            PrimaryButtonText = "Copy", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Primary,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary || picked.Count == 0) return;
+        int changed = state.CopySetTo(picked);
+        Refresh();
+        if (changed < picked.Count)
+            await Message("Copied", $"{changed} of {picked.Count} sets changed; the others already had these buttons.");
+    }
+
+    /// <summary>A set's name is its unit's name: open that string on the Strings page.</summary>
+    void RenameSet()
+    {
+        if (opened is null || opened.State.SelectedSetId >= UnitsDat.UnitCount || opened.State.Strings is null) return;
+        pages.SelectedItem = stringsPageItem;
+        stringsPage.Select(opened.State.SelectedSetId + 1);
+    }
+
+    /// <summary>
+    /// Re-import FireGraft's sets: every set back to vanilla plus the exe's FireGraft project,
+    /// as the corrected import places it, in one undo step. For exes saved with the first
+    /// import, which put FireGraft's sets on the wrong units.
+    /// </summary>
+    async Task ReimportFireGraft()
+    {
+        if (opened is null) return;
+        var state = opened.State;
+        var status = new List<string>();
+        ButtonSet[] sets;
+        try
+        {
+            string fgp = EditorSession.FindFgp(opened.Archive, Path.GetFileName(opened.ExePath));
+            sets = EditorSession.ImportFireGraft(opened.Archive, fgp, state.Document.Vanilla, state.Conditions, state.Actions, status);
+        }
+        catch (Exception e)
+        {
+            await Message("Can't re-import", e.Message, e.ToString());
+            return;
+        }
+        var changed = state.ReplaceAllSets(sets, "Re-import FireGraft's sets", apply: false);
+        if (changed.Count == 0)
+        {
+            await Message("Re-import FireGraft's sets", "Every set already matches vanilla plus FireGraft's project.\n\n" + string.Join("\n", status));
+            return;
+        }
+        string names = string.Join(", ", changed.Take(40).Select(id => $"{id} {opened.Catalog.Entries[id].Name}"))
+            + (changed.Count > 40 ? $", and {changed.Count - 40} more" : "");
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Title = "Re-import FireGraft's sets?",
+            Content = new ScrollViewer
+            {
+                MaxHeight = 420,
+                Content = new TextBlock
+                {
+                    TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true,
+                    Text = $"{changed.Count} sets go back to vanilla plus FireGraft's project, replacing what they hold now, " +
+                           $"including edits made in this editor (Undo brings them back):\n\n{names}\n\n" + string.Join("\n", status),
+                },
+            },
+            PrimaryButtonText = "Re-import", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Close,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        state.ReplaceAllSets(sets, "Re-import FireGraft's sets", apply: true);
+        SelectSet(state.SelectedSetId);
+        Refresh();
     }
 
     /// <summary>From the Strings page's "used by": show that set and button.</summary>
@@ -691,6 +807,10 @@ public sealed class MainWindow : Window
         var entry = opened.Catalog.Entries[state.SelectedSetId];
         setTitle.Text = $"{state.SelectedSetId}  {entry.Name}";
         pasteSetButton.IsEnabled = state.HasSetClipboard;
+        renameButton.IsEnabled = state.SelectedSetId < UnitsDat.UnitCount && state.Strings is not null;
+        ToolTipService.SetToolTip(renameButton, state.SelectedSetId < UnitsDat.UnitCount
+            ? $"A unit's set is named by the unit: edit string {state.SelectedSetId + 1}, the unit's name"
+            : "The cards 228-249 have fixed names");
         if (selectedButton >= state.SelectedSet.Buttons.Count) selectedButton = -1;
         DrawCard();
         FillButtonList();

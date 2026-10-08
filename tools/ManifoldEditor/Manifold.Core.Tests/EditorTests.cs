@@ -73,7 +73,8 @@ public class EditorTests
         Assert.Equal(SetGroup.Zerg, catalog.Entries[37].Group);
         Assert.Equal(SetGroup.Menus, catalog.Entries[230].Group);
         Assert.Equal("Unit 5", catalog.Entries[5].Name);         // no string: the id
-        Assert.Equal("(empty)", catalog.Entries[228].Name);
+        Assert.Equal("Blank", catalog.Entries[228].Name);
+        Assert.Equal("Replay: playing", catalog.Entries[249].Name);
 
         var groups = catalog.Filter("marine");
         Assert.Equal(new[] { SetGroup.Terran, SetGroup.NeutralAndHeroes }, groups.Select(g => g.Group));

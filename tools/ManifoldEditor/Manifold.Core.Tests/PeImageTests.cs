@@ -86,8 +86,10 @@ public class PeImageTests
         var exe = new PeImage(File.ReadAllBytes(System.IO.Path.Combine(Fixtures.StarCraftDir!, "StarCraft.exe")));
         var sets = VanillaSets.Read(exe);
         Assert.Empty(sets[228].Buttons);
-        // The spec (§2): FireGraft's set 11 starts with vanilla Move.
-        Assert.Equal(new Button(1, 228, 0x428DA0, 0x424440, 0, 0, 664, 0), sets[11].Buttons[0]);
+        // The mixed-group card (244; FireGraft's set 11) starts with Move under the
+        // mixed-group condition, as FireGraft's copy of it does.
+        Assert.Equal(0x428DA0u, sets[244].Buttons[0].Condition);
+        Assert.Equal(0x424440u, sets[244].Buttons[0].Action);
         var (start, end) = exe.CodeRange();
         Assert.All(sets.SelectMany(s => s.Buttons), b => Assert.InRange(b.Condition, start, end - 1));
     }

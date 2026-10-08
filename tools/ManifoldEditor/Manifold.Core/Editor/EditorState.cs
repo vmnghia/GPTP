@@ -74,6 +74,30 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
 
     public void CopySet() => clipboardSet = SelectedSet;
 
+    /// <summary>
+    /// Copy set to units: each target takes the selected set's buttons and keeps its own
+    /// connected unit (as Paste set), all in one step. Returns how many sets changed.
+    /// </summary>
+    public int CopySetTo(IEnumerable<int> targets)
+    {
+        var source = SelectedSet;
+        var replacements = targets.Distinct().Where(t => t != SelectedSetId && t >= 0 && t < Card.SetCount)
+            .ToDictionary(t => t, t => CardEdits.PasteSet(Document[t], source));
+        return Document.ApplySets(replacements, "Copy set to units");
+    }
+
+    /// <summary>
+    /// Every set replaced by <paramref name="sets"/> (Re-import FireGraft's sets), as one
+    /// step. Returns the ids that change, without changing anything when <paramref name="apply"/> is false.
+    /// </summary>
+    public IReadOnlyList<int> ReplaceAllSets(IReadOnlyList<ButtonSet> sets, string label, bool apply)
+    {
+        if (sets.Count != Card.SetCount) throw new ArgumentException($"expected {Card.SetCount} sets");
+        var changed = Enumerable.Range(0, Card.SetCount).Where(id => !sets[id].SameAs(Document[id])).ToArray();
+        if (apply) Document.ApplySets(changed.ToDictionary(id => id, id => sets[id]), label, SelectedSetId);
+        return changed;
+    }
+
     public bool PasteSet() =>
         clipboardSet is ButtonSet source && Apply(s => CardEdits.PasteSet(s, source), "Paste set");
 
