@@ -5,7 +5,7 @@ panel and from a Strings view; save into the exe and mirror to `to-repack\`; add
 and copy shared ones); approved 2026-10-08, with the instruction to follow PyMS's PyTBL.
 Built 2026-10-08 (plan `docs/superpowers/plans/2026-10-08-string-editor.md`): the table,
 history, save, to-repack copy and preview are tested on Linux; the window compiles but has
-not run. Not yet tested on Windows or in game (§8). Builds on part 1,
+not run. §8 step 0 done 2026-10-09; the rest not yet tested on Windows or in game. Builds on part 1,
 `docs/superpowers/specs/2026-10-05-button-set-editor-design.md`, whose §5 listed editing
 `stat_txt.tbl` as out of scope.
 
@@ -64,7 +64,12 @@ from the vanilla `stat_txt.tbl` that PyMS ships (`PyMS/MPQ/rez/`), read on 2026-
   techs, ...) and ids hardcoded in the exe and GPTP (777 "Damage:", 1301 "per rocket")
   also point into the table; they are not tracked in this part.
 - Vanilla uses 40,398 of the 65,536 bytes. The mod's table is larger by its own strings
-  (§8, step 0 measures it).
+  (§8, step 0 measures it). **Measured 2026-10-09** (`tools/ManifoldEditor/reports/stat_txt-report.txt`):
+  the mod's `to-repack\rez\stat_txt.tbl` is as regular as vanilla's. It has 1,547 strings
+  and 40,398 bytes (25,147 left), offsets in id order, none shared, none running on, and
+  274 with several NULs. The editor writes it back byte for byte and passes the self-check.
+  The 238 strings vanilla's buttons show when enabled all use PyTBL's types 0-5
+  (42/91/50/29/24/2).
 - Whether the game reads ids past vanilla's count without trouble is **[VERIFY]** (§8,
   step 4). The table carries its own count, so it is expected to.
 
