@@ -190,9 +190,11 @@ public sealed class MainWindow : Window
         middle.Children.Add(card);
 
         var setCommands = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 0) };
-        setCommands.Children.Add(ToolButton("Copy set", (_, _) => { opened?.State.CopySet(); Refresh(); }));
+        setCommands.Children.Add(ToolButton("Copy set", (_, _) => { opened?.State.CopySet(); Refresh(); })
+            .Also(b => ToolTipService.SetToolTip(b, "Ctrl+Shift+C")));
         pasteSetButton.Margin = new Thickness(0, 0, 6, 0);
         pasteSetButton.Click += (_, _) => Run(s => s.PasteSet());
+        ToolTipService.SetToolTip(pasteSetButton, "Ctrl+Shift+V");
         setCommands.Children.Add(pasteSetButton);
         var revert = new MenuFlyout();
         revert.Items.Add(Item("To the version opened", () => Run(s => s.Revert(toVanilla: false))));
@@ -265,6 +267,22 @@ public sealed class MainWindow : Window
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.S, async () => await Save()));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Z, Undo));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Y, Redo));
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.C, CopyButtonKey));
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.V, PasteButtonKey));
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Delete, DeleteButtonKey, VirtualKeyModifiers.None));
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.C, () =>
+        {
+            if (!CardKeysApply()) return false;
+            opened!.State.CopySet();
+            Refresh();
+            return true;
+        }, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.V, () =>
+        {
+            if (!CardKeysApply()) return false;
+            Run(s => s.PasteSet());
+            return true;
+        }, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
         return root;
     }
 
@@ -477,11 +495,60 @@ public sealed class MainWindow : Window
         return item;
     }
 
-    static KeyboardAccelerator Accelerator(VirtualKey key, Action action)
+    static KeyboardAccelerator Accelerator(VirtualKey key, Action action) =>
+        Accelerator(key, () => { action(); return true; });
+
+    /// <summary>A shortcut whose action says whether it took the key (false lets a text box have it).</summary>
+    static KeyboardAccelerator Accelerator(VirtualKey key, Func<bool> action,
+        VirtualKeyModifiers modifiers = VirtualKeyModifiers.Control)
     {
-        var accelerator = new KeyboardAccelerator { Key = key, Modifiers = VirtualKeyModifiers.Control };
-        accelerator.Invoked += (_, e) => { e.Handled = true; action(); };
+        var accelerator = new KeyboardAccelerator { Key = key, Modifiers = modifiers };
+        accelerator.Invoked += (_, e) => e.Handled = action();
         return accelerator;
+    }
+
+    /// <summary>The card's shortcuts apply: a set is open, its page shows, and no text field has the keys.</summary>
+    bool CardKeysApply() =>
+        opened is not null && setsPage.Visibility == Visibility.Visible &&
+        FocusManager.GetFocusedElement(Content.XamlRoot) is not (TextBox or NumberBox or ComboBox or AutoSuggestBox or PasswordBox);
+
+    bool HasSelectedButton => opened is not null && selectedButton >= 0 && selectedButton < opened.State.SelectedSet.Buttons.Count;
+
+    /// <summary>Ctrl+C: the selected button to the clipboard.</summary>
+    bool CopyButtonKey()
+    {
+        if (!CardKeysApply() || !HasSelectedButton) return false;
+        opened!.State.CopyButton(selectedButton);
+        Refresh();
+        return true;
+    }
+
+    /// <summary>Ctrl+V: the clipboard's button into the selected slot (sharing it if taken), then selected.</summary>
+    bool PasteButtonKey()
+    {
+        if (!CardKeysApply() || !opened!.State.HasButtonClipboard) return false;
+        ushort slot = selectedPosition != 0 ? selectedPosition
+            : HasSelectedButton ? opened.State.SelectedSet.Buttons[selectedButton].Position : (ushort)0;
+        if (slot == 0) return false;
+        if (opened.State.PasteButton(slot))
+        {
+            selectedPosition = slot;
+            selectedButton = opened.State.SelectedSet.Buttons.Count - 1;
+            Refresh();
+        }
+        return true;
+    }
+
+    /// <summary>Delete: the selected button.</summary>
+    bool DeleteButtonKey()
+    {
+        if (!CardKeysApply() || !HasSelectedButton) return false;
+        if (opened!.State.DeleteButton(selectedButton))
+        {
+            selectedButton = -1;
+            Refresh();
+        }
+        return true;
     }
 
     static ushort Value(NumberBox box) =>
@@ -982,11 +1049,13 @@ public sealed class MainWindow : Window
         };
 
         var menu = new MenuFlyout();
-        var copyItem = Item("Copy", () => { if (cell.Count > 0) state.CopyButton(cell.ButtonIndexes[0]); });
+        // The menu acts on the button pressed (the selected one, when it is in this cell).
+        int MenuButton() => cell.ButtonIndexes.Contains(selectedButton) ? selectedButton : pressed;
+        var copyItem = Item("Copy (Ctrl+C)", () => { if (MenuButton() >= 0) { state.CopyButton(MenuButton()); Refresh(); } });
         copyItem.IsEnabled = cell.Count > 0;
-        var pasteItem = Item("Paste", () => Run(s => s.PasteButton(cell.Position)));
+        var pasteItem = Item("Paste (Ctrl+V)", () => Run(s => s.PasteButton(cell.Position)));
         pasteItem.IsEnabled = state.HasButtonClipboard;
-        var deleteItem = Item("Delete", () => Run(s => cell.Count > 0 && s.DeleteButton(cell.ButtonIndexes[0])));
+        var deleteItem = Item("Delete (Del)", () => Run(s => MenuButton() >= 0 && s.DeleteButton(MenuButton())));
         deleteItem.IsEnabled = cell.Count > 0;
         menu.Items.Add(copyItem);
         menu.Items.Add(pasteItem);

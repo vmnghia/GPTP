@@ -72,6 +72,11 @@ slot swaps; **Alt** stacks onto it, **Ctrl** copies the button, **Shift** moves 
 slot (**Ctrl+Shift** copies it). Rows of the button list can be dragged onto the card too,
 and the panel's **Slot** box puts the selected button in an exact slot.
 
+**Shortcuts** (on the button sets page, outside text fields): Ctrl+C / Ctrl+V copy the
+selected button and paste it into the selected slot (sharing the slot if it is taken),
+Delete removes it; Ctrl+Shift+C / Ctrl+Shift+V copy and paste the whole set; Ctrl+S,
+Ctrl+Z, Ctrl+Y save, undo, redo. The right-click menu acts on the icon clicked in a stack.
+
 **The set list** names a unit's set by its name and subname ("Terran Siege Tank (Siege
 Mode)", "Edmund Duke (Siege Tank)"), and filters by race, by type (units, buildings,
 add-ons, heroes, turrets and subunits, cards 228-249, from `units.dat`) and to sets that
