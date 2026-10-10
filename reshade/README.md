@@ -1,0 +1,43 @@
+# ReShade with Starcraft: Manifold
+
+ReShade adds post-processing (sharpening, anti-aliasing and so on) to the game's picture.
+The mod's plugin tells ReShade where the console is, so those effects can be kept off it.
+All of this is optional: the mod runs the same without ReShade.
+
+## Setup
+
+1. cnc-ddraw, next to `StarCraft.exe`, with these lines in `ddraw.ini`:
+
+       renderer=opengl
+       maintas=false
+
+2. ReShade (https://reshade.me), installed for OpenGL: its DLL sits next to `StarCraft.exe`
+   as `opengl32.dll`. For multiplayer use the installer "with full add-on support"; see
+   Limits.
+3. Copy this folder's `reshade-shaders` folder and `ReShadePreset.ini` next to
+   `StarCraft.exe`. If you already have a preset, keep it and enable the two mask
+   techniques yourself (below).
+
+## Using the mask
+
+Open ReShade's overlay (Home). In the list of techniques:
+
+- `ManifoldMask_Top` goes above the effects you want kept off the console;
+- `ManifoldMask_Bottom` goes below them.
+
+Effects between the two are undone on the console; effects after `ManifoldMask_Bottom`
+cover everything. Nothing else is needed: the mask follows the race you play and the
+resolution in `Manifold.ini`.
+
+To see what is masked, tick "Display Mask" in ManifoldUIMask's settings: white is kept
+free of effects. Outside a game the mask is empty and the screen goes black, so untick it
+afterwards.
+
+## Limits
+
+- **Multiplayer.** ReShade's standard build stops talking to add-ons while it sees network
+  traffic, so the mask may not arrive in a multiplayer game and the console gets the
+  effects. The build "with full add-on support" does not have this limit.
+- **Aspect-ratio bars.** With `maintas=true` in `ddraw.ini` the mask is misplaced.
+- **Only the console is masked.** The resource counters, messages and menus drawn over the
+  game view get the effects.
