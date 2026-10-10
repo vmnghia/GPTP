@@ -22,8 +22,9 @@ There is no linter and no CI. This is a game plugin: the real verification is bu
 and running StarCraft. Debug is the usual configuration; the plugin lands in `GPTP\Debug\`.
 
 `tests/verify.ps1` is the one local check, run on the user's machine: it builds and runs the
-host-side tests of the extended selection's pure logic (`tests/selection_ext_test.bat`) and
-of the button set file's parser (`tests/buttonsets_file_test.bat`),
+host-side tests of the extended selection's pure logic (`tests/selection_ext_test.bat`),
+of the button set file's parser (`tests/buttonsets_file_test.bat`) and of the UI mask
+(`tests/ui_mask_test.bat`),
 builds the plugin with MSBuild, then disassembles `sel_inject.obj` and runs
 `tests/check_naked_wrappers.py` over it. That script fails if a naked wrapper touches
 `[ebp…]`: a naked function has no frame of its own, so a Debug-build temporary there writes
@@ -114,6 +115,12 @@ installed there, not only in `injectHudHooks`.
 - **Smart-build** (in `hooks/selection_ext/`, spec
   `docs/superpowers/specs/2026-10-03-smart-build-design.md`) and **smart-casting**
   (`hooks/recv_commands/smart_cast.cpp`, `docs/selection.md` §6).
+- **ReShade UI mask** (`SCBW/ui_mask*`, `hooks/interface/reshade_bridge*`, `reshade/`, spec
+  `docs/superpowers/specs/2026-10-11-reshade-ui-mask-design.md`): the plugin registers with
+  ReShade as an add-on, when ReShade is in the process, and uploads a mask of the console
+  so `ManifoldUIMask.fx` can keep other effects off it. Cosmetic. ReShade calls back on
+  the renderer's thread: only `reshade_bridge.cpp` includes ReShade's headers
+  (`GPTP/thirdparty/reshade/`), and the game thread never calls ReShade's runtime.
 
 Selection, smart-build and smart-casting are **synced game state**: they travel as network
 commands and are recorded in replays. See "Sync safety" below.

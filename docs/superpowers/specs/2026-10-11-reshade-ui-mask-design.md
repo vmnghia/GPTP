@@ -3,7 +3,9 @@
 Status: design 2026-10-11, from the user's answers that day: the plugin feeds the mask to
 ReShade directly ("B"); it ships with the mod; the console is the only region now, with room
 for more ("3"); a minimal preset now, the user's own preset bundled later ("1"); our own
-effect file ("A"). The spike of the same day passed (§2). Nothing is built.
+effect file ("A"). The spike of the same day passed (§2). Built 2026-10-11 (plan
+`docs/superpowers/plans/2026-10-11-reshade-ui-mask.md`): the mask's logic is host-tested;
+the rest is built and not yet run in game.
 
 ## 1. Goal
 
