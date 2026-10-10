@@ -11,9 +11,9 @@ All of this is optional: the mod runs the same without ReShade.
        renderer=opengl
        maintas=false
 
-2. ReShade (https://reshade.me), installed for OpenGL: its DLL sits next to `StarCraft.exe`
-   as `opengl32.dll`. For multiplayer use the installer "with full add-on support"; see
-   Limits.
+2. ReShade 6.8.0 or newer (https://reshade.me), installed for OpenGL: its DLL sits next to
+   `StarCraft.exe` as `opengl32.dll`. An older ReShade refuses the plugin and the mask
+   stays empty. For multiplayer use the installer "with full add-on support"; see Limits.
 3. Copy this folder's `reshade-shaders` folder and `ReShadePreset.ini` next to
    `StarCraft.exe`. If you already have a preset, keep it and enable the two mask
    techniques yourself (below).
@@ -32,6 +32,15 @@ resolution in `Manifold.ini`.
 To see what is masked, tick "Display Mask" in ManifoldUIMask's settings: white is kept
 free of effects. Outside a game the mask is empty and the screen goes black, so untick it
 afterwards.
+
+## If the mask does not appear
+
+- `ReShade.log`, next to `StarCraft.exe`, should have the line
+  `Registered add-on "Starcraft: Manifold"` once a game has started. If it has none, the
+  ReShade is older than 6.8.0, or the plugin is not loaded.
+- ReShade's Add-ons tab lists "Starcraft: Manifold". An add-on unticked there is refused
+  until it is ticked again and the game restarted.
+- Both mask techniques must be enabled, Top above the effects and Bottom below them.
 
 ## Limits
 
