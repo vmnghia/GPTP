@@ -1,4 +1,4 @@
-# Runs the extended selection's host test, then builds the plugin (Debug).
+# Runs the host tests, then builds the plugin (Debug).
 # Exit code 0 only if both succeed. The build log goes to tests\out\build-plugin.log.
 $ErrorActionPreference = "Continue"
 $root = Split-Path -Parent $PSScriptRoot
@@ -6,6 +6,8 @@ $root = Split-Path -Parent $PSScriptRoot
 if ($LASTEXITCODE -ne 0) { Write-Output "host test FAILED"; exit 1 }
 & "$PSScriptRoot\buttonsets_file_test.bat" 2>$null
 if ($LASTEXITCODE -ne 0) { Write-Output "button set file test FAILED"; exit 1 }
+& "$PSScriptRoot\ui_mask_test.bat" 2>$null
+if ($LASTEXITCODE -ne 0) { Write-Output "UI mask test FAILED"; exit 1 }
 New-Item -ItemType Directory -Force "$PSScriptRoot\out" | Out-Null
 $log = "$PSScriptRoot\out\build-plugin.log"
 & "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" "$root\GPTP\GPTP.sln" /p:Configuration=Debug /p:Platform=Win32 /nologo /v:minimal > $log
