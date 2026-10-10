@@ -6,6 +6,7 @@
 #include <SCBW/UnitFinder.h>
 #include <SCBW/api.h>
 #include "../interface/resolution.h"
+#include "../interface/reshade_bridge.h"
 #include "../recv_commands/smart_cast.h"
 #include <SCBW/selection_ext.h>
 #include "../selection_ext/sel_build.h"
@@ -362,6 +363,7 @@ namespace hooks
 /// This hook is called every frame.
 bool nextFrame()
 {
+    reshadebridge::tick(); // The plugin as a ReShade add-on: registers once ReShade is loaded
 
     if (!scbw::isGamePaused())
     { // If the game is not paused
@@ -456,6 +458,7 @@ bool gameOn()
 
 bool gameEnd()
 {
+    reshadebridge::clearMask(); // Outside a game ReShade's effects cover everything
     return true;
 }
 

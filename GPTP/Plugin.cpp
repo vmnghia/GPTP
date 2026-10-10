@@ -1,5 +1,6 @@
 #include "definitions.h"
 #include "Plugin.h"
+#include "hooks/interface/reshade_bridge.h"
 #include <cstring>
 #include <cstdio>
 
@@ -69,7 +70,7 @@ BOOL WINAPI Plugin::GetModules(MPQDRAFTPLUGINMODULE *lpPluginModules, LPDWORD lp
 //BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer);
 
 BOOL WINAPI Plugin::TerminatePlugin() {
-  //By default, do nothing
+  reshadebridge::shutdown();
   return TRUE;
 }
 

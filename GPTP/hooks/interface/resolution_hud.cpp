@@ -27,10 +27,12 @@
 //transparent.
 
 #include "resolution.h"
+#include "reshade_bridge.h"
 #include <hook_tools.h>
 #include <SCBW/api.h>
 #include <SCBW/console_raise.h>
 #include <SCBW/selection_ext.h>
+#include <SCBW/ui_mask.h>
 #include <cstdio>
 #include <cstring>
 
@@ -445,6 +447,19 @@ void __cdecl widenConsoleImage() {
   ++widenedCount;
 }
 
+//The console image as the game will use it, at any screen size: tell ReShade
+//where the console is, so effects can be kept off it
+//(docs/superpowers/specs/2026-10-11-reshade-ui-mask-design.md).
+void __cdecl consoleImageLoaded() {
+  widenConsoleImage();
+  if (consoleImage->pixels == NULL)
+    return;
+  static uimask::Mask mask;
+  uimask::reset(mask, consoleImage->width, consoleImage->height);
+  uimask::addConsoleImage(mask, consoleImage->pixels);
+  reshadebridge::publishMask(mask.pixels.data(), mask.width, mask.height);
+}
+
 } //unnamed namespace
 
 const u32 Func_ConsoleHitLines = 0x004D11A0;
@@ -476,7 +491,7 @@ const u32 Ret_MarkErrorLine = 0x004B2322;
 void __declspec(naked) consoleImageLoaded_4C39F5() {
   __asm {
     pushad
-    call widenConsoleImage
+    call consoleImageLoaded
     popad
     jmp Func_ConsoleHitLines
   }
