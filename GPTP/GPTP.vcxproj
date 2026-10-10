@@ -160,6 +160,7 @@
     <ClCompile Include="hooks\interface\buttonsets_inject.cpp" />
     <ClCompile Include="hooks\interface\resolution.cpp" />
     <ClCompile Include="hooks\interface\resolution_hud.cpp" />
+    <ClCompile Include="hooks\interface\reshade_bridge.cpp" />
     <ClCompile Include="hooks\interface\resolution_inject.cpp" />
     <ClCompile Include="hooks\interface\resolution_fog.cpp" />
     <ClCompile Include="hooks\interface\resolution_terrain.cpp" />
@@ -438,6 +439,7 @@
     <ClInclude Include="hooks\interface\buttonsets.h" />
     <ClInclude Include="hooks\interface\buttonsets_loader.h" />
     <ClInclude Include="hooks\interface\resolution.h" />
+    <ClInclude Include="hooks\interface\reshade_bridge.h" />
     <ClInclude Include="hooks\interface\selection.h" />
     <ClInclude Include="hooks\interface\select_larva.h" />
     <ClInclude Include="hooks\interface\status_display\advanced\status_base_text.h" />
