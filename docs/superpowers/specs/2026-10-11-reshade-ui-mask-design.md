@@ -127,21 +127,22 @@ void shutdown();                                     //Plugin::TerminatePlugin
   counter per frame, one module enumeration every 100 frames. `publishMask` and
   `clearMask` also try once, so a mask published before the first frame is not late.
   `shutdown()` unregisters.
-- **Hand-off.** `publishMask` copies the pixels into a buffer under a mutex and raises a
-  generation counter (an atomic). `clearMask` zeroes the buffer and raises it too. The
+- **Hand-off.** `publishMask` copies the pixels into a buffer under a mutex and sets a
+  "want upload" flag (an atomic). `clearMask` zeroes the buffer and sets it too. The
   game thread never calls ReShade's runtime.
-- **Upload**, in the `reshade_present` callback on the renderer's thread: when the
-  generation differs from the last uploaded one, find the texture
-  (`find_texture_variable("ManifoldUIMask.fx", "MaskTex")`) and call `update_texture` with
-  the buffer at its own size; ReShade resizes it to the texture's. The mutex is held for
-  the upload, which the game thread can only meet while publishing, once per game.
-- **Re-upload** when the texture may have been replaced: after `reshade_reloaded_effects`,
-  and when the texture's resource view handle (`get_texture_binding`) differs from the one
-  uploaded to. The handle is polled every 30 presents, which also catches the texture not
-  existing yet (effect still compiling, or its techniques enabled later). [VERIFY] that
-  enabling the techniques mid-game gets the mask within a second.
-- **Name.** The plugin exports `NAME` ("StarCraft: Manifold") and `DESCRIPTION`, so
-  ReShade's add-on list does not show `FGP8462`. They are `extern "C"
+- **Upload**, in the `reshade_present` callback on the renderer's thread: when the flag is
+  set, find the texture (`find_texture_variable("ManifoldUIMask.fx", "MaskTex")`) and call
+  `update_texture` with the buffer at its own size; ReShade resizes it to the texture's.
+  The mutex is held for the upload, which the game thread can only meet while publishing,
+  once per game.
+- **Re-upload** when the texture may have been replaced: after `reshade_reloaded_effects`
+  (which sets the flag), and when the texture's resource view handle
+  (`get_texture_binding`) differs from the one uploaded to. The handle is polled every 30
+  presents, which also catches the texture not existing yet (effect still compiling, or
+  its techniques enabled later). [VERIFY] that enabling the techniques mid-game gets the
+  mask within a second.
+- **Name.** The plugin exports `NAME` ("Starcraft: Manifold", as `PLUGIN_NAME`) and
+  `DESCRIPTION`, so ReShade's add-on list does not show `FGP8462`. They are `extern "C"
   __declspec(dllexport)` variables in `reshade_bridge.cpp`; `plugin.def` is unchanged.
   [VERIFY] MPQDraft and FireGraft still load the plugin with the two extra exports.
 
@@ -161,7 +162,8 @@ The flood fill runs once per game start over at most 2048x1536 bytes.
 
 ### 4.4 The effect: `ManifoldUIMask.fx`
 
-Ours, about thirty lines, in the namespace `ManifoldUIMask`:
+Ours, short, self-contained (it includes no `ReShade.fxh`, so it works with any shader set
+installed), in the namespace `ManifoldUIMask`:
 
 - `BackupTex`, the frame's size: `ManifoldMask_Top` copies the frame into it.
 - `MaskTex`, the frame's size, R8, no `source` file: zero until the plugin uploads.
@@ -224,7 +226,7 @@ a zero-sized mask and a null image change nothing.
 6. Start a game with the two techniques off, then enable them: the mask appears.
 7. Display Mask off, a strong effect between the techniques: the view shows it, the console
    does not, and buttons, wireframes and the minimap update as usual.
-8. ReShade's add-ons tab lists "StarCraft: Manifold".
+8. ReShade's add-ons tab lists "Starcraft: Manifold".
 9. `opengl32.dll` renamed away: the game runs as before, with no message and no slowdown.
 10. Exactly 640x480 in `Manifold.ini`: the mask fits the vanilla-sized console.
 
