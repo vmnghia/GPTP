@@ -172,6 +172,15 @@ int main() {
 		CHECK(legs[1].kind == MOVE);
 	}
 
+	//a rally point: set when new units would be sent to it (0x466F50).
+	CHECK(rallyIsSet(false, 300));
+	//the building is its own rally unit: none set. The game puts that back
+	//on lift-off and leaves the old point where it was.
+	CHECK(!rallyIsSet(true, 300));
+	//never set: the point is (0, 0), and the game only looks at x.
+	CHECK(!rallyIsSet(false, 0));
+	CHECK(!rallyIsSet(true, 0));
+
 	if (failures != 0) {
 		printf("FAIL: %u checks (first at order_lines_test.cpp line %u)\n", failures, firstLine);
 		return 1;

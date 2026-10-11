@@ -67,4 +67,8 @@ u32 legsOf(s32 unitX, s32 unitY, const Stop& current, const Stop* queued, u32 co
 	return legs;
 }
 
+bool rallyIsSet(bool unitIsItself, s32 x) {
+	return !unitIsItself && x != 0;
+}
+
 } //orderlines

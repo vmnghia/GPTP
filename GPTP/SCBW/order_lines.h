@@ -39,4 +39,10 @@ struct Leg {
 //current order alone has no line.
 u32 legsOf(s32 unitX, s32 unitY, const Stop& current, const Stop* queued, u32 count, Leg* out);
 
+//Whether a building has a rally point, by the game's own rule for sending a
+//new unit to it (0x466F50): its rally unit is not the building itself
+//(unitIsItself: none set, and what lift-off puts back) and the point's x is
+//not 0.
+bool rallyIsSet(bool unitIsItself, s32 x);
+
 } //orderlines

@@ -285,8 +285,15 @@ bool seenByLocalPlayer(const CUnit *unit)
 
 void drawRallyPoint(CUnit *unit)
 {
-    u16 rallyX, rallyY;
     CUnit *rallyTarget = unit->rally.unit;
+
+    // No rally point, no line: none was ever set, or the building lifted off since (the game then
+    // makes the building its own rally unit and leaves the old point where it was)
+    if (!orderlines::rallyIsSet(rallyTarget == unit, unit->rally.pt.x))
+        return;
+
+    u16 rallyX = unit->rally.pt.x;
+    u16 rallyY = unit->rally.pt.y;
     graphics::ColorId color = 83;
 
     if (rallyTarget != NULL && units_dat::BaseProperty[rallyTarget->id] & UnitProperty::ResourceContainer)
@@ -294,20 +301,9 @@ void drawRallyPoint(CUnit *unit)
         color = graphics::YELLOW;
     }
 
-    if (unit->rally.pt.x == 0 && unit->rally.pt.y == 0)
-    { // If the rally point is not set
-        rallyX = unit->position.x;
-        rallyY = unit->position.y;
-    }
-    else
-    { // If the rally point is set
-        rallyX = unit->rally.pt.x;
-        rallyY = unit->rally.pt.y;
-    }
-
     // New units follow a rally unit of their own player (0x466F50), so the line follows it too. With
     // any other unit they walk to the point where it stood when the rally point was set.
-    if (rallyTarget != unit && seenByLocalPlayer(rallyTarget) && rallyTarget->playerId == unit->playerId)
+    if (seenByLocalPlayer(rallyTarget) && rallyTarget->playerId == unit->playerId)
     {
         rallyX = rallyTarget->position.x;
         rallyY = rallyTarget->position.y;
