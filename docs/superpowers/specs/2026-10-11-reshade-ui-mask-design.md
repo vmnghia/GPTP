@@ -4,8 +4,17 @@ Status: design 2026-10-11, from the user's answers that day: the plugin feeds th
 ReShade directly ("B"); it ships with the mod; the console is the only region now, with room
 for more ("3"); a minimal preset now, the user's own preset bundled later ("1"); our own
 effect file ("A"). The spike of the same day passed (§2). Built 2026-10-11 (plan
-`docs/superpowers/plans/2026-10-11-reshade-ui-mask.md`): the mask's logic is host-tested;
-the rest is built and not yet run in game.
+`docs/superpowers/plans/2026-10-11-reshade-ui-mask.md`): the mask's logic is host-tested.
+Tested in game 2026-10-11 (build `Oct 11 2026 03:00:27`, ReShade 6.8.0 standard build,
+cnc-ddraw `renderer=opengl`, single player): the plan's round of 13 passed. The mask fits
+the Terran, Zerg, Protoss and replay consoles, the right way up; it follows a restarted
+mission and a loaded save of another race; it is empty in the menus; it survives the
+overlay's Reload, a window resize and Alt+Tab; it appears when the techniques are enabled
+mid-game; it fits at another resolution and at exactly 640x480; the Add-ons tab lists
+"Starcraft: Manifold"; and with `opengl32.dll` renamed away the game runs as before. That
+settles the two [VERIFY] notes of §4.2 (techniques enabled mid-game; the launcher loads
+the plugin with the two extra exports). Still open: §6's multiplayer and `direct3d9`
+notes, neither of which was tried.
 
 ## 1. Goal
 
