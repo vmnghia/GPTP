@@ -17,8 +17,9 @@ the plugin with the two extra exports). Still open: §6's multiplayer and `direc
 notes, neither of which was tried.
 
 Changed 2026-10-11, after that round, on the user's word that ReShade should not work on
-the menus: §11. Built, host-tested, not yet run in game. Where §3, §4 and §6 say that an
-empty mask lets the effects through, §11 is what holds.
+the menus: §11. Tested in game 2026-10-11 (build `Oct 11 2026 16:16:13`): §11's round of
+7 passed. Where §3, §4 and §6 say that an empty mask lets the effects through, §11 is what
+holds.
 
 ## 1. Goal
 
