@@ -239,6 +239,12 @@ int main() {
 	}
 	//the chevron line: arrowheads only.
 	checkChevron(64, 48, 3, 4, 60, 40, 10, 3, -5, true);
+	//the chevron line: the game's pattern (pairs of arrowheads 4 px apart,
+	//every 18 px), at every phase.
+	for (int phase = -17; phase <= 0; ++phase) {
+		checkChevron(64, 48, 3, 4, 60, 40, 4, 14, phase, true);
+		checkChevron(64, 48, 700, -300, -500, 400, 4, 14, phase, true);
+	}
 	//the chevron line: a point, in and out of the surface.
 	checkChevron(64, 48, 10, 10, 10, 10, 10, 3, 0, false);
 	checkChevron(64, 48, -10, 10, -10, 10, 10, 3, 0, false);

@@ -26,8 +26,11 @@ namespace graphics {
 		// arrows
 		void drawArrow(int x, int y, int length, int angle, ColorId color);
 		void drawArrowLine(int x1, int y1, int x2, int y2, ColorId color);
-		void drawChevronLine(int x1, int y1, int x2, int y2, ColorId color, int dash = 10, int gap = 3,
-		                     int direction = -1, int speed = 50, bool hideDashes = false);
+		// The defaults are the look of the order and rally point lines (user's choice, 2026-10-11): no
+		// dashes, a pair of arrowheads 4 px apart every 18 px. An arrowhead goes where a dash would
+		// start and where it would end.
+		void drawChevronLine(int x1, int y1, int x2, int y2, ColorId color, int dash = 4, int gap = 14,
+		                     int direction = -1, int speed = 50, bool hideDashes = true);
 		void bresenhamWithGap(int x0, int y0, int x1, int y1, int gapStart, int gapEnd, ColorId color);
 		void drawDiamondWithSideGaps(int x, int y, int radius, int gapLen, ColorId color);
 
