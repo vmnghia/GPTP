@@ -383,12 +383,15 @@ starfield handled (§5). Features 1 and 2 below are done.
   sites** (reported 2026-10-04) `[FIXED 2026-10-08, not yet run]`. Only the current
   player's and allies' should show. The bars come from `plugins::drawBuildProgress(unit)`,
   called for every unit in `nextFrame()` (`hooks/main/game_hooks.cpp`);
-  `showsBuildProgress` now allows the local player's units, allies' units the local
-  player can see, and every player's in a replay.
+  `showsBuildProgress` allows the local player's units, allies' units the local
+  player can see, and every player's in a replay. Since 2026-10-12 the rule is
+  `buildprogress::isShownFor`, and "can see" means out of the fog (below). The bars were
+  looked at in rounds 13-16 of 2026-10-12, but never next to an enemy's building.
 - **A destroyed Refinery, Assimilator or Extractor leaves a progress bar at 0% over its
   Vespene Geyser** (reported 2026-10-04) `[FIXED 2026-10-08, not yet run]`. The geyser
   belongs to the neutral player, whose units never get a bar now; and a unit with no order
-  and build time left only counts as building while it isn't completed.
+  and build time left only counts as building while it isn't completed
+  (`buildprogress::isBeingBuilt` since 2026-10-12). Still not looked at in game.
 
 **Next after smart-build** (user, 2026-10-03):
 - **The selection panel showed only 12 wireframes** `[FIXED 2026-10-04]`: the repack
@@ -535,7 +538,57 @@ starfield handled (§5). Features 1 and 2 below are done.
   - **More regions** `[PROPOSED]`: the resource counters, message lines and dialogs over
     the game view still get the effects. A region is one more `uimask::add...` function.
 
+**Outside that list: order lines, rally lines and progress bars** (the user's list of
+2026-10-11) `[BUILT, tested in game 2026-10-11 and 2026-10-12, rounds 7-16]`. The drawing is
+`plugins::drawOrderQueue`, `drawRallyPoint` and `drawBuildProgress` in
+`hooks/main/game_hooks.cpp`; drawing only. The rules are in three pure modules with host
+tests: `graphics/line_walk.cpp`, `SCBW/order_lines.cpp` and `SCBW/build_progress.cpp`.
+- **Lines** show for the whole selection, not its first 12, as pairs of arrowheads (4 px
+  apart, a pair every 18 px: the user's choice from previews). A chevron line walks only
+  its on-screen part: 400 units' lines cost 54-82 ms a draw before, 2-9 ms after (a host
+  benchmark of the Debug flags).
+  - An order without a target (Stop, Siege, the idle order behind an SCV's construction)
+    has the position (0, 0): it gets no line and the chain goes on past it. It was drawn
+    as a line to the map's top-left corner.
+  - Each line has the colour of the order it leads to. Every attack is red: units.dat gives
+    unit types their own "attack unit" order (`StayinRange` for a Siege Tank or a Goliath),
+    listed in `orderlines::kindOf`.
+  - A line to a unit ends at the unit while the local player sees it, by the rule a click
+    selects by (out of the fog, detected if cloaked); else at the position stored with the
+    order. A rally line follows only a unit of the building's own player, as new units do.
+  - A rally line shows only when the game would use the rally point (0x466F50): the
+    building is not its own rally unit (what lift-off puts back) and the point's x is not 0.
+- **Bars** show on a building being built, warped in, grown or morphed, on one
+  researching, upgrading or training, and on any unit that makes another inside it.
+  - A Zerg building morphing is in `ZergBuildSelf`, like one grown from a Drone, and
+    counts down the new type's build time (0x45D0D0, 0x4669E0). The bar had named the
+    order that starts the morph, which lasts a frame.
+  - Each kind needs its order *and* its work (a tech, an upgrade, a unit in the queue's
+    active slot). The per-frame hook runs after the frame's commands and before the units
+    update (0x4D974E), and a cancel leaves the order to end on its next run, so for a
+    frame or two the order alone says busy.
+  - Training is `Train` or `TrainFighter`: a building, a Carrier, a Reaver, and whatever
+    comes to produce by either order. **No unit type is named** (the user's requirement).
+  - Over a unit that is no building the bar is 16 px above its box; with queue boxes it is
+    at least as wide as they are. Buildings: as wide as the box, 24 px above
+    (`buildprogress::barFrame`). The queue boxes are 4 px tall with a border all round.
+- **Open:**
+  - The two fixes of 2026-10-08 in "Known bugs" above have still not been looked at in
+    game `[VERIFY]`.
+  - Allies' bars only where the local player sees the unit (the user's ruling,
+    2026-10-12): host-tested only. It needs a team game without shared vision `[VERIFY]`.
+  - A unit type whose units.dat "attack unit" order is none of the listed ones gets a
+    green line.
+  - The Protoss bar adds 24 frames to the total and not to the time done. It is at most
+    5% off (a Pylon) and the user saw nothing wrong: left as it is.
+
 **Working tips for the next session.**
+- **For a decision about a look, render the options and let the user pick.** The line
+  pattern, the queue boxes and the unit bar's placement were chosen that way on
+  2026-10-11/12. `mpqget.py` pulls the real palette (`tileset\badlands.wpe`: 256 x RGBX),
+  sprites (`unit\...\*.grp`) and the player colours (`game\tunit.pcx`) from `StarDat.mpq`;
+  a small C++ or Python 2.7 program draws with the plugin's own routines or formulas, and
+  Python's `zlib` writes the PNG. Zoom 2-8x and label the options.
 - Touch `hooks/main/game_hooks.cpp` before building, so the build stamp that prints in game
   updates. The plugin must be repacked into `SCManifold.exe` before testing.
 - The game runs from `D:\Games\Starcraft 1.16.1\Starcraft.exe`, and cnc-ddraw goes next to

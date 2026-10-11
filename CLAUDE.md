@@ -22,9 +22,9 @@ There is no linter and no CI. This is a game plugin: the real verification is bu
 and running StarCraft. Debug is the usual configuration; the plugin lands in `GPTP\Debug\`.
 
 `tests/verify.ps1` is the one local check, run on the user's machine: it builds and runs the
-host-side tests of the extended selection's pure logic (`tests/selection_ext_test.bat`),
-of the button set file's parser (`tests/buttonsets_file_test.bat`) and of the UI mask
-(`tests/ui_mask_test.bat`),
+host-side tests of the pure logic (`tests/*_test.bat`: the extended selection, the button
+set file's parser, the UI mask, and the on-map lines and bars' `line_walk`, `order_lines`
+and `build_progress`),
 builds the plugin with MSBuild, then disassembles `sel_inject.obj` and runs
 `tests/check_naked_wrappers.py` over it. That script fails if a naked wrapper touches
 `[ebp…]`: a naked function has no frame of its own, so a Debug-build temporary there writes
@@ -139,6 +139,14 @@ installed there, not only in `injectHudHooks`.
   the renderer's thread: only `reshade_bridge.cpp` includes ReShade's headers
   (`GPTP/thirdparty/reshade/`), and the game thread never calls ReShade's runtime.
 
+- **Order lines, rally lines and progress bars** (`plugins::drawOrderQueue`,
+  `drawRallyPoint` and `drawBuildProgress` in `hooks/main/game_hooks.cpp`; notes in
+  `docs/resolution.md` §6): drawn over the map for the selection (lines) and for every
+  unit the player may see at work (bars). Cosmetic. Their rules are pure and host-tested:
+  `graphics/line_walk*` (a line walks only its on-screen part), `SCBW/order_lines*`,
+  `SCBW/build_progress*`. They name orders, not unit types: a bar shows on anything that
+  produces by `Train` or `TrainFighter`.
+
 Selection, smart-build and smart-casting are **synced game state**: they travel as network
 commands and are recorded in replays. See "Sync safety" below.
 
@@ -164,6 +172,13 @@ every pass of the main loop, thousands of times per game frame: the command card
 was, and caused the lag fixed on 2026-10-06 (`docs/resolution.md` §6). To measure, set
 `SEL_PROFILE` to 1 in `hooks/selection_ext/sel_profile.h`: it logs per-feature ms per frame
 to `Manifold-profile-v2.csv` next to the exe.
+
+The hook is called from 0x4D974E: **after the frame's commands are applied and before the
+units update.** What it reads is the state the commands left, a frame before the orders
+catch up. A cancel takes the work away at once (the tech, the queue's entry) and leaves the
+order to end on its next run, so an order id alone can say "busy" with nothing to do: read
+the work as well (`SCBW/build_progress.cpp`). What it draws stays on screen until its next
+run, and so trails a moving unit by a frame.
 
 ## Working agreements
 
