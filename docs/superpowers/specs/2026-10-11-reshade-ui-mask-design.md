@@ -13,8 +13,8 @@ overlay's Reload, a window resize and Alt+Tab; it appears when the techniques ar
 mid-game; it fits at another resolution and at exactly 640x480; the Add-ons tab lists
 "Starcraft: Manifold"; and with `opengl32.dll` renamed away the game runs as before. That
 settles the two [VERIFY] notes of §4.2 (techniques enabled mid-game; the launcher loads
-the plugin with the two extra exports). Still open: §6's multiplayer and `direct3d9`
-notes, neither of which was tried.
+the plugin with the two extra exports). `direct3d9` was tried later that day and works
+(§6). Still open: §6's multiplayer note, which was not tried.
 
 Changed 2026-10-11, after that round, on the user's word that ReShade should not work on
 the menus: §11. Tested in game 2026-10-11 (build `Oct 11 2026 16:16:13`): §11's round of
@@ -210,8 +210,12 @@ and multiplayer are unaffected whether or not a player has ReShade.
   wrong place. The notes recommend `maintas=false`.
 - **Only the console.** The resource counters, message lines and dialogs over the game
   view still get the effects (§4.1 leaves room for them).
-- **Other renderers.** Only cnc-ddraw's `renderer=opengl` with ReShade as `opengl32.dll`
-  was tried. `direct3d9` with ReShade as `d3d9.dll` should work the same way. [VERIFY]
+- **Other renderers.** cnc-ddraw's `renderer=direct3d9` with ReShade as `d3d9.dll` works
+  as `renderer=opengl` with `opengl32.dll` does: tried 2026-10-11, same plugin build, a
+  round of 6 passed (no effects in the menus, effects in the game view only, the tint
+  exactly over the console at the bottom, the plugin registered, the effect compiled with
+  no warning). cnc-ddraw's own `shader=` scalers only work on OpenGL. `gdi` cannot work:
+  ReShade has nothing to hook.
 
 ## 7. What ships
 

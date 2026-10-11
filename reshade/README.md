@@ -16,6 +16,10 @@ runs the same without ReShade.
    `StarCraft.exe` as `opengl32.dll`. An older ReShade refuses the plugin, and the masked
    effects then show nowhere. For multiplayer use the installer "with full add-on
    support"; see Limits.
+
+   If OpenGL gives trouble, Direct3D 9 works too: `renderer=direct3d9` in `ddraw.ini`, and
+   ReShade's DLL named `d3d9.dll` instead (keep only one of the two names). cnc-ddraw's own
+   `shader=` scalers then do nothing; they need OpenGL.
 3. Copy this folder's `reshade-shaders` folder and `ReShadePreset.ini` next to
    `StarCraft.exe`. If you already have a preset, keep it and enable the two mask
    techniques yourself (below).
