@@ -50,4 +50,10 @@ void addConsoleImage(Mask& mask, const u8* image) {
 			mask.pixels[i] = UI;
 }
 
+void effectsArea(const Mask& mask, std::vector<u8>& effects) {
+	effects.resize(mask.pixels.size());
+	for (size_t i = 0; i < effects.size(); ++i)
+		effects[i] = (u8)(255 - mask.pixels[i]);
+}
+
 } //uimask

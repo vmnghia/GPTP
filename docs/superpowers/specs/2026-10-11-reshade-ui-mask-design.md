@@ -16,6 +16,10 @@ settles the two [VERIFY] notes of §4.2 (techniques enabled mid-game; the launch
 the plugin with the two extra exports). Still open: §6's multiplayer and `direct3d9`
 notes, neither of which was tried.
 
+Changed 2026-10-11, after that round, on the user's word that ReShade should not work on
+the menus: §11. Built, host-tested, not yet run in game. Where §3, §4 and §6 say that an
+empty mask lets the effects through, §11 is what holds.
+
 ## 1. Goal
 
 The mod is played through cnc-ddraw with ReShade on top (sharpening, anti-aliasing,
@@ -88,7 +92,7 @@ over everything, say).
 After that, nothing. A new game, another race, a replay, a new resolution, a resized
 window and the overlay's Reload all keep the mask right.
 
-Outside a game the mask is empty, so the menus get every effect.
+Outside a game the masked effects show nowhere (§11; at first the menus got every effect).
 
 ## 4. Design
 
@@ -183,7 +187,9 @@ installed), in the namespace `ManifoldUIMask`:
   checking. (At first it showed the mask instead of the picture; with the mask empty that
   blacked out the menus, so a game could not be started with it on: the user, 2026-10-11.)
 
-With no plugin, or outside a game, the mask is zero and the pair does nothing.
+With no plugin, or outside a game, the mask is zero and the pair does nothing. (Superseded
+by §11: the texture is now `EffectsTex`, zero means no effects, and Bottom is
+`lerp(backup, frame, effects)`.)
 
 ## 5. Sync safety
 
@@ -254,3 +260,42 @@ a zero-sized mask and a null image change nothing.
 
 Masks for anything but the console; bundling ReShade or the user's preset; a mask that
 follows aspect-ratio bars; any change to what the console looks like.
+
+## 11. No effects in the menus (2026-10-11)
+
+The user, after the first in-game round: "ReShade should not work on the menu". As built
+until then, the texture marked where the frame from before the effects is kept, so the
+empty texture of the menus let every effect through.
+
+**The change.** The texture's meaning is inverted. `EffectsTex` (it was `MaskTex`) marks
+where effects apply: 255 in the game view, 0 on the UI. An empty texture now means no
+effects anywhere.
+
+**Why this way.** ReShade creates the texture zeroed, and the plugin cannot register before
+a game starts (ReShade loads with the renderer, and the plugin's only recurring hooks run
+in game). With zero meaning "no effects", the menus are free of them from the first frame,
+with no code running outside a game. The other way, a "protect everything" mask sent while
+in the menus, needs a hook or a thread there, and the effects would still show at launch
+until the plugin had registered.
+
+**What changed in the code.**
+
+- `uimask::effectsArea(mask, effects)` (pure, host-tested) gives the mask's inverse; the
+  mask itself (`reset`, `addConsoleImage`, 255 = UI) is as before.
+- `reshadebridge::publishMask` and `clearMask` are now `publishEffectsArea` and
+  `clearEffectsArea`. `clearEffectsArea` still zeroes the buffer: effects nowhere.
+- `consoleImageLoaded()` publishes the effects area; `gameEnd()` clears it.
+- The effect: `ManifoldMask_Bottom` is `lerp(backup, frame, effects)`, and "Display Mask"
+  tints where `effects` is 0, which outside a game is the whole screen.
+
+**What it costs.** Whenever the plugin cannot reach ReShade, the effects between the two
+techniques show nowhere, where before they showed everywhere: an older ReShade, the add-on
+unticked in ReShade's Add-ons tab, the effect used without the plugin, and multiplayer on
+the standard build (§6), where the masked effects may now not show in the game at all. The
+player notes say so, and that switching the two techniques off gives the effects back
+unmasked.
+
+**In-game checks** (round 5): in the menus from launch, and again after a game, no effect
+between the two techniques shows; in a game the view has them and the console does not;
+Display Mask tints the whole screen in the menus and only the console in a game; the
+overlay's Reload in a game brings the effects back in the view.

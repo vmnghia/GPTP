@@ -458,7 +458,7 @@ bool gameOn()
 
 bool gameEnd()
 {
-    reshadebridge::clearMask(); // Outside a game ReShade's effects cover everything
+    reshadebridge::clearEffectsArea(); // Outside a game ReShade's masked effects show nowhere
     return true;
 }
 

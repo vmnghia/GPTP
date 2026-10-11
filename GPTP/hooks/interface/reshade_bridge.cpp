@@ -1,6 +1,11 @@
 //ReShade calls back on the renderer's thread, so the two threads only share
-//the mask buffer (under maskLock) and one flag. The game thread never calls
-//ReShade's runtime; uploads happen in onPresent.
+//the effects area's buffer (under areaLock) and one flag. The game thread
+//never calls ReShade's runtime; uploads happen in onPresent.
+//
+//The texture holds where effects apply (255) and where the frame from before
+//them is kept (0). ReShade creates it zeroed, so until the first upload, and
+//again from the end of each game, there are no effects anywhere: the menus
+//stay free of them without the plugin having to run there.
 #include "reshade_bridge.h"
 #include <thirdparty/reshade/reshade.hpp>
 #include <atomic>
@@ -19,9 +24,9 @@ namespace reshadebridge {
 namespace {
 
 const char* const EFFECT_FILE = "ManifoldUIMask.fx";
-const char* const MASK_TEXTURE = "MaskTex";
-//How often the renderer's thread checks that the mask texture is still the
-//one it uploaded to (ReShade recreates it on a resize or when the effect's
+const char* const AREA_TEXTURE = "EffectsTex";
+//How often the renderer's thread checks that the texture is still the one it
+//uploaded to (ReShade recreates it on a resize or when the effect's
 //techniques are switched on).
 const unsigned POLL_PRESENTS = 30;
 //How often the game thread looks for ReShade while it is not loaded.
@@ -34,9 +39,9 @@ HMODULE registeredWith = NULL;
 unsigned ticks = 0;
 
 //Shared.
-std::mutex maskLock;
-std::vector<unsigned char> maskPixels;    //maskWidth * maskHeight
-unsigned maskWidth = 0, maskHeight = 0;
+std::mutex areaLock;
+std::vector<unsigned char> areaPixels;    //areaWidth * areaHeight
+unsigned areaWidth = 0, areaHeight = 0;
 std::atomic<bool> wantUpload(false);
 
 //Renderer's thread only.
@@ -45,7 +50,7 @@ unsigned presents = 0;
 
 void upload(reshade::api::effect_runtime* runtime, bool force) {
   const reshade::api::effect_texture_variable texture =
-      runtime->find_texture_variable(EFFECT_FILE, MASK_TEXTURE);
+      runtime->find_texture_variable(EFFECT_FILE, AREA_TEXTURE);
   reshade::api::resource_view view = {}, viewSrgb = {};
   if (texture.handle != 0)
     runtime->get_texture_binding(texture, &view, &viewSrgb);
@@ -56,10 +61,11 @@ void upload(reshade::api::effect_runtime* runtime, bool force) {
   if (!force && view.handle == uploadedView)
     return;
 
-  std::lock_guard<std::mutex> guard(maskLock);
-  //Nothing published yet: ReShade created the texture empty, which is right.
-  if (maskWidth != 0 && maskHeight != 0)
-    runtime->update_texture(texture, maskWidth, maskHeight, maskPixels.data());
+  std::lock_guard<std::mutex> guard(areaLock);
+  //Nothing published yet: ReShade created the texture zeroed, no effects
+  //anywhere, which is right outside a game.
+  if (areaWidth != 0 && areaHeight != 0)
+    runtime->update_texture(texture, areaWidth, areaHeight, areaPixels.data());
   uploadedView = view.handle;
 }
 
@@ -113,26 +119,26 @@ void tick() {
     tryRegister();
 }
 
-void publishMask(const unsigned char* pixels, unsigned width, unsigned height) {
+void publishEffectsArea(const unsigned char* pixels, unsigned width, unsigned height) {
   tryRegister();
   if (pixels == NULL || width == 0 || height == 0)
     return;
   {
-    std::lock_guard<std::mutex> guard(maskLock);
-    maskPixels.assign(pixels, pixels + static_cast<size_t>(width) * height);
-    maskWidth = width;
-    maskHeight = height;
+    std::lock_guard<std::mutex> guard(areaLock);
+    areaPixels.assign(pixels, pixels + static_cast<size_t>(width) * height);
+    areaWidth = width;
+    areaHeight = height;
   }
   wantUpload = true;
 }
 
-void clearMask() {
+void clearEffectsArea() {
   tryRegister();
   {
-    std::lock_guard<std::mutex> guard(maskLock);
-    if (maskPixels.empty())
-      return;           //never published: the texture is empty already
-    memset(maskPixels.data(), 0, maskPixels.size());
+    std::lock_guard<std::mutex> guard(areaLock);
+    if (areaPixels.empty())
+      return;           //never published: the texture is zeroed already
+    memset(areaPixels.data(), 0, areaPixels.size());
   }
   wantUpload = true;
 }

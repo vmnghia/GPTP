@@ -83,6 +83,31 @@ int main() {
 		const char* rows[] = { "....####", "....####", "####.###", "########" };
 		CHECK(masked(rows, 8, 4) == "....####\n....####\n########\n########\n");
 	}
+	//The fill does not wrap from one row's end to the next row's start...
+	{
+		const char* rows[] = { "........", "#######.", ".#######", "########" };
+		CHECK(masked(rows, 8, 4) == "........\n#######.\n########\n########\n");
+	}
+	//...nor from a row's start back to the previous row's end.
+	{
+		const char* rows[] = { "........", ".#######", ".######.", ".#######", "########" };
+		CHECK(masked(rows, 8, 5) == "........\n.#######\n.#######\n.#######\n########\n");
+	}
+	//What ReShade's texture holds is the inverse: effects only in the game view.
+	{
+		const char* rows[] = { "....", "##..", "####" };
+		const std::vector<u8> art = image(rows, 4, 3);
+		Mask mask;
+		reset(mask, 4, 3);
+		addConsoleImage(mask, art.data());
+		std::vector<u8> effects(1, 99);
+		effectsArea(mask, effects);
+		const u8 expected[12] = { 255, 255, 255, 255,  0, 0, 255, 255,  0, 0, 0, 0 };
+		CHECK(effects == std::vector<u8>(expected, expected + 12));
+		Mask empty;
+		effectsArea(empty, effects);
+		CHECK(effects.empty());
+	}
 	//Adding only sets pixels: one already marked UI in the game view stays
 	//(a later region), and reset() clears to the new size.
 	{

@@ -117,8 +117,9 @@ installed there, not only in `injectHudHooks`.
   (`hooks/recv_commands/smart_cast.cpp`, `docs/selection.md` §6).
 - **ReShade UI mask** (`SCBW/ui_mask*`, `hooks/interface/reshade_bridge*`, `reshade/`, spec
   `docs/superpowers/specs/2026-10-11-reshade-ui-mask-design.md`): the plugin registers with
-  ReShade as an add-on, when ReShade is in the process, and uploads a mask of the console
-  so `ManifoldUIMask.fx` can keep other effects off it. Cosmetic. ReShade calls back on
+  ReShade as an add-on, when ReShade is in the process, and uploads where the game view
+  is, so `ManifoldUIMask.fx` can keep other effects off the console and the menus. The
+  texture's zero means "no effects", which is how ReShade creates it. Cosmetic. ReShade calls back on
   the renderer's thread: only `reshade_bridge.cpp` includes ReShade's headers
   (`GPTP/thirdparty/reshade/`), and the game thread never calls ReShade's runtime.
 

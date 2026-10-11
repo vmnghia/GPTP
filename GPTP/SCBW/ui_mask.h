@@ -27,4 +27,10 @@ void reset(Mask& mask, u32 width, u32 height);
 //mask changes nothing.
 void addConsoleImage(Mask& mask, const u8* image);
 
+//What ReShade's texture holds: where effects apply, 255 in the game view and
+//0 on the UI, the mask's inverse. That way an empty texture (a new one,
+//outside a game) means no effects anywhere, so the menus stay free of them
+//before the plugin has uploaded anything.
+void effectsArea(const Mask& mask, std::vector<u8>& effects);
+
 } //uimask

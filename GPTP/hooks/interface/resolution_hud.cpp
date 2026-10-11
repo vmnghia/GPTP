@@ -448,16 +448,18 @@ void __cdecl widenConsoleImage() {
 }
 
 //The console image as the game will use it, at any screen size: tell ReShade
-//where the console is, so effects can be kept off it
+//where the game view is, so effects show there and stay off the console
 //(docs/superpowers/specs/2026-10-11-reshade-ui-mask-design.md).
 void __cdecl consoleImageLoaded() {
   widenConsoleImage();
   if (consoleImage->pixels == NULL)
     return;
   static uimask::Mask mask;
+  static std::vector<u8> effects;
   uimask::reset(mask, consoleImage->width, consoleImage->height);
   uimask::addConsoleImage(mask, consoleImage->pixels);
-  reshadebridge::publishMask(mask.pixels.data(), mask.width, mask.height);
+  uimask::effectsArea(mask, effects);
+  reshadebridge::publishEffectsArea(effects.data(), mask.width, mask.height);
 }
 
 } //unnamed namespace
