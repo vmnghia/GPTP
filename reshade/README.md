@@ -29,9 +29,8 @@ Effects between the two are undone on the console; effects after `ManifoldMask_B
 cover everything. Nothing else is needed: the mask follows the race you play and the
 resolution in `Manifold.ini`.
 
-To see what is masked, tick "Display Mask" in ManifoldUIMask's settings: white is kept
-free of effects. Outside a game the mask is empty and the screen goes black, so untick it
-afterwards.
+To see what is masked, tick "Display Mask" in ManifoldUIMask's settings: the area kept free
+of effects is tinted magenta. Outside a game the mask is empty and nothing is tinted.
 
 ## If the mask does not appear
 

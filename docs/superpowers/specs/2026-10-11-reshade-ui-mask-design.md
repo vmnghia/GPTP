@@ -170,7 +170,9 @@ installed), in the namespace `ManifoldUIMask`:
 - `BackupTex`, the frame's size: `ManifoldMask_Top` copies the frame into it.
 - `MaskTex`, the frame's size, R8, no `source` file: zero until the plugin uploads.
 - `ManifoldMask_Bottom`: `lerp(frame, backup, mask)`.
-- One option, "Display Mask", which shows the mask instead of the picture, for checking.
+- One option, "Display Mask", which tints the masked area magenta over the picture, for
+  checking. (At first it showed the mask instead of the picture; with the mask empty that
+  blacked out the menus, so a game could not be started with it on: the user, 2026-10-11.)
 
 With no plugin, or outside a game, the mask is zero and the pair does nothing.
 

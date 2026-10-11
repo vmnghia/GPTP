@@ -14,8 +14,8 @@ namespace ManifoldUIMask
 
 uniform bool DisplayMask <
 	ui_label = "Display Mask";
-	ui_tooltip = "Shows the mask instead of the picture: white is kept free of effects.\n"
-	             "For checking only. Outside a game the mask is empty, so the screen is black.";
+	ui_tooltip = "Tints the area that is kept free of effects magenta. For checking only.\n"
+	             "Outside a game the mask is empty, so nothing is tinted.";
 > = false;
 
 texture BackBufferTex : COLOR;
@@ -43,9 +43,10 @@ float4 BackupPS(float4 position : SV_Position, float2 texcoord : TEXCOORD) : SV_
 float4 RestorePS(float4 position : SV_Position, float2 texcoord : TEXCOORD) : SV_Target
 {
 	float mask = tex2D(Mask, texcoord).r;
+	float4 color = lerp(tex2D(BackBuffer, texcoord), tex2D(Backup, texcoord), mask);
 	if (DisplayMask)
-		return float4(mask, mask, mask, 1.0);
-	return lerp(tex2D(BackBuffer, texcoord), tex2D(Backup, texcoord), mask);
+		color.rgb = lerp(color.rgb, float3(1.0, 0.0, 1.0), mask * 0.5);
+	return color;
 }
 
 technique ManifoldMask_Top <
