@@ -398,9 +398,10 @@ bool nextFrame()
             plugins::drawBuildProgress(unit);
         }
 
-        for (int i = 0; i < SELECTION_ARRAY_LENGTH; ++i)
+        // The whole selection, not vanilla's mirror of its first 12
+        for (u32 i = 0; i < selext::clientCount; ++i)
         {
-            CUnit *selUnit = clientSelectionGroup->unit[i];
+            CUnit *selUnit = selext::clientSel[i];
 
             if (selUnit == nullptr)
                 continue;

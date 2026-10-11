@@ -130,6 +130,7 @@
     <ClCompile Include="graphics\Font.cpp" />
     <ClCompile Include="graphics\graphics.cpp" />
     <ClCompile Include="graphics\graphics_errors.cpp" />
+    <ClCompile Include="graphics\line_walk.cpp" />
     <ClCompile Include="graphics\Shape.cpp" />
     <ClCompile Include="hooks\apply_upgrade_flags.cpp" />
     <ClCompile Include="hooks\apply_upgrade_flags_inject.cpp" />
@@ -423,6 +424,7 @@
     <ClInclude Include="graphics\graphics.h" />
     <ClInclude Include="graphics\graphics_errors.h" />
     <ClInclude Include="graphics\graphics_misc.h" />
+    <ClInclude Include="graphics\line_walk.h" />
     <ClInclude Include="graphics\Shape.h" />
     <ClInclude Include="hooks\apply_upgrade_flags.h" />
     <ClInclude Include="hooks\attack_priority.h" />

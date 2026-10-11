@@ -2,6 +2,7 @@
 #include "Bitmap.h"
 #include "../SCBW/scbwdata.h"
 #include "Font.h"
+#include "line_walk.h"
 #include <algorithm>
 #include <cassert>
 
@@ -566,38 +567,13 @@ namespace graphics {
 
 	void Bitmap::drawChevronLine(int x1, int y1, int x2, int y2, ColorId color, int dash, int gap, int direction,
 	                             int speed, bool hideDashes) {
-		const int arrowLength = 3;
-		double lineAngle = atan2(y2 - y1, x2 - x1);
+		// The pattern moves along the line with the game's clock
+		const int phase = ((*elapsedTimeFrames + speed) % (dash + gap)) * direction;
 
-		int count = ((*elapsedTimeFrames + speed) % (dash + gap)) * direction;
-
-		const int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
-		const int dy = -abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
-		int err = dx + dy;
-
-		int x = x1, y = y1;
-		this->drawDot(x1, y1, color);
-		this->drawDot(x2, y2, color);
-		if (count % (dash + gap) < dash && !hideDashes)
-			this->drawDot(x, y, color);
-		count++;
-		while (x != x2 || y != y2) {
-			const int e2 = err * 2;
-			if (e2 >= dy) {
-				err += dy;
-				x += sx;
-			}
-			if (e2 <= dx) {
-				err += dx;
-				y += sy;
-			}
-			if (count % (dash + gap) < dash && !hideDashes)
-				this->drawDot(x, y, color);
-			if (count % (dash + gap) == 0 || count % (dash + gap) == dash) {
-				this->drawArrow(x, y, arrowLength, lineAngle * 180 / 3.14159265358979323846264338327950288, color);
-			}
-			count++;
-		}
+		// The line may be far longer than the screen (an order across the map), and every selected
+		// unit draws several: linewalk walks only the part on the bitmap
+		linewalk::drawChevronLine(this->data, this->getWidth(), this->getHeight(), x1, y1, x2, y2, color, dash, gap,
+		                          phase, hideDashes);
 	}
 
 	//-------- Dotted line 2 colors drawing --------//
