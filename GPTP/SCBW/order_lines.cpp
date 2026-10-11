@@ -7,6 +7,11 @@ bool hasPosition(const Stop& stop) {
 	return stop.x != 0 || stop.y != 0;
 }
 
+Stop stopOf(u32 orderId, s32 storedX, s32 storedY, bool targetSeen, s32 targetX, s32 targetY) {
+	const Stop stop = {orderId, targetSeen ? targetX : storedX, targetSeen ? targetY : storedY};
+	return stop;
+}
+
 Kind kindOf(u32 orderId) {
 	switch (orderId) {
 	//The attack commands, on the ground or on a unit.

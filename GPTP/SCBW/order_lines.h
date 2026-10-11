@@ -15,6 +15,11 @@ struct Stop {
 	s32 x, y;
 };
 bool hasPosition(const Stop& stop);
+//An order's stop. The order stores the position its target unit had when the
+//order was given (storedX, storedY). While the local player sees that unit
+//(targetSeen) the line goes to where it is now (targetX, targetY); a unit out
+//of sight, or no unit, leaves the stored position.
+Stop stopOf(u32 orderId, s32 storedX, s32 storedY, bool targetSeen, s32 targetX, s32 targetY);
 
 //What a line is drawn as. ATTACK is any order that attacks, on the ground or
 //on a unit: unit types have their own orders for it (units.dat).

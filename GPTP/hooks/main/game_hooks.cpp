@@ -261,6 +261,28 @@ void drawBuildProgress(CUnit *unit)
     }
 }
 
+// Which sprites the local player sees (a bit per player), in a game and in a replay
+const u8 *const LOCAL_VISIBILITY = (u8 *)0x0057F0B0;
+const u8 *const REPLAY_VISIBILITY = (u8 *)0x006D0F18;
+
+// Whether the local player sees this unit now, by the rule a click selects by (0x46F161): its sprite is
+// out of the fog, and a cloaked or burrowed unit is detected. False for NULL and for a pointer that is
+// no living unit (an order may keep its target after the target dies).
+// Drawing only: nothing here feeds game state.
+bool seenByLocalPlayer(const CUnit *unit)
+{
+    if (unit < unitTable || unit >= unitTable + UNIT_ARRAY_LENGTH)
+        return false;
+    if (unit->sprite == NULL || unit->mainOrderId == OrderId::Die)
+        return false;
+    const u32 sees = scbw::isInReplay() ? *REPLAY_VISIBILITY : *LOCAL_VISIBILITY;
+    if (!(unit->sprite->visibilityFlags & sees))
+        return false;
+    if (unit->status & (UnitStatus::Cloaked + UnitStatus::RequiresDetection))
+        return (unit->visibilityStatus & sees) != 0;
+    return true;
+}
+
 void drawRallyPoint(CUnit *unit)
 {
     u16 rallyX, rallyY;
@@ -283,9 +305,25 @@ void drawRallyPoint(CUnit *unit)
         rallyY = unit->rally.pt.y;
     }
 
+    // New units follow a rally unit of their own player (0x466F50), so the line follows it too. With
+    // any other unit they walk to the point where it stood when the rally point was set.
+    if (rallyTarget != unit && seenByLocalPlayer(rallyTarget) && rallyTarget->playerId == unit->playerId)
+    {
+        rallyX = rallyTarget->position.x;
+        rallyY = rallyTarget->position.y;
+    }
+
     graphics::drawChevronLine(unit->position.x, unit->position.y, rallyX, rallyY, color, graphics::ON_MAP);
     graphics::drawDottedEllipse(rallyX - 8, rallyY - 4, rallyX + 8, rallyY + 4, color, graphics::ON_MAP);
     graphics::drawDot(rallyX, rallyY, color, graphics::ON_MAP);
+}
+
+// An order's stop: at its target unit while the local player sees it, else where the order says
+orderlines::Stop stopOfOrder(u32 orderId, const Target &target)
+{
+    const bool seen = seenByLocalPlayer(target.unit);
+    return orderlines::stopOf(orderId, target.pt.x, target.pt.y, seen, seen ? target.unit->position.x : 0,
+                              seen ? target.unit->position.y : 0);
 }
 
 void drawOrderQueue(CUnit *unit)
@@ -297,12 +335,9 @@ void drawOrderQueue(CUnit *unit)
     u32 count = 0;
     for (COrder *order = unit->orderQueueHead; order != NULL && count < QUEUED_MAX; order = order->next)
     {
-        queued[count].orderId = order->orderId;
-        queued[count].x = order->target.pt.x;
-        queued[count].y = order->target.pt.y;
-        ++count;
+        queued[count++] = stopOfOrder(order->orderId, order->target);
     }
-    const orderlines::Stop current = {unit->mainOrderId, unit->orderTarget.pt.x, unit->orderTarget.pt.y};
+    const orderlines::Stop current = stopOfOrder(unit->mainOrderId, unit->orderTarget);
 
     orderlines::Leg legs[QUEUED_MAX + 1];
     const u32 legCount = orderlines::legsOf(unit->position.x, unit->position.y, current, queued, count, legs);

@@ -52,6 +52,18 @@ int main() {
 	CHECK(hasPosition(stop(MOVE_ORDER, 0, 400)));
 	CHECK(hasPosition(stop(MOVE_ORDER, 300, 0)));
 
+	//an order on a unit: the line follows the unit while the player sees it
+	//(the order keeps the position the unit had when the order was given).
+	{
+		const Stop seen = stopOf(ATTACK_UNIT, 300, 400, true, 350, 480);
+		CHECK(seen.orderId == ATTACK_UNIT && seen.x == 350 && seen.y == 480);
+		//out of sight (fog, cloak, dead): the position the player last gave.
+		const Stop unseen = stopOf(ATTACK_UNIT, 300, 400, false, 350, 480);
+		CHECK(unseen.orderId == ATTACK_UNIT && unseen.x == 300 && unseen.y == 400);
+		//an order without a target stays one.
+		CHECK(!hasPosition(stopOf(STOP, 0, 0, false, 0, 0)));
+	}
+
 	//kinds: an attack on the ground or on a unit, patrol, and everything else.
 	CHECK(kindOf(ATTACK_MOVE) == ATTACK);
 	CHECK(kindOf(ATTACK_UNIT) == ATTACK);
