@@ -23,4 +23,9 @@ bool isBeingBuilt(u32 orderId, u32 remainingBuildTime, bool completed);
 //Anything else is its own type.
 u32 typeBeingBuilt(u32 unitType, bool completed, u32 queuedType);
 
+//How wide the bar's fill is, 0 to width: elapsed out of timeCost. It stays
+//inside the bar whatever the two say, and a time of 0 (the data can say so)
+//counts as done.
+s32 fillWidth(s32 elapsed, s32 timeCost, s32 width);
+
 } //buildprogress

@@ -160,7 +160,6 @@ void drawBuildProgress(CUnit *unit)
     int innerTop = top + 1;
     int innerRight = right - 1;
     int innerBottom = bottom;
-    float progress = 0;
     int progressWidth = 0;
 
     int queueLength = 0;
@@ -195,15 +194,15 @@ void drawBuildProgress(CUnit *unit)
     {
         for (int i = 0; i < 5; i++)
         {
-            // draw empty boxes border and background
-            graphics::drawBox(left + 8 * i, top + 6, left + 8 * i + 8, bottom + 4, graphics::COBALT, graphics::ON_MAP);
-            graphics::drawFilledBox(left + 8 * i + 1, innerTop + 5, left + 8 * i + 7, innerBottom + 3,
+            // draw empty boxes border and background: 4 px tall, a border all round and 2 px inside
+            graphics::drawBox(left + 8 * i, top + 6, left + 8 * i + 8, bottom + 5, graphics::COBALT, graphics::ON_MAP);
+            graphics::drawFilledBox(left + 8 * i + 1, innerTop + 6, left + 8 * i + 7, innerBottom + 4,
                                     graphics::CHARCOAL, graphics::ON_MAP);
 
             // draw filled boxes
             if (queueLength > 0 && i < queueLength)
             {
-                graphics::drawFilledBox(left + 8 * i + 1, innerTop + 5, left + 8 * i + 7, innerBottom + 3, 126,
+                graphics::drawFilledBox(left + 8 * i + 1, innerTop + 6, left + 8 * i + 7, innerBottom + 4, 126,
                                         graphics::ON_MAP);
             }
         }
@@ -246,7 +245,6 @@ void drawBuildProgress(CUnit *unit)
         const u32 builtType =
             buildprogress::typeBeingBuilt(unit->id, isCompleted, unit->buildQueue[unit->buildQueueSlot % 5]);
         timeCost = units_dat::TimeCost[builtType];
-        top = std::max(unit->getTop(), (short)unit->sprite->position.y);
         if (playerTable[unit->playerId].race == RaceId::Protoss)
         {
             timeCost += 24; // Protoss buildings warp flash animation time
@@ -255,8 +253,7 @@ void drawBuildProgress(CUnit *unit)
     }
 
     // draw progress
-    progress = (float)elapsedBuildTime / timeCost;
-    progressWidth = progress * (innerRight - innerLeft);
+    progressWidth = buildprogress::fillWidth(elapsedBuildTime, timeCost, innerRight - innerLeft);
     if (isTraining || isUpgradingOrResearching || isBuildingSelf)
     {
         graphics::drawFilledBox(innerLeft, innerTop, innerLeft + progressWidth, innerBottom - 1, graphics::AQUA,

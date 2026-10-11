@@ -80,6 +80,24 @@ int main() {
 	CHECK(typeBeingBuilt(HATCHERY, true, LAIR) == HATCHERY);
 	CHECK(typeBeingBuilt(BARRACKS, true, MARINE) == BARRACKS);
 
+	//the fill: elapsed of the time, as a part of the bar's width.
+	CHECK(fillWidth(0, 100, 50) == 0);
+	CHECK(fillWidth(50, 100, 50) == 25);
+	CHECK(fillWidth(100, 100, 50) == 50);
+	CHECK(fillWidth(1, 3, 100) == 33);
+	CHECK(fillWidth(2, 3, 100) == 66);
+	//the fill: never outside the bar, whatever the times say.
+	CHECK(fillWidth(150, 100, 50) == 50);
+	CHECK(fillWidth(-20, 100, 50) == 0);
+	//the fill: a time of 0 (data can say so) is done, not a division by 0.
+	CHECK(fillWidth(0, 0, 50) == 50);
+	CHECK(fillWidth(7, 0, 50) == 50);
+	//the fill: the longest time on the widest bar.
+	CHECK(fillWidth(65535, 65535, 2000) == 2000);
+	CHECK(fillWidth(65534, 65535, 2000) == 1999);
+	//the fill: a bar with no width.
+	CHECK(fillWidth(50, 100, 0) == 0);
+
 	if (failures != 0) {
 		printf("FAIL: %u checks (first at build_progress_test.cpp line %u)\n", failures, firstLine);
 		return 1;

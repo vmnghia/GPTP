@@ -32,4 +32,14 @@ u32 typeBeingBuilt(u32 unitType, bool completed, u32 queuedType) {
 	}
 }
 
+s32 fillWidth(s32 elapsed, s32 timeCost, s32 width) {
+	if (width <= 0)
+		return 0;
+	if (timeCost <= 0 || elapsed >= timeCost)
+		return width;
+	if (elapsed <= 0)
+		return 0;
+	return (s32)((long long)elapsed * width / timeCost);
+}
+
 } //buildprogress
