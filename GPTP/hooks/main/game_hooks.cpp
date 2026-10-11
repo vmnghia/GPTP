@@ -164,9 +164,13 @@ void drawBuildProgress(CUnit *unit)
 
     int queueLength = 0;
 
-    bool isTraining = unit->secondaryOrderId == OrderId::Train;
+    // The order and the work it is for: after a cancel the order goes on for a frame or two with
+    // nothing to do
+    bool isTraining =
+        buildprogress::isTraining(unit->secondaryOrderId, unit->buildQueue[unit->buildQueueSlot % 5]);
     bool isUpgradingOrResearching =
-        unit->mainOrderId == OrderId::ResearchTech || unit->mainOrderId == OrderId::Upgrade && !isTraining;
+        buildprogress::isResearching(unit->mainOrderId, unit->building.techType) ||
+        buildprogress::isUpgrading(unit->mainOrderId, unit->building.upgradeType) && !isTraining;
     const bool isCompleted = (unit->status & UnitStatus::Completed) != 0;
     bool isBuildingSelf = buildprogress::isBeingBuilt(unit->mainOrderId, unit->remainingBuildTime, isCompleted);
 

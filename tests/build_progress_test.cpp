@@ -22,7 +22,11 @@ void check(bool ok, u32 line) {
 
 //The game's order ids (SCBW/enumerations/OrderId.h).
 const u32 PLAYER_GUARD = 0x03, NOTHING = 0x17, TRAIN = 0x26, UNIT_MORPH = 0x2A, BUILDING_MORPH = 0x2B,
-          TERRAN_BUILD_SELF = 0x2C, ZERG_BUILD_SELF = 0x2D, PROTOSS_BUILD_SELF = 0x30;
+          TERRAN_BUILD_SELF = 0x2C, ZERG_BUILD_SELF = 0x2D, PROTOSS_BUILD_SELF = 0x30, TRAIN_FIGHTER = 0x3F,
+          RESEARCH = 0x4B, UPGRADE = 0x4C;
+//The game's tech and upgrade ids (TechId.h, UpgradeId.h): the last of each,
+//and the value for none.
+const u32 STIM_PACKS = 0, LAST_TECH = 43, NO_TECH = 44, INFANTRY_ARMOR = 0, LAST_UPGRADE = 60, NO_UPGRADE = 61;
 //The game's unit ids (SCBW/enumerations/UnitId.h).
 const u32 MARINE = 0, ZERGLING = 37, BARRACKS = 111, HATCHERY = 131, LAIR = 132, HIVE = 133,
           GREATER_SPIRE = 137, SPIRE = 141, SPAWNING_POOL = 142, CREEP_COLONY = 143, SPORE_COLONY = 144,
@@ -79,6 +83,32 @@ int main() {
 	//queued (a Hatchery in the frame its morph starts; a Barracks training).
 	CHECK(typeBeingBuilt(HATCHERY, true, LAIR) == HATCHERY);
 	CHECK(typeBeingBuilt(BARRACKS, true, MARINE) == BARRACKS);
+
+	//researching: the order, and a tech to research.
+	CHECK(isResearching(RESEARCH, STIM_PACKS));
+	CHECK(isResearching(RESEARCH, LAST_TECH));
+	//a cancel takes the tech away at once and leaves the order to end on its
+	//next run: nothing is being researched in between (the bar showed full).
+	CHECK(!isResearching(RESEARCH, NO_TECH));
+	CHECK(!isResearching(PLAYER_GUARD, STIM_PACKS));
+	CHECK(!isResearching(UPGRADE, STIM_PACKS));
+
+	//upgrading: the same, with the upgrade.
+	CHECK(isUpgrading(UPGRADE, INFANTRY_ARMOR));
+	CHECK(isUpgrading(UPGRADE, LAST_UPGRADE));
+	CHECK(!isUpgrading(UPGRADE, NO_UPGRADE));
+	CHECK(!isUpgrading(PLAYER_GUARD, INFANTRY_ARMOR));
+	CHECK(!isUpgrading(RESEARCH, INFANTRY_ARMOR));
+
+	//training: the order, and a unit in the queue's active slot.
+	CHECK(isTraining(TRAIN, MARINE));
+	CHECK(isTraining(TRAIN, ZERGLING));
+	//the last unit cancelled, or done: the queue is empty and the order ends
+	//a frame or two later (the bar showed empty in between).
+	CHECK(!isTraining(TRAIN, NONE));
+	CHECK(!isTraining(NOTHING, MARINE));
+	//a Carrier building Interceptors has another order, and no bar.
+	CHECK(!isTraining(TRAIN_FIGHTER, MARINE));
 
 	//the fill: elapsed of the time, as a part of the bar's width.
 	CHECK(fillWidth(0, 100, 50) == 0);

@@ -23,6 +23,16 @@ bool isBeingBuilt(u32 orderId, u32 remainingBuildTime, bool completed);
 //Anything else is its own type.
 u32 typeBeingBuilt(u32 unitType, bool completed, u32 queuedType);
 
+//Whether a building is researching, upgrading or training. Each takes its
+//order and the work the order is for (the tech, the upgrade, the unit in the
+//build queue's active slot). The order alone is not enough: a cancel takes
+//the work away at once and leaves the order to end on its next run
+//(0x453E30, 0x454280, 0x466A70), and so does the last unit of a queue when
+//it is done (0x468420). In between the order says busy with nothing to do.
+bool isResearching(u32 orderId, u32 techType);
+bool isUpgrading(u32 orderId, u32 upgradeType);
+bool isTraining(u32 secondaryOrderId, u32 queuedType);
+
 //How wide the bar's fill is, 0 to width: elapsed out of timeCost. It stays
 //inside the bar whatever the two say, and a time of 0 (the data can say so)
 //counts as done.

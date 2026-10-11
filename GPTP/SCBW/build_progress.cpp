@@ -1,6 +1,8 @@
 #include "build_progress.h"
 #include "enumerations/OrderId.h"
+#include "enumerations/TechId.h"
 #include "enumerations/UnitId.h"
+#include "enumerations/UpgradeId.h"
 
 namespace buildprogress {
 
@@ -30,6 +32,18 @@ u32 typeBeingBuilt(u32 unitType, bool completed, u32 queuedType) {
 	default:
 		return unitType;
 	}
+}
+
+bool isResearching(u32 orderId, u32 techType) {
+	return orderId == OrderId::ResearchTech && techType < TechId::None;
+}
+
+bool isUpgrading(u32 orderId, u32 upgradeType) {
+	return orderId == OrderId::Upgrade && upgradeType < UpgradeId::None;
+}
+
+bool isTraining(u32 secondaryOrderId, u32 queuedType) {
+	return secondaryOrderId == OrderId::Train && queuedType < UnitId::None;
 }
 
 s32 fillWidth(s32 elapsed, s32 timeCost, s32 width) {
