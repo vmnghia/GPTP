@@ -5,6 +5,7 @@
 
 #include <SCBW/UnitFinder.h>
 #include <SCBW/api.h>
+#include <SCBW/order_lines.h>
 #include "../interface/resolution.h"
 #include "../interface/reshade_bridge.h"
 #include "../recv_commands/smart_cast.h"
@@ -289,69 +290,33 @@ void drawRallyPoint(CUnit *unit)
 
 void drawOrderQueue(CUnit *unit)
 {
-    COrder *currentOrder = unit->orderQueueHead;
-    graphics::ColorId color = graphics::GREEN;
-
-    if (currentOrder != NULL)
+    // The current order, then the queue. Capped: vanilla queues 8 orders at most, and a damaged list
+    // must not hang the frame.
+    const u32 QUEUED_MAX = 64;
+    orderlines::Stop queued[QUEUED_MAX];
+    u32 count = 0;
+    for (COrder *order = unit->orderQueueHead; order != NULL && count < QUEUED_MAX; order = order->next)
     {
-        // SCV destination while constructing
-        if (currentOrder->target.pt.x == 0 && currentOrder->target.pt.y == 0)
-        {
-            if (unit->orderQueueTail != NULL)
-                graphics::drawDottedLine(unit->position.x, unit->position.y, unit->orderQueueTail->target.pt.x,
-                                         unit->orderQueueTail->target.pt.y, unit->getColor(),
-                                         graphics::CoordType::ON_MAP);
-        }
-        else
-        {
-            switch (currentOrder->orderId)
-            {
-            case OrderId::AttackMove:
-            case OrderId::AttackUnit:
-                color = graphics::RED;
-                break;
-            case OrderId::Patrol:
-                color = graphics::BLUE;
-                break;
-            default:
-                color = graphics::GREEN;
-                break;
-            }
-            graphics::drawChevronLine(unit->position.x, unit->position.y, unit->orderTarget.pt.x,
-                                      unit->orderTarget.pt.y, color, graphics::CoordType::ON_MAP);
-            graphics::drawDottedEllipse(unit->orderTarget.pt.x - 8, unit->orderTarget.pt.y - 4,
-                                        unit->orderTarget.pt.x + 8, unit->orderTarget.pt.y + 4, color,
-                                        graphics::ON_MAP);
+        queued[count].orderId = order->orderId;
+        queued[count].x = order->target.pt.x;
+        queued[count].y = order->target.pt.y;
+        ++count;
+    }
+    const orderlines::Stop current = {unit->mainOrderId, unit->orderTarget.pt.x, unit->orderTarget.pt.y};
 
-            graphics::drawChevronLine(unit->orderTarget.pt.x, unit->orderTarget.pt.y, currentOrder->target.pt.x,
-                                      currentOrder->target.pt.y, color, graphics::CoordType::ON_MAP);
-            graphics::drawDottedEllipse(currentOrder->target.pt.x - 8, currentOrder->target.pt.y - 4,
-                                        currentOrder->target.pt.x + 8, currentOrder->target.pt.y + 4, color,
-                                        graphics::ON_MAP);
+    orderlines::Leg legs[QUEUED_MAX + 1];
+    const u32 legCount = orderlines::legsOf(unit->position.x, unit->position.y, current, queued, count, legs);
+    for (u32 i = 0; i < legCount; ++i)
+    {
+        const orderlines::Leg &leg = legs[i];
+        graphics::ColorId color = graphics::GREEN;
+        if (leg.kind == orderlines::ATTACK)
+            color = graphics::RED;
+        else if (leg.kind == orderlines::PATROL)
+            color = graphics::BLUE;
 
-            currentOrder = currentOrder->next;
-
-            while (currentOrder != NULL && (currentOrder->target.pt.x != 0 && currentOrder->target.pt.y != 0))
-            {
-                if (currentOrder->orderId == OrderId::AttackMove || currentOrder->orderId == OrderId::AttackUnit)
-                {
-                    color = graphics::RED;
-                }
-                else
-                {
-                    color = graphics::GREEN;
-                }
-
-                graphics::drawChevronLine(currentOrder->prev->target.pt.x, currentOrder->prev->target.pt.y,
-                                          currentOrder->target.pt.x, currentOrder->target.pt.y, color,
-                                          graphics::CoordType::ON_MAP);
-                graphics::drawDottedEllipse(currentOrder->target.pt.x - 8, currentOrder->target.pt.y - 4,
-                                            currentOrder->target.pt.x + 8, currentOrder->target.pt.y + 4, color,
-                                            graphics::ON_MAP);
-
-                currentOrder = currentOrder->next;
-            }
-        }
+        graphics::drawChevronLine(leg.fromX, leg.fromY, leg.toX, leg.toY, color, graphics::ON_MAP);
+        graphics::drawDottedEllipse(leg.toX - 8, leg.toY - 4, leg.toX + 8, leg.toY + 4, color, graphics::ON_MAP);
     }
 }
 

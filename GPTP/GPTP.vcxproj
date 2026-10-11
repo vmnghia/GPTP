@@ -330,6 +330,7 @@
     <ClCompile Include="SCBW\selection_ext_core.cpp" />
     <ClCompile Include="SCBW\buttonsets_file.cpp" />
     <ClCompile Include="SCBW\console_raise.cpp" />
+    <ClCompile Include="SCBW\order_lines.cpp" />
     <ClCompile Include="SCBW\ui_mask.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_selftest.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_exe.cpp" />
@@ -523,6 +524,7 @@
     <ClInclude Include="SCBW\selection_ext.h" />
     <ClInclude Include="SCBW\buttonsets_file.h" />
     <ClInclude Include="SCBW\console_raise.h" />
+    <ClInclude Include="SCBW\order_lines.h" />
     <ClInclude Include="SCBW\ui_mask.h" />
     <ClInclude Include="hooks\selection_ext\selection_ext_hooks.h" />
     <ClInclude Include="hooks\selection_ext\sel_exe.h" />
