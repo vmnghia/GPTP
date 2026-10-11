@@ -39,21 +39,37 @@ already in it (such as the Manifold Editor's `Manifold\buttonsets.bin`) stay. A 
 once made the selection panel silently fall back to vanilla's 12 wireframes.
 `docs/resolution.md` §6 "Working tips" has the paths and helper scripts.
 
-**Claude cannot build or run this.** The remote session is Linux with no MSVC, no Windows,
-and no StarCraft install. Nothing here can be compile-checked before the user builds it.
-Consequences worth internalizing:
+The `reshade/` folder is not in the MPQ: its files sit next to `StarCraft.exe`. A changed
+`ManifoldUIMask.fx` is copied into the game folder's `reshade-shaders\Shaders\` by hand and
+picked up by Reload in ReShade's overlay, with no rebuild and no repack.
 
-- Include chains, MSVC-specific syntax, and type mismatches are only caught by the user's
-  build. Re-read edits for these deliberately — a missing include costs a full round trip.
-- Every change costs the user a rebuild plus an in-game test. Batch related fixes, and when
+**Claude cannot run this, and in a remote session cannot build it either.** Which it is
+depends on where the session runs; check the platform before assuming.
+
+- A **remote session** is Linux with no MSVC, no Windows and no StarCraft install. Nothing
+  can be compile-checked before the user builds it.
+- A **local session on the user's Windows machine** can build: `tests/verify.ps1` runs
+  there, and the plugin lands next to `SCManifold.exe`. It still cannot repack the exe or
+  run the game, and the game runs elevated, so its memory cannot be read from the session.
+
+Either way, the consequences worth internalizing:
+
+- In a remote session, include chains, MSVC-specific syntax, and type mismatches are only
+  caught by the user's build. Re-read edits for these deliberately — a missing include costs
+  a full round trip. In a local session, run `tests/verify.ps1` before handing over.
+- Every change costs the user a repack plus an in-game test. Batch related fixes, and when
   debugging, prefer instrumentation that answers several questions in one run over a guess
   that answers one.
-- Never claim a change is verified. Say what was reasoned through and what is unverified.
+- Never claim a change is verified in game. Say what was built or reasoned through and what
+  is unverified.
 
 "Is the DLL I'm running actually current?" comes up often enough to be worth settling rather
 than assuming. The game-start message from `initializeGame()` (`hooks/main/game_hooks.cpp`)
 prints a `__DATE__ __TIME__` build stamp. It only refreshes when that file is recompiled, so
 touch `game_hooks.cpp` (or do a full rebuild) before building to make it authoritative.
+A stamp older than the build just made means the exe was not repacked: compare
+`SCManifold.exe`'s modified time with `GPTP.qdp`'s. With ReShade installed, `ReShade.log`
+next to `StarCraft.exe` also names the plugin when a game starts.
 
 ## Architecture
 
@@ -194,10 +210,18 @@ defined, and `checkLogFile()` opens a **relative** path, so any file it does wri
 StarCraft's working directory rather than near the project. Prefer `printText`, capped with a
 static counter so a screenful of units doesn't flood the message area.
 
+`printText` only works on the game thread. Code that runs on another thread (ReShade's
+callbacks arrive on the renderer's) should set flags for the game thread to print, or
+write to that host's own log: `reshade::log::message` goes to `ReShade.log` next to
+`StarCraft.exe`, which a local session can read without a screenshot.
+
 ## Repository layout
 
-- `master` — main line. Resolution, the 5×3 command card, extended selection, smart-build
-  and smart-casting all landed here.
+- `master` — main line. Resolution, the 5×3 command card, extended selection, smart-build,
+  smart-casting, the Manifold Editor and the ReShade UI mask all landed here.
+- `claude/ecstatic-darwin-ztohwv` — the branch Claude's sessions work on. It reaches
+  `master` by a pull request or a local fast-forward, when the user says so; pushing is the
+  user's call too. A local `master` can be well ahead of `origin/master`.
 - `feature/beam-weapon` — in-memory GRP beam rendering (see `docs/beam-weapons.md`)
 - `wip` — archival: the original unsplit dump, kept for reference
 

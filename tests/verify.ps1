@@ -1,5 +1,5 @@
 # Runs the host tests, then builds the plugin (Debug).
-# Exit code 0 only if both succeed. The build log goes to tests\out\build-plugin.log.
+# Exit code 0 only if all succeed. The build log goes to tests\out\build-plugin.log.
 $ErrorActionPreference = "Continue"
 $root = Split-Path -Parent $PSScriptRoot
 & "$PSScriptRoot\selection_ext_test.bat" 2>$null

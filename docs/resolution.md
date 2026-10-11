@@ -507,9 +507,9 @@ starfield handled (§5). Features 1 and 2 below are done.
    **The FireGraft import put FireGraft's 18 sets on the wrong units** (its set numbers
    are not unit ids) `[FIXED 2026-10-08, re-import tested in the editor 2026-10-08]`: open the exe, use **Re-import
    FireGraft's sets...**, redo the editor's own edits (the Marine's Stim Packs), save.
-   **String editor** (part 2, `stat_txt.tbl`, after PyMS's PyTBL) `[BUILT 2026-10-08; not yet
-   run on Windows]`: spec `docs/superpowers/specs/2026-10-08-string-editor-design.md`, round
-   in its §8.
+   **String editor** (part 2, `stat_txt.tbl`, after PyMS's PyTBL) `[BUILT 2026-10-08; tested
+   on Windows and in game 2026-10-09]`: spec
+   `docs/superpowers/specs/2026-10-08-string-editor-design.md`, round in its §8.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
    first game frame; every client applies it in the same frame; replays record it. This
    needs the view size switchable at game start. The buffers would be allocated for the
@@ -517,12 +517,40 @@ starfield handled (§5). Features 1 and 2 below are done.
 6. **Release build:** the plugin is built as Debug into `GPTP\Debug\`. Turn
    `RESOLUTION_DEBUG` back on when changing the layout.
 
+**Outside that list: ReShade** (asked for by the user on 2026-10-10).
+- **ReShade UI mask** `[BUILT, tested in game 2026-10-11]`: with ReShade over cnc-ddraw,
+  the plugin registers as a ReShade add-on and uploads where the game view is, so the
+  effects between `ManifoldMask_Top` and `ManifoldMask_Bottom` show there only: not on the
+  console, not in the menus. Spec
+  `docs/superpowers/specs/2026-10-11-reshade-ui-mask-design.md` (its status line has the
+  rounds; §11 is the menus rule; §12 the review points left open); player notes
+  `reshade/README.md`. Works on cnc-ddraw's `opengl` and `direct3d9` renderers.
+- **Open:**
+  - **Multiplayer** `[VERIFY]`: ReShade's standard build stops calling add-ons under
+    network traffic, so the masked effects may not show in a multiplayer game. Try a LAN
+    game with the standard build and with the "full add-on support" build.
+  - **The user's own preset**: to be bundled into `reshade/`, with the third-party shaders
+    it uses and their licences, once the user has settled on a look. Until then
+    `reshade/ReShadePreset.ini` only switches the mask on.
+  - **More regions** `[PROPOSED]`: the resource counters, message lines and dialogs over
+    the game view still get the effects. A region is one more `uimask::add...` function.
+
 **Working tips for the next session.**
 - Touch `hooks/main/game_hooks.cpp` before building, so the build stamp that prints in game
   updates. The plugin must be repacked into `SCManifold.exe` before testing.
-- The game runs from `D:\Games\Starcraft 1.16.1\Starcraft.exe`, and cnc-ddraw
-  (`windowed=true` with `fullscreen=true`, i.e. borderless, and `maintas=false`) goes next
-  to it.
+- The game runs from `D:\Games\Starcraft 1.16.1\Starcraft.exe`, and cnc-ddraw goes next to
+  it, with `maintas=false` and, since ReShade, `renderer=opengl`. The user has run it both
+  borderless (`windowed=true` with `fullscreen=true`) and as a plain window.
+- **With ReShade installed, `ReShade.log` next to `StarCraft.exe` shows which plugin is
+  running**: at game start it logs `Registered add-on "Starcraft: Manifold"`, and it is
+  rewritten on every launch. A "nothing changed" report on 2026-10-11 was an exe that had
+  not been repacked: the log still showed the previous build's messages, and
+  `SCManifold.exe` was older than `GPTP.qdp`. Look there before debugging.
+- **`reshade/` is not in the MPQ.** A changed `ManifoldUIMask.fx` is copied by hand into
+  the game folder's `reshade-shaders\Shaders\` and picked up by Reload in ReShade's
+  overlay: no rebuild, no repack. The plugin and the effect must agree on the texture's
+  name and meaning (`EffectsTex`, 255 = effects), so a change to either side of that goes
+  out as a pair.
 - **A new `rez\` file must be added to the repack by hand**: the repack tool keeps its
   own list. Check the exe with `D:\SC Modding\resexp-analysis\mpqfind.py SCManifold.exe
   "rez\statdata.bin"` (lists the file's size in the exe's MPQ, or "missing");

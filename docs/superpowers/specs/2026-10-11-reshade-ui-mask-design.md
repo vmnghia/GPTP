@@ -254,7 +254,14 @@ a zero-sized mask and a null image change nothing.
 9. `opengl32.dll` renamed away: the game runs as before, with no message and no slowdown.
 10. Exactly 640x480 in `Manifold.ini`: the mask fits the vanilla-sized console.
 
+The round as run (the plan's Task 5) had three more: restarting a mission and loading a
+save of another race; resizing the window and Alt+Tab; and a last question about crashes
+and stutter. All 13 passed (status line). Items 1 and 3 read differently since: Display
+Mask tints (§4.4), and the menus have no effects (§11).
+
 ## 9. Afterwards
+
+All three done on 2026-10-11:
 
 - Remove what the earlier attempts left in the game folder: `reshade-shaders\make_uimask.py`
   and the third-party `reshade-shaders\Shaders\UIMask.fx`.
@@ -304,3 +311,33 @@ unmasked.
 between the two techniques shows; in a game the view has them and the console does not;
 Display Mask tints the whole screen in the menus and only the console in a game; the
 overlay's Reload in a game brings the effects back in the view.
+
+## 12. Review points left open
+
+From the whole-branch review of 2026-10-11 (a fresh reviewer, against ReShade 6.8.0's
+source). None was judged worth a rebuild on its own; take them when the code is next
+touched.
+
+- **An allocation failure crashes the game.** A `std::bad_alloc` from the mask's vectors
+  (`consoleImageLoaded()`, `publishEffectsArea`) would unwind through the naked stub into
+  game code, where `widenConsoleImage()` only gives up. A `try`/`catch (...)` around the
+  mask lines would keep a cosmetic feature's failure cosmetic.
+- **A lost reload under network traffic** (standard ReShade build, §6). If the texture is
+  recreated while add-on events are suppressed, the reload event is lost, and in OpenGL
+  the new texture can get the old one's handle, so the poll sees no change. Since §11 that
+  means no effects until the next game. A forced upload every N polls would cover it, at
+  the price of one "Resizing image data" line in `ReShade.log` per upload whenever the
+  window is not the game's size.
+- **Registering late** changes ReShade's add-on lists (which have no lock) from the game
+  thread while its renderer may be reading them: a one-off window, inherent to registering
+  after ReShade has started, and the spike did the same. Wants a comment in
+  `reshade_bridge.cpp`.
+- **More than one effect runtime** would share `wantUpload`, `uploadedView` and `presents`.
+  cnc-ddraw has one. Wants a comment.
+- **The mask's edges are soft** by a pixel or two when the window is not the game's size:
+  ReShade resizes the upload with a smoothing filter.
+- `NAME` repeats `PLUGIN_NAME` by hand (the price of keeping the plugin's headers out of
+  `reshade_bridge.cpp`), and the two `static` buffers in `consoleImageLoaded()` could be
+  file-level.
+- Timed with the Debug CRT, as the user runs it: the flood fill takes about 125 ms at
+  1600x900 and 313 ms at 2048x1536, once per game start, during loading.
