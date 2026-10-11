@@ -28,7 +28,7 @@ const u32 PLAYER_GUARD = 0x03, NOTHING = 0x17, TRAIN = 0x26, UNIT_MORPH = 0x2A, 
 //and the value for none.
 const u32 STIM_PACKS = 0, LAST_TECH = 43, NO_TECH = 44, INFANTRY_ARMOR = 0, LAST_UPGRADE = 60, NO_UPGRADE = 61;
 //The game's unit ids (SCBW/enumerations/UnitId.h).
-const u32 MARINE = 0, ZERGLING = 37, BARRACKS = 111, HATCHERY = 131, LAIR = 132, HIVE = 133,
+const u32 MARINE = 0, ZERGLING = 37, INTERCEPTOR = 73, SCARAB = 85, BARRACKS = 111, HATCHERY = 131, LAIR = 132, HIVE = 133,
           GREATER_SPIRE = 137, SPIRE = 141, SPAWNING_POOL = 142, CREEP_COLONY = 143, SPORE_COLONY = 144,
           SUNKEN_COLONY = 146, GATEWAY = 160, NONE = 228;
 
@@ -107,8 +107,70 @@ int main() {
 	//a frame or two later (the bar showed empty in between).
 	CHECK(!isTraining(TRAIN, NONE));
 	CHECK(!isTraining(NOTHING, MARINE));
-	//a Carrier building Interceptors has another order, and no bar.
-	CHECK(!isTraining(TRAIN_FIGHTER, MARINE));
+	//a Carrier building Interceptors or a Reaver building Scarabs: the
+	//game's other order for making a unit inside another. No unit types are
+	//named, so a unit that comes to produce by either order has the bar.
+	CHECK(isTraining(TRAIN_FIGHTER, INTERCEPTOR));
+	CHECK(isTraining(TRAIN_FIGHTER, SCARAB));
+	//a Carrier keeps that order when its queue is empty (it repairs its
+	//Interceptors by it): nothing queued, no bar.
+	CHECK(!isTraining(TRAIN_FIGHTER, NONE));
+	CHECK(!isTraining(PLAYER_GUARD, INTERCEPTOR));
+
+	//the bar's frame: over a building, as wide as the building's box and 24
+	//px above it; 5 rows tall, the border included.
+	{
+		//a Barracks at (1000, 800): its box reaches 48 left, 40 up, 56 right.
+		const Frame f = barFrame(1000, 800, 48, 40, 56, true, false, true);
+		CHECK(f.left == 952 && f.right == 1056 && f.top == 736 && f.bottom == 740);
+		//the same without a queue (under construction).
+		const Frame g = barFrame(1000, 800, 48, 40, 56, true, false, false);
+		CHECK(g.left == 952 && g.right == 1056 && g.top == 736 && g.bottom == 740);
+	}
+	//the bar's frame: an add-on's is 8 px right and 4 px down of that.
+	{
+		const Frame f = barFrame(1000, 800, 37, 16, 31, true, true, false);
+		CHECK(f.left == 971 && f.right == 1039 && f.top == 764 && f.bottom == 768);
+	}
+	//the bar's frame: over a unit, 16 px above its box.
+	{
+		//a Carrier: 32 left, 32 up, 31 right.
+		const Frame f = barFrame(500, 400, 32, 32, 31, false, false, true);
+		CHECK(f.left == 468 && f.right == 531 && f.top == 352 && f.bottom == 356);
+	}
+	//the bar's frame: with queue boxes it is at least as wide as the five of
+	//them (41 px), centred on the unit.
+	{
+		//a Reaver: 16 left, 16 up, 15 right, narrower than its queue.
+		const Frame f = barFrame(500, 400, 16, 16, 15, false, false, true);
+		CHECK(f.left == 480 && f.right == 520 && f.top == 368 && f.bottom == 372);
+		CHECK(f.right - f.left == QUEUE_WIDTH);
+		//a narrow building that trains would get the same.
+		const Frame b = barFrame(500, 400, 16, 12, 16, true, false, true);
+		CHECK(b.left == 480 && b.right == 520 && b.top == 364);
+	}
+	//the bar's frame: without queue boxes a narrow one stays as wide as its
+	//box (a Pylon warping in).
+	{
+		const Frame f = barFrame(500, 400, 16, 12, 16, true, false, false);
+		CHECK(f.left == 484 && f.right == 516 && f.top == 364 && f.bottom == 368);
+	}
+
+	//whose bars show: the local player's own.
+	CHECK(isShownFor(2, 2, false, false, true));
+	//an ally's, where the local player sees the unit; not in the fog (a bar
+	//there gave the unit away).
+	CHECK(isShownFor(3, 2, false, true, true));
+	CHECK(!isShownFor(3, 2, false, true, false));
+	//never an enemy's, seen or not.
+	CHECK(!isShownFor(5, 2, false, false, true));
+	CHECK(!isShownFor(5, 2, false, false, false));
+	//in a replay every player's.
+	CHECK(isShownFor(5, 2, true, false, false));
+	//never the neutral players' (a Vespene Geyser), in a replay either.
+	CHECK(!isShownFor(11, 2, false, false, true));
+	CHECK(!isShownFor(11, 2, true, false, true));
+	CHECK(!isShownFor(8, 2, true, false, true));
 
 	//the fill: elapsed of the time, as a part of the bar's width.
 	CHECK(fillWidth(0, 100, 50) == 0);

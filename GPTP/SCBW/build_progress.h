@@ -23,15 +23,38 @@ bool isBeingBuilt(u32 orderId, u32 remainingBuildTime, bool completed);
 //Anything else is its own type.
 u32 typeBeingBuilt(u32 unitType, bool completed, u32 queuedType);
 
-//Whether a building is researching, upgrading or training. Each takes its
-//order and the work the order is for (the tech, the upgrade, the unit in the
-//build queue's active slot). The order alone is not enough: a cancel takes
-//the work away at once and leaves the order to end on its next run
-//(0x453E30, 0x454280, 0x466A70), and so does the last unit of a queue when
-//it is done (0x468420). In between the order says busy with nothing to do.
+//Whether a unit is researching, upgrading or training. Each takes its order
+//and the work the order is for (the tech, the upgrade, the unit in the build
+//queue's active slot). Training is either of the game's two orders for
+//making a unit inside another: a building's, and the one a Carrier builds
+//Interceptors and a Reaver builds Scarabs by. No unit type is named: a unit
+//that produces by either order is training.
+//The order alone is not enough: a cancel takes the work away at once and
+//leaves the order to end on its next run (0x453E30, 0x454280, 0x466A70), and
+//so does the last unit of a queue when it is done (0x468420). In between the
+//order says busy with nothing to do. A Carrier keeps its order for good.
 bool isResearching(u32 orderId, u32 techType);
 bool isUpgrading(u32 orderId, u32 upgradeType);
 bool isTraining(u32 secondaryOrderId, u32 queuedType);
+
+//Whose bars show: the local player's own; an ally's where the local player
+//sees the unit (seen: out of the fog, and detected if cloaked); every
+//player's in a replay; never an enemy's, nor the neutral players' (owner 8
+//and up: a Vespene Geyser).
+bool isShownFor(u32 owner, u32 localPlayer, bool inReplay, bool allied, bool seen);
+
+//The bar's frame, its border included: 5 rows tall.
+struct Frame {
+	s32 left, top, right, bottom;
+};
+//The five queue boxes under a bar reach this far right of its left edge.
+const s32 QUEUE_WIDTH = 40;
+//The frame over a unit whose sprite is at (x, y) and whose box reaches
+//boxLeft, boxUp and boxRight from there. Over a building it is as wide as
+//the box and 24 px above it (an add-on's is 8 px right and 4 px down of
+//that); over any other unit it is 16 px above. With queue boxes under it
+//(withQueue) it is at least as wide as they are, centred on the unit.
+Frame barFrame(s32 x, s32 y, s32 boxLeft, s32 boxUp, s32 boxRight, bool building, bool addon, bool withQueue);
 
 //How wide the bar's fill is, 0 to width: elapsed out of timeCost. It stays
 //inside the bar whatever the two say, and a time of 0 (the data can say so)

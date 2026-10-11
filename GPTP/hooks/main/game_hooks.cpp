@@ -132,17 +132,36 @@ void initializeGame()
     }
 }
 
-// Whose bars show: the local player's, and allies' where the local player sees them;
-// every player's in a replay; never the neutral player's (a geyser) or an enemy's.
+// Which sprites the local player sees (a bit per player), in a game and in a replay
+const u8 *const LOCAL_VISIBILITY = (u8 *)0x0057F0B0;
+const u8 *const REPLAY_VISIBILITY = (u8 *)0x006D0F18;
+
+// Whether the local player sees this unit now, by the rule a click selects by (0x46F161): its sprite is
+// out of the fog, and a cloaked or burrowed unit is detected. False for NULL and for a pointer that is
+// no living unit (an order may keep its target after the target dies).
+// Drawing only: nothing here feeds game state.
+bool seenByLocalPlayer(const CUnit *unit)
+{
+    if (unit < unitTable || unit >= unitTable + UNIT_ARRAY_LENGTH)
+        return false;
+    if (unit->sprite == NULL || unit->mainOrderId == OrderId::Die)
+        return false;
+    const u32 sees = scbw::isInReplay() ? *REPLAY_VISIBILITY : *LOCAL_VISIBILITY;
+    if (!(unit->sprite->visibilityFlags & sees))
+        return false;
+    if (unit->status & (UnitStatus::Cloaked + UnitStatus::RequiresDetection))
+        return (unit->visibilityStatus & sees) != 0;
+    return true;
+}
+
+// Whose bars show (buildprogress::isShownFor): the local player's, allies' where the local player sees
+// the unit, every player's in a replay.
 // Drawing only: nothing here feeds game state.
 bool showsBuildProgress(const CUnit *unit)
 {
-    if (unit->playerId >= PLAYABLE_PLAYER_COUNT)
-        return false;
-    if (scbw::isInReplay() || unit->playerId == *LOCAL_NATION_ID)
-        return true;
     const u8 local = (u8)*LOCAL_NATION_ID;
-    return scbw::isAlliedTo(local, unit->playerId) && unit->isVisibleTo(local);
+    const bool allied = unit->playerId < PLAYABLE_PLAYER_COUNT && scbw::isAlliedTo(local, unit->playerId);
+    return buildprogress::isShownFor(unit->playerId, local, scbw::isInReplay(), allied, seenByLocalPlayer(unit));
 }
 
 void drawBuildProgress(CUnit *unit)
@@ -150,41 +169,36 @@ void drawBuildProgress(CUnit *unit)
     if (!showsBuildProgress(unit))
         return;
 
-    int width = unit->getRight() - unit->getLeft();
-    int height = 4;
-    int left = unit->getLeft();
-    int top = unit->getTop() - 24;
-    int right = unit->getRight();
-    int bottom = top + height;
-    int innerLeft = left + 1;
-    int innerTop = top + 1;
-    int innerRight = right - 1;
-    int innerBottom = bottom;
     int progressWidth = 0;
 
     int queueLength = 0;
 
     // The order and the work it is for: after a cancel the order goes on for a frame or two with
-    // nothing to do
+    // nothing to do. Training is any unit making another inside it: a building, a Carrier, a Reaver.
     bool isTraining =
         buildprogress::isTraining(unit->secondaryOrderId, unit->buildQueue[unit->buildQueueSlot % 5]);
+
+    // Where the bar goes: over a building as it always was, closer over a unit, and wide enough for
+    // the queue boxes when there are any
+    const Box16 &box = units_dat::UnitBounds[unit->id];
+    const buildprogress::Frame frame = buildprogress::barFrame(
+        unit->getX(), unit->getY(), box.left, box.top, box.right,
+        (units_dat::BaseProperty[unit->id] & UnitProperty::Building) != 0,
+        (units_dat::BaseProperty[unit->id] & UnitProperty::Addon) != 0, isTraining);
+    int left = frame.left;
+    int top = frame.top;
+    int right = frame.right;
+    int bottom = frame.bottom;
+    int innerLeft = left + 1;
+    int innerTop = top + 1;
+    int innerRight = right - 1;
+    int innerBottom = bottom;
+
     bool isUpgradingOrResearching =
         buildprogress::isResearching(unit->mainOrderId, unit->building.techType) ||
         buildprogress::isUpgrading(unit->mainOrderId, unit->building.upgradeType) && !isTraining;
     const bool isCompleted = (unit->status & UnitStatus::Completed) != 0;
     bool isBuildingSelf = buildprogress::isBeingBuilt(unit->mainOrderId, unit->remainingBuildTime, isCompleted);
-
-    if (units_dat::BaseProperty[unit->id] & UnitProperty::Addon)
-    {
-        left += 8;
-        innerLeft += 8;
-        right += 8;
-        innerRight += 8;
-        top += 4;
-        innerTop += 4;
-        bottom += 4;
-        innerBottom += 4;
-    }
 
     for (int i = 0; i < 5; i++)
     {
@@ -263,28 +277,6 @@ void drawBuildProgress(CUnit *unit)
         graphics::drawFilledBox(innerLeft, innerTop, innerLeft + progressWidth, innerBottom - 1, graphics::AQUA,
                                 graphics::ON_MAP);
     }
-}
-
-// Which sprites the local player sees (a bit per player), in a game and in a replay
-const u8 *const LOCAL_VISIBILITY = (u8 *)0x0057F0B0;
-const u8 *const REPLAY_VISIBILITY = (u8 *)0x006D0F18;
-
-// Whether the local player sees this unit now, by the rule a click selects by (0x46F161): its sprite is
-// out of the fog, and a cloaked or burrowed unit is detected. False for NULL and for a pointer that is
-// no living unit (an order may keep its target after the target dies).
-// Drawing only: nothing here feeds game state.
-bool seenByLocalPlayer(const CUnit *unit)
-{
-    if (unit < unitTable || unit >= unitTable + UNIT_ARRAY_LENGTH)
-        return false;
-    if (unit->sprite == NULL || unit->mainOrderId == OrderId::Die)
-        return false;
-    const u32 sees = scbw::isInReplay() ? *REPLAY_VISIBILITY : *LOCAL_VISIBILITY;
-    if (!(unit->sprite->visibilityFlags & sees))
-        return false;
-    if (unit->status & (UnitStatus::Cloaked + UnitStatus::RequiresDetection))
-        return (unit->visibilityStatus & sees) != 0;
-    return true;
 }
 
 void drawRallyPoint(CUnit *unit)
