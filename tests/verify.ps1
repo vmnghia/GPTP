@@ -12,6 +12,8 @@ if ($LASTEXITCODE -ne 0) { Write-Output "UI mask test FAILED"; exit 1 }
 if ($LASTEXITCODE -ne 0) { Write-Output "line walk test FAILED"; exit 1 }
 & "$PSScriptRoot\order_lines_test.bat" 2>$null
 if ($LASTEXITCODE -ne 0) { Write-Output "order lines test FAILED"; exit 1 }
+& "$PSScriptRoot\build_progress_test.bat" 2>$null
+if ($LASTEXITCODE -ne 0) { Write-Output "build progress test FAILED"; exit 1 }
 New-Item -ItemType Directory -Force "$PSScriptRoot\out" | Out-Null
 $log = "$PSScriptRoot\out\build-plugin.log"
 & "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" "$root\GPTP\GPTP.sln" /p:Configuration=Debug /p:Platform=Win32 /nologo /v:minimal > $log

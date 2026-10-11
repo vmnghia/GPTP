@@ -1,0 +1,35 @@
+#include "build_progress.h"
+#include "enumerations/OrderId.h"
+#include "enumerations/UnitId.h"
+
+namespace buildprogress {
+
+bool isBeingBuilt(u32 orderId, u32 remainingBuildTime, bool completed) {
+	switch (orderId) {
+	case OrderId::BuildSelf1:		//Terran
+	case OrderId::ZergBuildSelf:	//Zerg, grown from a Drone or morphing
+	case OrderId::BuildSelf2:		//Protoss
+		return true;
+	case OrderId::Nothing2:
+		return remainingBuildTime > 0 && !completed;
+	default:
+		return false;
+	}
+}
+
+u32 typeBeingBuilt(u32 unitType, bool completed, u32 queuedType) {
+	if (completed)
+		return unitType;
+	switch (queuedType) {
+	case UnitId::ZergLair:
+	case UnitId::ZergHive:
+	case UnitId::ZergGreaterSpire:
+	case UnitId::ZergSunkenColony:
+	case UnitId::ZergSporeColony:
+		return queuedType;
+	default:
+		return unitType;
+	}
+}
+
+} //buildprogress

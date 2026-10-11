@@ -5,6 +5,7 @@
 
 #include <SCBW/UnitFinder.h>
 #include <SCBW/api.h>
+#include <SCBW/build_progress.h>
 #include <SCBW/order_lines.h>
 #include "../interface/resolution.h"
 #include "../interface/reshade_bridge.h"
@@ -167,10 +168,8 @@ void drawBuildProgress(CUnit *unit)
     bool isTraining = unit->secondaryOrderId == OrderId::Train;
     bool isUpgradingOrResearching =
         unit->mainOrderId == OrderId::ResearchTech || unit->mainOrderId == OrderId::Upgrade && !isTraining;
-    bool isBuildingSelf = unit->mainOrderId == OrderId::BuildSelf1 || unit->mainOrderId == OrderId::BuildSelf2 ||
-                          unit->mainOrderId == OrderId::Morph2 ||
-                          (unit->mainOrderId == OrderId::Nothing2 && unit->remainingBuildTime > 0 &&
-                           !(unit->status & UnitStatus::Completed));
+    const bool isCompleted = (unit->status & UnitStatus::Completed) != 0;
+    bool isBuildingSelf = buildprogress::isBeingBuilt(unit->mainOrderId, unit->remainingBuildTime, isCompleted);
 
     if (units_dat::BaseProperty[unit->id] & UnitProperty::Addon)
     {
@@ -242,7 +241,11 @@ void drawBuildProgress(CUnit *unit)
     }
     else if (isBuildingSelf)
     {
-        timeCost = units_dat::TimeCost[unit->id];
+        // A Zerg building morphing (Hatchery to Lair) is still its old type and counts down the new one's
+        // build time
+        const u32 builtType =
+            buildprogress::typeBeingBuilt(unit->id, isCompleted, unit->buildQueue[unit->buildQueueSlot % 5]);
+        timeCost = units_dat::TimeCost[builtType];
         top = std::max(unit->getTop(), (short)unit->sprite->position.y);
         if (playerTable[unit->playerId].race == RaceId::Protoss)
         {
