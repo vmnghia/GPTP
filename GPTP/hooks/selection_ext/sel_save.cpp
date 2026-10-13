@@ -1,6 +1,7 @@
 #include "sel_save.h"
 #include "sel_exe.h"
 #include "sel_build.h"
+#include "../rally/smart_rally_hooks.h"
 #include <SCBW/selection_ext.h>
 #include <cstring>
 
@@ -11,7 +12,8 @@ namespace {
 const u32 MAGIC = 0x584C4553;	//"SELX"
 //1: selections (stages 1-3). 2: selections, then control groups (stage 4).
 //3: as 2, then a second compressed block: smart-build's stamps.
-const u16 VERSION = 3;
+//4: as 3, then a third compressed block: smart rally's worker rallies.
+const u16 VERSION = 4;
 
 #pragma pack(push, 1)
 struct Header {
@@ -42,6 +44,9 @@ struct BuildStamps {
 	u8 paidPlayer[UNIT_ARRAY_LENGTH];
 };
 BuildStamps buildStamps;
+
+//Version 4's third block.
+smartrally::SavedWorkerRally savedRallies[UNIT_ARRAY_LENGTH];
 
 //An old save: the selections are vanilla's 12.
 void selectionsFromVanilla() {
@@ -124,15 +129,19 @@ size_t __cdecl writeLastAndExtension(const void* data, size_t size, size_t count
 	memcpy(buildStamps.paidPlayer, selbuild::paidPlayer, sizeof(buildStamps.paidPlayer));
 	if (!selexe::writeCompressed(file, &buildStamps, sizeof(buildStamps)))
 		return 0;
+	smartrally::saveWorkerRallies(savedRallies);
+	if (!selexe::writeCompressed(file, savedRallies, sizeof(savedRallies)))
+		return 0;
 	return count;
 }
 
 size_t __cdecl readLastAndExtension(void* data, size_t size, size_t count, FILE* file) {
 	if (selexe::freadExe(data, size, count, file) != count)
 		return 0;
+	smartrally::clearAll();
 	Header header;
 	if (selexe::freadExe(&header, sizeof(header), 1, file) != 1
-		|| header.magic != MAGIC || header.version < 1 || header.version > 3)
+		|| header.magic != MAGIC || header.version < 1 || header.version > 4)
 	{
 		selectionsFromVanilla();
 		groupsFromVanilla();
@@ -159,6 +168,12 @@ size_t __cdecl readLastAndExtension(void* data, size_t size, size_t count, FILE*
 			memcpy(selbuild::buildSequence, buildStamps.buildSequence, sizeof(buildStamps.buildSequence));
 			memcpy(selbuild::paidPlayer, buildStamps.paidPlayer, sizeof(buildStamps.paidPlayer));
 		}
+	}
+	//Smart rally's worker rallies: version 4, else none.
+	if (ok && header.version >= 4) {
+		ok = selexe::readCompressed(file, savedRallies, sizeof(savedRallies));
+		if (ok)
+			smartrally::loadWorkerRallies(savedRallies);
 	}
 	return ok ? count : 0;
 }

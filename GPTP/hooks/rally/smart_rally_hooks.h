@@ -44,6 +44,23 @@ u8* workerRallySendAs(const u8* targeted);
 //get their worker rally on the target, or on the point without one.
 void recvWorkerRally(const u8* packet);
 
+//Melee start: base's rally on its nearest mineral field: a Hatchery's worker
+//rally, a CC's or Nexus's rally (spec 2.4).
+void setStartRally(CUnit* base, CUnit* mineral);
+
+//The plugin save chunk's block (sel_save.cpp, version 4): every slot's
+//worker rally, UNIT_ARRAY_LENGTH of them.
+#pragma pack(push, 1)
+struct SavedWorkerRally {
+	u16 targetTag;	//0: the ground, or none
+	u16 x, y;
+	u8 set;
+	u8 unused;
+};
+#pragma pack(pop)
+void saveWorkerRallies(SavedWorkerRally* out);
+void loadWorkerRallies(const SavedWorkerRally* in);
+
 } //smartrally
 
 namespace hooks {

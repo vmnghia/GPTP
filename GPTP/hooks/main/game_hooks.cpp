@@ -121,9 +121,13 @@ void initializeGame()
                 if (units_dat::BaseProperty[base->id] & UnitProperty::ResourceDepot)
                 {
                     harvestTargetFinder.setMainHarvester(base);
-                    firstMineral.set(base->playerId, scbw::UnitFinder::getNearestTarget(
-                                                         base->getX() - 512, base->getY() - 512, base->getX() + 512,
-                                                         base->getY() + 512, base, harvestTargetFinder));
+                    CUnit *const mineral = scbw::UnitFinder::getNearestTarget(
+                        base->getX() - 512, base->getY() - 512, base->getX() + 512, base->getY() + 512, base,
+                        harvestTargetFinder);
+                    firstMineral.set(base->playerId, mineral);
+                    // Smart rally: the base's (worker) rally on it, as SC2 sets at the start. Game state.
+                    if (mineral != NULL && base->playerId < 8)
+                        smartrally::setStartRally(base, mineral);
                 }
             }
 

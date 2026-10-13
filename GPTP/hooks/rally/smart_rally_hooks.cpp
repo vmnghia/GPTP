@@ -187,4 +187,33 @@ void recvWorkerRally(const u8* packet) {
 	}
 }
 
+void setStartRally(CUnit* base, CUnit* mineral) {
+	WorkerRally* const workerRally = workerRallyOf(base);
+	if (workerRally != NULL)
+		setWorkerRally(workerRally, mineral, 0, 0);
+	else if (base->isFactory())
+		setNormalRally(base, mineral);
+}
+
+void saveWorkerRallies(SavedWorkerRally* out) {
+	for (u32 i = 0; i < UNIT_ARRAY_LENGTH; i++) {
+		const WorkerRally& rally = workerRallies[i];
+		out[i].targetTag = rally.set ? selext::tagOf(rally.target) : 0;
+		out[i].x = rally.x;
+		out[i].y = rally.y;
+		out[i].set = rally.set ? 1 : 0;
+		out[i].unused = 0;
+	}
+}
+
+void loadWorkerRallies(const SavedWorkerRally* in) {
+	for (u32 i = 0; i < UNIT_ARRAY_LENGTH; i++) {
+		WorkerRally& rally = workerRallies[i];
+		rally.set = in[i].set != 0;
+		rally.target = in[i].targetTag != 0 ? selext::unitOfTag(in[i].targetTag) : NULL;
+		rally.x = in[i].x;
+		rally.y = in[i].y;
+	}
+}
+
 } //smartrally
