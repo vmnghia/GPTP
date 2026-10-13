@@ -618,10 +618,13 @@ the orders queued behind a gather (below).
     mining routine, and its twin in the routine that waits for a patch).
   - Replays recorded before 2026-10-14 play differently where Cancel Last was pressed with
     several units selected, or a worker had orders queued behind a gather.
-  - Found while reading, not reported by the user `[VERIFY]`: `initializeGame()` in
-    `game_hooks.cpp` fills `firstMineral[8]` only for players with a resource depot and
-    reads it for every worker's player (also players 8-11), in games that are not Use Map
-    Settings. In a Debug build an unset entry is not NULL.
+  - Found while reading, not reported by the user `[FIXED 2026-10-14 on master, not yet
+    run]`: `initializeGame()` in `game_hooks.cpp` filled `firstMineral[8]` only for players
+    with a resource depot and read it for every worker's player (also players 8-11, out
+    of range), in games that are not Use Map Settings. An unset entry is not NULL in a
+    Debug build, and the orders it gives are game state. It is `playerslots::Slots` now
+    (`SCBW/player_slots.h`, host-tested): every slot starts as NULL and the players past
+    the eight playing ones are ignored.
 
 **Working tips for the next session.**
 - **For a decision about a look, render the options and let the user pick.** The line

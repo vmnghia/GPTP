@@ -528,6 +528,7 @@
     <ClInclude Include="SCBW\console_raise.h" />
     <ClInclude Include="SCBW\build_progress.h" />
     <ClInclude Include="SCBW\order_lines.h" />
+    <ClInclude Include="SCBW\player_slots.h" />
     <ClInclude Include="SCBW\ui_mask.h" />
     <ClInclude Include="hooks\selection_ext\selection_ext_hooks.h" />
     <ClInclude Include="hooks\selection_ext\sel_chain.h" />

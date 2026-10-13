@@ -7,6 +7,7 @@
 #include <SCBW/api.h>
 #include <SCBW/build_progress.h>
 #include <SCBW/order_lines.h>
+#include <SCBW/player_slots.h>
 #include "../interface/resolution.h"
 #include "../interface/reshade_bridge.h"
 #include "../recv_commands/smart_cast.h"
@@ -107,15 +108,19 @@ void initializeGame()
         if (*GAME_TYPE != GameType::UseMapSettings)
         {
             exploreMap();
-            CUnit *firstMineral[8];
+            // The mineral field each playing player's workers start on. A player without a resource
+            // depot has none, and the players past the playing ones (a neutral Command Center is player
+            // 11's) take no part: the plain array this was read unset for the first and was indexed out
+            // of range by the second. These orders are game state: the same on every client.
+            playerslots::Slots<CUnit> firstMineral;
             for (CUnit *base = *firstVisibleUnit; base; base = base->link.next)
             {
                 if (units_dat::BaseProperty[base->id] & UnitProperty::ResourceDepot)
                 {
                     harvestTargetFinder.setMainHarvester(base);
-                    firstMineral[base->playerId] =
-                        scbw::UnitFinder::getNearestTarget(base->getX() - 512, base->getY() - 512, base->getX() + 512,
-                                                           base->getY() + 512, base, harvestTargetFinder);
+                    firstMineral.set(base->playerId, scbw::UnitFinder::getNearestTarget(
+                                                         base->getX() - 512, base->getY() - 512, base->getX() + 512,
+                                                         base->getY() + 512, base, harvestTargetFinder));
                 }
             }
 
@@ -123,9 +128,10 @@ void initializeGame()
             {
                 if (units_dat::BaseProperty[worker->id] & UnitProperty::Worker)
                 {
-                    if (firstMineral[worker->playerId])
+                    CUnit *const mineral = firstMineral.get(worker->playerId);
+                    if (mineral)
                     {
-                        worker->orderTo(OrderId::Harvest1, firstMineral[worker->playerId]);
+                        worker->orderTo(OrderId::Harvest1, mineral);
                     }
                 }
             }

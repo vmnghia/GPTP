@@ -23,8 +23,8 @@ and running StarCraft. Debug is the usual configuration; the plugin lands in `GP
 
 `tests/verify.ps1` is the one local check, run on the user's machine: it builds and runs the
 host-side tests of the pure logic (`tests/*_test.bat`: the extended selection, the button
-set file's parser, the UI mask, and the on-map lines and bars' `line_walk`, `order_lines`
-and `build_progress`),
+set file's parser, the UI mask, the on-map lines and bars' `line_walk`, `order_lines`
+and `build_progress`, and `player_slots`),
 builds the plugin with MSBuild, then disassembles `sel_inject.obj` and runs
 `tests/check_naked_wrappers.py` over it. That script fails if a naked wrapper touches
 `[ebp…]`: a naked function has no frame of its own, so a Debug-build temporary there writes
