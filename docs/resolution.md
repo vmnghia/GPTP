@@ -529,6 +529,13 @@ starfield handled (§5). Features 1 and 2 below are done.
 6. **Release build:** the plugin is built as Debug into `GPTP\Debug\`. Turn
    `RESOLUTION_DEBUG` back on when changing the layout.
 
+**Outside that list: smart rally** (asked for by the user on 2026-10-14) `[PROPOSED]`:
+workers gather and units enter on a rally, SC2's separate worker rally for Hatchery, Lair
+and Hive, and rallies to the nearest mineral field at a melee start. Spec
+`docs/superpowers/specs/2026-10-14-smart-rally-design.md`.
+- **Later: a separate icon for Set Worker Rally Point** (the user, 2026-10-14). SC2's is
+  the rally icon with a small Drone in it; until then it uses Set Rally Point's icon.
+
 **Outside that list: ReShade** (asked for by the user on 2026-10-10).
 - **ReShade UI mask** `[BUILT, tested in game 2026-10-11]`: with ReShade over cnc-ddraw,
   the plugin registers as a ReShade add-on and uploads where the game view is, so the
