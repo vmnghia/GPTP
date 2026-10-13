@@ -331,7 +331,10 @@ this order:
 - Each panel dialog copies its background out of it at its own rect
   (0x4C35F0): Minimap, StatData, StatPort, StatBtn, StatRes, Stat_F10,
   TextBox, placed by `panelPlacements`. StatData is also widened by the gap,
-  raised 24 px and made 24 px taller (`raiseStatData`).
+  raised 24 px and made 24 px taller (`raiseStatData`). The chat input
+  (TextBox, `rez\<race>textbox.bin`) stands in the clear rows just above the
+  box, so it goes up 24 px with it (`raiseChatInput`, rule
+  `consoleraise::dialogRise`); left where it was, the raised art covered it.
 - The decorative pieces (StatFluf) paint the parts no panel covers. The
   plugin gives each race its own table (`buildFlufTable`): each vanilla piece
   is split at the raised span's edges with the inside part moved 24 px up
@@ -392,6 +395,12 @@ starfield handled (§5). Features 1 and 2 below are done.
   the user]`. The geyser belongs to the neutral player, whose units never get a bar now;
   and a unit with no order and build time left only counts as building while it isn't
   completed (`buildprogress::isBeingBuilt` since 2026-10-12).
+- **The chat input (Enter) was hidden** (reported 2026-10-14) `[FIXED 2026-10-14; passed
+  round 22 in game, the user]`. The selection box's 24 px raise moved the console art
+  over the TextBox dialog, which stayed at its vanilla rows (about 75% of its rect
+  covered, every race and the replay console). It now goes up with the box
+  (`raiseChatInput` in `resolution_hud.cpp`, host-tested `consoleraise::dialogRise`).
+  The error line and the chat lines were never affected.
 
 **Next after smart-build** (user, 2026-10-03):
 - **The selection panel showed only 12 wireframes** `[FIXED 2026-10-04]`: the repack

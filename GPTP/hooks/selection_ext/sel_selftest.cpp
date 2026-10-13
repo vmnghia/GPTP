@@ -642,6 +642,21 @@ void consoleRaise() {
 	//Every span lies inside StatData's vanilla columns [138, 408).
 	for (u32 race = 0; race < 4; race++)
 		CHECK(SPANS[race].left >= 138 && SPANS[race].right <= 408 && SPANS[race].left < SPANS[race].right);
+
+	//The chat input (rez\?textbox.bin) stands in the clear rows just above
+	//the box, so it goes up with it: each race's, over its own console and
+	//over the replay one (a replay loads the player's race's).
+	const Piece chat[3] = { { 190, 338, 460, 356 }, { 170, 346, 450, 364 }, { 190, 338, 448, 356 } };
+	for (u32 race = 0; race < 3; race++) {
+		CHECK(dialogRise(chat[race], SPANS[race], CUT_ROW, 24) == 24);
+		CHECK(dialogRise(chat[race], SPANS[3], CUT_ROW, 24) == 24);
+		CHECK(dialogRise(chat[race], SPANS[race], CUT_ROW, 0) == 0);	//no raise
+	}
+	CHECK(dialogRise(outside, terran, CUT_ROW, 24) == 0);		//left of the span
+	const Piece rightOf = { 407, 346, 450, 364 };
+	CHECK(dialogRise(rightOf, terran, CUT_ROW, 24) == 0);
+	CHECK(dialogRise(below, terran, CUT_ROW, 24) == 0);		//under the cut: art unmoved
+	CHECK(dialogRise(high, terran, CUT_ROW, 24) == 10);		//not above row 0
 }
 
 void frames() {

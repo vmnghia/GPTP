@@ -42,4 +42,11 @@ struct Piece {
 //how many.
 u32 raisePiece(Piece piece, Span span, s32 cutRow, s32 raise, Piece out[3]);
 
+//How far up a dialog placed against the vanilla art goes with the raised
+//art (the chat input, which stands in the clear rows just above the box):
+//raise rows if it is over the span's columns and starts above cutRow, no
+//further than row 0; 0 beside the span or under the cut, where the art
+//stayed. Moved whole, unlike a piece: it is one dialog.
+s32 dialogRise(Piece dialog, Span span, s32 cutRow, s32 raise);
+
 } //consoleraise

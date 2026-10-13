@@ -47,4 +47,10 @@ u32 raisePiece(Piece piece, Span span, s32 cutRow, s32 raise, Piece out[3]) {
 	return n;
 }
 
+s32 dialogRise(Piece dialog, Span span, s32 cutRow, s32 raise) {
+	if (raise <= 0 || dialog.top >= cutRow || dialog.right <= span.left || dialog.left >= span.right)
+		return 0;
+	return dialog.top < raise ? dialog.top : raise;
+}
+
 } //consoleraise

@@ -305,6 +305,17 @@ void raiseStatData(u8* root, u8* base) {
   selext::layOutStatDataBin(base);
 }
 
+//The chat input (rez\?textbox.bin, loaded at 0x004C3C0B during console setup)
+//stands in the clear rows just above the selection box. With the box raised
+//it goes up as far, or the raised art covers what is typed. From its vanilla
+//rect, so before the console's offsets.
+void raiseChatInput(u8* root) {
+  const s16* bounds = (const s16*)(root + DLG_BOUNDS);
+  const consoleraise::Piece vanilla = { bounds[0], bounds[1], bounds[0] + bounds[2] + 1, bounds[1] + bounds[3] + 1 };
+  offsetBounds(root, 0, -consoleraise::dialogRise(vanilla, consoleraise::SPANS[layoutRace],
+                                                  consoleraise::CUT_ROW, selext::PANEL_RAISE));
+}
+
 void __cdecl placeDialog(u8* root, u8* base) {
   if (root != base || *(u16*)(root + DLG_TYPE) != 0)
     return;
@@ -319,6 +330,8 @@ void __cdecl placeDialog(u8* root, u8* base) {
     const s32 dx = *placement.dx;
     const s32 dy = *placement.dy;
     placedMask |= 1u << (&placement - panelPlacements);
+    if (RAISE_SELECTION_BOX && strcmp(name, "TextBox") == 0)
+      raiseChatInput(root);
     offsetBounds(root, dx, dy, *placement.dw);
     if (strcmp(name, "StatData") == 0)
       raiseStatData(root, base);
