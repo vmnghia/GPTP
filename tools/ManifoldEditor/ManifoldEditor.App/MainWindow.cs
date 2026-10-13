@@ -207,15 +207,6 @@ public sealed class MainWindow : Window
 
         middle.Children.Add(buttonListTitle);
         buttonList.SelectionChanged += OnButtonSelected;
-        // Drag a row onto the card: that button alone (the same drops as dragging on the card).
-        buttonList.CanDragItems = true;
-        buttonList.DragItemsStarting += (_, e) =>
-        {
-            if (e.Items.FirstOrDefault() is not ListViewItem { Tag: int index }) { e.Cancel = true; return; }
-            dragButton = index;
-            e.Data.SetText(index.ToString());
-            e.Data.RequestedOperation = DataPackageOperation.Move | DataPackageOperation.Copy;
-        };
         middle.Children.Add(buttonList);
         middle.Children.Add(checks);
         Grid.SetColumn(middle, 1);
