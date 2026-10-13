@@ -18,7 +18,7 @@ void injectCommandCardHooks();
 void injectSmartBuildHooks();
 //Notes which units hold a Shift-queued order, for the order lines.
 void injectOrderChainHooks();
-//A worker goes on with the orders queued behind a mineral gather.
+//A worker holding cargo goes on with the orders queued behind a gather.
 void injectGatherQueueHooks();
 
 } //hooks

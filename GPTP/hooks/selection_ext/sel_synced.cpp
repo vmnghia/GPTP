@@ -375,7 +375,7 @@ void recvSelectChunk(const u8* packet) {
 	}
 }
 
-u32 miningYieldsToQueue(CUnit* unit) {
+u32 harvestYieldsToQueue(CUnit* unit) {
 	//Vanilla queues 8 orders at most; the cap keeps a damaged list finite.
 	const u32 QUEUED_MAX = 64;
 	u8 ids[QUEUED_MAX];

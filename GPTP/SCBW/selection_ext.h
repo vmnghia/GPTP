@@ -304,15 +304,20 @@ const u32 PLACEMENT_BOX_BUILDING = 1;
 bool checkAsFree(bool queued, u32 currentOrder);
 //-------- Orders queued behind a gather --------//
 
-//Whether a worker that has just mined its minerals goes on with its queue
-//instead of taking them back: when an order is queued behind the gather.
+//Whether a worker holding cargo at a gather goes on with its queue instead
+//of taking the cargo back: when an order is queued behind the gather.
 //queued: the ids of its queued orders, count of them. The game's own
 //clean-up orders (the collision resets 0x96 and 0x97, the harvest interrupts
 //0x58, 0x59 and 0x5B) are not such an order; anything else is, and only a
 //Shift-queued command puts one there.
-//Vanilla (0x46984A, 0x469858) gives the next harvest step as an order that
-//drops the queue. For gas it already does this: a worker leaving a refinery
-//with orders queued goes on with them, carrying the gas (0x469980).
+//It is asked where vanilla sends the worker back with an order that drops
+//the queue: when it has mined its minerals (0x46984A, 0x469858), and when it
+//reaches the resource it was told to gather already carrying that kind
+//(minerals 0x46945D, gas 0x4695CE). A worker leaving a refinery already
+//goes on with its queue in vanilla, carrying the gas (0x469980).
+//A Return Cargo the player queued is an order like any other: the worker
+//delivers, and gathers again as it does without a queue (0x4690C0 puts that
+//gather in front of the queue, dropping nothing).
 bool gatherYieldsToQueue(const u8* queued, u32 count);
 
 //-------- Cancel Train with several units selected --------//
