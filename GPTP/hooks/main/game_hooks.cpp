@@ -324,6 +324,33 @@ void drawRallyPoint(CUnit *unit)
     graphics::drawDot(rallyX, rallyY, color, graphics::ON_MAP);
 }
 
+// Smart rally: the worker rally of a selected Hatchery, Lair or Hive, drawn like its rally point
+// (hooks/rally/smart_rally_hooks.h). Yellow, picked by the user from a preview on 2026-10-14. Drawing only.
+const graphics::ColorId WORKER_RALLY_COLOR = graphics::YELLOW;
+
+void drawWorkerRally(CUnit *unit)
+{
+    const smartrally::WorkerRally *const rally = smartrally::workerRallyOf(unit);
+    if (rally == NULL || !rally->set)
+        return;
+
+    u16 rallyX = rally->x;
+    u16 rallyY = rally->y;
+
+    // Drones follow a unit of their own player there, so the line follows it while it is seen
+    if (seenByLocalPlayer(rally->target) && rally->target->playerId == unit->playerId)
+    {
+        rallyX = rally->target->position.x;
+        rallyY = rally->target->position.y;
+    }
+
+    graphics::drawChevronLine(unit->position.x, unit->position.y, rallyX, rallyY, WORKER_RALLY_COLOR,
+                              graphics::ON_MAP);
+    graphics::drawDottedEllipse(rallyX - 8, rallyY - 4, rallyX + 8, rallyY + 4, WORKER_RALLY_COLOR,
+                                graphics::ON_MAP);
+    graphics::drawDot(rallyX, rallyY, WORKER_RALLY_COLOR, graphics::ON_MAP);
+}
+
 // An order's stop: at its target unit while the local player sees it, else where the order says
 orderlines::Stop stopOfOrder(u32 orderId, const Target &target)
 {
@@ -421,6 +448,7 @@ bool nextFrame()
                 if (units_dat::GroupFlags[selUnit->id].isFactory)
                 {
                     plugins::drawRallyPoint(selUnit);
+                    plugins::drawWorkerRally(selUnit);
                 }
 
                 if (selUnit != NULL)
