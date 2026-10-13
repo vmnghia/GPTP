@@ -71,7 +71,8 @@ or an ally's gas building is "a unit that is not a resource".
 **Set Rally Point** (the game's button) sets the normal rally, on anything, as in vanilla.
 
 **Set Worker Rally Point**, a new button (hotkey G), sets the worker rally on the ground
-or on any unit. Same icon as Set Rally Point for now (§10). It is a button-set edit the
+or on any unit. On the building itself it clears it (Drones stay), as the game's rally
+on the building itself is none (found in the final review, 2026-10-14). Same icon as Set Rally Point for now (§10). It is a button-set edit the
 user makes (§8).
 
 Every other building: right-click and its button as in vanilla.

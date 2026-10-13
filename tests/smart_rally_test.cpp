@@ -56,6 +56,11 @@ int main() {
 	CHECK(rallySource(true, true, true) == USE_WORKER);		//a Drone, worker rally set
 	CHECK(rallySource(true, true, false) == USE_NONE);		//a Drone, none: it stays
 
+	//A worker rally on the building itself is none, as the game's rally there.
+	CHECK(workerRallyCounts(true, false));
+	CHECK(!workerRallyCounts(true, true));
+	CHECK(!workerRallyCounts(false, false) && !workerRallyCounts(false, true));
+
 	//What it does there.
 	CHECK(rallyAction(true, MINERAL_1, true, false, false) == ACT_MINERALS);
 	CHECK(rallyAction(true, MINERAL_3, true, false, false) == ACT_MINERALS);

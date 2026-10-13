@@ -84,7 +84,8 @@ void orderNewUnitToRally(CUnit* unit, CUnit* factory) {
 	const bool worker = gathersOnRightClick(unit);
 	const WorkerRally* const workerRally = workerRallyOf(factory);
 	const RallySource source = rallySource(hasTwoRallies(factory->id), worker,
-	                                       workerRally != NULL && workerRally->set);
+	                                       workerRally != NULL && workerRallyCounts(workerRally->set,
+	                                                                                workerRally->target == factory));
 	if (source == USE_NONE)
 		return;
 

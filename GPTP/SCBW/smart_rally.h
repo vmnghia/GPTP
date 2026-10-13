@@ -32,6 +32,11 @@ enum RallySource { USE_NORMAL, USE_WORKER, USE_NONE };
 //rally.
 RallySource rallySource(bool twoRallies, bool unitIsWorker, bool workerRallySet);
 
+//Whether a worker rally counts as set: not while it is on the building
+//itself, which is none, as for the game's rally (0x466F50). So pointing Set
+//Worker Rally Point at the Hatchery clears it.
+bool workerRallyCounts(bool set, bool onBuildingItself);
+
 enum RallyAction { ACT_VANILLA, ACT_MINERALS, ACT_GAS, ACT_ENTER };
 //What a new unit does at its rally target: gather where its right-click
 //gathers (a mineral field; a finished gas building of its owner, the rule of

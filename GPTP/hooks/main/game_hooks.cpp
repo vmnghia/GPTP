@@ -8,6 +8,7 @@
 #include <SCBW/build_progress.h>
 #include <SCBW/order_lines.h>
 #include <SCBW/player_slots.h>
+#include <SCBW/smart_rally.h>
 #include "../interface/resolution.h"
 #include "../interface/reshade_bridge.h"
 #include "../recv_commands/smart_cast.h"
@@ -331,7 +332,7 @@ const graphics::ColorId WORKER_RALLY_COLOR = graphics::YELLOW;
 void drawWorkerRally(CUnit *unit)
 {
     const smartrally::WorkerRally *const rally = smartrally::workerRallyOf(unit);
-    if (rally == NULL || !rally->set)
+    if (rally == NULL || !smartrally::workerRallyCounts(rally->set, rally->target == unit))
         return;
 
     u16 rallyX = rally->x;

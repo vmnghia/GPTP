@@ -39,6 +39,10 @@ RallySource rallySource(bool twoRallies, bool unitIsWorker, bool workerRallySet)
 	return workerRallySet ? USE_WORKER : USE_NONE;
 }
 
+bool workerRallyCounts(bool set, bool onBuildingItself) {
+	return set && !onBuildingItself;
+}
+
 RallyAction rallyAction(bool gathersOnRightClick, u16 targetId, bool targetCompleted,
                         bool sameOwner, bool rightClickLoads) {
 	if (gathersOnRightClick && isMineralField(targetId))
