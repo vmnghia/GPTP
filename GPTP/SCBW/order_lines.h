@@ -37,7 +37,12 @@ struct Leg {
 //how many. An order without a position gets no line and the chain goes on
 //past it. Nothing shows unless a queued order has a position: a unit's
 //current order alone has no line.
-u32 legsOf(s32 unitX, s32 unitY, const Stop& current, const Stop* queued, u32 count, Leg* out);
+//leaving: the unit has been told to leave its current order for the next
+//and has not yet. The game keeps a plain order in the same queue while the
+//unit cannot break off (an attack animation, 0x475000) and marks the unit
+//so; a Shift-queued order does not mark it. A unit that is leaving has no
+//Shift chain to show: no lines.
+u32 legsOf(s32 unitX, s32 unitY, const Stop& current, const Stop* queued, u32 count, bool leaving, Leg* out);
 
 //Whether a building has a rally point, by the game's own rule for sending a
 //new unit to it (0x466F50): its rally unit is not the building itself

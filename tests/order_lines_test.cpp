@@ -90,14 +90,14 @@ int main() {
 
 	//nothing queued: no line, even with a current order on its way.
 	clear(legs, 8);
-	CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), NULL, 0, legs) == 0);
+	CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), NULL, 0, false, legs) == 0);
 	CHECK(is(legs[0], -1, -1, -1, -1, PATROL));
 
 	//moving to A with a move to B queued: the unit to A, A to B.
 	{
 		const Stop queued[] = {stop(MOVE_ORDER, 500, 400)};
 		clear(legs, 8);
-		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 1, legs) == 2);
+		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 1, false, legs) == 2);
 		CHECK(is(legs[0], 100, 100, 500, 100, MOVE));
 		CHECK(is(legs[1], 500, 100, 500, 400, MOVE));
 		CHECK(is(legs[2], -1, -1, -1, -1, PATROL));
@@ -108,7 +108,7 @@ int main() {
 	{
 		const Stop queued[] = {stop(PLAYER_GUARD, 0, 0)};
 		clear(legs, 8);
-		CHECK(legsOf(900, 700, stop(CONSTRUCTING, 910, 690), queued, 1, legs) == 0);
+		CHECK(legsOf(900, 700, stop(CONSTRUCTING, 910, 690), queued, 1, false, legs) == 0);
 		CHECK(is(legs[0], -1, -1, -1, -1, PATROL));
 	}
 
@@ -117,7 +117,7 @@ int main() {
 	{
 		const Stop queued[] = {stop(MOVE_ORDER, 500, 400)};
 		clear(legs, 8);
-		CHECK(legsOf(100, 100, stop(SIEGE, 0, 0), queued, 1, legs) == 1);
+		CHECK(legsOf(100, 100, stop(SIEGE, 0, 0), queued, 1, false, legs) == 1);
 		CHECK(is(legs[0], 100, 100, 500, 400, MOVE));
 	}
 
@@ -125,7 +125,7 @@ int main() {
 	{
 		const Stop queued[] = {stop(PLAYER_GUARD, 0, 0), stop(MOVE_ORDER, 500, 400)};
 		clear(legs, 8);
-		CHECK(legsOf(900, 700, stop(CONSTRUCTING, 910, 690), queued, 2, legs) == 2);
+		CHECK(legsOf(900, 700, stop(CONSTRUCTING, 910, 690), queued, 2, false, legs) == 2);
 		CHECK(is(legs[0], 900, 700, 910, 690, MOVE));
 		CHECK(is(legs[1], 910, 690, 500, 400, MOVE));
 	}
@@ -135,7 +135,7 @@ int main() {
 	{
 		const Stop queued[] = {stop(MOVE_ORDER, 500, 400), stop(SIEGE, 0, 0), stop(MOVE_ORDER, 800, 400)};
 		clear(legs, 8);
-		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 3, legs) == 3);
+		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 3, false, legs) == 3);
 		CHECK(is(legs[0], 100, 100, 500, 100, MOVE));
 		CHECK(is(legs[1], 500, 100, 500, 400, MOVE));
 		CHECK(is(legs[2], 500, 400, 800, 400, MOVE));
@@ -147,10 +147,26 @@ int main() {
 	{
 		const Stop queued[] = {stop(MOVE_ORDER, 0, 400), stop(MOVE_ORDER, 300, 0), stop(MOVE_ORDER, 800, 400)};
 		clear(legs, 8);
-		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 3, legs) == 4);
+		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 3, false, legs) == 4);
 		CHECK(is(legs[1], 500, 100, 0, 400, MOVE));
 		CHECK(is(legs[2], 0, 400, 300, 0, MOVE));
 		CHECK(is(legs[3], 300, 0, 800, 400, MOVE));
+	}
+
+	//a plain move given while the unit is in an attack it cannot break off
+	//yet: the game keeps the move at the head of the queue until the
+	//animation is over, and marks the unit as leaving its order. That is no
+	//Shift chain: no lines (it showed red to the target, green on to the
+	//move).
+	{
+		const Stop queued[] = {stop(MOVE_ORDER, 500, 400)};
+		clear(legs, 8);
+		CHECK(legsOf(100, 100, stop(ATTACK_UNIT, 180, 100), queued, 1, true, legs) == 0);
+		CHECK(is(legs[0], -1, -1, -1, -1, PATROL));
+		//the same orders as a Shift chain show.
+		CHECK(legsOf(100, 100, stop(ATTACK_UNIT, 180, 100), queued, 1, false, legs) == 2);
+		CHECK(is(legs[0], 100, 100, 180, 100, ATTACK));
+		CHECK(is(legs[1], 180, 100, 500, 400, MOVE));
 	}
 
 	//each line is drawn as the order it leads to.
@@ -158,7 +174,7 @@ int main() {
 		const Stop queued[] = {stop(ATTACK_MOVE, 500, 400), stop(PATROL_ORDER, 800, 400),
 		                       stop(MOVE_ORDER, 800, 100)};
 		clear(legs, 8);
-		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 3, legs) == 4);
+		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 3, false, legs) == 4);
 		CHECK(legs[0].kind == MOVE);
 		CHECK(legs[1].kind == ATTACK);
 		CHECK(legs[2].kind == PATROL);
@@ -167,7 +183,7 @@ int main() {
 	{
 		const Stop queued[] = {stop(MOVE_ORDER, 500, 400)};
 		clear(legs, 8);
-		CHECK(legsOf(100, 100, stop(ATTACK_MOVE, 500, 100), queued, 1, legs) == 2);
+		CHECK(legsOf(100, 100, stop(ATTACK_MOVE, 500, 100), queued, 1, false, legs) == 2);
 		CHECK(legs[0].kind == ATTACK);
 		CHECK(legs[1].kind == MOVE);
 	}

@@ -332,7 +332,11 @@ void drawOrderQueue(CUnit *unit)
     const orderlines::Stop current = stopOfOrder(unit->mainOrderId, unit->orderTarget);
 
     orderlines::Leg legs[QUEUED_MAX + 1];
-    const u32 legCount = orderlines::legsOf(unit->position.x, unit->position.y, current, queued, count, legs);
+    // The game's mark on a unit that is to leave its order for the next as soon as it can (bit 0,
+    // cleared when it does, 0x475104): what waits in the queue then is no Shift chain
+    const bool leaving = (unit->userActionFlags & 1) != 0;
+    const u32 legCount =
+        orderlines::legsOf(unit->position.x, unit->position.y, current, queued, count, leaving, legs);
     for (u32 i = 0; i < legCount; ++i)
     {
         const orderlines::Leg &leg = legs[i];

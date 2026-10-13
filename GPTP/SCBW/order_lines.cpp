@@ -46,7 +46,10 @@ Kind kindOf(u32 orderId) {
 	}
 }
 
-u32 legsOf(s32 unitX, s32 unitY, const Stop& current, const Stop* queued, u32 count, Leg* out) {
+u32 legsOf(s32 unitX, s32 unitY, const Stop& current, const Stop* queued, u32 count, bool leaving, Leg* out) {
+	if (leaving)
+		return 0;
+
 	bool queuedHasPosition = false;
 	for (u32 i = 0; i < count; ++i)
 		queuedHasPosition = queuedHasPosition || hasPosition(queued[i]);
