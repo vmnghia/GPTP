@@ -495,6 +495,11 @@ starfield handled (§5). Features 1 and 2 below are done.
 - **stat_txt.tbl entries 810 and 811** ("Show/Hide Terrain in Minimap (Tab)"): change
   "(Tab)" to "(Alt+T)". The minimap terrain toggle moved to Alt+T on 2026-10-03 (Tab now
   cycles selection subgroups; the ally colours moved to Ctrl+Shift+T, which has no string).
+- **Set Worker Rally Point** (smart rally, 2026-10-14): in the Manifold Editor, on the
+  Hatchery, Lair and Hive sets, a button beside Set Rally Point: icon 286 (the rally
+  flag, for now), condition 0x429740 (as Set Rally Point's), action Rally Point
+  0x4244A0 with actVar 1, a new string "Set Worker Rally Point" with hotkey G. Save,
+  repack.
 
 **Then the planned features, in this order** (set by the user on 2026-09-28):
 1. **Resolution choice without rebuilding** `[BUILT]`, tested 2026-09-28 at 1024×576,
@@ -529,10 +534,15 @@ starfield handled (§5). Features 1 and 2 below are done.
 6. **Release build:** the plugin is built as Debug into `GPTP\Debug\`. Turn
    `RESOLUTION_DEBUG` back on when changing the layout.
 
-**Outside that list: smart rally** (asked for by the user on 2026-10-14) `[PROPOSED]`:
-workers gather and units enter on a rally, SC2's separate worker rally for Hatchery, Lair
-and Hive, and rallies to the nearest mineral field at a melee start. Spec
-`docs/superpowers/specs/2026-10-14-smart-rally-design.md`.
+**Outside that list: smart rally** (asked for by the user on 2026-10-14) `[BUILT
+2026-10-14, not yet run in game]`: workers gather and units enter on a rally, SC2's
+separate worker rally for Hatchery, Lair and Hive (its line yellow, the user's pick), and
+rallies to the nearest mineral field at a melee start. Spec
+`docs/superpowers/specs/2026-10-14-smart-rally-design.md`, plan
+`docs/superpowers/plans/2026-10-14-smart-rally.md`; code `hooks/rally/`,
+`SCBW/smart_rally*`.
+- Replays recorded before this build play differently: Drones no longer follow a
+  Hatchery's rally, and melee games start with rallies set.
 - **Later: a separate icon for Set Worker Rally Point** (the user, 2026-10-14). SC2's is
   the rally icon with a small Drone in it; until then it uses Set Rally Point's icon.
 

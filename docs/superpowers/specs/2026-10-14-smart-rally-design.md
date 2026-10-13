@@ -1,6 +1,8 @@
 # Smart rally (gather and enter on rally, SC2's worker rally)
 
-Status: `[PROPOSED]` spec, 2026-10-14, approved in conversation; not built.
+Status: `[BUILT 2026-10-14]`, not yet run in game. Plan:
+`docs/superpowers/plans/2026-10-14-smart-rally.md`. The worker rally line is yellow
+(the user's pick from a preview, §2.5).
 Asked for by the user on 2026-10-14. Idea from KYSXD's tutorial
 (https://github.com/KYSXD/GPTP-For-VS2008/wiki/%5BPlugin%5D-Smart-rally), reviewed in §9
 and not followed as is. SC2 is the reference; the user checks SC2's behaviour.

@@ -24,9 +24,9 @@ and running StarCraft. Debug is the usual configuration; the plugin lands in `GP
 `tests/verify.ps1` is the one local check, run on the user's machine: it builds and runs the
 host-side tests of the pure logic (`tests/*_test.bat`: the extended selection, the button
 set file's parser, the UI mask, the on-map lines and bars' `line_walk`, `order_lines`
-and `build_progress`, and `player_slots`),
-builds the plugin with MSBuild, then disassembles `sel_inject.obj` and runs
-`tests/check_naked_wrappers.py` over it. That script fails if a naked wrapper touches
+and `build_progress`, `player_slots`, and the smart rally rules `smart_rally`),
+builds the plugin with MSBuild, then disassembles `sel_inject.obj` and
+`smart_rally_inject.obj` and runs `tests/check_naked_wrappers.py` over each. That script fails if a naked wrapper touches
 `[ebp…]`: a naked function has no frame of its own, so a Debug-build temporary there writes
 into the exe caller's frame. Only the offsets listed in its `ALLOWED` table are allowed.
 
@@ -152,9 +152,16 @@ installed there, not only in `injectHudHooks`.
 - **Worker and Carrier commands** (in `hooks/selection_ext/sel_synced.cpp`, notes in
   `docs/resolution.md` §6): Cancel Last obeyed by every selected unit, and a worker
   holding cargo goes on with the orders queued behind a gather. Synced.
+- **Smart rally** (`hooks/rally/`, rules `SCBW/smart_rally*`, spec
+  `docs/superpowers/specs/2026-10-14-smart-rally-design.md`): a worker gathers and a
+  unit goes into its own Bunker or transport at its rally; Hatchery, Lair and Hive have
+  SC2's separate worker rally (right-click a resource, or Set Worker Rally Point:
+  command 0x3E); melee games start with each town hall rallied to its minerals. Synced;
+  the worker rallies are in the plugin save chunk (version 4). Upstream's
+  `injectRallyHooks()` must stay off: it patches 0x466F50 and 0x45620D too.
 
-Selection, smart-build, smart-casting and those two command changes are **synced game
-state**: they travel as network commands and are recorded in replays. See "Sync safety"
+Selection, smart-build, smart-casting, those two command changes and smart rally are
+**synced game state**: they travel as network commands and are recorded in replays. See "Sync safety"
 below.
 
 ### `SCBW/` — reverse-engineered engine knowledge
