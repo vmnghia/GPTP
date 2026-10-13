@@ -574,7 +574,12 @@ tests: `graphics/line_walk.cpp`, `SCBW/order_lines.cpp` and `SCBW/build_progress
     (`buildprogress::barFrame`). The queue boxes are 4 px tall with a border all round.
 - **Open:**
   - Allies' bars only where the local player sees the unit (the user's ruling,
-    2026-10-12): host-tested only. It needs a team game without shared vision `[VERIFY]`.
+    2026-10-12): no bar over an ally in the fog, checked in game by the user on
+    2026-10-13 (a UMS map with an allied computer and no shared vision). To set such a map
+    up: a force's Allies and Shared Vision apply between human players only (0x45AB20,
+    0x45A9B0), so the computer needs Set Alliance Status triggers both ways, and its vision
+    comes from "Run AI Script: Turn ON Shared Vision for Player N" in a trigger owned by
+    the player who is to receive it.
   - A unit type whose units.dat "attack unit" order is none of the listed ones gets a
     green line.
   - The Protoss bar adds 24 frames to the total and not to the time done. It is at most
