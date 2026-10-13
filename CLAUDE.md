@@ -145,10 +145,17 @@ installed there, not only in `injectHudHooks`.
   unit the player may see at work (bars). Cosmetic. Their rules are pure and host-tested:
   `graphics/line_walk*` (a line walks only its on-screen part), `SCBW/order_lines*`,
   `SCBW/build_progress*`. They name orders, not unit types: a bar shows on anything that
-  produces by `Train` or `TrainFighter`.
+  produces by `Train` or `TrainFighter`. Lines show only a chain the player queued with
+  Shift: the game's order queue also holds waiting plain orders and its own clean-up
+  orders, unmarked, so `hooks/selection_ext/sel_chain*` notes it where a command's order
+  enters the queue (local, not saved).
+- **Worker and Carrier commands** (in `hooks/selection_ext/sel_synced.cpp`, notes in
+  `docs/resolution.md` §6): Cancel Last obeyed by every selected unit, and a worker
+  holding cargo goes on with the orders queued behind a gather. Synced.
 
-Selection, smart-build and smart-casting are **synced game state**: they travel as network
-commands and are recorded in replays. See "Sync safety" below.
+Selection, smart-build, smart-casting and those two command changes are **synced game
+state**: they travel as network commands and are recorded in replays. See "Sync safety"
+below.
 
 ### `SCBW/` — reverse-engineered engine knowledge
 

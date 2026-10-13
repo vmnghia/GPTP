@@ -539,10 +539,12 @@ starfield handled (§5). Features 1 and 2 below are done.
     the game view still get the effects. A region is one more `uimask::add...` function.
 
 **Outside that list: order lines, rally lines and progress bars** (the user's list of
-2026-10-11) `[BUILT, tested in game 2026-10-11 and 2026-10-12, rounds 7-16]`. The drawing is
+2026-10-11) `[BUILT, tested in game 2026-10-11 to 2026-10-14, rounds 7-20]`. The drawing is
 `plugins::drawOrderQueue`, `drawRallyPoint` and `drawBuildProgress` in
 `hooks/main/game_hooks.cpp`; drawing only. The rules are in three pure modules with host
 tests: `graphics/line_walk.cpp`, `SCBW/order_lines.cpp` and `SCBW/build_progress.cpp`.
+Two changes that came out of it are **synced game state**, not drawing: Cancel Last and
+the orders queued behind a gather (below).
 - **Lines** show for the whole selection, not its first 12, as pairs of arrowheads (4 px
   apart, a pair every 18 px: the user's choice from previews). A chevron line walks only
   its on-screen part: 400 units' lines cost 54-82 ms a draw before, 2-9 ms after (a host
@@ -558,6 +560,32 @@ tests: `graphics/line_walk.cpp`, `SCBW/order_lines.cpp` and `SCBW/build_progress
     order. A rally line follows only a unit of the building's own player, as new units do.
   - A rally line shows only when the game would use the rally point (0x466F50): the
     building is not its own rally unit (what lift-off puts back) and the point's x is not 0.
+  - **Only a chain the player queued with Shift shows** (rounds 17-18). The game keeps
+    three things in one order queue and marks none: Shift-queued orders, a plain order
+    that has to wait (an attack animation: 0x475000 holds it while the unit cannot break
+    off), and its own clean-up orders (every gathering worker carries its collision reset,
+    0x468AA0; a burrowed unit gets its unburrow), which run before whatever the unit is
+    told next. `hooks/selection_ext/sel_chain.cpp` notes which units hold a Shift-queued
+    order, at the two calls where a command's order enters the queue (0x4755C8 queued,
+    0x4755E3 plain) and where smart-build queues a building; it forgets a chain when the
+    queue runs out. A patrol's route shows without Shift: the game queues the way back
+    itself. The note is local and **not saved**: after a load a chain has no lines until
+    the player queues again.
+- **Cancel Last with several units selected** (round 17; synced). The SC2-style card
+  shows the button for several Carriers, but the game's Cancel Train routine (0x4C0100)
+  quits unless exactly one unit is selected. `selsync::recvCancelTrain` replaces it:
+  Cancel Last is obeyed by every selected unit able to, as Build Interceptor is; a queue
+  slot is still one unit's. Upstream's own hook of that routine
+  (`injectCMDRECV_CancelHooks`) is off and cannot run alongside.
+- **Orders queued behind a gather are kept** (rounds 19-20; synced; the user's reading of
+  StarCraft II). A worker holding cargo at a gather goes on with its queue, keeping the
+  cargo, instead of taking it back: after mining its minerals (0x46984A, 0x469858) and
+  when it reaches the resource already carrying that kind (0x46945D, 0x4695CE). Vanilla
+  gives the next harvest step there as an order that replaces the queue; its gas routine
+  already goes on with the queue when a worker leaves a refinery (0x469980). The rule is
+  `selext::gatherYieldsToQueue` (anything queued but the game's own clean-up orders), the
+  stub `harvestStepStub`. A queued Return Cargo needed nothing: the delivery routine
+  (0x4690C0) puts the next gather in front of the queue.
 - **Bars** show on a building being built, warped in, grown or morphed, on one
   researching, upgrading or training, and on any unit that makes another inside it.
   - A Zerg building morphing is in `ZergBuildSelf`, like one grown from a Drone, and
@@ -584,6 +612,16 @@ tests: `graphics/line_walk.cpp`, `SCBW/order_lines.cpp` and `SCBW/build_progress
     green line.
   - The Protoss bar adds 24 frames to the total and not to the time done. It is at most
     5% off (a Pylon) and the user saw nothing wrong: left as it is.
+  - Gathering with a queue, left as vanilla: a carrying worker still walks to the resource
+    before it goes on (that is where the game decides), and when a patch runs out under a
+    worker the game re-targets and drops the queue itself (the loop at 0x469931 in the
+    mining routine, and its twin in the routine that waits for a patch).
+  - Replays recorded before 2026-10-14 play differently where Cancel Last was pressed with
+    several units selected, or a worker had orders queued behind a gather.
+  - Found while reading, not reported by the user `[VERIFY]`: `initializeGame()` in
+    `game_hooks.cpp` fills `firstMineral[8]` only for players with a resource depot and
+    reads it for every worker's player (also players 8-11), in games that are not Use Map
+    Settings. In a Debug build an unset entry is not NULL.
 
 **Working tips for the next session.**
 - **For a decision about a look, render the options and let the user pick.** The line
