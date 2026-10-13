@@ -334,6 +334,7 @@
     <ClCompile Include="SCBW\order_lines.cpp" />
     <ClCompile Include="SCBW\ui_mask.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_selftest.cpp" />
+    <ClCompile Include="hooks\selection_ext\sel_chain.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_exe.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_synced.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_local.cpp" />
@@ -529,6 +530,7 @@
     <ClInclude Include="SCBW\order_lines.h" />
     <ClInclude Include="SCBW\ui_mask.h" />
     <ClInclude Include="hooks\selection_ext\selection_ext_hooks.h" />
+    <ClInclude Include="hooks\selection_ext\sel_chain.h" />
     <ClInclude Include="hooks\selection_ext\sel_exe.h" />
     <ClInclude Include="hooks\selection_ext\sel_synced.h" />
     <ClInclude Include="hooks\selection_ext\sel_local.h" />

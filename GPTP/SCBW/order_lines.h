@@ -37,12 +37,15 @@ struct Leg {
 //how many. An order without a position gets no line and the chain goes on
 //past it. Nothing shows unless a queued order has a position: a unit's
 //current order alone has no line.
-//leaving: the unit has been told to leave its current order for the next
-//and has not yet. The game keeps a plain order in the same queue while the
-//unit cannot break off (an attack animation, 0x475000) and marks the unit
-//so; a Shift-queued order does not mark it. A unit that is leaving has no
-//Shift chain to show: no lines.
-u32 legsOf(s32 unitX, s32 unitY, const Stop& current, const Stop* queued, u32 count, bool leaving, Leg* out);
+//playerQueued: the queue holds an order the player queued with Shift. The
+//game keeps other things in the same queue, and nothing in it tells them
+//apart: a plain order waiting for the unit to be able to break off (an
+//attack animation, 0x475000), what a unit must do first (unburrow), and the
+//clean-up orders every gathering worker carries (0x468AA0), which run before
+//whatever it is told next. None of that is a plan to show: without a
+//Shift-queued order there are no lines. A patrol is the exception: the game
+//queues the way back itself, and its route shows.
+u32 legsOf(s32 unitX, s32 unitY, const Stop& current, const Stop* queued, u32 count, bool playerQueued, Leg* out);
 
 //Whether a building has a rally point, by the game's own rule for sending a
 //new unit to it (0x466F50): its rally unit is not the building itself

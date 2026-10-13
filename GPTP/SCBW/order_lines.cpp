@@ -46,8 +46,8 @@ Kind kindOf(u32 orderId) {
 	}
 }
 
-u32 legsOf(s32 unitX, s32 unitY, const Stop& current, const Stop* queued, u32 count, bool leaving, Leg* out) {
-	if (leaving)
+u32 legsOf(s32 unitX, s32 unitY, const Stop& current, const Stop* queued, u32 count, bool playerQueued, Leg* out) {
+	if (!playerQueued && kindOf(current.orderId) != PATROL)
 		return 0;
 
 	bool queuedHasPosition = false;

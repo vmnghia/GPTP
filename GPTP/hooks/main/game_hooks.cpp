@@ -12,6 +12,7 @@
 #include "../recv_commands/smart_cast.h"
 #include <SCBW/selection_ext.h>
 #include "../selection_ext/sel_build.h"
+#include "../selection_ext/sel_chain.h"
 #include "../selection_ext/sel_profile.h"
 #include <cstdio>
 
@@ -332,11 +333,10 @@ void drawOrderQueue(CUnit *unit)
     const orderlines::Stop current = stopOfOrder(unit->mainOrderId, unit->orderTarget);
 
     orderlines::Leg legs[QUEUED_MAX + 1];
-    // The game's mark on a unit that is to leave its order for the next as soon as it can (bit 0,
-    // cleared when it does, 0x475104): what waits in the queue then is no Shift chain
-    const bool leaving = (unit->userActionFlags & 1) != 0;
-    const u32 legCount =
-        orderlines::legsOf(unit->position.x, unit->position.y, current, queued, count, leaving, legs);
+    // Only what the player queued with Shift: the game keeps waiting plain orders and its own
+    // clean-up orders in the same queue (selchain notes which it is)
+    const u32 legCount = orderlines::legsOf(unit->position.x, unit->position.y, current, queued, count,
+                                            selchain::holds(unit), legs);
     for (u32 i = 0; i < legCount; ++i)
     {
         const orderlines::Leg &leg = legs[i];
@@ -392,6 +392,7 @@ bool nextFrame()
             }
 
             plugins::drawBuildProgress(unit);
+            selchain::sweep(unit);
         }
 
         // The whole selection, not vanilla's mirror of its first 12
@@ -448,6 +449,7 @@ bool nextFrame()
 bool gameOn()
 {
     smartCast::reset();
+    selchain::reset();
     return true;
 }
 

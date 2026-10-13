@@ -16,5 +16,7 @@ void injectControlGroupHooks();
 void injectCommandCardHooks();
 //Smart-build: several workers build; Shift queues buildings.
 void injectSmartBuildHooks();
+//Notes which units hold a Shift-queued order, for the order lines.
+void injectOrderChainHooks();
 
 } //hooks

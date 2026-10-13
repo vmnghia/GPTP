@@ -22,7 +22,8 @@ void check(bool ok, u32 line) {
 
 //The game's order ids (SCBW/enumerations/OrderId.h).
 const u32 STOP = 0x01, PLAYER_GUARD = 0x03, MOVE_ORDER = 0x06, ATTACK_UNIT = 0x0A, ATTACK_MOVE = 0x0E,
-          CONSTRUCTING = 0x21, SIEGE = 0x62, PATROL_ORDER = 0x98;
+          CONSTRUCTING = 0x21, MOVE_TO_MINERALS = 0x55, HARVEST_INTERRUPT = 0x58, SIEGE = 0x62,
+          UNBURROW = 0x76, RESET_COLLISION = 0x97, PATROL_ORDER = 0x98;
 
 Stop stop(u32 orderId, s32 x, s32 y) {
 	const Stop s = {orderId, x, y};
@@ -90,14 +91,14 @@ int main() {
 
 	//nothing queued: no line, even with a current order on its way.
 	clear(legs, 8);
-	CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), NULL, 0, false, legs) == 0);
+	CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), NULL, 0, true, legs) == 0);
 	CHECK(is(legs[0], -1, -1, -1, -1, PATROL));
 
 	//moving to A with a move to B queued: the unit to A, A to B.
 	{
 		const Stop queued[] = {stop(MOVE_ORDER, 500, 400)};
 		clear(legs, 8);
-		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 1, false, legs) == 2);
+		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 1, true, legs) == 2);
 		CHECK(is(legs[0], 100, 100, 500, 100, MOVE));
 		CHECK(is(legs[1], 500, 100, 500, 400, MOVE));
 		CHECK(is(legs[2], -1, -1, -1, -1, PATROL));
@@ -108,7 +109,7 @@ int main() {
 	{
 		const Stop queued[] = {stop(PLAYER_GUARD, 0, 0)};
 		clear(legs, 8);
-		CHECK(legsOf(900, 700, stop(CONSTRUCTING, 910, 690), queued, 1, false, legs) == 0);
+		CHECK(legsOf(900, 700, stop(CONSTRUCTING, 910, 690), queued, 1, true, legs) == 0);
 		CHECK(is(legs[0], -1, -1, -1, -1, PATROL));
 	}
 
@@ -117,7 +118,7 @@ int main() {
 	{
 		const Stop queued[] = {stop(MOVE_ORDER, 500, 400)};
 		clear(legs, 8);
-		CHECK(legsOf(100, 100, stop(SIEGE, 0, 0), queued, 1, false, legs) == 1);
+		CHECK(legsOf(100, 100, stop(SIEGE, 0, 0), queued, 1, true, legs) == 1);
 		CHECK(is(legs[0], 100, 100, 500, 400, MOVE));
 	}
 
@@ -125,7 +126,7 @@ int main() {
 	{
 		const Stop queued[] = {stop(PLAYER_GUARD, 0, 0), stop(MOVE_ORDER, 500, 400)};
 		clear(legs, 8);
-		CHECK(legsOf(900, 700, stop(CONSTRUCTING, 910, 690), queued, 2, false, legs) == 2);
+		CHECK(legsOf(900, 700, stop(CONSTRUCTING, 910, 690), queued, 2, true, legs) == 2);
 		CHECK(is(legs[0], 900, 700, 910, 690, MOVE));
 		CHECK(is(legs[1], 910, 690, 500, 400, MOVE));
 	}
@@ -135,7 +136,7 @@ int main() {
 	{
 		const Stop queued[] = {stop(MOVE_ORDER, 500, 400), stop(SIEGE, 0, 0), stop(MOVE_ORDER, 800, 400)};
 		clear(legs, 8);
-		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 3, false, legs) == 3);
+		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 3, true, legs) == 3);
 		CHECK(is(legs[0], 100, 100, 500, 100, MOVE));
 		CHECK(is(legs[1], 500, 100, 500, 400, MOVE));
 		CHECK(is(legs[2], 500, 400, 800, 400, MOVE));
@@ -147,26 +148,60 @@ int main() {
 	{
 		const Stop queued[] = {stop(MOVE_ORDER, 0, 400), stop(MOVE_ORDER, 300, 0), stop(MOVE_ORDER, 800, 400)};
 		clear(legs, 8);
-		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 3, false, legs) == 4);
+		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 3, true, legs) == 4);
 		CHECK(is(legs[1], 500, 100, 0, 400, MOVE));
 		CHECK(is(legs[2], 0, 400, 300, 0, MOVE));
 		CHECK(is(legs[3], 300, 0, 800, 400, MOVE));
 	}
 
-	//a plain move given while the unit is in an attack it cannot break off
-	//yet: the game keeps the move at the head of the queue until the
-	//animation is over, and marks the unit as leaving its order. That is no
-	//Shift chain: no lines (it showed red to the target, green on to the
+	//the game keeps other things in the queue Shift-orders use, and nothing
+	//in it tells them apart; the caller knows whether the player queued one
+	//(playerQueued). Without one there are no lines.
+	//a plain move given during an attack the unit cannot break off yet waits
+	//at the head of the queue (it showed red to the target, green on to the
 	//move).
 	{
 		const Stop queued[] = {stop(MOVE_ORDER, 500, 400)};
 		clear(legs, 8);
-		CHECK(legsOf(100, 100, stop(ATTACK_UNIT, 180, 100), queued, 1, true, legs) == 0);
+		CHECK(legsOf(100, 100, stop(ATTACK_UNIT, 180, 100), queued, 1, false, legs) == 0);
 		CHECK(is(legs[0], -1, -1, -1, -1, PATROL));
 		//the same orders as a Shift chain show.
-		CHECK(legsOf(100, 100, stop(ATTACK_UNIT, 180, 100), queued, 1, false, legs) == 2);
+		CHECK(legsOf(100, 100, stop(ATTACK_UNIT, 180, 100), queued, 1, true, legs) == 2);
 		CHECK(is(legs[0], 100, 100, 180, 100, ATTACK));
 		CHECK(is(legs[1], 180, 100, 500, 400, MOVE));
+	}
+	//a gathering worker always has clean-up orders queued (its collision
+	//reset, the end of its mining). Told to move, it runs them first, with
+	//the move behind them: no lines.
+	{
+		const Stop queued[] = {stop(HARVEST_INTERRUPT, 0, 0), stop(MOVE_ORDER, 500, 400)};
+		clear(legs, 8);
+		CHECK(legsOf(100, 100, stop(RESET_COLLISION, 0, 0), queued, 2, false, legs) == 0);
+		CHECK(is(legs[0], -1, -1, -1, -1, PATROL));
+	}
+	//the same worker with a move queued by Shift: it goes on gathering, then
+	//moves. The lines show that.
+	{
+		const Stop queued[] = {stop(RESET_COLLISION, 0, 0), stop(MOVE_ORDER, 500, 400)};
+		clear(legs, 8);
+		CHECK(legsOf(100, 100, stop(MOVE_TO_MINERALS, 60, 80), queued, 2, true, legs) == 2);
+		CHECK(is(legs[0], 100, 100, 60, 80, MOVE));
+		CHECK(is(legs[1], 60, 80, 500, 400, MOVE));
+	}
+	//a burrowed unit told to move unburrows first, the move queued behind.
+	{
+		const Stop queued[] = {stop(MOVE_ORDER, 500, 400)};
+		clear(legs, 8);
+		CHECK(legsOf(100, 100, stop(UNBURROW, 0, 0), queued, 1, false, legs) == 0);
+	}
+	//a patrol: the game queues the way back itself, and the route shows
+	//without any Shift.
+	{
+		const Stop queued[] = {stop(PATROL_ORDER, 100, 100)};
+		clear(legs, 8);
+		CHECK(legsOf(300, 100, stop(PATROL_ORDER, 500, 100), queued, 1, false, legs) == 2);
+		CHECK(is(legs[0], 300, 100, 500, 100, PATROL));
+		CHECK(is(legs[1], 500, 100, 100, 100, PATROL));
 	}
 
 	//each line is drawn as the order it leads to.
@@ -174,7 +209,7 @@ int main() {
 		const Stop queued[] = {stop(ATTACK_MOVE, 500, 400), stop(PATROL_ORDER, 800, 400),
 		                       stop(MOVE_ORDER, 800, 100)};
 		clear(legs, 8);
-		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 3, false, legs) == 4);
+		CHECK(legsOf(100, 100, stop(MOVE_ORDER, 500, 100), queued, 3, true, legs) == 4);
 		CHECK(legs[0].kind == MOVE);
 		CHECK(legs[1].kind == ATTACK);
 		CHECK(legs[2].kind == PATROL);
@@ -183,7 +218,7 @@ int main() {
 	{
 		const Stop queued[] = {stop(MOVE_ORDER, 500, 400)};
 		clear(legs, 8);
-		CHECK(legsOf(100, 100, stop(ATTACK_MOVE, 500, 100), queued, 1, false, legs) == 2);
+		CHECK(legsOf(100, 100, stop(ATTACK_MOVE, 500, 100), queued, 1, true, legs) == 2);
 		CHECK(legs[0].kind == ATTACK);
 		CHECK(legs[1].kind == MOVE);
 	}

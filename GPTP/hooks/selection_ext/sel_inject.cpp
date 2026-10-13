@@ -9,6 +9,7 @@
 #include "sel_groups.h"
 #include "sel_subgroups.h"
 #include "sel_build.h"
+#include "sel_chain.h"
 #include "../interface/buttonsets_loader.h"
 #include <SCBW/selection_ext.h>
 #include <hook_tools.h>
@@ -651,6 +652,38 @@ void __declspec(naked) canCreateWorkerStub() {
 	}
 }
 
+//The two ways a command's order reaches a unit (0x4754F0, ESI = the unit at
+//both calls): behind its other orders (Shift, 0x4755C8 calls 0x474B90), or in
+//their place (0x4755E3 calls 0x475470). selchain notes which, for the order
+//lines.
+const u32 Func_QueueOrder = 0x00474B90;
+const u32 Func_PlainOrder = 0x00475470;
+void __declspec(naked) orderQueuedStub() {
+	static CUnit* unit;
+	__asm {
+		MOV unit, ESI
+		PUSHAD
+	}
+	selchain::queued(unit);
+	__asm {
+		POPAD
+		JMP Func_QueueOrder
+	}
+}
+
+void __declspec(naked) orderPlainStub() {
+	static CUnit* unit;
+	__asm {
+		MOV unit, ESI
+		PUSHAD
+	}
+	selchain::replaced(unit);
+	__asm {
+		POPAD
+		JMP Func_PlainOrder
+	}
+}
+
 //0x4C0100 (Cancel Train receive, command 0x20): stdcall, its one argument the
 //packet. The whole routine is replaced.
 void __declspec(naked) recvCancelTrainWrapper() {
@@ -1016,6 +1049,11 @@ void injectSelectionPanelHooks() {
 void injectControlGroupHooks() {
 	jmpPatch(selectRecentGroupWrapper,	0x00496D30, 1);
 	jmpPatch(centerViewOnGroupWrapper,	0x004967E0, 1);
+}
+
+void injectOrderChainHooks() {
+	callPatch(orderQueuedStub,	0x004755C8, 0);
+	callPatch(orderPlainStub,	0x004755E3, 0);
 }
 
 void injectCommandCardHooks() {

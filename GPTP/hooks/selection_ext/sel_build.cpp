@@ -1,4 +1,5 @@
 #include "sel_build.h"
+#include "sel_chain.h"
 #include "sel_exe.h"
 #include "sel_subgroups.h"
 #include "../interface/resolution.h"
@@ -106,6 +107,7 @@ u32 collectSelection(CUnit** units) {
 
 //Starts a build now with builder, through vanilla's path.
 void buildNow(CUnit* builder, u8 order, u16 type, u32 tiles) {
+	selchain::replaced(builder);	//a plain build is no Shift chain (drawing only)
 	selbuild::chosenBuilder = builder;
 	selexe::placeBuilding(order, type, tiles);
 	selbuild::chosenBuilder = NULL;
@@ -337,6 +339,7 @@ void recvQueuedBuild(const u8* packet) {
 	//The mark: set up when it becomes current, and prepaid.
 	unit->performAnotherOrder(cmd.order, (s16)cmd.siteX, (s16)cmd.siteY, NULL,
 	                          packQueuedType(cmd.type, sequence), NULL);
+	selchain::queued(unit);	//the order lines show it (drawing only)
 }
 
 } //selbuild
