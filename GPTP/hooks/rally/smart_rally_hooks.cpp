@@ -1,5 +1,7 @@
 #include "smart_rally_hooks.h"
 #include <SCBW/smart_rally.h>
+#include <SCBW/selection_ext.h>
+#include "../selection_ext/sel_synced.h"
 #include <cstring>
 
 namespace smartrally {
@@ -41,6 +43,27 @@ bool unitIsActiveTransport(CUnit* unit) {
 //test before EnterTransport (0x455973-0x45598B).
 bool rightClickLoads(CUnit* unit, CUnit* target) {
 	return unitIsActiveTransport(target) && scbw::canBeEnteredBy(target, unit);
+}
+
+bool workerRallyTargeting;	//local: the last rally button pressed was Set Worker Rally Point
+u8 workerRallyCommand[WORKER_RALLY_BYTES];
+
+//As the game sets a rally on a unit (0x45620D): the building itself for
+//none, at the target's position.
+void setNormalRally(CUnit* building, CUnit* target) {
+	if (target == NULL)
+		target = building;
+	building->rally.unit = target;
+	building->rally.pt.x = target->sprite->position.x;
+	building->rally.pt.y = target->sprite->position.y;
+}
+
+//A worker rally on a unit (at its position) or, target NULL, on (x, y).
+void setWorkerRally(WorkerRally* rally, CUnit* target, u16 x, u16 y) {
+	rally->set = true;
+	rally->target = target;
+	rally->x = target != NULL ? target->sprite->position.x : x;
+	rally->y = target != NULL ? target->sprite->position.y : y;
 }
 
 } //unnamed namespace
@@ -121,6 +144,47 @@ void referenceCleared(CUnit* holder, CUnit* dying) {
 	rally.target = NULL;
 	rally.x = dying->sprite->position.x;
 	rally.y = dying->sprite->position.y;
+}
+
+void rightClickRally(CUnit* building, CUnit* target) {
+	WorkerRally* const workerRally = workerRallyOf(building);
+	if (workerRally == NULL) {
+		setNormalRally(building, target);
+		return;
+	}
+	const bool hasTarget = target != NULL;
+	const RightClickSets sets = rightClickSets(
+		hasTarget,
+		hasTarget && isRallyResource(target->id, target->playerId == building->playerId),
+		hasTarget && workerRally->set && workerRally->target == target);
+	if (sets == SETS_WORKER || sets == SETS_BOTH)
+		setWorkerRally(workerRally, target, 0, 0);
+	if (sets == SETS_NORMAL || sets == SETS_BOTH)
+		setNormalRally(building, target);
+}
+
+void noteRallyButton(u32 actVar) {
+	workerRallyTargeting = (u16)actVar == 1;
+}
+
+u8* workerRallySendAs(const u8* targeted) {
+	const bool forWorkers = workerRallyTargeting;
+	workerRallyTargeting = false;
+	if (!forWorkers || !toWorkerRallyCommand(targeted, workerRallyCommand))
+		return NULL;
+	return workerRallyCommand;
+}
+
+void recvWorkerRally(const u8* packet) {
+	const u16 x = *(const u16*)(packet + 1);
+	const u16 y = *(const u16*)(packet + 3);
+	CUnit* const target = selext::unitOfTag(*(const u16*)(packet + 5));	//NULL: the ground, or it died
+	*selectionIndexStart = 0;
+	for (CUnit* unit = selsync::nextSelected(); unit != NULL; unit = selsync::nextSelected()) {
+		WorkerRally* const rally = workerRallyOf(unit);
+		if (rally != NULL && unit->playerId == *ACTIVE_NATION_ID)
+			setWorkerRally(rally, target, x, y);
+	}
 }
 
 } //smartrally

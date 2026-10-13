@@ -1,6 +1,7 @@
 //The pure logic of the extended selection: it touches no game memory, so the
 //host test in tests/ builds it on its own.
 #include "selection_ext.h"
+#include "smart_rally.h"
 #include <algorithm>
 #include <cstring>
 
@@ -110,6 +111,8 @@ u32 variableCommandLength(const u8* cmd) {
 		return 3 + 2 * cmd[2];
 	if (id == CMD_QUEUED_BUILD)
 		return QUEUED_BUILD_BYTES;
+	if (id == smartrally::CMD_WORKER_RALLY)
+		return smartrally::WORKER_RALLY_BYTES;
 	if (id >= 0x09 && id <= 0x0B)
 		return 2 + 2 * cmd[1];
 	return 0;

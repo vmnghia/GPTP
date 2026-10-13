@@ -58,6 +58,67 @@ void __declspec(naked) referenceClearStub() {
 	}
 }
 
+//0x45620D in the right-click receive (0x4560D0), RallyPoint1 for a factory:
+//EDI = the building, EAX = the clicked unit. Vanilla sets the rally there,
+//then jumps on to 0x456384.
+const u32 Back_RightClickRally = 0x00456384;
+void __declspec(naked) rightClickRallyStub() {
+	static CUnit* building;
+	static CUnit* target;
+	__asm {
+		MOV building, EDI
+		MOV target, EAX
+		PUSHAD
+	}
+	smartrally::rightClickRally(building, target);
+	__asm {
+		POPAD
+		JMP Back_RightClickRally
+	}
+}
+
+//0x4244A0, the rally button's action (fastcall: ECX = actVar, EDX = Shift),
+//which never reads actVar. Its first two instructions (7 bytes) are redone
+//here: MOV AL, 0x28; MOV [0x641691], AL.
+const u32 Back_RallyButton = 0x004244A7;
+void __declspec(naked) rallyButtonStub() {
+	static u32 actVar;
+	__asm {
+		MOV actVar, ECX
+		PUSHAD
+	}
+	smartrally::noteRallyButton(actVar);
+	__asm {
+		POPAD
+		MOV AL, 0x28
+		MOV BYTE PTR DS:[0x00641691], AL
+		JMP Back_RallyButton
+	}
+}
+
+//0x4C036C in 0x4C0300, which sends a click's targeted command 0x15: its call
+//of the send (ECX = the command, EDX = 11), which this stub ends in. After
+//Set Worker Rally Point, a rally click goes as the 7-byte 0x3E instead.
+const u32 Func_QueueCommandSend = 0x00485BD0;
+void __declspec(naked) targetedSendStub() {
+	static u8* command;
+	static u8* replaced;
+	__asm {
+		MOV command, ECX
+		PUSHAD
+	}
+	replaced = smartrally::workerRallySendAs(command);
+	__asm {
+		POPAD
+		CMP DWORD PTR replaced, 0
+		JE sendIt
+		MOV ECX, replaced
+		MOV EDX, 7
+	sendIt:
+		JMP Func_QueueCommandSend
+	}
+}
+
 } //unnamed namespace
 
 namespace hooks {
@@ -66,6 +127,9 @@ void injectSmartRallyHooks() {
 	jmpPatch(orderNewUnitToRallyWrapper,	0x00466F50, 0);
 	callPatch(unitDyingStub,				0x004A076D, 0);
 	callPatch(referenceClearStub,			0x0049E63A, 0);
+	jmpPatch(rightClickRallyStub,			0x0045620D, 35);
+	jmpPatch(rallyButtonStub,				0x004244A0, 2);
+	callPatch(targetedSendStub,				0x004C036C, 0);
 }
 
 } //hooks

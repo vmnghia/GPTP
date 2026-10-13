@@ -11,6 +11,7 @@
 #include "sel_build.h"
 #include "sel_chain.h"
 #include "../interface/buttonsets_loader.h"
+#include "../rally/smart_rally_hooks.h"
 #include <SCBW/selection_ext.h>
 #include <hook_tools.h>
 
@@ -295,15 +296,22 @@ void __cdecl recvQueuedBuildC(const u8* packet) {
 	selbuild::recvQueuedBuild(packet);
 }
 
+void __cdecl recvWorkerRallyC(const u8* packet) {
+	smartrally::recvWorkerRally(packet);
+}
+
 //Dispatch slot 50 of the executor 0x4865D0 (ids 0x3C-0x44, 0x48, 0x5B). ESI =
 //command, EAX = bytes left, [EBP+8] = bytes left, [EBP-4] = command size.
-//0x3C: the select chunk; 0x3D: smart-build's queued build (8 bytes).
+//0x3C: the select chunk; 0x3D: smart-build's queued build (9 bytes); 0x3E:
+//smart rally's worker rally (7 bytes).
 const u32 Back_CommandDone = 0x00486D7A;	//records the command and advances
 const u32 Back_CommandBad = 0x00486DA3;		//vanilla's exit for these ids
 void __declspec(naked) selectChunkDispatch() {
 	__asm {
 		CMP BYTE PTR [ESI], 0x3D
 		JE queuedBuild
+		CMP BYTE PTR [ESI], 0x3E
+		JE workerRally
 		CMP BYTE PTR [ESI], 0x3C
 		JNE notOurs
 		CMP EAX, 3
@@ -329,6 +337,18 @@ void __declspec(naked) selectChunkDispatch() {
 		PUSHAD
 		PUSH ESI
 		CALL recvQueuedBuildC
+		ADD ESP, 4
+		POPAD
+		JMP Back_CommandDone
+	workerRally:
+		CMP EAX, 7
+		JL notOurs
+		SUB EAX, 7
+		MOV [EBP+8], EAX
+		MOV DWORD PTR [EBP-4], 7
+		PUSHAD
+		PUSH ESI
+		CALL recvWorkerRallyC
 		ADD ESP, 4
 		POPAD
 		JMP Back_CommandDone

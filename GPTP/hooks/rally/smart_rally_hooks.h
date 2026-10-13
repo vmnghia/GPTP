@@ -30,6 +30,20 @@ void unitDying(CUnit* unit);
 //it keeps its point and loses its target, as the game's rally does (0x49E643).
 void referenceCleared(CUnit* holder, CUnit* dying);
 
+//The right-click receive sets building's rally on target (0x45620D; target
+//NULL is none): with two rallies, rightClickSets decides; else vanilla.
+void rightClickRally(CUnit* building, CUnit* target);
+//Local: the rally button's action ran (0x4244A0) with actVar; 1 is Set
+//Worker Rally Point. Only picks the command the local player sends.
+void noteRallyButton(u32 actVar);
+//Local: a targeted command is being sent (0x4C036C). After Set Worker Rally
+//Point, a rally click's command as 0x3E; else NULL, to send it as it is.
+//Either way the note is cleared.
+u8* workerRallySendAs(const u8* targeted);
+//0x3E received: the command player's selected Hatcheries, Lairs and Hives
+//get their worker rally on the target, or on the point without one.
+void recvWorkerRally(const u8* packet);
+
 } //smartrally
 
 namespace hooks {

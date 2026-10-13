@@ -3,6 +3,7 @@
 //tests/selection_ext_test.bat.
 #include <SCBW/selection_ext.h>
 #include <SCBW/console_raise.h>
+#include <SCBW/smart_rally.h>
 #include <cstring>
 
 namespace selext {
@@ -131,6 +132,8 @@ void lengths() {
 	CHECK(variableCommandLength(hotkey) == 0);
 	const u8 queued[] = { CMD_QUEUED_BUILD, 0x1E, 0, 0, 0, 0, 0, 0, 5 };
 	CHECK(variableCommandLength(queued) == 9);
+	const u8 workerRally[] = { smartrally::CMD_WORKER_RALLY, 0, 0, 0, 0, 0, 0 };
+	CHECK(variableCommandLength(workerRally) == smartrally::WORKER_RALLY_BYTES);
 }
 
 void ring() {
