@@ -353,6 +353,27 @@ void refundQueueSlots(CUnit* unit) {
 	}
 }
 
+void cancelLastQueued(CUnit* unit) {
+	const u32 Func = 0x00466E40;
+	__asm {
+		PUSHAD
+		MOV EAX, unit
+		CALL Func
+		POPAD
+	}
+}
+
+void cancelQueueSlot(CUnit* unit, u32 slot) {
+	const u32 Func = 0x00466A70;
+	__asm {
+		PUSHAD
+		MOV EDI, unit
+		MOV EAX, slot
+		CALL Func
+		POPAD
+	}
+}
+
 bool fillBuildSlot(CUnit* unit, u16 type) {
 	static u32 result;
 	const u32 Func = 0x00467250;

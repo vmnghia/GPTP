@@ -543,6 +543,27 @@ void queuedSites() {
 	CHECK(!rightClickRefusedFor(false, 0x03));	//idle SCV
 	CHECK(rightClickRefusedFor(false, 0x21));	//constructing, no Shift: vanilla refuses
 	CHECK(!rightClickRefusedFor(true, 0x21));	//constructing, Shift: queues
+	//Cancel Last (0xFE) with several units selected: every one of them obeys
+	//(vanilla refused the command unless exactly one unit was selected).
+	CHECK(cancelTrainObeyed(CANCEL_TRAIN_LAST, 1));
+	CHECK(cancelTrainObeyed(CANCEL_TRAIN_LAST, 5));
+	CHECK(cancelTrainObeyed(CANCEL_TRAIN_LAST, 400));
+	CHECK(!cancelTrainObeyed(CANCEL_TRAIN_LAST, 0));
+	//A queue slot is one unit's: obeyed with one unit selected only.
+	CHECK(cancelTrainObeyed(2, 1) && cancelTrainObeyed(0, 1));
+	CHECK(!cancelTrainObeyed(2, 5) && !cancelTrainObeyed(2, 0));
+	CHECK(cancelTrainObeyed(CANCEL_TRAIN_NONE, 1) && !cancelTrainObeyed(CANCEL_TRAIN_NONE, 5));
+	//Which selected units obey: completed, the command player's.
+	CHECK(cancelsTraining(72, true, true));		//Carrier
+	CHECK(cancelsTraining(83, true, true));		//Reaver
+	CHECK(cancelsTraining(111, true, true));	//Barracks
+	CHECK(!cancelsTraining(72, false, true));	//not completed
+	CHECK(!cancelsTraining(72, true, false));	//another player's
+	//Not the types whose Cancel is their morph's.
+	CHECK(!cancelsTraining(35, true, true) && !cancelsTraining(38, true, true) && !cancelsTraining(43, true, true));
+	CHECK(!cancelsTraining(131, true, true) && !cancelsTraining(132, true, true));
+	CHECK(!cancelsTraining(141, true, true) && !cancelsTraining(143, true, true));
+	CHECK(cancelsTraining(133, true, true));	//a Hive is not among them
 	//A depot cell inside a queued depot's footprint is red; one beside it isn't.
 	placementCellCentre(10, 20, 0, 0, &cx, &cy);
 	CHECK(footprintsOverlap(cx, cy, 32, 32, 352, 672, 96, 64));

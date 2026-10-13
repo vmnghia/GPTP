@@ -58,6 +58,10 @@ bool placementMessage(u32 code);
 //Whether player has the supply for type, showing the error if not (0x42CF70).
 bool hasSupplies(u16 type, u8 player);
 void refundQueueSlots(CUnit* unit);							//0x466E80
+//Cancels the last unit in unit's build queue, or the one in slot (counted
+//from the active slot), with its refund.
+void cancelLastQueued(CUnit* unit);							//0x466E40
+void cancelQueueSlot(CUnit* unit, u32 slot);				//0x466A70
 //Puts type in unit's build slot (0x467250).
 bool fillBuildSlot(CUnit* unit, u16 type);
 //Whether unit is within distance of (x, y) (0x401240).

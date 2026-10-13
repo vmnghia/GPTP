@@ -574,6 +574,26 @@ u32 placementCellIndex(u32 box, u32 row, u32 column) {
 	return box * 48 + row * 6 + column;
 }
 
+bool cancelTrainObeyed(u16 what, u32 selected) {
+	if (what == CANCEL_TRAIN_LAST)
+		return selected >= 1;
+	return selected == 1;
+}
+
+bool cancelsTraining(u16 unitType, bool completed, bool commandPlayers) {
+	switch (unitType) {
+	case 35:	//Larva
+	case 38:	//Hydralisk
+	case 43:	//Mutalisk
+	case 131:	//Hatchery
+	case 132:	//Lair
+	case 141:	//Spire
+	case 143:	//Creep Colony
+		return false;
+	}
+	return completed && commandPlayers;
+}
+
 bool rightClickRefusedFor(bool shiftHeld, u32 currentOrder) {
 	return currentOrder == 0x21 && !checkAsFree(shiftHeld, currentOrder);
 }

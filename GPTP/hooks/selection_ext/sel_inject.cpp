@@ -651,6 +651,22 @@ void __declspec(naked) canCreateWorkerStub() {
 	}
 }
 
+//0x4C0100 (Cancel Train receive, command 0x20): stdcall, its one argument the
+//packet. The whole routine is replaced.
+void __declspec(naked) recvCancelTrainWrapper() {
+	static const u8* packet;
+	__asm {
+		MOV EAX, [ESP + 4]
+		MOV packet, EAX
+		PUSHAD
+	}
+	selsync::recvCancelTrain(packet);
+	__asm {
+		POPAD
+		RETN 4
+	}
+}
+
 //0x4C23C0 (Build receive, command 0x0C): ESI = the packet.
 void __declspec(naked) recvBuildWrapper() {
 	static const u8* packet;
@@ -1008,6 +1024,9 @@ void injectCommandCardHooks() {
 	callPatch(targetOrderCheckStub,	0x004BD54B, 0);
 	callPatch(targetOrderCheckStub,	0x004BD564, 0);
 	jmpPatch(wireframeDimStub,		0x00456FB6, 0);
+	//Cancel Last from a card of several units (upstream's own hook of this
+	//routine, injectCMDRECV_CancelHooks, is off; the two cannot both run).
+	jmpPatch(recvCancelTrainWrapper,	0x004C0100, 6);
 	//The minimap's Tab toggles move to Alt+T / Ctrl+Shift+T (selpanel::keyDown).
 	jmpPatch(minimapKeyStub,		0x004A5938, 2);
 }

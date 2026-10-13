@@ -302,6 +302,23 @@ const u32 PLACEMENT_BOX_BUILDING = 1;
 //command to an SCV constructing (0x21) queues behind its construction;
 //anything else is vanilla's check as is.
 bool checkAsFree(bool queued, u32 currentOrder);
+//-------- Cancel Train with several units selected --------//
+
+//The Cancel Train command: [0x20][u16 what]. what is a slot of the unit's
+//build queue, or one of these two.
+const u16 CANCEL_TRAIN_LAST = 0xFE;	//the last unit queued: the Cancel Last button
+const u16 CANCEL_TRAIN_NONE = 0xFF;
+//Whether the command is obeyed with this many units selected. Vanilla
+//(0x4C0100) obeys with exactly one. Cancel Last is obeyed with any number,
+//by every selected unit able to (the card's rule: a button orders every
+//selected unit that can obey; Build Interceptor already does). A slot is
+//one unit's, as in vanilla.
+bool cancelTrainObeyed(u16 what, u32 selected);
+//Whether a selected unit obeys it, by vanilla's own test: it is completed,
+//the command player's, and not a type whose Cancel is its morph's (Larva,
+//Hydralisk, Mutalisk, Hatchery, Lair, Spire, Creep Colony).
+bool cancelsTraining(u16 unitType, bool completed, bool commandPlayers);
+
 //The right-click's send check for an SCV (0x4556D0): refused only when it is
 //constructing and Shift is not held (vanilla); any other SCV goes on.
 bool rightClickRefusedFor(bool shiftHeld, u32 currentOrder);

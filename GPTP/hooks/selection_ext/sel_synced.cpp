@@ -375,4 +375,32 @@ void recvSelectChunk(const u8* packet) {
 	}
 }
 
+void recvCancelTrain(const u8* packet) {
+	const u16 what = *(const u16*)(packet + 1);
+
+	//The command player's selection, taken first: a cancel removes a unit.
+	static CUnit* units[SEL_MAX];
+	u32 n = 0;
+	*selectionIndexStart = 0;
+	for (CUnit* unit = nextSelected(); unit != NULL && n < SEL_MAX; unit = nextSelected())
+		units[n++] = unit;
+	if (!cancelTrainObeyed(what, n))
+		return;
+
+	bool obeyed = false;
+	for (u32 i = 0; i < n; i++) {
+		CUnit* const unit = units[i];
+		if (!cancelsTraining(unit->id, (unit->status & UnitStatus::Completed) != 0,
+		                     unit->playerId == *ACTIVE_NATION_ID))
+			continue;
+		obeyed = true;
+		if (what == CANCEL_TRAIN_LAST)
+			selexe::cancelLastQueued(unit);
+		else if (what != CANCEL_TRAIN_NONE)
+			selexe::cancelQueueSlot(unit, what);
+	}
+	if (obeyed)
+		scbw::refreshConsole();
+}
+
 } //selsync

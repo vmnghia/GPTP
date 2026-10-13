@@ -18,5 +18,8 @@ void recvShiftSelect(const u8* packet);		//0x0A, 0x4C2560
 void recvShiftDeselect(const u8* packet);	//0x0B, 0x4BFB40
 void recvHotkey(const u8* packet);			//0x13, 0x4C2870
 void recvSelectChunk(const u8* packet);		//0x3C (selext::CMD_SELECT_CHUNK)
+//Cancel Train: Cancel Last is obeyed by every selected unit able to
+//(selext::cancelTrainObeyed); vanilla obeyed with one unit selected only.
+void recvCancelTrain(const u8* packet);		//0x20, 0x4C0100
 
 } //selsync
