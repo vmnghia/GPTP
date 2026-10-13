@@ -16,6 +16,8 @@ if ($LASTEXITCODE -ne 0) { Write-Output "order lines test FAILED"; exit 1 }
 if ($LASTEXITCODE -ne 0) { Write-Output "build progress test FAILED"; exit 1 }
 & "$PSScriptRoot\player_slots_test.bat" 2>$null
 if ($LASTEXITCODE -ne 0) { Write-Output "player slots test FAILED"; exit 1 }
+& "$PSScriptRoot\smart_rally_test.bat" 2>$null
+if ($LASTEXITCODE -ne 0) { Write-Output "smart rally test FAILED"; exit 1 }
 New-Item -ItemType Directory -Force "$PSScriptRoot\out" | Out-Null
 $log = "$PSScriptRoot\out\build-plugin.log"
 & "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" "$root\GPTP\GPTP.sln" /p:Configuration=Debug /p:Platform=Win32 /nologo /v:minimal > $log

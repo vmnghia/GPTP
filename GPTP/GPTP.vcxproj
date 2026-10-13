@@ -330,6 +330,7 @@
     <ClCompile Include="SCBW\selection_ext_core.cpp" />
     <ClCompile Include="SCBW\buttonsets_file.cpp" />
     <ClCompile Include="SCBW\console_raise.cpp" />
+    <ClCompile Include="SCBW\smart_rally.cpp" />
     <ClCompile Include="SCBW\build_progress.cpp" />
     <ClCompile Include="SCBW\order_lines.cpp" />
     <ClCompile Include="SCBW\ui_mask.cpp" />
@@ -526,6 +527,7 @@
     <ClInclude Include="SCBW\selection_ext.h" />
     <ClInclude Include="SCBW\buttonsets_file.h" />
     <ClInclude Include="SCBW\console_raise.h" />
+    <ClInclude Include="SCBW\smart_rally.h" />
     <ClInclude Include="SCBW\build_progress.h" />
     <ClInclude Include="SCBW\order_lines.h" />
     <ClInclude Include="SCBW\player_slots.h" />
