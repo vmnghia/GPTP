@@ -11,6 +11,7 @@
 #include "../interface/resolution.h"
 #include "../interface/reshade_bridge.h"
 #include "../recv_commands/smart_cast.h"
+#include "../rally/smart_rally_hooks.h"
 #include <SCBW/selection_ext.h>
 #include "../selection_ext/sel_build.h"
 #include "../selection_ext/sel_chain.h"
@@ -92,6 +93,8 @@ void initializeGame()
 {
     if (*elapsedTimeFrames == 0)
     {
+        // A new game (or replay): no worker rallies. A loaded game reads them from its save.
+        smartrally::clearAll();
         scbw::printText(PLUGIN_NAME ": built " __DATE__ " " __TIME__);
         resolution::printSettings();
 

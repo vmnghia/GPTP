@@ -16,6 +16,7 @@ using namespace dll;
 #include "hooks/detector.h"
 #include "hooks/harvest.h"
 #include "hooks/rally_point.h"
+#include "hooks/rally/smart_rally_hooks.h"
 #include "hooks/recharge_shields.h"
 #include "hooks/stim_packs.h"
 #include "hooks/tech_target_check.h"
@@ -239,6 +240,8 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	hooks::injectSmartBuildHooks();
 	hooks::injectOrderChainHooks();
 	hooks::injectGatherQueueHooks();
+	//Smart rally (hooks/rally, SCBW/smart_rally.h).
+	hooks::injectSmartRallyHooks();
 
 	//======== DISABLED HOOKS ========//
 	//Written but not in use. To turn one on, move it up into the enabled list.

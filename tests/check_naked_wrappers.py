@@ -1,4 +1,4 @@
-# Checks that the extended selection's naked wrappers never touch [ebp...].
+# Checks that the naked wrappers (sel_inject.cpp, smart_rally_inject.cpp) never touch [ebp...].
 #
 # A naked function has no stack frame of its own: EBP is still the exe
 # caller's. In a Debug build, a C++ statement with a temporary (e.g.

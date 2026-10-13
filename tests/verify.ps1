@@ -29,5 +29,9 @@ $asm = "$PSScriptRoot\out\sel_inject.asm"
 cmd /c "`"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars32.bat`" >nul 2>&1 && dumpbin /nologo /disasm `"$root\GPTP\Debug\sel_inject.obj`" > `"$asm`""
 & C:\Python27\python.exe "$PSScriptRoot\check_naked_wrappers.py" $asm
 if ($LASTEXITCODE -ne 0) { Write-Output "naked wrapper check FAILED"; exit 1 }
+$asm2 = "$PSScriptRoot\out\smart_rally_inject.asm"
+cmd /c "`"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars32.bat`" >nul 2>&1 && dumpbin /nologo /disasm `"$root\GPTP\Debug\smart_rally_inject.obj`" > `"$asm2`""
+& C:\Python27\python.exe "$PSScriptRoot\check_naked_wrappers.py" $asm2
+if ($LASTEXITCODE -ne 0) { Write-Output "naked wrapper check FAILED (smart rally)"; exit 1 }
 Write-Output "plugin build succeeded"
 exit 0
