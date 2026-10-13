@@ -574,6 +574,22 @@ u32 placementCellIndex(u32 box, u32 row, u32 column) {
 	return box * 48 + row * 6 + column;
 }
 
+bool gatherYieldsToQueue(const u8* queued, u32 count) {
+	for (u32 i = 0; i < count; i++) {
+		switch (queued[i]) {
+		case 0x58:	//Harvest3: mining interrupted
+		case 0x59:	//Harvest4
+		case 0x5B:	//Harvest5
+		case 0x96:	//ResetCollision1
+		case 0x97:	//ResetCollision2: every gathering worker carries it
+			break;
+		default:
+			return true;
+		}
+	}
+	return false;
+}
+
 bool cancelTrainObeyed(u16 what, u32 selected) {
 	if (what == CANCEL_TRAIN_LAST)
 		return selected >= 1;

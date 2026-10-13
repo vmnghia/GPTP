@@ -302,6 +302,19 @@ const u32 PLACEMENT_BOX_BUILDING = 1;
 //command to an SCV constructing (0x21) queues behind its construction;
 //anything else is vanilla's check as is.
 bool checkAsFree(bool queued, u32 currentOrder);
+//-------- Orders queued behind a gather --------//
+
+//Whether a worker that has just mined its minerals goes on with its queue
+//instead of taking them back: when an order is queued behind the gather.
+//queued: the ids of its queued orders, count of them. The game's own
+//clean-up orders (the collision resets 0x96 and 0x97, the harvest interrupts
+//0x58, 0x59 and 0x5B) are not such an order; anything else is, and only a
+//Shift-queued command puts one there.
+//Vanilla (0x46984A, 0x469858) gives the next harvest step as an order that
+//drops the queue. For gas it already does this: a worker leaving a refinery
+//with orders queued goes on with them, carrying the gas (0x469980).
+bool gatherYieldsToQueue(const u8* queued, u32 count);
+
 //-------- Cancel Train with several units selected --------//
 
 //The Cancel Train command: [0x20][u16 what]. what is a slot of the unit's

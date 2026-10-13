@@ -652,6 +652,32 @@ void __declspec(naked) canCreateWorkerStub() {
 	}
 }
 
+//The end of MiningMinerals (0x4697C0): 0x46984A and 0x469858 call
+//orderComputer_cl (0x475310: ESI = the unit, CL = the next harvest order),
+//which drops every order queued behind the gather. With one queued the
+//worker goes on with its queue instead (toIdle, 0x4753A0: ECX = the unit),
+//as vanilla's gas routine does.
+const u32 Func_OrderComputerCl = 0x00475310;
+const u32 Func_ToIdle = 0x004753A0;
+void __declspec(naked) miningDoneStub() {
+	static CUnit* unit;
+	static u32 goesOn;
+	__asm {
+		MOV unit, ESI
+		PUSHAD
+	}
+	goesOn = selsync::miningYieldsToQueue(unit);
+	__asm {
+		POPAD
+		CMP goesOn, 0
+		JNE withQueue
+		JMP Func_OrderComputerCl
+	withQueue:
+		MOV ECX, ESI
+		JMP Func_ToIdle
+	}
+}
+
 //The two ways a command's order reaches a unit (0x4754F0, ESI = the unit at
 //both calls): behind its other orders (Shift, 0x4755C8 calls 0x474B90), or in
 //their place (0x4755E3 calls 0x475470). selchain notes which, for the order
@@ -753,8 +779,8 @@ void __declspec(naked) orderRootStub() {
 
 //Rule 3: the SCV build order's give-up exit (its `call 0x4753A0` at
 //0x46817C, ECX = unit). The message if it got stuck or stopped out of
-//reach; then toIdle as vanilla (the next queued order).
-const u32 Func_ToIdle = 0x004753A0;
+//reach; then toIdle as vanilla (the next queued order). Func_ToIdle is
+//defined with the mining stub above.
 void __declspec(naked) buildGaveUpStub() {
 	static CUnit* unit;
 	__asm {
@@ -1049,6 +1075,11 @@ void injectSelectionPanelHooks() {
 void injectControlGroupHooks() {
 	jmpPatch(selectRecentGroupWrapper,	0x00496D30, 1);
 	jmpPatch(centerViewOnGroupWrapper,	0x004967E0, 1);
+}
+
+void injectGatherQueueHooks() {
+	callPatch(miningDoneStub,	0x0046984A, 0);
+	callPatch(miningDoneStub,	0x00469858, 0);
 }
 
 void injectOrderChainHooks() {

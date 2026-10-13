@@ -543,6 +543,28 @@ void queuedSites() {
 	CHECK(!rightClickRefusedFor(false, 0x03));	//idle SCV
 	CHECK(rightClickRefusedFor(false, 0x21));	//constructing, no Shift: vanilla refuses
 	CHECK(!rightClickRefusedFor(true, 0x21));	//constructing, Shift: queues
+	//Orders queued behind a mineral gather. A gathering worker's queue always
+	//holds its collision reset (0x97): with nothing else, it takes the
+	//minerals back, as vanilla.
+	{
+		const u8 gathering[] = {0x97};
+		CHECK(!gatherYieldsToQueue(gathering, 1));
+		CHECK(!gatherYieldsToQueue(NULL, 0));
+		//A move (0x06) queued with Shift behind the gather: the worker goes on
+		//with it (vanilla dropped it when the mining ended).
+		const u8 thenMove[] = {0x97, 0x06};
+		CHECK(gatherYieldsToQueue(thenMove, 2));
+		//Whatever is queued: an attack-move, a build, another gather.
+		const u8 thenAttack[] = {0x97, 0x0E};
+		const u8 thenBuild[] = {0x97, 0x1E};
+		const u8 thenGather[] = {0x97, 0x4F, 0x06};
+		CHECK(gatherYieldsToQueue(thenAttack, 2) && gatherYieldsToQueue(thenBuild, 2) && gatherYieldsToQueue(thenGather, 3));
+		//The game's own clean-up orders alone are not a queue to go on with.
+		const u8 cleanUp[] = {0x97, 0x58, 0x96, 0x59, 0x5B};
+		CHECK(!gatherYieldsToQueue(cleanUp, 5));
+		const u8 cleanUpThenMove[] = {0x58, 0x97, 0x06};
+		CHECK(gatherYieldsToQueue(cleanUpThenMove, 3));
+	}
 	//Cancel Last (0xFE) with several units selected: every one of them obeys
 	//(vanilla refused the command unless exactly one unit was selected).
 	CHECK(cancelTrainObeyed(CANCEL_TRAIN_LAST, 1));
