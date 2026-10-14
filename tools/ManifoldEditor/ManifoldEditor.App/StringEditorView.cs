@@ -140,6 +140,17 @@ sealed class StringEditorView
 
     public void ShowError(string message) => error.Text = message;
 
+    /// <summary>
+    /// Commits what the fields hold. They commit on LostFocus and Enter, but a shortcut
+    /// (Ctrl+S) or a click on the card leaves the focus in the field, so the owner calls this
+    /// before acting. False when the fields hold text that doesn't compile (its error shows).
+    /// </summary>
+    public bool CommitPending()
+    {
+        Commit();
+        return text.IsReadOnly || text.Text == committedText && hotkey.Text == committedHotkey;
+    }
+
     void CommitOnEnter(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key != VirtualKey.Enter) return;

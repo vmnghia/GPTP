@@ -96,6 +96,9 @@ sealed class StringsPage
         Root.Children.Add(scroll);
     }
 
+    /// <summary>Commits the string's fields (see StringEditorView.CommitPending).</summary>
+    public bool CommitPending() => editor.CommitPending();
+
     StringFilter Filter => (StringFilter)Math.Max(0, filter.SelectedIndex);
 
     /// <summary>Shows the string (after an undo, or a jump from the button panel).</summary>

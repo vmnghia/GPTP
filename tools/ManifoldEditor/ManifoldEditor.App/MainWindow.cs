@@ -611,6 +611,11 @@ public sealed class MainWindow : Window
     async Task<bool> Save()
     {
         if (opened is null) return false;
+        if (!CommitFields())
+        {
+            await Message("Not saved", "A string field holds text that doesn't compile: its error shows under it. Fix it, then save.");
+            return false;
+        }
         string? error;
         byte[]? strings = null;
         try
@@ -751,7 +756,9 @@ public sealed class MainWindow : Window
     /// <summary>With unsaved changes: Save, Don't save or Cancel. True to go on.</summary>
     async Task<bool> ConfirmDiscard()
     {
-        if (opened is null || !opened.State.Document.IsDirty) return true;
+        if (opened is null) return true;
+        CommitFields();
+        if (!opened.State.Document.IsDirty) return true;
         var dialog = new ContentDialog
         {
             XamlRoot = Content.XamlRoot,
@@ -772,7 +779,9 @@ public sealed class MainWindow : Window
 
     async void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
-        if (closeConfirmed || opened is null || !opened.State.Document.IsDirty) return;
+        if (closeConfirmed || opened is null) return;
+        CommitFields();
+        if (!opened.State.Document.IsDirty) return;
         args.Cancel = true;
         if (await ConfirmDiscard())
         {
@@ -809,8 +818,33 @@ public sealed class MainWindow : Window
         if (opened is not null && command(opened.State)) Refresh();
     }
 
-    void Undo() => Run(s => KeepSelection(s.Undo()));
-    void Redo() => Run(s => KeepSelection(s.Redo()));
+    void Undo()
+    {
+        CommitFields();
+        Run(s => KeepSelection(s.Undo()));
+    }
+
+    void Redo()
+    {
+        CommitFields();
+        Run(s => KeepSelection(s.Redo()));
+    }
+
+    /// <summary>
+    /// Commits what the string fields hold before a command that redraws them. The fields
+    /// commit on LostFocus, and a shortcut or a click on the card (which takes no focus)
+    /// leaves the focus in the field: Ctrl+S saved without a hotkey just typed, and the redraw
+    /// put the old one back. Call it before the selection changes, as a commit edits the
+    /// selected button's string. False when a field holds text that doesn't compile.
+    /// </summary>
+    bool CommitFields()
+    {
+        if (opened is null) return true;
+        bool enabled = enabledEditor.CommitPending();
+        bool disabled = disabledEditor.CommitPending();
+        bool strings = stringsPage.CommitPending();
+        return enabled && disabled && strings;
+    }
 
     bool KeepSelection(bool changed)
     {
@@ -1000,6 +1034,7 @@ public sealed class MainWindow : Window
         }), handledEventsToo: true);
         border.Tapped += (_, _) =>
         {
+            CommitFields();
             selectedPosition = cell.Position;
             selectedButton = pressed;
             Refresh();
@@ -1031,6 +1066,7 @@ public sealed class MainWindow : Window
             int index = dragButton;
             dragButton = -1;
             if (index < 0) return;
+            CommitFields();
             if (opened!.State.DropButton(index, cell.Position, DropKind(e.Modifiers)) is int landed)
             {
                 selectedPosition = cell.Position;
