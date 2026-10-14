@@ -1,6 +1,7 @@
 # Smart rally (gather and enter on rally, SC2's worker rally)
 
-Status: `[BUILT 2026-10-14]`, not yet run in game. Plan:
+Status: `[BUILT 2026-10-14]`, tested in game 2026-10-14 (round 23: the 10 steps of §11
+plus clearing the worker rally on the Hatchery itself, all passed; build 02:43:11). Plan:
 `docs/superpowers/plans/2026-10-14-smart-rally.md`. The worker rally line is yellow
 (the user's pick from a preview, §2.5).
 Asked for by the user on 2026-10-14. Idea from KYSXD's tutorial

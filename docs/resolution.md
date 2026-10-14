@@ -535,7 +535,7 @@ starfield handled (§5). Features 1 and 2 below are done.
    `RESOLUTION_DEBUG` back on when changing the layout.
 
 **Outside that list: smart rally** (asked for by the user on 2026-10-14) `[BUILT
-2026-10-14, not yet run in game]`: workers gather and units enter on a rally, SC2's
+2026-10-14, tested in game 2026-10-14, round 23, all 10 steps passed]`: workers gather and units enter on a rally, SC2's
 separate worker rally for Hatchery, Lair and Hive (its line yellow, the user's pick), and
 rallies to the nearest mineral field at a melee start. Spec
 `docs/superpowers/specs/2026-10-14-smart-rally-design.md`, plan
