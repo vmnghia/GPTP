@@ -382,6 +382,12 @@ starfield handled (§5). Features 1 and 2 below are done.
 **Known bugs, to fix** (reported by the user on 2026-10-01):
 - **Restarting a game confines the cursor** to a 640×480 area in the centre of the screen.
 - **Opening the menu (F10) in a replay is very laggy.**
+- **Set Rally Point (button or hotkey) on the ground did nothing, for every building**
+  (reported 2026-10-14) `[FIXED 2026-10-14; passed round 25 in game, the user]`.
+  Upstream's C++ copy of the targeted-command receive (`receive_command.cpp`, on since
+  smart-casting) compared `saved_order_2` instead of the order byte the exe tests at
+  0x49ACDF (`saved_order_3`), so RallyPoint2 was never written. Right-click and a rally
+  on a unit were not affected. Found with an on-screen trace (round 24).
 - **Build and training progress bars show over enemy buildings and construction
   sites** (reported 2026-10-04) `[FIXED 2026-10-08; passed in game 2026-10-12, the user]`.
   Only the current player's and allies' should show. The bars come from

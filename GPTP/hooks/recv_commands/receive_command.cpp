@@ -221,8 +221,10 @@ namespace hooks {
 
 								}
 
-								//9acdf
-								if(*saved_order_2 == OrderId::RallyPoint2) {
+								//9acdf: the same byte as RallyPoint1's test, [EBP-8] (0x49ACDF: cmp al, 0x28).
+								//Upstream compared saved_order_2 ([EBP-0xC], Nothing2 here), so a rally
+								//button's click on the ground was never set (found 2026-10-14, round 24).
+								if(*saved_order_3 == OrderId::RallyPoint2) {
 
 									loop_to_9ac0d = false;
 
