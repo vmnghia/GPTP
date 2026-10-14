@@ -227,7 +227,7 @@ On Windows, in order:
 4. A string added past vanilla's count shows in game: this is the new-id test.
 5. Edit `to-repack\`'s table in PyMS and open the exe in the editor: the dialog of §7
    appears.
-6. **A field typed and saved with Ctrl+S** `[FIXED 2026-10-14; not yet run on Windows]`:
+6. **A field typed and saved with Ctrl+S** `[FIXED 2026-10-14; tested on Windows 2026-10-14]`:
    a hotkey changed from R to G in the panel went back to R on Ctrl+S, and the game kept
    R. The fields commit on LostFocus or Enter, and Ctrl+S, Ctrl+Z, Ctrl+Y, closing the
    window and a click or drop on the card leave the focus in the field, so the redraw after
