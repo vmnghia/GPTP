@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Manifold.Core.Data;
 
 namespace Manifold.Core.Model;
@@ -57,9 +58,13 @@ public static class Repack
 
     const int ERROR_ACCESS_DENIED = 5, ERROR_SHARING_VIOLATION = 32, ERROR_LOCK_VIOLATION = 33;
 
+    /// <summary>Another program holds the exe: .NET's file errors, or StormLib's Win32 error codes.</summary>
     static bool IsBusy(Exception e) =>
         e is UnauthorizedAccessException ||
-        e is IOException && (e.HResult & 0xFFFF) is ERROR_SHARING_VIOLATION or ERROR_LOCK_VIOLATION or ERROR_ACCESS_DENIED;
+        e is IOException && (e.HResult & 0xFFFF) is ERROR_SHARING_VIOLATION or ERROR_LOCK_VIOLATION or ERROR_ACCESS_DENIED ||
+        e is Win32Exception { NativeErrorCode: ERROR_SHARING_VIOLATION or ERROR_LOCK_VIOLATION or ERROR_ACCESS_DENIED };
+
+    static bool IsFileError(Exception e) => e is IOException or UnauthorizedAccessException;
 
     /// <summary>
     /// Repacks the exe (spec §6): copies it to &lt;exe&gt;.repacking, adds the files to the copy,
@@ -83,7 +88,7 @@ public static class Repack
         }
         catch (Exception e)
         {
-            return IsBusy(e) ? busy : $"Copying the exe: {name} can't be read: {e.Message}";
+            return IsBusy(e) ? busy : $"Reading the exe: {e.Message}";
         }
 
         bool swapped = false;
@@ -104,7 +109,7 @@ public static class Repack
             if (plugin is not null)
             {
                 try { File.WriteAllBytes(work, FireGraftExe.WithPlugin(File.ReadAllBytes(work), plugin)); }
-                catch (InvalidDataException e) { return $"Packing the plugin: {e.Message}"; }
+                catch (Exception e) when (e is InvalidDataException || IsFileError(e)) { return $"Packing the plugin: {e.Message}"; }
             }
 
             if (Check(work, files, plugin, kept, host) is string problem) return $"Checking the result: {problem}";
@@ -119,7 +124,10 @@ public static class Repack
         }
         finally
         {
-            if (!swapped && File.Exists(work)) File.Delete(work);
+            // Best effort: a work copy left behind is overwritten by the next repack.
+            if (!swapped)
+                try { File.Delete(work); }
+                catch (Exception e) when (IsFileError(e)) { }
         }
     }
 
@@ -129,7 +137,9 @@ public static class Repack
     {
         if (plugin is not null)
         {
-            var bytes = File.ReadAllBytes(work);
+            byte[] bytes;
+            try { bytes = File.ReadAllBytes(work); }
+            catch (Exception e) when (IsFileError(e)) { return $"the new exe can't be read: {e.Message}"; }
             FireGraftExe? layout;
             try { layout = FireGraftExe.Parse(bytes); }
             catch (InvalidDataException e) { return $"the new exe doesn't read back: {e.Message}"; }

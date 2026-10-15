@@ -8,6 +8,10 @@ sealed class FakeRepackHost(Dictionary<string, byte[]> exeFiles) : IRepackHost
 {
     public List<(string File, IReadOnlyList<(string Path, byte[] Data)> Files)> Adds { get; } = new();
     public bool FailAdd { get; set; }
+    /// <summary>Runs at the end of AddFiles, with the work copy's path (to break it on purpose).</summary>
+    public Action<string>? OnAdd { get; set; }
+    /// <summary>Thrown by Open, as StormLib throws for an exe another program holds.</summary>
+    public Exception? OpenFails { get; set; }
     /// <summary>Replaces what the work copy reads back (the files after the add).</summary>
     public Func<Dictionary<string, byte[]>, Dictionary<string, byte[]>>? AfterAdd { get; set; }
 
@@ -15,10 +19,12 @@ sealed class FakeRepackHost(Dictionary<string, byte[]> exeFiles) : IRepackHost
     {
         if (FailAdd) throw new IOException("StormLib: disk full");
         Adds.Add((file, files));
+        OnAdd?.Invoke(file);
     }
 
     public IArchive Open(string file)
     {
+        if (OpenFails is not null) throw OpenFails;
         var files = new Dictionary<string, byte[]>(exeFiles);
         if (file.EndsWith(".repacking"))
         {
@@ -119,6 +125,30 @@ public sealed class RepackRunTests : IDisposable
         var result = File.ReadAllBytes(exePath);
         Assert.Equal(plugin, FireGraftExe.Parse(result)!.Plugin(result));
         Assert.False(File.Exists(exePath + ".repacking"));
+    }
+
+    [Fact]
+    public void An_IO_failure_in_the_plugin_step_is_reported_not_thrown()
+    {
+        host.OnAdd = File.Delete;   // the work copy vanishes (antivirus, a full disk)
+        AssertUnchanged(Repack.Run(exePath, [("rez\\a.bin", [1])], Make.Dll(extra: 10), host), "Packing the plugin:");
+    }
+
+    [Fact]
+    public void Adds_files_and_packs_the_plugin_in_one_run()
+    {
+        var plugin = Make.Dll(extra: 4000, fill: 0x22);
+        Assert.Null(Repack.Run(exePath, [("rez\\a.bin", [1])], plugin, host));
+        var result = File.ReadAllBytes(exePath);
+        Assert.Equal(plugin, FireGraftExe.Parse(result)!.Plugin(result));
+        Assert.Single(host.Adds);
+    }
+
+    [Fact]
+    public void An_exe_held_by_another_program_gives_the_busy_message()
+    {
+        host.OpenFails = new System.ComponentModel.Win32Exception(32);   // ERROR_SHARING_VIOLATION, as StormLib reports it
+        AssertUnchanged(Repack.Run(exePath, [("rez\\a.bin", [1])], null, host), "SCManifold.exe is in use by another program");
     }
 
     [Fact]

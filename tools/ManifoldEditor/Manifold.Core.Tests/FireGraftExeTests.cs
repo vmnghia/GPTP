@@ -105,6 +105,13 @@ public class FireGraftExeTests
     }
 
     [Fact]
+    public void Refuses_a_truncated_plugin()
+    {
+        var cut = Make.Dll()[..0x300];   // a build still being copied: its sections claim 0x2400 bytes
+        Assert.Contains("cut short", FireGraftExe.DllProblem(cut));
+    }
+
+    [Fact]
     public void Refuses_a_plugin_with_an_MPQ_signature_at_a_boundary()
     {
         var exe = Make.FireGraftExe(Make.Dll());

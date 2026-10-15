@@ -93,6 +93,18 @@ public sealed record FireGraftExe(int HeaderOffset, uint PluginId, int PluginOff
         ushort machine = BitConverter.ToUInt16(plugin, pe + 4), characteristics = BitConverter.ToUInt16(plugin, pe + 22);
         if (machine != 0x14C) return $"not a 32-bit DLL (machine 0x{machine:X})";
         if ((characteristics & 0x2000) == 0) return "not a DLL (an exe?)";
+        // A build still being copied has its headers but not all of its sections.
+        try
+        {
+            var image = new PeImage(plugin);
+            long end = image.Sections.Count == 0 ? 0 : image.Sections.Max(s => (long)s.RawOffset + s.RawSize);
+            if (end > plugin.Length)
+                return $"not a DLL: cut short ({plugin.Length:N0} of {end:N0} bytes; a build still being written?)";
+        }
+        catch (Exception e) when (e is InvalidDataException or ArgumentException)
+        {
+            return $"not a DLL: {e.Message}";
+        }
         return null;
     }
 }

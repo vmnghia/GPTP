@@ -28,6 +28,10 @@ public sealed class MainWindow : Window
     const double CellSize = 64;
 
     EditorSettings settings;
+    /// <summary>The toolbar, its buttons off while a repack runs.</summary>
+    readonly StackPanel toolbar = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
+    /// <summary>A repack is running in the background: no save may swap the exe under it.</summary>
+    bool repacking;
     OpenedExe? opened;
     IconCache? icons;
     IReadOnlyList<string> iconNames = Array.Empty<string>();
@@ -128,7 +132,6 @@ public sealed class MainWindow : Window
         root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-        var toolbar = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
         toolbar.Children.Add(ToolButton("Open exe...", async (_, _) => await PickExe()));
         toolbar.Children.Add(ToolButton("Save (Ctrl+S)", async (_, _) => await Save()));
         toolbar.Children.Add(ToolButton("Undo (Ctrl+Z)", (_, _) => Undo()));
@@ -612,6 +615,11 @@ public sealed class MainWindow : Window
     async Task<bool> Save()
     {
         if (opened is null) return false;
+        if (repacking)
+        {
+            await Message("Not saved", "Repack is running. Save once it has finished.");
+            return false;
+        }
         if (!CommitFields())
         {
             await Message("Not saved", "A string field holds text that doesn't compile: its error shows under it. Fix it, then save.");
@@ -645,7 +653,7 @@ public sealed class MainWindow : Window
     /// </summary>
     async Task RepackExe()
     {
-        if (opened is null) return;
+        if (opened is null || repacking) return;
         CommitFields();
         string exePath = opened.ExePath, name = Path.GetFileName(exePath);
         if (opened.State.Document.IsDirty)
@@ -676,9 +684,26 @@ public sealed class MainWindow : Window
         }
         if (choice is null) return;
 
-        string? error = await Task.Run(() => Repack.Run(exePath, choice.Files, choice.Plugin, new StormRepackHost()));
+        string? error;
+        repacking = true;
+        foreach (var button in toolbar.Children.OfType<Control>()) button.IsEnabled = false;
+        status.Text = $"Repacking {name}...";
+        try
+        {
+            error = await Task.Run(() => Repack.Run(exePath, choice.Files, choice.Plugin, new StormRepackHost()));
+        }
+        catch (Exception e)
+        {
+            error = $"Repack failed unexpectedly: {e.Message}";
+        }
+        finally
+        {
+            repacking = false;
+            foreach (var button in toolbar.Children.OfType<Control>()) button.IsEnabled = true;
+        }
         if (error is not null)
         {
+            Refresh();
             await Message("Not repacked", error);
             return;
         }
