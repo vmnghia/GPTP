@@ -553,7 +553,9 @@ rallies to the nearest mineral field at a melee start. Spec
   the rally icon with a small Drone in it; until then it uses Set Rally Point's icon.
 
 **Outside that list: smart larva morphing and the morph table** (asked for by the user on
-2026-10-15) `[BUILT 2026-10-15, not yet run in game]`: a plain press of a morph button
+2026-10-15) `[BUILT 2026-10-15, tested in game 2026-10-15, round 26 all passed]`, then
+the card staying on Larva after a morph and eggs selected several at once `[BUILT
+2026-10-15, round 27 pending]`: a plain press of a morph button
 (larva units, Lurker, Guardian, Devourer) morphs one selected unit, the larva of the
 Hatchery with the most selected larvae first; Shift+press morphs all (vanilla). Which
 units morph, and through which egg, is one table: `SCBW/unit_morphs.cpp` (Zergling →

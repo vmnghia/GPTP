@@ -1,6 +1,13 @@
 # Smart larva morphing (SC2's one-per-press morph, one morph table)
 
-Status: `[BUILT 2026-10-15]`, not yet run in game. Plan (with the exe facts that settled
+Status: `[BUILT 2026-10-15]`, tested in game 2026-10-15 (round 26, §7's steps 1-8 and
+the replay, all passed; build 23:33:50). Then, asked for by the user after round 26
+(`[BUILT 2026-10-15]`, round 27 pending, build 23:52:52): the card stays on the morphing
+subgroup (a selected unit that changes type has the console list sorted again, 0x49FF82;
+before, the card followed the unit that became an egg, so repeated presses stopped), and
+eggs can be selected several at once (the multi-select test 0x47B770 hardcoded the Egg,
+JE at 0x47B7C7 NOPed; units.dat gives none of the eggs Building or Single Entity, so
+Cocoon and Lurker Egg already passed). Plan (with the exe facts that settled
 §3.1's `[VERIFY]` items): `docs/superpowers/plans/2026-10-15-smart-larva.md`. Planning
 found one more site: cancel's guard for unfinished units (0x4682E5), which must keep a
 Zergling back from its egg, or a Baneling hatching, from being cancelled and refunded a
