@@ -552,6 +552,23 @@ rallies to the nearest mineral field at a melee start. Spec
 - **Later: a separate icon for Set Worker Rally Point** (the user, 2026-10-14). SC2's is
   the rally icon with a small Drone in it; until then it uses Set Rally Point's icon.
 
+**Outside that list: smart larva morphing and the morph table** (asked for by the user on
+2026-10-15) `[BUILT 2026-10-15, not yet run in game]`: a plain press of a morph button
+(larva units, Lurker, Guardian, Devourer) morphs one selected unit, the larva of the
+Hatchery with the most selected larvae first; Shift+press morphs all (vanilla). Which
+units morph, and through which egg, is one table: `SCBW/unit_morphs.cpp` (Zergling →
+Lurker Egg is in it, for the Baneling). Spec
+`docs/superpowers/specs/2026-10-15-smart-larva-design.md`, plan
+`docs/superpowers/plans/2026-10-15-smart-larva.md`; code `hooks/recv_commands/smart_morph*`,
+`SCBW/unit_morphs*`, `SCBW/smart_larva*`.
+- A plain press is recorded as the new command 0x3F; replays recorded before this build
+  still play the same (0x23 keeps its meaning).
+- **Data, the user's:** the Baneling unit (Morph From Other Unit, like the Lurker), its
+  requirement ("current unit is Zergling"), and a Baneling button on the Zergling's set
+  (action Unit_Morph 0x423790, condition 0x428E60, actVar the Baneling's id).
+- **Later:** a separate Baneling cocoon unit (needs the exe's ~20 egg sites hooked);
+  morphing larvae straight from a selected Hatchery.
+
 **Outside that list: ReShade** (asked for by the user on 2026-10-10).
 - **ReShade UI mask** `[BUILT, tested in game 2026-10-11]`: with ReShade over cnc-ddraw,
   the plugin registers as a ReShade add-on and uploads where the game view is, so the

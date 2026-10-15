@@ -1,6 +1,10 @@
 # Smart larva morphing (SC2's one-per-press morph, one morph table)
 
-Status: `[PROPOSED]`, spec written 2026-10-15, not built.
+Status: `[BUILT 2026-10-15]`, not yet run in game. Plan (with the exe facts that settled
+§3.1's `[VERIFY]` items): `docs/superpowers/plans/2026-10-15-smart-larva.md`. Planning
+found one more site: cancel's guard for unfinished units (0x4682E5), which must keep a
+Zergling back from its egg, or a Baneling hatching, from being cancelled and refunded a
+second time.
 Asked for by the user on 2026-10-15. SC2 is the reference; the user checks SC2's behaviour.
 There is no KYSXD tutorial for this (his wiki has none).
 
@@ -88,20 +92,21 @@ Each hardcodes Larva/Hydralisk/Mutalisk (or their eggs) today and is rerouted:
    upstream's `CMDRECV_Morph.cpp`, whose hook stays off), so vanilla types behave exactly
    as before. The new 0x3F shares its per-unit steps.
 2. **The Morph1 order** (0x45DEA0): its "may morph" check and its egg choice read the
-   table. `[VERIFY]` the two decision points (upstream's old module patched 0x45DFB0 and
-   0x45E019).
+   table: the check at 0x45DFB0 and the egg choice at 0x45E019 (settled in the plan).
 3. **The button condition** 0x428E60 (BTNSCOND_CanBuildUnit): with more than one unit
    selected it shows the button only for Larva/Mutalisk/Hydralisk; smart-build already
    patches that gate (workers may build too). It now also accepts any table source.
 4. **Cancel** 0x468280: an egg that is not Egg reverts to the unit it was
    (`previousUnitType`), not to a hardcoded Hydralisk or Mutalisk, so a cancelled Baneling
-   is a Zergling again. `[VERIFY]` the revert site and that `previousUnitType` holds the
-   source while it is an egg.
+   is a Zergling again. The revert is picked at 0x468351; 0x49F170 writes the old id to
+   `previousUnitType` on every type change, so an egg's is its source (the plan).
+   Its guard for unfinished units (0x4682E5) also reads the table: a source back from its
+   egg, or a unit hatching from a Cocoon or Lurker Egg, is not cancelled again.
 5. **Cancel Last** (`selext::cancelsTraining`): its Larva/Hydralisk/Mutalisk become "a
    table source".
 
-`[VERIFY]` in planning: the remaining compares of 0x23/0x26/0x2B in the exe that decide a
-morph (not AI or display). Each one found is rerouted or ruled harmless in the plan.
+The other compares of these ids in the exe are the AI's, the console's and the egg
+compares that reusing Lurker Egg keeps right (checked in planning, 2026-10-15).
 
 Not rerouted, because reusing Lurker Egg keeps them right: the egg compares (birth offset,
 no rally after a Lurker Egg, AI, console progress, the progress percentage 0x4669E0).

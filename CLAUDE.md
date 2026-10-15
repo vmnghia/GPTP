@@ -24,9 +24,10 @@ and running StarCraft. Debug is the usual configuration; the plugin lands in `GP
 `tests/verify.ps1` is the one local check, run on the user's machine: it builds and runs the
 host-side tests of the pure logic (`tests/*_test.bat`: the extended selection, the button
 set file's parser, the UI mask, the on-map lines and bars' `line_walk`, `order_lines`
-and `build_progress`, `player_slots`, and the smart rally rules `smart_rally`),
-builds the plugin with MSBuild, then disassembles `sel_inject.obj` and
-`smart_rally_inject.obj` and runs `tests/check_naked_wrappers.py` over each. That script fails if a naked wrapper touches
+and `build_progress`, `player_slots`, the smart rally rules `smart_rally`, and the
+morph table with the smart larva pick `unit_morphs`), builds the plugin with MSBuild,
+then disassembles `sel_inject.obj`, `smart_rally_inject.obj` and
+`smart_morph_inject.obj` and runs `tests/check_naked_wrappers.py` over each. That script fails if a naked wrapper touches
 `[ebp…]`: a naked function has no frame of its own, so a Debug-build temporary there writes
 into the exe caller's frame. Only the offsets listed in its `ALLOWED` table are allowed.
 
@@ -159,8 +160,17 @@ installed there, not only in `injectHudHooks`.
   command 0x3E); melee games start with each town hall rallied to its minerals. Synced;
   the worker rallies are in the plugin save chunk (version 4). Upstream's
   `injectRallyHooks()` must stay off: it patches 0x466F50 and 0x45620D too.
+- **Smart larva and the morph table** (`hooks/recv_commands/smart_morph*`, rules
+  `SCBW/unit_morphs*` and `SCBW/smart_larva*`, spec
+  `docs/superpowers/specs/2026-10-15-smart-larva-design.md`): a plain press of a morph
+  button morphs one selected unit (command 0x3F), Shift+press all (vanilla 0x23). Which
+  units morph, through which of the three eggs, is the table in `SCBW/unit_morphs.cpp`;
+  the exe's morph sites (receive, Morph1, cancel, the several-selected button gate) read
+  it. Synced. Upstream's `injectUnitMorphHooks()` and `injectCMDRECV_MorphHooks()` stay
+  off.
 
-Selection, smart-build, smart-casting, those two command changes and smart rally are
+Selection, smart-build, smart-casting, those two command changes, smart rally and smart
+larva are
 **synced game state**: they travel as network commands and are recorded in replays. See "Sync safety"
 below.
 
