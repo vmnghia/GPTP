@@ -12,12 +12,23 @@ namespace {
 //The one unit 0x3F lets through the game's receive; NULL: every unit (0x23).
 CUnit* onlyUnit;
 
+//A TECH_RESEARCHED row: the player's own finished unit, and the player has
+//researched the row's tech (what the can-use test 0x46DD80 checks of a tech
+//before its use requirements).
+bool researchedFor(CUnit* unit, u32 playerId) {
+	if (unit->playerId != playerId || playerId >= PLAYER_COUNT || !(unit->status & UnitStatus::Completed))
+		return false;
+	return scbw::hasTechResearched((u8)playerId, unitmorphs::morphRowOf(unit->id)->tech);
+}
+
 bool canMorphInto(CUnit* unit, u16 type) {
 	switch (unitmorphs::morphCheck(unit->id, type)) {
 	case unitmorphs::CHECK_MAKE:
 		return unit->canMakeUnit(type, *ACTIVE_NATION_ID) == 1;
 	case unitmorphs::CHECK_TECH:
 		return unit->canUseTech(unitmorphs::morphRowOf(unit->id)->tech, *ACTIVE_NATION_ID) == 1;
+	case unitmorphs::CHECK_RESEARCHED:
+		return researchedFor(unit, *ACTIVE_NATION_ID);
 	default:
 		return false;
 	}
@@ -98,6 +109,12 @@ u32 mayCreateWithSeveral(CUnit* unit) {
 	if (units_dat::BaseProperty[unit->id] & UnitProperty::Worker)
 		return 1;
 	return unitmorphs::isMorphSource(unit->id) ? 1 : 0;
+}
+
+u32 morphButtonState(CUnit* unit, u16 type, u32 playerId) {
+	if (unitmorphs::morphCheck(unit->id, type) != unitmorphs::CHECK_RESEARCHED)
+		return BUTTON_NOT_OURS;
+	return researchedFor(unit, playerId) ? 1 : 0;
 }
 
 void selectedTypeChanged(CUnit* unit) {

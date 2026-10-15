@@ -160,6 +160,34 @@ void __declspec(naked) typeChangeStub() {
 	}
 }
 
+//0x428E92 in the button condition 0x428E60: its call of canMakeUnit 0x46E1C0
+//(EAX = the type, ESI = the unit, the player pushed: RET 4), which this stub
+//replaces: a morph gated by research answers here, anything else goes on to
+//canMakeUnit with the same registers and stack.
+const u32 Func_CanMakeUnit = 0x0046E1C0;
+void __declspec(naked) morphButtonStub() {
+	static CUnit* unit;
+	static u32 unitType;
+	static u32 player;
+	static u32 state;
+	__asm {
+		MOV unit, ESI
+		MOV unitType, EAX
+		MOV player, EDX
+		PUSHAD
+	}
+	state = smartmorph::morphButtonState(unit, (u16)unitType, player);
+	__asm {
+		POPAD
+		CMP state, 2	//smartmorph::BUTTON_NOT_OURS
+		JE notOurs
+		MOV EAX, state
+		RETN 4
+	notOurs:
+		JMP Func_CanMakeUnit
+	}
+}
+
 //0x47B7C7 in the multi-select test 0x47B770: the JE that refuses an Egg
 //(after CMP AX, 0x24 at 0x47B7C3). NOPed, so eggs can be selected several at
 //once, as Cocoon and
@@ -179,6 +207,7 @@ void injectSmartMorphHooks() {
 	jmpPatch(cancelKeptStub,		0x004682E5, 0);
 	jmpPatch(cancelRevertStub,		0x00468351, 0);
 	jmpPatch(typeChangeStub,		0x0049FF82, 2);
+	callPatch(morphButtonStub,		0x00428E92, 0);
 	memoryPatch(0x0047B7C7, EGG_MULTI_SELECT, sizeof(EGG_MULTI_SELECT));
 }
 

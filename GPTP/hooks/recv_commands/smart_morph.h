@@ -28,6 +28,13 @@ u32 cancelRevertOf(CUnit* unit);
 //The button gate 0x428E60 with several units selected (0x428E89): a worker
 //(smart-build) or a morph source shows its buttons.
 u32 mayCreateWithSeveral(CUnit* unit);
+//The button condition 0x428E60's last test (its call of canMakeUnit at
+//0x428E92): for a morph table row gated by research (Zergling to Devouring
+//One), 1 (shown) once the tech is researched, else 0 (hidden, as the Lurker
+//button before Lurker Aspect); BUTTON_NOT_OURS for anything else, which
+//canMakeUnit decides as before.
+const u32 BUTTON_NOT_OURS = 2;
+u32 morphButtonState(CUnit* unit, u16 type, u32 playerId);
 //The type change 0x49FED0 (at 0x49FF82): a unit the local player has
 //selected changed type (began or ended a morph), so the console list is
 //sorted again and the card's unit picked again. The active subgroup stays

@@ -24,7 +24,7 @@ void check(bool ok, u32 line) {
 
 //The game's ids (SCBW/enumerations/UnitId.h).
 const u16 MARINE = 0, LARVA = 35, ZERGLING = 37, HYDRALISK = 38, MUTALISK = 43, GUARDIAN = 44, DRONE = 41,
-          DEVOURER = 62, LURKER = 103, HATCHERY = 131;
+          DEVOURING_ONE = 54, DEVOURER = 62, LURKER = 103, HATCHERY = 131;
 
 } //unnamed namespace
 
@@ -40,9 +40,14 @@ int main() {
 	CHECK(morphCheck(LARVA, DRONE) == CHECK_MAKE && morphCheck(MUTALISK, GUARDIAN) == CHECK_MAKE);
 	CHECK(morphCheck(HYDRALISK, LURKER) == CHECK_TECH);
 	CHECK(morphCheck(HYDRALISK, GUARDIAN) == CHECK_NONE);	//a Hydralisk becomes only a Lurker
-	CHECK(morphCheck(ZERGLING, 200) == CHECK_MAKE);			//the Baneling: the requirements decide
 	CHECK(morphCheck(MARINE, DRONE) == CHECK_NONE && morphCheck(HATCHERY, DRONE) == CHECK_NONE);
 	CHECK(morphRowOf(HYDRALISK)->tech == 0x20);				//Lurker Aspect
+	//The Baneling (Devouring One, 54): only it, once tech 35 is researched.
+	//Tech 35 has no use requirements in the data, so it is not the game's
+	//can-use test (0x46DD80) but the research itself.
+	CHECK(morphCheck(ZERGLING, DEVOURING_ONE) == CHECK_RESEARCHED);
+	CHECK(morphCheck(ZERGLING, DRONE) == CHECK_NONE && morphCheck(ZERGLING, LURKER) == CHECK_NONE);
+	CHECK(morphRowOf(ZERGLING)->tech == 35);
 
 	//What a cancelled egg becomes.
 	CHECK(cancelRevert(LURKER_EGG, HYDRALISK) == HYDRALISK);
@@ -56,7 +61,7 @@ int main() {
 	//An unfinished unit cancel leaves alone.
 	CHECK(keptFromCancel(HYDRALISK, MARINE) && keptFromCancel(MUTALISK, MARINE));	//vanilla's
 	CHECK(keptFromCancel(ZERGLING, LURKER_EGG));		//back from its egg
-	CHECK(keptFromCancel(200, LURKER_EGG));				//a Baneling hatching
+	CHECK(keptFromCancel(DEVOURING_ONE, LURKER_EGG));	//a Baneling hatching
 	CHECK(keptFromCancel(GUARDIAN, COCOON) && keptFromCancel(DEVOURER, COCOON) && keptFromCancel(LURKER, LURKER_EGG));
 	CHECK(!keptFromCancel(LARVA, MARINE));				//a larva's egg is removed, never reverts
 	CHECK(!keptFromCancel(MARINE, MARINE) && !keptFromCancel(DRONE, EGG));	//as vanilla

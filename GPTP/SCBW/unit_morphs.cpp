@@ -6,18 +6,20 @@ namespace unitmorphs {
 namespace {
 
 //The game's ids (SCBW/enumerations/UnitId.h, TechId.h).
-const u16 LARVA = 35, ZERGLING = 37, HYDRALISK = 38, MUTALISK = 43, LURKER = 103;
-const u8 LURKER_ASPECT = 0x20;
+const u16 LARVA = 35, ZERGLING = 37, HYDRALISK = 38, MUTALISK = 43, DEVOURING_ONE = 54, LURKER = 103;
+const u8 LURKER_ASPECT = 0x20, BANELING_TECH = 35;
 
 //The morph table. A row makes its source morphable: while it morphs it is
 //its egg, and it may become what the requirements allow (FireGraft's "current
-//unit is"), or, with a techTarget, only that type once the tech is
-//researched. A morph button is Unit_Morph (0x423790) with the target's id.
+//unit is"), or, with a techTarget, only that type, by its tech (rule). A
+//morph button is Unit_Morph (0x423790) with the target's id, condition
+//0x428E60 (Lurker: 0x429720).
 const MorphRow ROWS[] = {
-	{ LARVA,		EGG,		NONE,	0 },
-	{ HYDRALISK,	LURKER_EGG,	LURKER,	LURKER_ASPECT },
-	{ MUTALISK,		COCOON,		NONE,	0 },
-	{ ZERGLING,		LURKER_EGG,	NONE,	0 },	//the Baneling (the user's data)
+	{ LARVA,		EGG,		NONE,			0,				TECH_USE },
+	{ HYDRALISK,	LURKER_EGG,	LURKER,			LURKER_ASPECT,	TECH_USE },
+	{ MUTALISK,		COCOON,		NONE,			0,				TECH_USE },
+	//The Baneling: Devouring One, once tech 35 (unused in vanilla) is researched.
+	{ ZERGLING,		LURKER_EGG,	DEVOURING_ONE,	BANELING_TECH,	TECH_RESEARCHED },
 };
 
 } //unnamed namespace
@@ -44,7 +46,9 @@ MorphCheck morphCheck(u16 unitId, u16 type) {
 		return CHECK_NONE;
 	if (row->techTarget == NONE)
 		return CHECK_MAKE;
-	return type == row->techTarget ? CHECK_TECH : CHECK_NONE;
+	if (type != row->techTarget)
+		return CHECK_NONE;
+	return row->rule == TECH_RESEARCHED ? CHECK_RESEARCHED : CHECK_TECH;
 }
 
 u16 cancelRevert(u16 eggId, u16 previousType) {
