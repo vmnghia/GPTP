@@ -12,13 +12,19 @@ namespace {
 //The one unit 0x3F lets through the game's receive; NULL: every unit (0x23).
 CUnit* onlyUnit;
 
-//A TECH_RESEARCHED row: the player's own finished unit, and the player has
-//researched the row's tech (what the can-use test 0x46DD80 checks of a tech
-//before its use requirements).
-bool researchedFor(CUnit* unit, u32 playerId) {
-	if (unit->playerId != playerId || playerId >= PLAYER_COUNT || !(unit->status & UnitStatus::Completed))
-		return false;
-	return scbw::hasTechResearched((u8)playerId, unitmorphs::morphRowOf(unit->id)->tech);
+//The game's count of each player's completed units, u32 [type][12 players]:
+//what the requirements' "must have" reads (0x46D685).
+const u32* const COMPLETED_UNITS = (const u32*)0x00584DE4;
+
+//Whether the unit is the player's, finished (the game's tests ask both).
+bool ownFinished(CUnit* unit, u32 playerId) {
+	return unit->playerId == playerId && playerId < (u32)PLAYER_COUNT && (unit->status & UnitStatus::Completed);
+}
+
+//Whether the player has a completed unit of the type a NEED_COMPLETED row
+//needs.
+bool hasNeededUnit(CUnit* unit, u32 playerId) {
+	return COMPLETED_UNITS[unitmorphs::morphRowOf(unit->id)->need * PLAYER_COUNT + playerId] != 0;
 }
 
 bool canMorphInto(CUnit* unit, u16 type) {
@@ -26,9 +32,9 @@ bool canMorphInto(CUnit* unit, u16 type) {
 	case unitmorphs::CHECK_MAKE:
 		return unit->canMakeUnit(type, *ACTIVE_NATION_ID) == 1;
 	case unitmorphs::CHECK_TECH:
-		return unit->canUseTech(unitmorphs::morphRowOf(unit->id)->tech, *ACTIVE_NATION_ID) == 1;
-	case unitmorphs::CHECK_RESEARCHED:
-		return researchedFor(unit, *ACTIVE_NATION_ID);
+		return unit->canUseTech((u8)unitmorphs::morphRowOf(unit->id)->need, *ACTIVE_NATION_ID) == 1;
+	case unitmorphs::CHECK_COMPLETED:
+		return ownFinished(unit, *ACTIVE_NATION_ID) && hasNeededUnit(unit, *ACTIVE_NATION_ID);
 	default:
 		return false;
 	}
@@ -112,9 +118,11 @@ u32 mayCreateWithSeveral(CUnit* unit) {
 }
 
 u32 morphButtonState(CUnit* unit, u16 type, u32 playerId) {
-	if (unitmorphs::morphCheck(unit->id, type) != unitmorphs::CHECK_RESEARCHED)
+	if (unitmorphs::morphCheck(unit->id, type) != unitmorphs::CHECK_COMPLETED)
 		return BUTTON_NOT_OURS;
-	return researchedFor(unit, playerId) ? 1 : 0;
+	if (!ownFinished(unit, playerId))
+		return 0;
+	return (u32)unitmorphs::completedButtonState(hasNeededUnit(unit, playerId));
 }
 
 void selectedTypeChanged(CUnit* unit) {

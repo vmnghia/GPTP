@@ -6,20 +6,22 @@ namespace unitmorphs {
 namespace {
 
 //The game's ids (SCBW/enumerations/UnitId.h, TechId.h).
-const u16 LARVA = 35, ZERGLING = 37, HYDRALISK = 38, MUTALISK = 43, DEVOURING_ONE = 54, LURKER = 103;
-const u8 LURKER_ASPECT = 0x20, BANELING_TECH = 35;
+const u16 LARVA = 35, ZERGLING = 37, HYDRALISK = 38, MUTALISK = 43, DEVOURING_ONE = 54, LURKER = 103,
+          MATURE_CHRYSALIS = 150;
+const u16 LURKER_ASPECT = 0x20;
 
 //The morph table. A row makes its source morphable: while it morphs it is
 //its egg, and it may become what the requirements allow (FireGraft's "current
-//unit is"), or, with a techTarget, only that type, by its tech (rule). A
-//morph button is Unit_Morph (0x423790) with the target's id, condition
-//0x428E60 (Lurker: 0x429720).
+//unit is"), or, with a techTarget, only that type, with what it needs (rule).
+//A morph button is Unit_Morph (0x423790), condition 0x428E60 (Lurker:
+//0x429720), the target's id as both variables.
 const MorphRow ROWS[] = {
-	{ LARVA,		EGG,		NONE,			0,				TECH_USE },
-	{ HYDRALISK,	LURKER_EGG,	LURKER,			LURKER_ASPECT,	TECH_USE },
-	{ MUTALISK,		COCOON,		NONE,			0,				TECH_USE },
-	//The Baneling: Devouring One, once tech 35 (unused in vanilla) is researched.
-	{ ZERGLING,		LURKER_EGG,	DEVOURING_ONE,	BANELING_TECH,	TECH_RESEARCHED },
+	{ LARVA,		EGG,		NONE,			0,					NEED_TECH_USE },
+	{ HYDRALISK,	LURKER_EGG,	LURKER,			LURKER_ASPECT,		NEED_TECH_USE },
+	{ MUTALISK,		COCOON,		NONE,			0,					NEED_TECH_USE },
+	//The Baneling: Devouring One, with a Mature Chrysalis (the future
+	//Baneling Nest) completed.
+	{ ZERGLING,		LURKER_EGG,	DEVOURING_ONE,	MATURE_CHRYSALIS,	NEED_COMPLETED },
 };
 
 } //unnamed namespace
@@ -48,7 +50,11 @@ MorphCheck morphCheck(u16 unitId, u16 type) {
 		return CHECK_MAKE;
 	if (type != row->techTarget)
 		return CHECK_NONE;
-	return row->rule == TECH_RESEARCHED ? CHECK_RESEARCHED : CHECK_TECH;
+	return row->rule == NEED_COMPLETED ? CHECK_COMPLETED : CHECK_TECH;
+}
+
+s32 completedButtonState(bool hasNeeded) {
+	return hasNeeded ? 1 : -1;
 }
 
 u16 cancelRevert(u16 eggId, u16 previousType) {

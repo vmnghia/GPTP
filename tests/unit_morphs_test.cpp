@@ -24,7 +24,7 @@ void check(bool ok, u32 line) {
 
 //The game's ids (SCBW/enumerations/UnitId.h).
 const u16 MARINE = 0, LARVA = 35, ZERGLING = 37, HYDRALISK = 38, MUTALISK = 43, GUARDIAN = 44, DRONE = 41,
-          DEVOURING_ONE = 54, DEVOURER = 62, LURKER = 103, HATCHERY = 131;
+          DEVOURING_ONE = 54, DEVOURER = 62, LURKER = 103, HATCHERY = 131, MATURE_CHRYSALIS = 150;
 
 } //unnamed namespace
 
@@ -41,13 +41,17 @@ int main() {
 	CHECK(morphCheck(HYDRALISK, LURKER) == CHECK_TECH);
 	CHECK(morphCheck(HYDRALISK, GUARDIAN) == CHECK_NONE);	//a Hydralisk becomes only a Lurker
 	CHECK(morphCheck(MARINE, DRONE) == CHECK_NONE && morphCheck(HATCHERY, DRONE) == CHECK_NONE);
-	CHECK(morphRowOf(HYDRALISK)->tech == 0x20);				//Lurker Aspect
-	//The Baneling (Devouring One, 54): only it, once tech 35 is researched.
-	//Tech 35 has no use requirements in the data, so it is not the game's
-	//can-use test (0x46DD80) but the research itself.
-	CHECK(morphCheck(ZERGLING, DEVOURING_ONE) == CHECK_RESEARCHED);
+	CHECK(morphRowOf(HYDRALISK)->need == 0x20);				//Lurker Aspect
+	//The Baneling (Devouring One, 54): only it, with a completed Mature
+	//Chrysalis (150, the future Baneling Nest), as SC2's Baneling Nest.
+	CHECK(morphCheck(ZERGLING, DEVOURING_ONE) == CHECK_COMPLETED);
 	CHECK(morphCheck(ZERGLING, DRONE) == CHECK_NONE && morphCheck(ZERGLING, LURKER) == CHECK_NONE);
-	CHECK(morphRowOf(ZERGLING)->tech == 35);
+	CHECK(morphRowOf(ZERGLING)->need == MATURE_CHRYSALIS);
+	CHECK(morphRowOf(HYDRALISK)->rule == NEED_TECH_USE && morphRowOf(ZERGLING)->rule == NEED_COMPLETED);
+
+	//What the button shows for a building requirement: enabled with one,
+	//disabled (grey) without, as a unit button whose building is missing.
+	CHECK(completedButtonState(true) == 1 && completedButtonState(false) == -1);
 
 	//What a cancelled egg becomes.
 	CHECK(cancelRevert(LURKER_EGG, HYDRALISK) == HYDRALISK);
