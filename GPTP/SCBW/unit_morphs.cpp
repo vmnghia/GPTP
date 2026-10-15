@@ -72,4 +72,8 @@ bool keptFromCancel(u16 unitId, u16 previousType) {
 	return previousType == COCOON || previousType == LURKER_EGG;
 }
 
+bool hatchesTwin(u16 previousType) {
+	return previousType == EGG;
+}
+
 } //unitmorphs

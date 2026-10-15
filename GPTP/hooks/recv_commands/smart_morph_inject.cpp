@@ -189,6 +189,29 @@ void __declspec(naked) morphButtonStub() {
 	}
 }
 
+//0x45DDA9 in the Zerg birth 0x45DD60 (EDI = the unit, pushed): its call of
+//0x45D910, which makes the twin of a unit with Two Units in One Egg (RET 4;
+//EAX = the twin or NULL). A unit that gets none answers NULL here.
+const u32 Func_MakeTwin = 0x0045D910;
+void __declspec(naked) twinStub() {
+	static CUnit* unit;
+	static u32 allowed;
+	__asm {
+		MOV unit, EDI
+		PUSHAD
+	}
+	allowed = smartmorph::twinAllowed(unit);
+	__asm {
+		POPAD
+		CMP allowed, 0
+		JNE makeTwin
+		XOR EAX, EAX
+		RETN 4
+	makeTwin:
+		JMP Func_MakeTwin
+	}
+}
+
 //0x47B7C7 in the multi-select test 0x47B770: the JE that refuses an Egg
 //(after CMP AX, 0x24 at 0x47B7C3). NOPed, so eggs can be selected several at
 //once, as Cocoon and
@@ -209,6 +232,7 @@ void injectSmartMorphHooks() {
 	jmpPatch(cancelRevertStub,		0x00468351, 0);
 	jmpPatch(typeChangeStub,		0x0049FF82, 2);
 	callPatch(morphButtonStub,		0x00428E92, 0);
+	callPatch(twinStub,				0x0045DDA9, 0);
 	memoryPatch(0x0047B7C7, EGG_MULTI_SELECT, sizeof(EGG_MULTI_SELECT));
 }
 

@@ -36,6 +36,9 @@ u32 mayCreateWithSeveral(CUnit* unit);
 //else, which canMakeUnit decides as before.
 const u32 BUTTON_NOT_OURS = 2;
 u32 morphButtonState(CUnit* unit, u16 type, u32 playerId);
+//The Zerg birth 0x45DD60, before it makes a twin (0x45DDA9): whether this
+//unit gets one (unitmorphs::hatchesTwin).
+u32 twinAllowed(CUnit* unit);
 //The type change 0x49FED0 (at 0x49FF82): a unit the local player has
 //selected changed type (began or ended a morph), so the console list is
 //sorted again and the card's unit picked again. The active subgroup stays

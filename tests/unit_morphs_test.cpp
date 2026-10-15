@@ -70,6 +70,13 @@ int main() {
 	CHECK(!keptFromCancel(LARVA, MARINE));				//a larva's egg is removed, never reverts
 	CHECK(!keptFromCancel(MARINE, MARINE) && !keptFromCancel(DRONE, EGG));	//as vanilla
 
+	//A twin (Two Units in One Egg) hatches only from a larva's Egg: a Zergling
+	//back from a cancelled Lurker Egg gets none (the twin's placement reads
+	//the egg image's overlay, which only the Egg has: 0x45D925 crashed).
+	CHECK(hatchesTwin(EGG));
+	CHECK(!hatchesTwin(LURKER_EGG) && !hatchesTwin(COCOON));
+	CHECK(!hatchesTwin(ZERGLING) && !hatchesTwin(MARINE));
+
 	//The command a press sends.
 	CHECK(morphCommandId(true) == CMD_MORPH_ALL && CMD_MORPH_ALL == 0x23);
 	CHECK(morphCommandId(false) == CMD_MORPH_ONE && CMD_MORPH_ONE == 0x3F && MORPH_ONE_BYTES == 3);
