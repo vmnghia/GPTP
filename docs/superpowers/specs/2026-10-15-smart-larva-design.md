@@ -73,28 +73,30 @@ A row is:
 |---|---|
 | source | the unit that morphs |
 | egg | the egg it becomes while morphing: Egg (36), Cocoon (59) or Lurker Egg (97) |
-| techTarget, tech, rule | if set, the source may morph only into techTarget, by its tech: `TECH_USE`, the game's can-use test (0x46DD80, the tech's use requirements in the data: Hydralisk → Lurker, Lurker Aspect), or `TECH_RESEARCHED`, the tech researched by the owner (for a tech the data has no use requirements for: the can-use test refuses those, 0x46DE56); else any type `canMakeUnit` allows |
+| techTarget, need, rule | if set, the source may morph only into techTarget, with what it needs: `NEED_TECH_USE`, a tech by the game's can-use test (0x46DD80, the tech's use requirements in the data: Hydralisk → Lurker, Lurker Aspect), or `NEED_COMPLETED`, a completed unit of the owner's (the game's count 0x584DE4, `u32 [type][12]`, which the requirements' "must have" reads at 0x46D685); else any type `canMakeUnit` allows |
 
 Rows at build time:
 
 | source | egg | tech |
 |---|---|---|
 | Larva (35) | Egg (36) | none |
-| Hydralisk (38) | Lurker Egg (97) | Lurker (103), Lurker Aspect, `TECH_USE` |
+| Hydralisk (38) | Lurker Egg (97) | Lurker (103), Lurker Aspect, `NEED_TECH_USE` |
 | Mutalisk (43) | Cocoon (59) | none |
-| Zergling (37) | Lurker Egg (97) | the Baneling: Devouring One (54), tech 35 (unused in vanilla), `TECH_RESEARCHED` (the user, 2026-10-16) |
+| Zergling (37) | Lurker Egg (97) | the Baneling: Devouring One (54), a completed Mature Chrysalis (150, the future Baneling Nest), `NEED_COMPLETED` (the user, 2026-10-16: SC2's Baneling needs the Baneling Nest, no research) |
 
-A `TECH_RESEARCHED` row also answers the button condition 0x428E60 (its call of
-canMakeUnit at 0x428E92): the button shows once the tech is researched and is hidden
-before, as the Lurker button is. So the Baneling needs no requirement data.
+A `NEED_COMPLETED` row also answers the button condition 0x428E60 (its call of
+canMakeUnit at 0x428E92): the button is enabled with the needed unit and disabled (grey)
+without, as a unit button whose building is missing; hidden for another player's or an
+unfinished unit. So the Baneling needs no requirement data. (Built first on 2026-10-16
+as tech 35 researched, then changed to this the same day.)
 
 The egg must be one of the three existing egg units: about 20 places in the exe know those
 three (AI, console, cancel, birth, the progress percentage), and a new egg unit would need
 each of them hooked (the user chose to reuse Lurker Egg for the Baneling, 2026-10-15). A
 separate Baneling cocoon is a later job (§8).
 
-The Zergling row is harmless before the user's data exists: without tech 35 researched,
-a Zergling can morph into nothing.
+The Zergling row is harmless before the user's data exists: without a Morph button on
+the Zergling, nothing sends it.
 
 ### 3.1 The exe's sites that read the table
 
@@ -159,10 +161,11 @@ no rally after a Lurker Egg, AI, console progress, the progress percentage 0x466
 
 For Zergling → Baneling (Devouring One, 54, the user's test unit; 2026-10-16): a
 Baneling button on the Zergling's button set (action Unit_Morph 0x423790, condition
-0x428E60, actVar 54), a way to research tech 35, and in units.dat: Devouring One without
-Two Units in One Egg (it was copied from the Zergling: the hatch would make two, 0x45D910)
-and with the supply the Baneling should take (it had 0: a Zergling's half would be freed).
-No requirement data: the table's `TECH_RESEARCHED` row decides the button and the morph.
+0x428E60, both variables 54), and in units.dat Devouring One edited into the Baneling
+(done by the user: without Two Units in One Egg, which would hatch two, 0x45D910; half a
+supply, PyDAT's 0.5 box, as the Zergling). A Mature Chrysalis for the requirement: the
+user's test map has one built; making it from a Drone is later. No requirement data: the
+table's `NEED_COMPLETED` row decides the button and the morph.
 
 ## 7. Testing
 

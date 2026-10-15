@@ -162,7 +162,8 @@ void __declspec(naked) typeChangeStub() {
 
 //0x428E92 in the button condition 0x428E60: its call of canMakeUnit 0x46E1C0
 //(EAX = the type, ESI = the unit, the player pushed: RET 4), which this stub
-//replaces: a morph gated by research answers here, anything else goes on to
+//replaces: a morph that needs a completed unit answers here (1 or -1, or 0),
+//anything else goes on to
 //canMakeUnit with the same registers and stack.
 const u32 Func_CanMakeUnit = 0x0046E1C0;
 void __declspec(naked) morphButtonStub() {

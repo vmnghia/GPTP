@@ -566,14 +566,14 @@ Lurker Egg is in it, for the Baneling). Spec
 - A plain press is recorded as the new command 0x3F; replays recorded before this build
   still play the same (0x23 keeps its meaning).
 - **The Baneling** (2026-10-16) `[BUILT, not yet run in game]`: Devouring One (54), the
-  user's test unit, once tech 35 is researched (the table's `TECH_RESEARCHED` row; tech
-  35 has no use requirements, which the game's can-use test refuses). The row also
-  answers the button condition 0x428E60 (shown once researched, hidden before, as the
-  Lurker's), so no requirement data is needed.
+  user's test unit, with a completed Mature Chrysalis (150, the future Baneling Nest; the
+  table's `NEED_COMPLETED` row, read from the game's completed-unit count 0x584DE4). The
+  row also answers the button condition 0x428E60: enabled with a Chrysalis, disabled
+  (grey) without, so no requirement data is needed.
 - **Data, the user's:** a Baneling button on the Zergling's set (action Unit_Morph
-  0x423790, condition 0x428E60, actVar 54); a way to research tech 35; in units.dat,
-  Devouring One without Two Units in One Egg (copied from the Zergling: two would hatch)
-  and with the Baneling's supply (it has 0).
+  0x423790, condition 0x428E60, both variables 54); Devouring One edited into the
+  Baneling in units.dat (done); a Mature Chrysalis built in the test map. Later: the
+  Mature Chrysalis as a building a Drone makes (the Baneling Nest).
 - **Later:** a separate Baneling cocoon unit (needs the exe's ~20 egg sites hooked);
   morphing larvae straight from a selected Hatchery.
 
