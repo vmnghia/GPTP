@@ -375,6 +375,14 @@ void subgroupActive() {
 	//Gone (killed, shift-removed): the top subgroup, as in SC2.
 	CHECK(activeKeyAfter(keys, 5, 4, true) == 2);
 	CHECK(activeKeyAfter(keys, 5, 10, true) == 2);
+	//A selected larva becomes an Egg: the same units, sorted again
+	//(smartmorph::selectedTypeChanged). Larva stays active while one is left,
+	//then the top subgroup.
+	const u32 larvaKey = subgroupKey(0, 35, false), eggKey = subgroupKey(0, 36, false);
+	const u32 oneMorphed[3] = { larvaKey, larvaKey, eggKey };
+	CHECK(activeKeyAfter(oneMorphed, 3, larvaKey, keepsActive(false, before, 3, before, 3)) == larvaKey);
+	const u32 allMorphed[3] = { eggKey, eggKey, eggKey };
+	CHECK(activeKeyAfter(allMorphed, 3, larvaKey, true) == eggKey);
 	CHECK(keyAfterTab(keys, 5, 2, false) == 5);
 	CHECK(keyAfterTab(keys, 5, 9, false) == 2);	//wraps
 	CHECK(keyAfterTab(keys, 5, 2, true) == 9);

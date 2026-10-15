@@ -1,5 +1,6 @@
 #include "smart_morph.h"
 #include "../selection_ext/sel_synced.h"
+#include "../selection_ext/sel_local.h"
 #include <SCBW/unit_morphs.h>
 #include <SCBW/smart_larva.h>
 #include <SCBW/selection_ext.h>
@@ -97,6 +98,11 @@ u32 mayCreateWithSeveral(CUnit* unit) {
 	if (units_dat::BaseProperty[unit->id] & UnitProperty::Worker)
 		return 1;
 	return unitmorphs::isMorphSource(unit->id) ? 1 : 0;
+}
+
+void selectedTypeChanged(CUnit* unit) {
+	if (unit->sprite != NULL && (unit->sprite->flags & CSprite_Flags::Selected))
+		sellocal::requestRefresh();
 }
 
 } //smartmorph

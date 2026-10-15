@@ -141,6 +141,32 @@ void __declspec(naked) cancelRevertStub() {
 	}
 }
 
+//0x49FF82 in the type change 0x49FED0 (ESI = the unit, already its new
+//type): its test of the sprite's Selected flag, redone here; the JE at
+//0x49FF89 reads its flags. EBX and EDI are read on, so all is kept.
+const u32 TypeChange_SelectedTest = 0x0049FF89;
+void __declspec(naked) typeChangeStub() {
+	static CUnit* unit;
+	__asm {
+		MOV unit, ESI
+		PUSHAD
+	}
+	smartmorph::selectedTypeChanged(unit);
+	__asm {
+		POPAD
+		MOV EDX, DWORD PTR [ESI+0x0C]
+		TEST BYTE PTR [EDX+0x0E], 0x08
+		JMP TypeChange_SelectedTest
+	}
+}
+
+//0x47B7C7 in the multi-select test 0x47B770: the JE that refuses an Egg
+//(after CMP AX, 0x24 at 0x47B7C3). NOPed, so eggs can be selected several at
+//once, as Cocoon and
+//Lurker Egg already can (units.dat gives none of the three Building or
+//Single Entity, the test's data side).
+const u8 EGG_MULTI_SELECT[] = { 0x90, 0x90 };
+
 } //unnamed namespace
 
 namespace hooks {
@@ -152,6 +178,8 @@ void injectSmartMorphHooks() {
 	jmpPatch(morph1EggStub,			0x0045E019, 0);
 	jmpPatch(cancelKeptStub,		0x004682E5, 0);
 	jmpPatch(cancelRevertStub,		0x00468351, 0);
+	jmpPatch(typeChangeStub,		0x0049FF82, 2);
+	memoryPatch(0x0047B7C7, EGG_MULTI_SELECT, sizeof(EGG_MULTI_SELECT));
 }
 
 } //hooks
