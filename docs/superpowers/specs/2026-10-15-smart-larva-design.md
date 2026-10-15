@@ -1,7 +1,10 @@
 # Smart larva morphing (SC2's one-per-press morph, one morph table)
 
 Status: `[BUILT 2026-10-15]`, tested in game 2026-10-15 (round 26, §7's steps 1-8 and
-the replay, all passed; build 23:33:50). Then, asked for by the user after round 26
+the replay, all passed; build 23:33:50). The Baneling (Devouring One, needs a Mature
+Chrysalis, §3) and the fix for its cancel (no twin outside a larva's Egg, §3.1's cancel)
+tested 2026-10-16, rounds 29-30, all passed (build 02:58:44); egg progress bars, round
+28 (`docs/resolution.md` §6). Then, asked for by the user after round 26
 (`[BUILT 2026-10-15]`, tested in game 2026-10-16, round 27, all 10 steps passed; build
 23:52:52): the card stays on the morphing
 subgroup (a selected unit that changes type has the console list sorted again, 0x49FF82;
