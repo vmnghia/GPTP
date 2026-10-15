@@ -125,6 +125,10 @@ u32 morphButtonState(CUnit* unit, u16 type, u32 playerId) {
 	return (u32)unitmorphs::completedButtonState(hasNeededUnit(unit, playerId));
 }
 
+u32 twinAllowed(CUnit* unit) {
+	return unitmorphs::hatchesTwin(unit->previousUnitType) ? 1 : 0;
+}
+
 void selectedTypeChanged(CUnit* unit) {
 	if (unit->sprite != NULL && (unit->sprite->flags & CSprite_Flags::Selected))
 		sellocal::requestRefresh();

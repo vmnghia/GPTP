@@ -570,6 +570,11 @@ Lurker Egg is in it, for the Baneling). Spec
   table's `NEED_COMPLETED` row, read from the game's completed-unit count 0x584DE4). The
   row also answers the button condition 0x428E60: enabled with a Chrysalis, disabled
   (grey) without, so no requirement data is needed.
+- **Round 29** (2026-10-16): steps 1-4 and 6-8 passed. Cancelling the Baneling's egg
+  crashed (0x498277): the Zergling back from it has Two Units in One Egg, so its birth
+  (0x45DD60) made a twin (0x45D910), whose placement reads the egg image's overlay, which
+  the Lurker Egg lacks. Fixed `[BUILT, not yet run in game]`: a twin hatches only from a
+  larva's Egg (`unitmorphs::hatchesTwin`, at 0x45DDA9), as in vanilla.
 - **Data, the user's:** a Baneling button on the Zergling's set (action Unit_Morph
   0x423790, condition 0x428E60, both variables 54); Devouring One edited into the
   Baneling in units.dat (done); a Mature Chrysalis built in the test map. Later: the

@@ -53,5 +53,11 @@ u16 cancelRevert(u16 eggId, u16 previousType);
 //names Mutalisk and Hydralisk; without this a Zergling back from its egg, or
 //a Baneling hatching, would be refunded a second time.
 bool keptFromCancel(u16 unitId, u16 previousType);
+//Whether a unit whose type makes two per egg (Two Units in One Egg) gets its
+//twin at birth (0x45DDA9): only when it hatches from a larva's Egg, as in
+//vanilla. A Zergling back from a cancelled Lurker Egg runs the same birth;
+//the twin's placement reads the egg image's overlay, which the Lurker Egg
+//lacks (a crash at 0x498277), and it would be a free unit besides.
+bool hatchesTwin(u16 previousType);
 
 } //unitmorphs
