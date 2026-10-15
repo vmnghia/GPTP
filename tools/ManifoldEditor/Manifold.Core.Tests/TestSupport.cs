@@ -23,6 +23,43 @@ static class Make
     public static ButtonSet Set(params Button[] buttons) => new(buttons, 0);
 
     public static ButtonSet[] EmptySets() => Enumerable.Repeat(ButtonSet.Empty, Card.SetCount).ToArray();
+
+    /// <summary>A 32-bit DLL (the minimal PE, machine 0x14C, DLL flag), with extra bytes after it.</summary>
+    public static byte[] Dll(int extra = 0, byte fill = 0xCC)
+    {
+        var bytes = PeImageTests.MinimalExe((_, _) => { });
+        int pe = BitConverter.ToInt32(bytes, 0x3C);
+        BitConverter.TryWriteBytes(bytes.AsSpan(pe + 4), (ushort)0x14C);
+        BitConverter.TryWriteBytes(bytes.AsSpan(pe + 22), (ushort)0x2102);
+        return [.. bytes, .. Enumerable.Repeat(fill, extra)];
+    }
+
+    /// <summary>An MPQ header (format 0, header 32 bytes) and filler to the archive's size.</summary>
+    public static byte[] Mpq(int size = 2048)
+    {
+        var bytes = new byte[size];
+        for (int i = 0; i < size; i++) bytes[i] = (byte)(i % 251);
+        "MPQ\x1A"u8.CopyTo(bytes);
+        BitConverter.TryWriteBytes(bytes.AsSpan(4), 32u);
+        BitConverter.TryWriteBytes(bytes.AsSpan(8), (uint)size);
+        BitConverter.TryWriteBytes(bytes.AsSpan(12), (ushort)0);
+        return bytes;
+    }
+
+    /// <summary>
+    /// FireGraft's exe (spec §2): a launcher whose sections end at 0x2400, the "PEGF" header,
+    /// the plugin, zeros to 512 bytes, the MPQ.
+    /// </summary>
+    public static byte[] FireGraftExe(byte[] plugin, byte[]? mpq = null, uint id = 0x1B4D69B6, uint count = 1, uint reserved = 0)
+    {
+        var bytes = new List<byte>(PeImageTests.MinimalExe((_, _) => { }));
+        foreach (uint value in new[] { 0x46474550u, 1u, count, id, (uint)plugin.Length, reserved })
+            bytes.AddRange(BitConverter.GetBytes(value));
+        bytes.AddRange(plugin);
+        while (bytes.Count % 512 != 0) bytes.Add(0);
+        bytes.AddRange(mpq ?? Mpq());
+        return bytes.ToArray();
+    }
 }
 
 sealed class FakeArchive(string name, Dictionary<string, byte[]>? files = null) : IWritableArchive
