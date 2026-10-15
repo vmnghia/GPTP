@@ -4,6 +4,7 @@
 #include <SCBW/selection_ext.h>
 #include <SCBW/console_raise.h>
 #include <SCBW/smart_rally.h>
+#include <SCBW/smart_larva.h>
 #include <cstring>
 
 namespace selext {
@@ -134,6 +135,8 @@ void lengths() {
 	CHECK(variableCommandLength(queued) == 9);
 	const u8 workerRally[] = { smartrally::CMD_WORKER_RALLY, 0, 0, 0, 0, 0, 0 };
 	CHECK(variableCommandLength(workerRally) == smartrally::WORKER_RALLY_BYTES);
+	const u8 morphOne[] = { smartlarva::CMD_MORPH_ONE, 0, 0 };
+	CHECK(variableCommandLength(morphOne) == smartlarva::MORPH_ONE_BYTES);
 }
 
 void ring() {
@@ -589,6 +592,7 @@ void queuedSites() {
 	CHECK(!cancelsTraining(131, true, true) && !cancelsTraining(132, true, true));
 	CHECK(!cancelsTraining(141, true, true) && !cancelsTraining(143, true, true));
 	CHECK(cancelsTraining(133, true, true));	//a Hive is not among them
+	CHECK(!cancelsTraining(37, true, true));	//a Zergling: a morph table source (SCBW/unit_morphs.cpp)
 	//A depot cell inside a queued depot's footprint is red; one beside it isn't.
 	placementCellCentre(10, 20, 0, 0, &cx, &cy);
 	CHECK(footprintsOverlap(cx, cy, 32, 32, 352, 672, 96, 64));
