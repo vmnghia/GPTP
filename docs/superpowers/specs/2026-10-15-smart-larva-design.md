@@ -88,9 +88,12 @@ until a requirement says "current unit is Zergling".
 
 Each hardcodes Larva/Hydralisk/Mutalisk (or their eggs) today and is rerouted:
 
-1. **The morph receive** 0x4C1990 (command 0x23): reimplemented with the table (from
-   upstream's `CMDRECV_Morph.cpp`, whose hook stays off), so vanilla types behave exactly
-   as before. The new 0x3F shares its per-unit steps.
+1. **The morph receive** 0x4C1990 (command 0x23): only its per-unit "may it morph"
+   check (0x4C19BB) is replaced by the table's; the rest (pay, queue, the order) stays
+   the exe's, so vanilla types behave exactly as before. The new 0x3F calls this same
+   receive with only its pick let through. (Planned as a reimplementation from upstream's
+   `CMDRECV_Morph.cpp`; keeping the exe's own body was smaller and closer to vanilla.
+   That hook stays off.)
 2. **The Morph1 order** (0x45DEA0): its "may morph" check and its egg choice read the
    table: the check at 0x45DFB0 and the egg choice at 0x45E019 (settled in the plan).
 3. **The button condition** 0x428E60 (BTNSCOND_CanBuildUnit): with more than one unit
