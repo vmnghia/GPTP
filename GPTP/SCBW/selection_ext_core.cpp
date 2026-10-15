@@ -2,6 +2,8 @@
 //host test in tests/ builds it on its own.
 #include "selection_ext.h"
 #include "smart_rally.h"
+#include "smart_larva.h"
+#include "unit_morphs.h"
 #include <algorithm>
 #include <cstring>
 
@@ -113,6 +115,8 @@ u32 variableCommandLength(const u8* cmd) {
 		return QUEUED_BUILD_BYTES;
 	if (id == smartrally::CMD_WORKER_RALLY)
 		return smartrally::WORKER_RALLY_BYTES;
+	if (id == smartlarva::CMD_MORPH_ONE)
+		return smartlarva::MORPH_ONE_BYTES;
 	if (id >= 0x09 && id <= 0x0B)
 		return 2 + 2 * cmd[1];
 	return 0;
@@ -600,10 +604,9 @@ bool cancelTrainObeyed(u16 what, u32 selected) {
 }
 
 bool cancelsTraining(u16 unitType, bool completed, bool commandPlayers) {
+	if (unitmorphs::isMorphSource(unitType))	//Larva, Hydralisk, Mutalisk...
+		return false;
 	switch (unitType) {
-	case 35:	//Larva
-	case 38:	//Hydralisk
-	case 43:	//Mutalisk
 	case 131:	//Hatchery
 	case 132:	//Lair
 	case 141:	//Spire
