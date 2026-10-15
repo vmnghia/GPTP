@@ -213,7 +213,11 @@ void drawBuildProgress(CUnit *unit)
         buildprogress::isResearching(unit->mainOrderId, unit->building.techType) ||
         buildprogress::isUpgrading(unit->mainOrderId, unit->building.upgradeType) && !isTraining;
     const bool isCompleted = (unit->status & UnitStatus::Completed) != 0;
-    bool isBuildingSelf = buildprogress::isBeingBuilt(unit->mainOrderId, unit->remainingBuildTime, isCompleted);
+    const bool isBuilding = buildprogress::isBeingBuilt(unit->mainOrderId, unit->remainingBuildTime, isCompleted);
+    // An Egg, Cocoon or Lurker Egg: counted like a building, down from its queued type's build time
+    const bool isInEgg =
+        buildprogress::isMorphingInEgg(unit->mainOrderId, isCompleted, unit->buildQueue[unit->buildQueueSlot % 5]);
+    bool isBuildingSelf = isBuilding || isInEgg;
 
     for (int i = 0; i < 5; i++)
     {
@@ -274,11 +278,11 @@ void drawBuildProgress(CUnit *unit)
     else if (isBuildingSelf)
     {
         // A Zerg building morphing (Hatchery to Lair) is still its old type and counts down the new one's
-        // build time
-        const u32 builtType =
-            buildprogress::typeBeingBuilt(unit->id, isCompleted, unit->buildQueue[unit->buildQueueSlot % 5]);
+        // build time; an egg counts down the type it becomes
+        const u32 queuedType = unit->buildQueue[unit->buildQueueSlot % 5];
+        const u32 builtType = isInEgg ? queuedType : buildprogress::typeBeingBuilt(unit->id, isCompleted, queuedType);
         timeCost = units_dat::TimeCost[builtType];
-        if (playerTable[unit->playerId].race == RaceId::Protoss)
+        if (isBuilding && playerTable[unit->playerId].race == RaceId::Protoss)
         {
             timeCost += 24; // Protoss buildings warp flash animation time
         }

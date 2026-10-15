@@ -28,9 +28,10 @@ const u32 PLAYER_GUARD = 0x03, NOTHING = 0x17, TRAIN = 0x26, UNIT_MORPH = 0x2A, 
 //and the value for none.
 const u32 STIM_PACKS = 0, LAST_TECH = 43, NO_TECH = 44, INFANTRY_ARMOR = 0, LAST_UPGRADE = 60, NO_UPGRADE = 61;
 //The game's unit ids (SCBW/enumerations/UnitId.h).
-const u32 MARINE = 0, ZERGLING = 37, INTERCEPTOR = 73, SCARAB = 85, BARRACKS = 111, HATCHERY = 131, LAIR = 132, HIVE = 133,
-          GREATER_SPIRE = 137, SPIRE = 141, SPAWNING_POOL = 142, CREEP_COLONY = 143, SPORE_COLONY = 144,
-          SUNKEN_COLONY = 146, GATEWAY = 160, NONE = 228;
+const u32 MARINE = 0, ZERGLING = 37, GUARDIAN = 44, INTERCEPTOR = 73, SCARAB = 85, LURKER = 103, BARRACKS = 111,
+          HATCHERY = 131, LAIR = 132, HIVE = 133, GREATER_SPIRE = 137, SPIRE = 141, SPAWNING_POOL = 142,
+          CREEP_COLONY = 143, SPORE_COLONY = 144, SUNKEN_COLONY = 146, GATEWAY = 160, NONE = 228;
+const u32 DIE = 0x00, ZERG_BIRTH = 0x29;
 
 } //unnamed namespace
 
@@ -83,6 +84,19 @@ int main() {
 	//queued (a Hatchery in the frame its morph starts; a Barracks training).
 	CHECK(typeBeingBuilt(HATCHERY, true, LAIR) == HATCHERY);
 	CHECK(typeBeingBuilt(BARRACKS, true, MARINE) == BARRACKS);
+	//in an egg (Egg, Cocoon, Lurker Egg): the unit morph order, not
+	//completed, with the type it becomes queued.
+	CHECK(isMorphingInEgg(UNIT_MORPH, false, ZERGLING));
+	CHECK(isMorphingInEgg(UNIT_MORPH, false, GUARDIAN));
+	CHECK(isMorphingInEgg(UNIT_MORPH, false, LURKER));
+	//not in an egg: the frame the order starts, the Larva or Hydralisk still
+	//completed; the unit back from a cancelled egg (its birth order); an egg
+	//dying; an egg with nothing queued.
+	CHECK(!isMorphingInEgg(UNIT_MORPH, true, ZERGLING));
+	CHECK(!isMorphingInEgg(UNIT_MORPH, true, LURKER));
+	CHECK(!isMorphingInEgg(ZERG_BIRTH, false, NONE));
+	CHECK(!isMorphingInEgg(DIE, false, ZERGLING));
+	CHECK(!isMorphingInEgg(UNIT_MORPH, false, NONE));
 
 	//researching: the order, and a tech to research.
 	CHECK(isResearching(RESEARCH, STIM_PACKS));
