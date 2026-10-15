@@ -565,7 +565,7 @@ Lurker Egg is in it, for the Baneling). Spec
 `SCBW/unit_morphs*`, `SCBW/smart_larva*`.
 - A plain press is recorded as the new command 0x3F; replays recorded before this build
   still play the same (0x23 keeps its meaning).
-- **The Baneling** (2026-10-16) `[BUILT, not yet run in game]`: Devouring One (54), the
+- **The Baneling** (2026-10-16) `[BUILT, tested in game 2026-10-16, rounds 29-30]`: Devouring One (54), the
   user's test unit, with a completed Mature Chrysalis (150, the future Baneling Nest; the
   table's `NEED_COMPLETED` row, read from the game's completed-unit count 0x584DE4). The
   row also answers the button condition 0x428E60: enabled with a Chrysalis, disabled
@@ -573,7 +573,7 @@ Lurker Egg is in it, for the Baneling). Spec
 - **Round 29** (2026-10-16): steps 1-4 and 6-8 passed. Cancelling the Baneling's egg
   crashed (0x498277): the Zergling back from it has Two Units in One Egg, so its birth
   (0x45DD60) made a twin (0x45D910), whose placement reads the egg image's overlay, which
-  the Lurker Egg lacks. Fixed `[BUILT, not yet run in game]`: a twin hatches only from a
+  the Lurker Egg lacks. Fixed `[BUILT, tested in game 2026-10-16, round 30 all passed]`: a twin hatches only from a
   larva's Egg (`unitmorphs::hatchesTwin`, at 0x45DDA9), as in vanilla.
 - **Data, the user's:** a Baneling button on the Zergling's set (action Unit_Morph
   0x423790, condition 0x428E60, both variables 54); Devouring One edited into the
