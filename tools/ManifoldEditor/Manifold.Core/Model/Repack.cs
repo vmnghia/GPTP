@@ -10,6 +10,14 @@ public sealed record RepackFile(string MpqPath, byte[] Data, RepackState State, 
     public bool TickedByDefault => State != RepackState.Same && Warning is null;
 }
 
+/// <summary>What Repack needs from StormLib: adding files to an MPQ, and reading one.</summary>
+public interface IRepackHost
+{
+    /// <summary>Adds or replaces the files in the MPQ inside <paramref name="file"/> (imploded).</summary>
+    void AddFiles(string file, IReadOnlyList<(string Path, byte[] Data)> files);
+    IArchive Open(string file);
+}
+
 /// <summary>
 /// Repack (spec 2026-10-14): the plugin and the to-repack folder's files into the mod exe,
 /// in place of FireGraft and PyMPQ.
@@ -45,6 +53,106 @@ public static class Repack
         }
         files.Sort((a, b) => StringComparer.OrdinalIgnoreCase.Compare(a.MpqPath, b.MpqPath));
         return files;
+    }
+
+    const int ERROR_ACCESS_DENIED = 5, ERROR_SHARING_VIOLATION = 32, ERROR_LOCK_VIOLATION = 33;
+
+    static bool IsBusy(Exception e) =>
+        e is UnauthorizedAccessException ||
+        e is IOException && (e.HResult & 0xFFFF) is ERROR_SHARING_VIOLATION or ERROR_LOCK_VIOLATION or ERROR_ACCESS_DENIED;
+
+    /// <summary>
+    /// Repacks the exe (spec §6): copies it to &lt;exe&gt;.repacking, adds the files to the copy,
+    /// rebuilds the copy around the plugin (when given), checks it, and swaps it in keeping
+    /// &lt;exe&gt;.bak. Null on success; else what failed, with the exe as it was.
+    /// </summary>
+    public static string? Run(string exePath, IReadOnlyList<(string Path, byte[] Data)> files, byte[]? plugin, IRepackHost host)
+    {
+        if (files.Count == 0 && plugin is null) return null;
+        string name = Path.GetFileName(exePath), work = exePath + ".repacking";
+        string busy = $"{name} is in use by another program (the game, or FireGraft). Nothing was changed.";
+
+        // The editor's own files, unless replaced on purpose: they must come through unchanged.
+        var kept = new Dictionary<string, byte[]?>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            var before = host.Open(exePath);
+            foreach (string path in Protected.Keys)
+                if (!files.Any(f => string.Equals(f.Path, path, StringComparison.OrdinalIgnoreCase)))
+                    kept[path] = before.TryRead(path);
+        }
+        catch (Exception e)
+        {
+            return IsBusy(e) ? busy : $"Copying the exe: {name} can't be read: {e.Message}";
+        }
+
+        bool swapped = false;
+        try
+        {
+            try { File.Copy(exePath, work, overwrite: true); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                return IsBusy(e) ? busy : $"Copying the exe: {e.Message}";
+            }
+
+            if (files.Count > 0)
+            {
+                try { host.AddFiles(work, files); }
+                catch (Exception e) { return $"Adding the files: {e.Message}"; }
+            }
+
+            if (plugin is not null)
+            {
+                try { File.WriteAllBytes(work, FireGraftExe.WithPlugin(File.ReadAllBytes(work), plugin)); }
+                catch (InvalidDataException e) { return $"Packing the plugin: {e.Message}"; }
+            }
+
+            if (Check(work, files, plugin, kept, host) is string problem) return $"Checking the result: {problem}";
+
+            try { File.Replace(work, exePath, exePath + ".bak"); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                return IsBusy(e) ? busy : $"Replacing the exe: {e.Message}";
+            }
+            swapped = true;
+            return null;
+        }
+        finally
+        {
+            if (!swapped && File.Exists(work)) File.Delete(work);
+        }
+    }
+
+    /// <summary>Step 4: the new file parses with the plugin, its MPQ opens, and every file reads back.</summary>
+    static string? Check(string work, IReadOnlyList<(string Path, byte[] Data)> files, byte[]? plugin,
+        IReadOnlyDictionary<string, byte[]?> kept, IRepackHost host)
+    {
+        if (plugin is not null)
+        {
+            var bytes = File.ReadAllBytes(work);
+            FireGraftExe? layout;
+            try { layout = FireGraftExe.Parse(bytes); }
+            catch (InvalidDataException e) { return $"the new exe doesn't read back: {e.Message}"; }
+            if (layout is null || !bytes.AsSpan(layout.PluginOffset, layout.PluginSize).SequenceEqual(plugin))
+                return "the plugin doesn't read back the same";
+        }
+        IArchive after;
+        try { after = host.Open(work); }
+        catch (Exception e) { return $"its MPQ doesn't open: {e.Message}"; }
+        try
+        {
+            foreach (var (path, data) in files)
+                if (after.TryRead(path) is not { } read || !read.AsSpan().SequenceEqual(data))
+                    return $"{path} doesn't read back the same";
+            foreach (var (path, before) in kept)
+            {
+                var read = after.TryRead(path);
+                if (before is null ? read is not null : read is null || !read.AsSpan().SequenceEqual(before))
+                    return $"{path} changed, and Repack must leave it as the editor saved it";
+            }
+        }
+        catch (Exception e) { return $"its MPQ can't be read: {e.Message}"; }
+        return null;
     }
 
     /// <summary>The plugin file's bytes, or why it can't be packed (missing, unreadable, not a DLL).</summary>

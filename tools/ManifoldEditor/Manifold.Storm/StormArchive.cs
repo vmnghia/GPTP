@@ -67,7 +67,7 @@ public sealed class StormArchive(string path, string? name = null) : IWritableAr
         {
             try { File.Copy(path, temp, overwrite: true); }
             catch (IOException e) when (IsBusy(e)) { throw Busy(); }
-            WriteInto(temp, files);
+            AddFiles(temp, files);
             try { File.Replace(temp, path, path + ".bak"); }
             catch (IOException e) when (IsBusy(e)) { throw Busy(); }
             catch (UnauthorizedAccessException) { throw Busy(); }
@@ -78,7 +78,11 @@ public sealed class StormArchive(string path, string? name = null) : IWritableAr
         }
     }
 
-    static void WriteInto(string archive, IReadOnlyList<(string Path, byte[] Data)> files)
+    /// <summary>
+    /// Adds or replaces the files (imploded) in the MPQ inside <paramref name="archive"/>, in
+    /// place, with one flush. Repack calls it on its work copy.
+    /// </summary>
+    public static void AddFiles(string archive, IReadOnlyList<(string Path, byte[] Data)> files)
     {
         if (!Native.SFileOpenArchive(archive, 0, 0, out var mpq))
             throw new Win32Exception(Marshal.GetLastWin32Error(), "cannot open the MPQ for writing");
