@@ -104,3 +104,17 @@ or neither). The first such save asks whether to also write it to
 `<exe folder>\to-repack\rez\stat_txt.tbl` (kept as `.bak`), so a later PyMPQ add of the
 to-repack copy doesn't bring the old strings back; the answer is kept per exe. When an exe
 opens and its to-repack copy differs (edited in PyTBL, say), the editor asks which to edit.
+
+**Repack** (spec `docs/superpowers/specs/2026-10-14-repack-design.md`), in place of FireGraft
+and PyMPQ. **Repack...** packs the plugin (`<exe folder>\GPTP.qdp`, where the GPTP build copies
+it) into FireGraft's exe and adds every file in a subfolder of the to-repack folder
+(`<exe folder>\to-repack\`; files at its top and `*.bak` are left out) to the MPQ, imploded.
+Both paths have **Change...** and **Default**, kept per exe; a changed folder also moves the
+strings' to-repack copy for an exe not yet asked. The dialog lists each file as new, changed or
+the same as the exe's; `rez\stat_txt.tbl` and `Manifold\buttonsets.bin` start unticked, with a
+warning, when they differ from the exe's, since they would replace the editor's work. Unsaved
+edits are saved first. The repack works on `<exe>.repacking`, checks that the plugin, every
+added file and the editor's files read back, and swaps it in keeping `<exe>.bak`; any failure
+leaves the exe as it was. The status line compares the exe's plugin with `GPTP.qdp`. Only
+FireGraft's one-plugin layout is known; any other is refused. Whether FireGraft's loader
+accepts a plugin of another size is settled by the spec's §8 step 1, on a copy of the exe.

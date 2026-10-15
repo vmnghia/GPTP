@@ -684,6 +684,11 @@ the orders queued behind a gather (below).
   own list. Check the exe with `D:\SC Modding\resexp-analysis\mpqfind.py SCManifold.exe
   "rez\statdata.bin"` (lists the file's size in the exe's MPQ, or "missing");
   `mpqget.py <mpq> <name> <out>` extracts a file from the game's MPQs (StormLib).
+- **The Manifold Editor's Repack** `[BUILT 2026-10-15; not yet run on Windows]` packs
+  `GPTP.qdp` into FireGraft's exe and adds every file under `to-repack\`'s subfolders, in
+  place of FireGraft and PyMPQ (spec `docs/superpowers/specs/2026-10-14-repack-design.md`).
+  Its first test runs on a copy of `SCManifold.exe` (§8 step 1): the build stamp must be the
+  new one.
 - **At exactly 640×480 the resolution module is off**, but the console layout hooks
   (`injectConsoleLayoutHooks`) still run; anything that depends on the console's layout
   must be installed there, not only in `injectHudHooks`.

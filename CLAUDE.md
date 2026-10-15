@@ -38,6 +38,9 @@ be added by hand too**. Adding replaces files in place; it doesn't rebuild the M
 already in it (such as the Manifold Editor's `Manifold\buttonsets.bin`) stay. A missing `rez\statdata.bin`
 once made the selection panel silently fall back to vanilla's 12 wireframes.
 `docs/resolution.md` §6 "Working tips" has the paths and helper scripts.
+The Manifold Editor's **Repack...** does both (the plugin and every to-repack file) in one
+step, in place of FireGraft and PyMPQ, once its first in-game test passes (spec
+`docs/superpowers/specs/2026-10-14-repack-design.md` §8).
 
 The `reshade/` folder is not in the MPQ: its files sit next to `StarCraft.exe`. A changed
 `ManifoldUIMask.fx` is copied into the game folder's `reshade-shaders\Shaders\` by hand and

@@ -4,7 +4,9 @@ Status: design 2026-10-14, from the user's request ("I want our editor to be abl
 the qdp, with this alone I barely need to open FG anymore and I hate its exe lock"), the
 scope they chose ("Plugin + to-repack files": one Repack command, no post-build step) and
 their correction (the to-repack folder defaults to `<exe folder>\to-repack\` and can be
-changed). Not yet built. The exe layout of §2 was read from the user's `SCManifold.exe` with
+changed). Built 2026-10-15 (plan `docs/superpowers/plans/2026-10-14-repack.md`): the exe
+reader and writer, the folder scan, the repack and the settings are tested on Linux with fake
+exes; the window compiles but has not run, and §8's Windows steps are not done. The exe layout of §2 was read from the user's `SCManifold.exe` with
 two read-only probes on 2026-10-14. Builds on parts 1 and 2,
 `docs/superpowers/specs/2026-10-05-button-set-editor-design.md` and
 `docs/superpowers/specs/2026-10-08-string-editor-design.md`.

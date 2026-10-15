@@ -73,7 +73,8 @@ public static class Workspace
     /// Opens a mod exe. Throws (with a message for the user) when the exe has no MPQ or
     /// StarCraft.exe can't be read; nothing is loaded then.
     /// </summary>
-    public static OpenedExe Open(string exePath, string starCraftDir)
+    /// <param name="pluginPath">The plugin Repack would pack, compared with the exe's in the status.</param>
+    public static OpenedExe Open(string exePath, string starCraftDir, string pluginPath)
     {
         var exe = new StormArchive(exePath);
         var archives = new List<IArchive> { exe };
@@ -101,7 +102,10 @@ public static class Workspace
             () => EditorSession.Open(exe, fgp, vanilla, conditions, actions, resources.Strings?.Table));
 
         var state = new EditorState(opened.Document, Path.GetFileName(exePath), conditions, actions);
-        var status = opened.Status.Concat(resources.Sources).Concat(resources.Notes).ToArray();
+        string plugin;
+        try { plugin = Repack.PluginStatus(File.ReadAllBytes(exePath), exePath, pluginPath); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { plugin = $"Plugin: {e.Message}"; }
+        var status = opened.Status.Append(plugin).Concat(resources.Sources).Concat(resources.Notes).ToArray();
         return new OpenedExe(exePath, exe, state, resources, SetCatalog.Build(state.UnitName, resources.Units), status);
     }
 }

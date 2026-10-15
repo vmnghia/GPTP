@@ -135,6 +135,7 @@ public sealed class MainWindow : Window
         toolbar.Children.Add(ToolButton("Redo (Ctrl+Y)", (_, _) => Redo()));
         toolbar.Children.Add(ToolButton("StarCraft folder...", async (_, _) => await PickStarCraftDir()));
         toolbar.Children.Add(ToolButton("Re-import FireGraft's sets...", async (_, _) => await ReimportFireGraft()));
+        toolbar.Children.Add(ToolButton("Repack...", async (_, _) => await RepackExe()));
         root.Children.Add(toolbar);
 
         pages.Items.Add(setsPageItem);
@@ -587,7 +588,7 @@ public sealed class MainWindow : Window
     {
         try
         {
-            opened = Workspace.Open(path, Workspace.StarCraftDir(settings));
+            opened = Workspace.Open(path, Workspace.StarCraftDir(settings), settings.PluginPathFor(path));
         }
         catch (Exception e)
         {
@@ -636,6 +637,60 @@ public sealed class MainWindow : Window
         return true;
     }
 
+    // -------- Repack (Repack spec §6) --------
+
+    /// <summary>
+    /// The plugin and the to-repack files into the exe, in place of FireGraft and PyMPQ: on the
+    /// saved exe, so unsaved edits are saved first. The exe is reopened afterwards.
+    /// </summary>
+    async Task RepackExe()
+    {
+        if (opened is null) return;
+        CommitFields();
+        string exePath = opened.ExePath, name = Path.GetFileName(exePath);
+        if (opened.State.Document.IsDirty)
+        {
+            var ask = new ContentDialog
+            {
+                XamlRoot = Content.XamlRoot,
+                Title = "Unsaved changes",
+                Content = $"Repack works on the saved exe. Save the changes to {name} first?",
+                PrimaryButtonText = "Save and repack",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Primary,
+            };
+            if (await ask.ShowAsync() != ContentDialogResult.Primary) return;
+            if (!await Save()) return;
+        }
+
+        RepackChoice? choice;
+        try
+        {
+            choice = await new RepackDialog(Content.XamlRoot, WinRT.Interop.WindowNative.GetWindowHandle(this), exePath,
+                opened.Archive, () => settings, changed => { settings = changed; settings.Save(Workspace.SettingsPath); }).ShowAsync();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            await Message("Can't repack", $"{name} can't be read: {e.Message}", e.ToString());
+            return;
+        }
+        if (choice is null) return;
+
+        string? error = await Task.Run(() => Repack.Run(exePath, choice.Files, choice.Plugin, new StormRepackHost()));
+        if (error is not null)
+        {
+            await Message("Not repacked", error);
+            return;
+        }
+        await OpenExe(exePath);
+        string what = string.Join(" and ", new[]
+        {
+            choice.Plugin is null ? null : $"the plugin ({choice.Plugin.Length:N0} bytes)",
+            choice.Files.Count == 0 ? null : $"{choice.Files.Count} file{(choice.Files.Count == 1 ? "" : "s")}",
+        }.OfType<string>());
+        await Message("Repacked", $"{name} now holds {what}. The previous exe is {name}.bak.");
+    }
+
     // -------- The to-repack copy of stat_txt.tbl (spec §7) --------
 
     /// <summary>After a save that wrote strings: the same table to the exe's to-repack copy, asked once per exe.</summary>
@@ -666,7 +721,7 @@ public sealed class MainWindow : Window
     /// <summary>Where to also write the strings: a path, "" for nowhere, null to ask next time.</summary>
     async Task<string?> AskRepackPath(string exePath)
     {
-        string suggested = StringMirror.DefaultPath(exePath);
+        string suggested = StringMirror.PathIn(settings.RepackFolderFor(exePath));
         var dialog = new ContentDialog
         {
             XamlRoot = Content.XamlRoot,
@@ -709,7 +764,7 @@ public sealed class MainWindow : Window
         string? mirror = settings.MirrorFor(exePath);
         if (mirror is null)
         {
-            string suggested = StringMirror.DefaultPath(exePath);
+            string suggested = StringMirror.PathIn(settings.RepackFolderFor(exePath));
             mirror = File.Exists(suggested) ? suggested : "";
         }
         if (mirror.Length == 0) return;
