@@ -28,6 +28,12 @@ u32 cancelRevertOf(CUnit* unit);
 //The button gate 0x428E60 with several units selected (0x428E89): a worker
 //(smart-build) or a morph source shows its buttons.
 u32 mayCreateWithSeveral(CUnit* unit);
+//The type change 0x49FED0 (at 0x49FF82): a unit the local player has
+//selected changed type (began or ended a morph), so the console list is
+//sorted again and the card's unit picked again. The active subgroup stays
+//while it has units (selext::activeKeyAfter): with larvae selected, morphing
+//one leaves the card on Larva instead of the new Egg. Local only.
+void selectedTypeChanged(CUnit* unit);
 
 } //smartmorph
 
