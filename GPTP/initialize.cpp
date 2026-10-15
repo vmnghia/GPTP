@@ -17,6 +17,7 @@ using namespace dll;
 #include "hooks/harvest.h"
 #include "hooks/rally_point.h"
 #include "hooks/rally/smart_rally_hooks.h"
+#include "hooks/recv_commands/smart_morph.h"
 #include "hooks/recharge_shields.h"
 #include "hooks/stim_packs.h"
 #include "hooks/tech_target_check.h"
@@ -242,6 +243,8 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	hooks::injectGatherQueueHooks();
 	//Smart rally (hooks/rally, SCBW/smart_rally.h).
 	hooks::injectSmartRallyHooks();
+	//Smart larva morphing and the morph table (hooks/recv_commands/smart_morph, SCBW/unit_morphs.h).
+	hooks::injectSmartMorphHooks();
 
 	//======== DISABLED HOOKS ========//
 	//Written but not in use. To turn one on, move it up into the enabled list.
