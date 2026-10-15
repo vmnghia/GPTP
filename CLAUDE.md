@@ -149,7 +149,7 @@ installed there, not only in `injectHudHooks`.
   unit the player may see at work (bars). Cosmetic. Their rules are pure and host-tested:
   `graphics/line_walk*` (a line walks only its on-screen part), `SCBW/order_lines*`,
   `SCBW/build_progress*`. They name orders, not unit types: a bar shows on anything that
-  produces by `Train` or `TrainFighter`. Lines show only a chain the player queued with
+  produces by `Train` or `TrainFighter`, and on any egg (`Morph1`, not completed). Lines show only a chain the player queued with
   Shift: the game's order queue also holds waiting plain orders and its own clean-up
   orders, unmarked, so `hooks/selection_ext/sel_chain*` notes it where a command's order
   enters the queue (local, not saved).

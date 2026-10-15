@@ -16,6 +16,13 @@ namespace buildprogress {
 //Zerg building has (0x45D0D0).
 bool isBeingBuilt(u32 orderId, u32 remainingBuildTime, bool completed);
 
+//Whether a unit is an egg morphing into its next form (an Egg, Cocoon or
+//Lurker Egg), by its order: Morph1, not completed, with the type it becomes
+//in its build queue; it counts down that type's build time (0x4669E0). The
+//unit that starts the order (a Larva, Hydralisk, Mutalisk) is still
+//completed until the order's first run makes it the egg (0x45E019).
+bool isMorphingInEgg(u32 orderId, bool completed, u32 queuedType);
+
 //The unit type whose build time a unit counts down, by the game's own rule
 //(0x4669E0, 0x45CD00): a Zerg building morphing into a Lair, Hive, Greater
 //Spire, Sunken Colony or Spore Colony keeps its old type until it is done,

@@ -596,6 +596,12 @@ Lurker Egg is in it, for the Baneling). Spec
 tests: `graphics/line_walk.cpp`, `SCBW/order_lines.cpp` and `SCBW/build_progress.cpp`.
 Two changes that came out of it are **synced game state**, not drawing: Cancel Last and
 the orders queued behind a gather (below).
+- **Bars over eggs** (Egg, Cocoon, Lurker Egg; asked for by the user on 2026-10-16)
+  `[BUILT 2026-10-16, not yet run in game]`: by the order, not the unit type
+  (`buildprogress::isMorphingInEgg`): Morph1, not completed, a type queued. The egg
+  counts down that type's build time, as the game's own percentage does (0x4669E0). The
+  unit that starts Morph1 is still completed until its first run makes it the egg, so it
+  gets no bar for that frame.
 - **Lines** show for the whole selection, not its first 12, as pairs of arrowheads (4 px
   apart, a pair every 18 px: the user's choice from previews). A chevron line walks only
   its on-screen part: 400 units' lines cost 54-82 ms a draw before, 2-9 ms after (a host
