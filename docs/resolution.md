@@ -565,9 +565,15 @@ Lurker Egg is in it, for the Baneling). Spec
 `SCBW/unit_morphs*`, `SCBW/smart_larva*`.
 - A plain press is recorded as the new command 0x3F; replays recorded before this build
   still play the same (0x23 keeps its meaning).
-- **Data, the user's:** the Baneling unit (Morph From Other Unit, like the Lurker), its
-  requirement ("current unit is Zergling"), and a Baneling button on the Zergling's set
-  (action Unit_Morph 0x423790, condition 0x428E60, actVar the Baneling's id).
+- **The Baneling** (2026-10-16) `[BUILT, not yet run in game]`: Devouring One (54), the
+  user's test unit, once tech 35 is researched (the table's `TECH_RESEARCHED` row; tech
+  35 has no use requirements, which the game's can-use test refuses). The row also
+  answers the button condition 0x428E60 (shown once researched, hidden before, as the
+  Lurker's), so no requirement data is needed.
+- **Data, the user's:** a Baneling button on the Zergling's set (action Unit_Morph
+  0x423790, condition 0x428E60, actVar 54); a way to research tech 35; in units.dat,
+  Devouring One without Two Units in One Egg (copied from the Zergling: two would hatch)
+  and with the Baneling's supply (it has 0).
 - **Later:** a separate Baneling cocoon unit (needs the exe's ~20 egg sites hooked);
   morphing larvae straight from a selected Hatchery.
 
@@ -597,7 +603,7 @@ tests: `graphics/line_walk.cpp`, `SCBW/order_lines.cpp` and `SCBW/build_progress
 Two changes that came out of it are **synced game state**, not drawing: Cancel Last and
 the orders queued behind a gather (below).
 - **Bars over eggs** (Egg, Cocoon, Lurker Egg; asked for by the user on 2026-10-16)
-  `[BUILT 2026-10-16, not yet run in game]`: by the order, not the unit type
+  `[BUILT 2026-10-16, tested in game 2026-10-16, round 28 all passed]`: by the order, not the unit type
   (`buildprogress::isMorphingInEgg`): Morph1, not completed, a type queued. The egg
   counts down that type's build time, as the game's own percentage does (0x4669E0). The
   unit that starts Morph1 is still completed until its first run makes it the egg, so it
