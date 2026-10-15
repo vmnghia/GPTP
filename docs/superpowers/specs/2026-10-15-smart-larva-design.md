@@ -2,7 +2,8 @@
 
 Status: `[BUILT 2026-10-15]`, tested in game 2026-10-15 (round 26, §7's steps 1-8 and
 the replay, all passed; build 23:33:50). Then, asked for by the user after round 26
-(`[BUILT 2026-10-15]`, round 27 pending, build 23:52:52): the card stays on the morphing
+(`[BUILT 2026-10-15]`, tested in game 2026-10-16, round 27, all 10 steps passed; build
+23:52:52): the card stays on the morphing
 subgroup (a selected unit that changes type has the console list sorted again, 0x49FF82;
 before, the card followed the unit that became an egg, so repeated presses stopped), and
 eggs can be selected several at once (the multi-select test 0x47B770 hardcoded the Egg,
