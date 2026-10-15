@@ -338,6 +338,10 @@
     <ClCompile Include="hooks\selection_ext\sel_chain.cpp" />
     <ClCompile Include="hooks\rally\smart_rally_hooks.cpp" />
     <ClCompile Include="hooks\rally\smart_rally_inject.cpp" />
+    <ClCompile Include="SCBW\unit_morphs.cpp" />
+    <ClCompile Include="SCBW\smart_larva.cpp" />
+    <ClCompile Include="hooks\recv_commands\smart_morph.cpp" />
+    <ClCompile Include="hooks\recv_commands\smart_morph_inject.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_exe.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_synced.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_local.cpp" />
@@ -537,6 +541,9 @@
     <ClInclude Include="hooks\selection_ext\selection_ext_hooks.h" />
     <ClInclude Include="hooks\selection_ext\sel_chain.h" />
     <ClInclude Include="hooks\rally\smart_rally_hooks.h" />
+    <ClInclude Include="SCBW\unit_morphs.h" />
+    <ClInclude Include="SCBW\smart_larva.h" />
+    <ClInclude Include="hooks\recv_commands\smart_morph.h" />
     <ClInclude Include="hooks\selection_ext\sel_exe.h" />
     <ClInclude Include="hooks\selection_ext\sel_synced.h" />
     <ClInclude Include="hooks\selection_ext\sel_local.h" />

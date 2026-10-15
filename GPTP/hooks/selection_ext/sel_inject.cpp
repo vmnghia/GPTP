@@ -12,6 +12,7 @@
 #include "sel_chain.h"
 #include "../interface/buttonsets_loader.h"
 #include "../rally/smart_rally_hooks.h"
+#include "../recv_commands/smart_morph.h"
 #include <SCBW/selection_ext.h>
 #include <hook_tools.h>
 
@@ -300,10 +301,15 @@ void __cdecl recvWorkerRallyC(const u8* packet) {
 	smartrally::recvWorkerRally(packet);
 }
 
+void __cdecl recvMorphOneC(const u8* packet) {
+	smartmorph::recvMorphOne(packet);
+}
+
 //Dispatch slot 50 of the executor 0x4865D0 (ids 0x3C-0x44, 0x48, 0x5B). ESI =
 //command, EAX = bytes left, [EBP+8] = bytes left, [EBP-4] = command size.
 //0x3C: the select chunk; 0x3D: smart-build's queued build (9 bytes); 0x3E:
-//smart rally's worker rally (7 bytes).
+//smart rally's worker rally (7 bytes); 0x3F: smart larva's morph one (3
+//bytes).
 const u32 Back_CommandDone = 0x00486D7A;	//records the command and advances
 const u32 Back_CommandBad = 0x00486DA3;		//vanilla's exit for these ids
 void __declspec(naked) selectChunkDispatch() {
@@ -312,6 +318,8 @@ void __declspec(naked) selectChunkDispatch() {
 		JE queuedBuild
 		CMP BYTE PTR [ESI], 0x3E
 		JE workerRally
+		CMP BYTE PTR [ESI], 0x3F
+		JE morphOne
 		CMP BYTE PTR [ESI], 0x3C
 		JNE notOurs
 		CMP EAX, 3
@@ -349,6 +357,18 @@ void __declspec(naked) selectChunkDispatch() {
 		PUSHAD
 		PUSH ESI
 		CALL recvWorkerRallyC
+		ADD ESP, 4
+		POPAD
+		JMP Back_CommandDone
+	morphOne:
+		CMP EAX, 3
+		JL notOurs
+		SUB EAX, 3
+		MOV [EBP+8], EAX
+		MOV DWORD PTR [EBP-4], 3
+		PUSHAD
+		PUSH ESI
+		CALL recvMorphOneC
 		ADD ESP, 4
 		POPAD
 		JMP Back_CommandDone
@@ -649,25 +669,28 @@ void __declspec(naked) minimapKeyStub() {
 //-------- Smart-build --------//
 
 //0x428E89, Can_Create_UnitorBuilding with several units selected and the
-//unit none of Larva/Mutalisk/Hydralisk: workers may build too. EAX (the
-//type), ESI (the unit) and EDX (the player) are kept for 0x428E91.
+//unit none of Larva/Mutalisk/Hydralisk: workers may build too (smart-build),
+//and any morph table source may morph (SCBW/unit_morphs.h). EAX (the type),
+//ESI (the unit) and EDX (the player) are kept for 0x428E91.
 const u32 CanCreate_Allowed = 0x00428E91;
-void __declspec(naked) canCreateWorkerStub() {
+void __declspec(naked) canCreateSeveralStub() {
+	static CUnit* unit;
+	static u32 allowed;
 	__asm {
-		PUSH EAX
-		PUSH ECX
-		MOVZX EAX, WORD PTR [ESI+0x64]
-		MOV ECX, 0x00664080				//units_dat::BaseProperty
-		TEST BYTE PTR [ECX+EAX*4], 0x08	//UnitProperty::Worker
-		POP ECX
-		POP EAX
-		JNZ allowed
+		MOV unit, ESI
+		PUSHAD
+	}
+	allowed = smartmorph::mayCreateWithSeveral(unit);
+	__asm {
+		POPAD
+		CMP allowed, 0
+		JNE allowedHere
 		POP EDI
 		XOR EAX, EAX
 		POP ESI
 		POP EBP
 		RETN 4
-	allowed:
+	allowedHere:
 		JMP CanCreate_Allowed
 	}
 }
@@ -1135,7 +1158,7 @@ void injectSmartBuildHooks() {
 	memoryPatch(0x00428B8E, NOP6, 6);	//Probe advanced
 	memoryPatch(0x00428C3E, NOP2, 2);	//Drone basic
 	memoryPatch(0x00428CBE, NOP2, 2);	//Drone advanced
-	jmpPatch(canCreateWorkerStub,	0x00428E89, 3);
+	jmpPatch(canCreateSeveralStub,	0x00428E89, 3);
 	//Receive: the nearest able builder; 0x3D (dispatch slot 50, with 0x3C).
 	jmpPatch(recvBuildWrapper,		0x004C23C0, 3);
 	callPatch(builderStub,			0x0048E01E, 0);
