@@ -9,6 +9,7 @@
 #include <SCBW/order_lines.h>
 #include <SCBW/player_slots.h>
 #include <SCBW/smart_rally.h>
+#include "../interface/frame_check.h"
 #include "../interface/resolution.h"
 #include "../interface/reshade_bridge.h"
 #include "../recv_commands/smart_cast.h"
@@ -20,6 +21,7 @@
 #include <cstdio>
 
 #include "../psi_field.h"
+#include "../siege_tank_fx.h"
 
 namespace utils
 {
@@ -405,6 +407,7 @@ namespace hooks
 bool nextFrame()
 {
     reshadebridge::tick(); // The plugin as a ReShade add-on: registers once ReShade is loaded
+    framecheck::printPending(); // Images skipped for a frame past their GRP's last
 
     if (!scbw::isGamePaused())
     { // If the game is not paused
@@ -418,6 +421,7 @@ bool nextFrame()
         plugins::initializeGame();
         resolution::debugReport();
         selbuild::frame(); // Smart-build: Shift released ends Shift-placing
+        siegefx::frame();  // the sieged hull's recoil, the siege shell's building impact
 
         u32 idleWorkerCount = 0;
 
@@ -495,6 +499,7 @@ bool nextFrame()
 bool gameOn()
 {
     smartCast::reset();
+    siegefx::reset();
     selchain::reset();
     return true;
 }
