@@ -420,6 +420,14 @@
     <ClCompile Include="Plugin.cpp" />
     <ClCompile Include="plugin_main.cpp" />
     <ClCompile Include="SCBW\api.cpp" />
+    <ClCompile Include="SCBW\scbwdata.cpp" />
+    <ClCompile Include="SCBW\Storm.cpp" />
+    <ClCompile Include="DatExtend\datext.cpp" />
+    <ClCompile Include="DatExtend\flingy_dat.cpp" />
+    <ClCompile Include="DatExtend\images_dat.cpp" />
+    <ClCompile Include="DatExtend\sprites_dat.cpp" />
+    <ClCompile Include="hooks\DatExtend\dat_load.cpp" />
+    <ClCompile Include="hooks\DatExtend\dat_load_inject.cpp" />
     <ClCompile Include="SCBW\structures\CImage.cpp" />
     <ClCompile Include="SCBW\structures\CSprite.cpp" />
     <ClCompile Include="SCBW\structures\CUnit.cpp" />
@@ -594,6 +602,9 @@
     <ClInclude Include="MPQDraftPlugin.h" />
     <ClInclude Include="Plugin.h" />
     <ClInclude Include="SCBW\api.h" />
+    <ClInclude Include="SCBW\Storm.h" />
+    <ClInclude Include="DatExtend\datext.h" />
+    <ClInclude Include="hooks\DatExtend\dat_load.h" />
     <ClInclude Include="SCBW\enumerations.h" />
     <ClInclude Include="SCBW\enumerations\FlingyId.h" />
     <ClInclude Include="SCBW\enumerations\IconId.h" />

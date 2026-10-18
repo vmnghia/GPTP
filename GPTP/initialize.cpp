@@ -7,6 +7,7 @@ using namespace dll;
 // Hook header files
 #include "graphics/draw_hook.h"
 #include "hooks/main/game_hooks.h"
+#include "hooks/DatExtend/dat_load.h"
 
 #include "hooks/apply_upgrade_flags.h"
 #include "hooks/attack_priority.h"
@@ -223,6 +224,8 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	//line, each switched off with its own leading "//OFF". Keep it that way: no
 	///* */ blocks and nothing else on a hook's line, so that searching for a
 	//hook shows at a glance whether it runs.
+	//The .dat extender's loader: more images/sprites/flingy entries (DatExtend/datext.h). First, before any .dat is read.
+	hooks::injectDatLoadHooks();
 	hooks::injectGameHooks();
 	hooks::injectDrawHook();
 	hooks::injectResolutionHooks();
