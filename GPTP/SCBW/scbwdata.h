@@ -10,6 +10,12 @@
 
 #define SCBW_DATA(type, name, offset) type const name = (type)offset;
 
+//A reference to a variable instead of a copy of the address, for the arrays
+//the .dat extender moves (DatExtend/datext.h): SCBW_DATA would capture a
+//table's address once, at plugin load, before any .dat is read. Defined in
+//scbwdata.cpp; @p offset is the vanilla address, for reference.
+#define SCBW_DATA_REF(type, name, offset) extern type& name;
+
 /// @name Linked list nodes
 //////////////////////////////////////////////////////////////// @{
 
@@ -209,13 +215,14 @@ SCBW_DATA(u8*,		BroodwarOnly,			unitsDat[52].address);	//006606D8
 namespace flingy_dat {
 SCBW_DATA(const DatLoad*, flingyDat, 0x00515A38);
 
-SCBW_DATA(u16*, SpriteID,           flingyDat[0].address);	//006CA318
-SCBW_DATA(u32*, TopSpeed,           flingyDat[1].address);	//006C9EF8
-SCBW_DATA(u16*, Acceleration,       flingyDat[2].address);	//006C9C78
-SCBW_DATA(u32*, HaltDistance,       flingyDat[3].address);	//006C9930
-SCBW_DATA(u8*,  TurnSpeed,          flingyDat[4].address);	//006C9E20 Incorrectly known as "Turn Radius"
+//References: the .dat extender may move these (scbwdata.cpp).
+SCBW_DATA_REF(u16*, SpriteID,           flingyDat[0].address);	//006CA318
+SCBW_DATA_REF(u32*, TopSpeed,           flingyDat[1].address);	//006C9EF8
+SCBW_DATA_REF(u16*, Acceleration,       flingyDat[2].address);	//006C9C78
+SCBW_DATA_REF(u32*, HaltDistance,       flingyDat[3].address);	//006C9930
+SCBW_DATA_REF(u8*,  TurnSpeed,          flingyDat[4].address);	//006C9E20 Incorrectly known as "Turn Radius"
 //SCBW_DATA(u8*, ???,				flingyDat[5].address);	//006CA240
-SCBW_DATA(u8*,  MovementControl,    flingyDat[6].address);	//006C9858
+SCBW_DATA_REF(u8*,  MovementControl,    flingyDat[6].address);	//006C9858
 } //flingy_dat (last entry at 0x00515A80)
 
 namespace weapons_dat {
@@ -307,10 +314,13 @@ SCBW_DATA(u8*,		ObscuredOrder,		ordersDat[18].address);	//00665400
 namespace sprites_dat {
 SCBW_DATA(const DatLoad*, spritesDat, 0x00513FB8);
 
-SCBW_DATA(u16*, ImageId,            spritesDat[0].address);		//00666160
-SCBW_DATA(s8*,  HpBarSize,          spritesDat[1].address);		//00665E50
+//References: the .dat extender may move these (scbwdata.cpp). HpBarSize and
+//the selection circle start at sprite 130 in a vanilla sprites.dat but at 0 in
+//an extended one: index HpBarSize only through the engine (nothing here does).
+SCBW_DATA_REF(u16*, ImageId,            spritesDat[0].address);		//00666160
+SCBW_DATA_REF(s8*,  HpBarSize,          spritesDat[1].address);		//00665E50
 //SCBW_DATA(s8*,  ???,				spritesDat[2].address);		//00666570
-SCBW_DATA(u8*,  IsVisible,          spritesDat[3].address);		//00665C48
+SCBW_DATA_REF(u8*,  IsVisible,          spritesDat[3].address);		//00665C48
 //SCBW_DATA(s8*,  ???,				spritesDat[4].address);		//00665AC0 //"Selection Circle" according to EUDDB, not starting at 0
 //SCBW_DATA(s8*,  ???,				spritesDat[5].address);		//00665FD8 //"Selection Vertical Offset" according to EUDDB
 } //sprites_dat (last entry at 0x00513FF4)
@@ -319,16 +329,17 @@ namespace images_dat {
 SCBW_DATA(const DatLoad*, imagesDat, 0x00514010);
 
 //SCBW_DATA(const u32*,  ???,		imagesDat[0].address);	//00668AA0 //"GRP File" according to EUDDB
-SCBW_DATA(const u8*,	IsTurnable,		imagesDat[1].address);	//0066E860
-SCBW_DATA(const u8*,	IsClickable,	imagesDat[2].address);	//0066C150
+//References: the .dat extender may move these (scbwdata.cpp).
+SCBW_DATA_REF(const u8*,	IsTurnable,		imagesDat[1].address);	//0066E860
+SCBW_DATA_REF(const u8*,	IsClickable,	imagesDat[2].address);	//0066C150
 //SCBW_DATA(const u8*,  ???,		imagesDat[3].address);	//0066D4D8 //"Use Full Iscript" according to EUDDB
 //SCBW_DATA(const u8*,  ???,		imagesDat[4].address);	//00667718 //"Draw If Cloaked" according to EUDDB
-SCBW_DATA(const u8*,	RLE_Function,	imagesDat[5].address);	//00669E28
-SCBW_DATA(const u8*,	Remapping,		imagesDat[6].address);	//00669A40
+SCBW_DATA_REF(const u8*,	RLE_Function,	imagesDat[5].address);	//00669E28
+SCBW_DATA_REF(const u8*,	Remapping,		imagesDat[6].address);	//00669A40
 //SCBW_DATA(const u32*,  ???,		imagesDat[7].address);	//0066EC48 //"Iscript ID" according to EUDDB
 //SCBW_DATA(const u32*,  ???,		imagesDat[8].address);	//0066C538 //"Shields Overlay" according to EUDDB
 //SCBW_DATA(const u32*,  ???,		imagesDat[9].address);	//0066B1B0 //"Attack Overlay" according to EUDDB
-SCBW_DATA(const u32*,	DamageOverlay,	imagesDat[10].address);	//0066A210
+SCBW_DATA_REF(const u32*,	DamageOverlay,	imagesDat[10].address);	//0066A210
 //SCBW_DATA(const u32*,  ???,		imagesDat[11].address);	//00667B00 //"Special Overlay" according to EUDDB
 //SCBW_DATA(const u32*,  ???,		imagesDat[12].address);	//00666778 //"Landing Dust Overlay" according to EUDDB
 //SCBW_DATA(const u32*,  ???,		imagesDat[13].address);	//0066D8C0 //"Lift-off Dust Overlay" according to EUDDB
@@ -402,18 +413,23 @@ struct SpriteTileData {
 SCBW_DATA(SpriteTileData*, spritesOnTileRow,    0x00629288);
 
 //Image-related
+//Each .lo? type's table, one pointer per image. Pointers, not vanilla's five
+//arrays in a row at 0x51F2A8, so the .dat extender can move them
+//(scbwdata.cpp). Note: the extender's own lists call slots 3 and 4 lift-off
+//and landing (DatExtend/images_dat.cpp), these names the reverse; nothing here
+//reads either.
 struct ImagesDatExtraOverlayLO_Files {
-  LO_Header* attackOverlays[IMAGE_TYPE_COUNT];
-  LO_Header* damageOverlays[IMAGE_TYPE_COUNT];
-  LO_Header* specialOverlays[IMAGE_TYPE_COUNT];
-  LO_Header* landingDustOverlays[IMAGE_TYPE_COUNT];
-  LO_Header* liftoffDustOverlays[IMAGE_TYPE_COUNT];
+  LO_Header** attackOverlays;
+  LO_Header** damageOverlays;
+  LO_Header** specialOverlays;
+  LO_Header** landingDustOverlays;
+  LO_Header** liftoffDustOverlays;
 };
-SCBW_DATA(const ImagesDatExtraOverlayLO_Files*, lo_files, 0x0051F2A8);
-SCBW_DATA(const LO_Header* const*, shieldOverlays, 0x0052E5C8);
+SCBW_DATA_REF(ImagesDatExtraOverlayLO_Files*, lo_files, 0x0051F2A8);
+SCBW_DATA_REF(const LO_Header* const*, shieldOverlays, 0x0052E5C8);
 
 SCBW_DATA(const ColorShiftData*, colorShift, 0x005128F8); //Use ColorRemapping::Enum as index
-SCBW_DATA(GrpHead* const*, imageGrpGraphics, 0x0051CED0);
+SCBW_DATA_REF(GrpHead* const*, imageGrpGraphics, 0x0051CED0);
 
 template <typename T>
 struct PlayerFlags {
