@@ -39,5 +39,9 @@ $asm3 = "$PSScriptRoot\out\smart_morph_inject.asm"
 cmd /c "`"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars32.bat`" >nul 2>&1 && dumpbin /nologo /disasm `"$root\GPTP\Debug\smart_morph_inject.obj`" > `"$asm3`""
 & C:\Python27\python.exe "$PSScriptRoot\check_naked_wrappers.py" $asm3
 if ($LASTEXITCODE -ne 0) { Write-Output "naked wrapper check FAILED (smart morph)"; exit 1 }
+$asm4 = "$PSScriptRoot\out\frame_check.asm"
+cmd /c "`"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars32.bat`" >nul 2>&1 && dumpbin /nologo /disasm `"$root\GPTP\Debug\frame_check.obj`" > `"$asm4`""
+& C:\Python27\python.exe "$PSScriptRoot\check_naked_wrappers.py" $asm4
+if ($LASTEXITCODE -ne 0) { Write-Output "naked wrapper check FAILED (frame check)"; exit 1 }
 Write-Output "plugin build succeeded"
 exit 0
