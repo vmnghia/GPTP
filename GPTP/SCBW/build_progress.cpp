@@ -19,6 +19,10 @@ bool isBeingBuilt(u32 orderId, u32 remainingBuildTime, bool completed) {
 	}
 }
 
+bool isMorphingInEgg(u32 orderId, bool completed, u32 queuedType) {
+	return orderId == OrderId::Morph1 && !completed && queuedType < UnitId::None;
+}
+
 u32 typeBeingBuilt(u32 unitType, bool completed, u32 queuedType) {
 	if (completed)
 		return unitType;

@@ -18,6 +18,8 @@ if ($LASTEXITCODE -ne 0) { Write-Output "build progress test FAILED"; exit 1 }
 if ($LASTEXITCODE -ne 0) { Write-Output "player slots test FAILED"; exit 1 }
 & "$PSScriptRoot\smart_rally_test.bat" 2>$null
 if ($LASTEXITCODE -ne 0) { Write-Output "smart rally test FAILED"; exit 1 }
+& "$PSScriptRoot\unit_morphs_test.bat" 2>$null
+if ($LASTEXITCODE -ne 0) { Write-Output "unit morphs test FAILED"; exit 1 }
 New-Item -ItemType Directory -Force "$PSScriptRoot\out" | Out-Null
 $log = "$PSScriptRoot\out\build-plugin.log"
 & "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" "$root\GPTP\GPTP.sln" /p:Configuration=Debug /p:Platform=Win32 /nologo /v:minimal > $log
@@ -33,5 +35,13 @@ $asm2 = "$PSScriptRoot\out\smart_rally_inject.asm"
 cmd /c "`"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars32.bat`" >nul 2>&1 && dumpbin /nologo /disasm `"$root\GPTP\Debug\smart_rally_inject.obj`" > `"$asm2`""
 & C:\Python27\python.exe "$PSScriptRoot\check_naked_wrappers.py" $asm2
 if ($LASTEXITCODE -ne 0) { Write-Output "naked wrapper check FAILED (smart rally)"; exit 1 }
+$asm3 = "$PSScriptRoot\out\smart_morph_inject.asm"
+cmd /c "`"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars32.bat`" >nul 2>&1 && dumpbin /nologo /disasm `"$root\GPTP\Debug\smart_morph_inject.obj`" > `"$asm3`""
+& C:\Python27\python.exe "$PSScriptRoot\check_naked_wrappers.py" $asm3
+if ($LASTEXITCODE -ne 0) { Write-Output "naked wrapper check FAILED (smart morph)"; exit 1 }
+$asm4 = "$PSScriptRoot\out\frame_check.asm"
+cmd /c "`"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars32.bat`" >nul 2>&1 && dumpbin /nologo /disasm `"$root\GPTP\Debug\frame_check.obj`" > `"$asm4`""
+& C:\Python27\python.exe "$PSScriptRoot\check_naked_wrappers.py" $asm4
+if ($LASTEXITCODE -ne 0) { Write-Output "naked wrapper check FAILED (frame check)"; exit 1 }
 Write-Output "plugin build succeeded"
 exit 0

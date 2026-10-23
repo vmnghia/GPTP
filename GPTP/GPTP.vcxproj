@@ -159,6 +159,7 @@
     <ClCompile Include="hooks\interface\buttonsets.cpp" />
     <ClCompile Include="hooks\interface\buttonsets_loader.cpp" />
     <ClCompile Include="hooks\interface\buttonsets_inject.cpp" />
+    <ClCompile Include="hooks\interface\frame_check.cpp" />
     <ClCompile Include="hooks\interface\resolution.cpp" />
     <ClCompile Include="hooks\interface\resolution_hud.cpp" />
     <ClCompile Include="hooks\interface\reshade_bridge.cpp" />
@@ -301,6 +302,7 @@
     </ClCompile>
     <ClCompile Include="hooks\psi_field_inject.cpp" />
     <ClCompile Include="hooks\psi_field_util.cpp" />
+    <ClCompile Include="hooks\siege_tank_fx.cpp" />
     <ClCompile Include="hooks\rally_point.cpp" />
     <ClCompile Include="hooks\rally_point_inject.cpp" />
     <ClCompile Include="hooks\recharge_shields.cpp" />
@@ -338,6 +340,10 @@
     <ClCompile Include="hooks\selection_ext\sel_chain.cpp" />
     <ClCompile Include="hooks\rally\smart_rally_hooks.cpp" />
     <ClCompile Include="hooks\rally\smart_rally_inject.cpp" />
+    <ClCompile Include="SCBW\unit_morphs.cpp" />
+    <ClCompile Include="SCBW\smart_larva.cpp" />
+    <ClCompile Include="hooks\recv_commands\smart_morph.cpp" />
+    <ClCompile Include="hooks\recv_commands\smart_morph_inject.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_exe.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_synced.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_local.cpp" />
@@ -446,6 +452,7 @@
     <ClInclude Include="hooks\interface\btns_cond.h" />
     <ClInclude Include="hooks\interface\buttonsets.h" />
     <ClInclude Include="hooks\interface\buttonsets_loader.h" />
+    <ClInclude Include="hooks\interface\frame_check.h" />
     <ClInclude Include="hooks\interface\resolution.h" />
     <ClInclude Include="hooks\interface\reshade_bridge.h" />
     <ClInclude Include="hooks\interface\selection.h" />
@@ -513,6 +520,7 @@
     <ClInclude Include="hooks\orders\unit_making\unit_morph.h" />
     <ClInclude Include="hooks\orders\unit_making\unit_train.h" />
     <ClInclude Include="hooks\psi_field.h" />
+    <ClInclude Include="hooks\siege_tank_fx.h" />
     <ClInclude Include="hooks\rally_point.h" />
     <ClInclude Include="hooks\recharge_shields.h" />
     <ClInclude Include="hooks\recv_commands\burrow_tech.h" />
@@ -537,6 +545,9 @@
     <ClInclude Include="hooks\selection_ext\selection_ext_hooks.h" />
     <ClInclude Include="hooks\selection_ext\sel_chain.h" />
     <ClInclude Include="hooks\rally\smart_rally_hooks.h" />
+    <ClInclude Include="SCBW\unit_morphs.h" />
+    <ClInclude Include="SCBW\smart_larva.h" />
+    <ClInclude Include="hooks\recv_commands\smart_morph.h" />
     <ClInclude Include="hooks\selection_ext\sel_exe.h" />
     <ClInclude Include="hooks\selection_ext\sel_synced.h" />
     <ClInclude Include="hooks\selection_ext\sel_local.h" />

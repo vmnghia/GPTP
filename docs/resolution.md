@@ -552,6 +552,36 @@ rallies to the nearest mineral field at a melee start. Spec
 - **Later: a separate icon for Set Worker Rally Point** (the user, 2026-10-14). SC2's is
   the rally icon with a small Drone in it; until then it uses Set Rally Point's icon.
 
+**Outside that list: smart larva morphing and the morph table** (asked for by the user on
+2026-10-15) `[BUILT 2026-10-15, tested in game 2026-10-15, round 26 all passed]`, then
+the card staying on Larva after a morph and eggs selected several at once `[BUILT
+2026-10-15, tested in game 2026-10-16, round 27 all passed]`: a plain press of a morph button
+(larva units, Lurker, Guardian, Devourer) morphs one selected unit, the larva of the
+Hatchery with the most selected larvae first; Shift+press morphs all (vanilla). Which
+units morph, and through which egg, is one table: `SCBW/unit_morphs.cpp` (Zergling →
+Lurker Egg is in it, for the Baneling). Spec
+`docs/superpowers/specs/2026-10-15-smart-larva-design.md`, plan
+`docs/superpowers/plans/2026-10-15-smart-larva.md`; code `hooks/recv_commands/smart_morph*`,
+`SCBW/unit_morphs*`, `SCBW/smart_larva*`.
+- A plain press is recorded as the new command 0x3F; replays recorded before this build
+  still play the same (0x23 keeps its meaning).
+- **The Baneling** (2026-10-16) `[BUILT, tested in game 2026-10-16, rounds 29-30]`: Devouring One (54), the
+  user's test unit, with a completed Mature Chrysalis (150, the future Baneling Nest; the
+  table's `NEED_COMPLETED` row, read from the game's completed-unit count 0x584DE4). The
+  row also answers the button condition 0x428E60: enabled with a Chrysalis, disabled
+  (grey) without, so no requirement data is needed.
+- **Round 29** (2026-10-16): steps 1-4 and 6-8 passed. Cancelling the Baneling's egg
+  crashed (0x498277): the Zergling back from it has Two Units in One Egg, so its birth
+  (0x45DD60) made a twin (0x45D910), whose placement reads the egg image's overlay, which
+  the Lurker Egg lacks. Fixed `[BUILT, tested in game 2026-10-16, round 30 all passed]`: a twin hatches only from a
+  larva's Egg (`unitmorphs::hatchesTwin`, at 0x45DDA9), as in vanilla.
+- **Data, the user's:** a Baneling button on the Zergling's set (action Unit_Morph
+  0x423790, condition 0x428E60, both variables 54); Devouring One edited into the
+  Baneling in units.dat (done); a Mature Chrysalis built in the test map. Later: the
+  Mature Chrysalis as a building a Drone makes (the Baneling Nest).
+- **Later:** a separate Baneling cocoon unit (needs the exe's ~20 egg sites hooked);
+  morphing larvae straight from a selected Hatchery.
+
 **Outside that list: ReShade** (asked for by the user on 2026-10-10).
 - **ReShade UI mask** `[BUILT, tested in game 2026-10-11]`: with ReShade over cnc-ddraw,
   the plugin registers as a ReShade add-on and uploads where the game view is, so the
@@ -577,6 +607,12 @@ rallies to the nearest mineral field at a melee start. Spec
 tests: `graphics/line_walk.cpp`, `SCBW/order_lines.cpp` and `SCBW/build_progress.cpp`.
 Two changes that came out of it are **synced game state**, not drawing: Cancel Last and
 the orders queued behind a gather (below).
+- **Bars over eggs** (Egg, Cocoon, Lurker Egg; asked for by the user on 2026-10-16)
+  `[BUILT 2026-10-16, tested in game 2026-10-16, round 28 all passed]`: by the order, not the unit type
+  (`buildprogress::isMorphingInEgg`): Morph1, not completed, a type queued. The egg
+  counts down that type's build time, as the game's own percentage does (0x4669E0). The
+  unit that starts Morph1 is still completed until its first run makes it the egg, so it
+  gets no bar for that frame.
 - **Lines** show for the whole selection, not its first 12, as pairs of arrowheads (4 px
   apart, a pair every 18 px: the user's choice from previews). A chevron line walks only
   its on-screen part: 400 units' lines cost 54-82 ms a draw before, 2-9 ms after (a host

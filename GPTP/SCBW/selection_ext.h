@@ -333,8 +333,8 @@ const u16 CANCEL_TRAIN_NONE = 0xFF;
 //one unit's, as in vanilla.
 bool cancelTrainObeyed(u16 what, u32 selected);
 //Whether a selected unit obeys it, by vanilla's own test: it is completed,
-//the command player's, and not a type whose Cancel is its morph's (Larva,
-//Hydralisk, Mutalisk, Hatchery, Lair, Spire, Creep Colony).
+//the command player's, and not a type whose Cancel is its morph's (a morph
+//table source, SCBW/unit_morphs.h; Hatchery, Lair, Spire, Creep Colony).
 bool cancelsTraining(u16 unitType, bool completed, bool commandPlayers);
 
 //The right-click's send check for an SCV (0x4556D0): refused only when it is

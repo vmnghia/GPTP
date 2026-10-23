@@ -9,6 +9,7 @@
 #include <SCBW/order_lines.h>
 #include <SCBW/player_slots.h>
 #include <SCBW/smart_rally.h>
+#include "../interface/frame_check.h"
 #include "../interface/resolution.h"
 #include "../interface/reshade_bridge.h"
 #include "../recv_commands/smart_cast.h"
@@ -20,6 +21,7 @@
 #include <cstdio>
 
 #include "../psi_field.h"
+#include "../siege_tank_fx.h"
 
 namespace utils
 {
@@ -213,7 +215,11 @@ void drawBuildProgress(CUnit *unit)
         buildprogress::isResearching(unit->mainOrderId, unit->building.techType) ||
         buildprogress::isUpgrading(unit->mainOrderId, unit->building.upgradeType) && !isTraining;
     const bool isCompleted = (unit->status & UnitStatus::Completed) != 0;
-    bool isBuildingSelf = buildprogress::isBeingBuilt(unit->mainOrderId, unit->remainingBuildTime, isCompleted);
+    const bool isBuilding = buildprogress::isBeingBuilt(unit->mainOrderId, unit->remainingBuildTime, isCompleted);
+    // An Egg, Cocoon or Lurker Egg: counted like a building, down from its queued type's build time
+    const bool isInEgg =
+        buildprogress::isMorphingInEgg(unit->mainOrderId, isCompleted, unit->buildQueue[unit->buildQueueSlot % 5]);
+    bool isBuildingSelf = isBuilding || isInEgg;
 
     for (int i = 0; i < 5; i++)
     {
@@ -274,11 +280,11 @@ void drawBuildProgress(CUnit *unit)
     else if (isBuildingSelf)
     {
         // A Zerg building morphing (Hatchery to Lair) is still its old type and counts down the new one's
-        // build time
-        const u32 builtType =
-            buildprogress::typeBeingBuilt(unit->id, isCompleted, unit->buildQueue[unit->buildQueueSlot % 5]);
+        // build time; an egg counts down the type it becomes
+        const u32 queuedType = unit->buildQueue[unit->buildQueueSlot % 5];
+        const u32 builtType = isInEgg ? queuedType : buildprogress::typeBeingBuilt(unit->id, isCompleted, queuedType);
         timeCost = units_dat::TimeCost[builtType];
-        if (playerTable[unit->playerId].race == RaceId::Protoss)
+        if (isBuilding && playerTable[unit->playerId].race == RaceId::Protoss)
         {
             timeCost += 24; // Protoss buildings warp flash animation time
         }
@@ -401,6 +407,7 @@ namespace hooks
 bool nextFrame()
 {
     reshadebridge::tick(); // The plugin as a ReShade add-on: registers once ReShade is loaded
+    framecheck::printPending(); // Images skipped for a frame past their GRP's last
 
     if (!scbw::isGamePaused())
     { // If the game is not paused
@@ -414,6 +421,7 @@ bool nextFrame()
         plugins::initializeGame();
         resolution::debugReport();
         selbuild::frame(); // Smart-build: Shift released ends Shift-placing
+        siegefx::frame();  // the sieged hull's recoil, the siege shell's building impact
 
         u32 idleWorkerCount = 0;
 
@@ -491,6 +499,7 @@ bool nextFrame()
 bool gameOn()
 {
     smartCast::reset();
+    siegefx::reset();
     selchain::reset();
     return true;
 }
