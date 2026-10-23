@@ -45,8 +45,16 @@ void restoreFacing(CUnit* unit, u8 direction) {
 //spot when there is one. The first build also required the tile's
 //isWalkable bit and refused every landing on open ground (2026-10-24): that
 //bit is not the walkability the engine places units by.
+//0 while testing the landing itself (the owner, 2026-10-24): it lands where
+//it is, whatever is there
+#define VIKING_LANDING_CHECK 0
+
 bool settleLanding(CUnit* unit) {
 	const Point16 at = unit->sprite->position;
+#if !VIKING_LANDING_CHECK
+	VDBG("Viking: landing at %d,%d (unit at %d,%d), unchecked", at.x, at.y, unit->position.x, unit->position.y);
+	return true;
+#endif
 	Point16 spot = at;
 	//as scbw::moveUnit, Recall and Nydus do: place the unit (now the ground
 	//form) before asking for a free spot; the second build asked without it,
@@ -58,7 +66,7 @@ bool settleLanding(CUnit* unit) {
 	}
 	const s32 dx = spot.x - at.x, dy = spot.y - at.y;
 	if (dx * dx + dy * dy > vikingtransform::MAX_LANDING_NUDGE * vikingtransform::MAX_LANDING_NUDGE) {
-		VDBG("Viking: nearest spot %d,%d is too far", spot.x, spot.y);
+		VDBG("Viking: nearest spot %d,%d is too far from %d,%d", spot.x, spot.y, at.x, at.y);
 		return false;
 	}
 	if (spot.x != at.x || spot.y != at.y) {
