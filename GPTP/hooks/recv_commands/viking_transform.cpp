@@ -46,9 +46,13 @@ void restoreFacing(CUnit* unit, u8 direction) {
 //isWalkable bit and refused every landing on open ground (2026-10-24): that
 //bit is not the walkability the engine places units by.
 bool settleLanding(CUnit* unit) {
-	const Point16 at = unit->position;
+	const Point16 at = unit->sprite->position;
 	Point16 spot = at;
-	if (!scbw::checkUnitCollisionPos(unit, &at, &spot, NULL, true, 0)) {
+	//as scbw::moveUnit, Recall and Nydus do: place the unit (now the ground
+	//form) before asking for a free spot; the second build asked without it,
+	//and with hideErrorMsg true as no other caller does, and was refused
+	scbw::setUnitPosition(unit, at.x, at.y);
+	if (!scbw::checkUnitCollisionPos(unit, &at, &spot, NULL, false, 0)) {
 		VDBG("Viking: no free spot near %d,%d", at.x, at.y);
 		return false;
 	}
@@ -57,8 +61,12 @@ bool settleLanding(CUnit* unit) {
 		VDBG("Viking: nearest spot %d,%d is too far", spot.x, spot.y);
 		return false;
 	}
-	if (spot.x != at.x || spot.y != at.y)
+	if (spot.x != at.x || spot.y != at.y) {
+		scbw::prepareUnitMove(unit, false);
 		scbw::setUnitPosition(unit, spot.x, spot.y);
+		scbw::refreshUnitAfterMove(unit);
+	}
+	VDBG("Viking: landing at %d,%d (from %d,%d)", spot.x, spot.y, at.x, at.y);
 	return true;
 }
 
