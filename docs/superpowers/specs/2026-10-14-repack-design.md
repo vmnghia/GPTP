@@ -6,7 +6,9 @@ scope they chose ("Plugin + to-repack files": one Repack command, no post-build 
 their correction (the to-repack folder defaults to `<exe folder>\to-repack\` and can be
 changed). Built 2026-10-15 (plan `docs/superpowers/plans/2026-10-14-repack.md`): the exe
 reader and writer, the folder scan, the repack and the settings are tested on Linux with fake
-exes; the window compiles but has not run, and §8's Windows steps are not done. The exe layout of §2 was read from the user's `SCManifold.exe` with
+exes. Tested on Windows 2026-10-23: §8 step 1's first half passed (Repack packed a new
+build and the game showed its build stamp); its second half (a plugin of another size)
+and steps 2-5 are not done yet. The exe layout of §2 was read from the user's `SCManifold.exe` with
 two read-only probes on 2026-10-14. Builds on parts 1 and 2,
 `docs/superpowers/specs/2026-10-05-button-set-editor-design.md` and
 `docs/superpowers/specs/2026-10-08-string-editor-design.md`.
@@ -170,6 +172,9 @@ On Windows, in order:
    start a game from the copy: the build stamp is the new one. Then Repack again with an
    older or newer `GPTP.qdp` of a different size, and start again. If either fails, the
    loader reads more than the header; stop and report what the game shows.
+   `[First half passed 2026-10-23: the new build's stamp showed in game. The second half
+   is still open; the first may have kept the plugin's size, since builds are padded to
+   512 bytes, in which case the MPQ did not move.]`
 2. **The files.** Change one to-repack file (or add one), Repack, and check it in game
    (or with `mpqfind.py`). The button sets and strings are unchanged.
 3. **The warnings.** Edit `to-repack\rez\stat_txt.tbl` in PyTBL: the dialog shows it
