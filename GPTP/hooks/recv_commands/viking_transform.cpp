@@ -1,0 +1,200 @@
+#include "viking_transform.h"
+#include <SCBW/viking_transform.h>
+#include "../selection_ext/sel_synced.h"
+#include "../selection_ext/sel_exe.h"
+
+//The design (sc2grp docs/research/2026-10-23-viking-transform-scratch.md):
+//a transforming Viking is always the ground form. Landing changes the type at
+//its start (the spot is settled before the art descends), lift-off at its end;
+//an interruption anywhere leaves a plain ground Viking. The art is the
+//ground form's own: header 419's Unused1 (landing) and Unused2 (lift-off)
+//play the morph's sets and end on `sigorder 1`.
+
+namespace {
+
+void replaceUnitWithType(CUnit* unit, u16 newUnitId);	//49FED0
+void holdPosition(CUnit* unit);							//4EB5B0
+void orderReturnToIdle(CUnit* unit);					//463770
+void issueOrder(CUnit* unit, u32 orderId, Bool32 queued);	//4754F0
+
+//The type change faces the new sprite north (0x49ED05 -> 0x496360, the
+//design's A4): give the unit, and every image of its sprite, its facing back.
+void restoreFacing(CUnit* unit, u8 direction) {
+	unit->currentDirection1 = direction;
+	unit->velocityDirection1 = direction;
+	if (unit->sprite == NULL)
+		return;
+	for (CImage* image = unit->sprite->images.head; image != NULL; image = image->link.next)
+		scbw::setImageDirection(image, (s8)direction);
+}
+
+//Whether a ground Viking may stand where the fighter is: the tile walkable,
+//and a free spot within MAX_LANDING_NUDGE (checkUnitCollisionPos, as Recall
+//places a unit). Called with the unit already the ground form, so the test
+//is the ground form's footprint; moves it to the spot when there is one.
+bool settleLanding(CUnit* unit) {
+	const Point16 at = unit->position;
+	if (!scbw::getActiveTileAt(at.x, at.y).isWalkable)
+		return false;
+	Point16 spot = at;
+	if (!scbw::checkUnitCollisionPos(unit, &at, &spot, NULL, true, 0))
+		return false;
+	const s32 dx = spot.x - at.x, dy = spot.y - at.y;
+	if (dx * dx + dy * dy > vikingtransform::MAX_LANDING_NUDGE * vikingtransform::MAX_LANDING_NUDGE)
+		return false;
+	if (spot.x != at.x || spot.y != at.y)
+		scbw::setUnitPosition(unit, spot.x, spot.y);
+	return true;
+}
+
+} //unnamed namespace
+
+namespace vikingtransform {
+
+void buttonPressed(u32 actVar, u8 queued) {
+	u8 toForm;
+	if (actVar == ACTVAR_TO_ASSAULT)
+		toForm = (u8)VIKING_ASSAULT;
+	else if (actVar == ACTVAR_TO_FIGHTER)
+		toForm = (u8)VIKING_FIGHTER;
+	else
+		return;
+	u8 command[VIKING_TRANSFORM_BYTES] = { CMD_VIKING_TRANSFORM, toForm, (u8)(queued ? 1 : 0) };
+	selexe::queueCommand(command, VIKING_TRANSFORM_BYTES);
+}
+
+void recvTransform(const u8* packet) {
+	const u16 toForm = toFormUnit(packet[1]);
+	const Bool32 queued = packet[2] != 0;
+	if (toForm == 0)
+		return;
+	const u16 from = sourceForm(toForm);
+	*selectionIndexStart = 0;
+	for (CUnit* unit = selsync::nextSelected(); unit != NULL; unit = selsync::nextSelected()) {
+		if (unit->id != from || !(unit->status & UnitStatus::Completed))
+			continue;
+		if (unit->status & (UnitStatus::InTransport | UnitStatus::InBuilding))
+			continue;
+		if (!queued && unit->mainOrderId == ORDER_VIKING_TRANSFORM)
+			continue;
+		issueOrder(unit, ORDER_VIKING_TRANSFORM, queued);
+	}
+}
+
+void orderTransform(CUnit* unit) {
+	if (unit->id != VIKING_ASSAULT && unit->id != VIKING_FIGHTER) {
+		unit->orderToIdle();
+		return;
+	}
+
+	if (unit->mainOrderState == STATE_STOP) {
+		if (unit->movementFlags & MovementFlags::Accelerating)
+			holdPosition(unit);
+		unit->mainOrderState = STATE_START;
+	}
+
+	if (unit->mainOrderState == STATE_START) {
+		if (unit->movementFlags & MovementFlags::Accelerating)
+			return;
+		const u8 facing = unit->currentDirection1;
+		if (unit->id == VIKING_FIGHTER) {
+			//landing: the ground form from the start, its spot settled now
+			replaceUnitWithType(unit, VIKING_ASSAULT);
+			if (!settleLanding(unit)) {
+				replaceUnitWithType(unit, VIKING_FIGHTER);
+				restoreFacing(unit, facing);
+				if (unit->playerId == *LOCAL_NATION_ID)
+					scbw::printText("Can't land there.");
+				unit->orderToIdle();
+				return;
+			}
+			restoreFacing(unit, facing);
+			unit->orderSignal &= ~1;
+			unit->sprite->mainGraphic->playIscriptAnim(IscriptAnimation::Unused1);
+			unit->mainOrderState = STATE_LANDING;
+		}
+		else {
+			//lift-off: stays the ground form until the art has risen
+			unit->orderSignal &= ~1;
+			unit->sprite->mainGraphic->playIscriptAnim(IscriptAnimation::Unused2);
+			unit->mainOrderState = STATE_LIFTING;
+		}
+		return;
+	}
+
+	if (!(unit->orderSignal & 1))
+		return;
+	unit->orderSignal &= ~1;
+	if (unit->mainOrderState == STATE_LIFTING) {
+		const u8 facing = unit->currentDirection1;
+		replaceUnitWithType(unit, VIKING_FIGHTER);
+		restoreFacing(unit, facing);
+	}
+	orderReturnToIdle(unit);
+}
+
+} //vikingtransform
+
+namespace {
+
+const u32 Func_ReplaceUnitWithType = 0x0049FED0;
+void replaceUnitWithType(CUnit* unit, u16 newUnitId) {
+	u32 newUnitId_ = newUnitId;
+	__asm {
+		PUSHAD
+		PUSH newUnitId_
+		MOV EAX, unit
+		CALL Func_ReplaceUnitWithType
+		POPAD
+	}
+}
+
+const u32 Func_OrdersHoldPositionSuicidal = 0x004EB5B0;
+void holdPosition(CUnit* unit) {
+	__asm {
+		PUSHAD
+		MOV ESI, unit
+		CALL Func_OrdersHoldPositionSuicidal
+		POPAD
+	}
+}
+
+const u32 Func_OrderReturnToIdle = 0x00463770;
+void orderReturnToIdle(CUnit* unit) {
+	__asm {
+		PUSHAD
+		MOV ESI, unit
+		CALL Func_OrderReturnToIdle
+		POPAD
+	}
+}
+
+//As CMDRECV_SiegeTank.cpp issues SiegeMode (0x4754F0), the same registers
+//and pushes: no target, no unit type, the two points the receive leaves at
+//0x6D5C24 / 0x6D5C20.
+const u32 Func_IssueOrder = 0x004754F0;
+void issueOrder(CUnit* unit, u32 orderId, Bool32 queued) {
+	Point16 unkPos1 = *(Point16*)(0x006D5C24);
+	Point16 unkPos2 = *(Point16*)(0x006D5C20);
+	CUnit* target = NULL;
+	u32 unitId = UnitId::None;
+	u32 unkQueuedOrderType = 1;
+	int x = 0, y = 0;
+	__asm {
+		PUSHAD
+		MOV EAX, y
+		MOV EDX, x
+		MOV EBX, unitId
+		MOV ESI, unit
+		PUSH unkPos1
+		PUSH unkPos2
+		PUSH target
+		PUSH orderId
+		PUSH queued
+		PUSH unkQueuedOrderType
+		CALL Func_IssueOrder
+		POPAD
+	}
+}
+
+} //unnamed namespace

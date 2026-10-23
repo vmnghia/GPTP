@@ -344,6 +344,8 @@
     <ClCompile Include="SCBW\smart_larva.cpp" />
     <ClCompile Include="hooks\recv_commands\smart_morph.cpp" />
     <ClCompile Include="hooks\recv_commands\smart_morph_inject.cpp" />
+    <ClCompile Include="hooks\recv_commands\viking_transform.cpp" />
+    <ClCompile Include="hooks\recv_commands\viking_transform_inject.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_exe.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_synced.cpp" />
     <ClCompile Include="hooks\selection_ext\sel_local.cpp" />

@@ -5,6 +5,7 @@
 #include <SCBW/console_raise.h>
 #include <SCBW/smart_rally.h>
 #include <SCBW/smart_larva.h>
+#include <SCBW/viking_transform.h>
 #include <cstring>
 
 namespace selext {
@@ -137,6 +138,10 @@ void lengths() {
 	CHECK(variableCommandLength(workerRally) == smartrally::WORKER_RALLY_BYTES);
 	const u8 morphOne[] = { smartlarva::CMD_MORPH_ONE, 0, 0 };
 	CHECK(variableCommandLength(morphOne) == smartlarva::MORPH_ONE_BYTES);
+	const u8 vikingTransform[] = { vikingtransform::CMD_VIKING_TRANSFORM, (u8)vikingtransform::VIKING_FIGHTER, 1 };
+	CHECK(variableCommandLength(vikingTransform) == 3 && vikingtransform::VIKING_TRANSFORM_BYTES == 3);
+	CHECK(vikingtransform::sourceForm(vikingtransform::VIKING_FIGHTER) == vikingtransform::VIKING_ASSAULT);
+	CHECK(vikingtransform::toFormUnit(10) == 10 && vikingtransform::toFormUnit(91) == 91 && vikingtransform::toFormUnit(5) == 0);
 }
 
 void ring() {

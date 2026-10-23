@@ -47,5 +47,9 @@ $asm5 = "$PSScriptRoot\out\dat_load_inject.asm"
 cmd /c "`"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars32.bat`" >nul 2>&1 && dumpbin /nologo /disasm `"$root\GPTP\Debug\dat_load_inject.obj`" > `"$asm5`""
 & C:\Python27\python.exe "$PSScriptRoot\check_naked_wrappers.py" $asm5
 if ($LASTEXITCODE -ne 0) { Write-Output "naked wrapper check FAILED (dat load)"; exit 1 }
+$asm6 = "$PSScriptRoot\out\viking_transform_inject.asm"
+cmd /c "`"C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars32.bat`" >nul 2>&1 && dumpbin /nologo /disasm `"$root\GPTP\Debug\viking_transform_inject.obj`" > `"$asm6`""
+& C:\Python27\python.exe "$PSScriptRoot\check_naked_wrappers.py" $asm6
+if ($LASTEXITCODE -ne 0) { Write-Output "naked wrapper check FAILED (viking transform)"; exit 1 }
 Write-Output "plugin build succeeded"
 exit 0
