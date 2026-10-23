@@ -5,12 +5,15 @@
 namespace {
 
 //0x423180, BTNSACT_DoNothing: a bare RET that only the vanilla button table
-//points at (sc_disasm callers: none). A button action gets its actVar in ECX
-//and the Shift (queued) byte in DL (the siege action 0x423450 stores DL).
+//points at (sc_disasm callers: none). A button action gets its actVar in CX
+//and the Shift (queued) byte in DL: the caller (0x459918) loads only CX
+//(`mov cx, word [esi+0xE]`), so ECX's upper half is whatever was there before
+//(the first build compared all of ECX and never matched, 2026-10-24).
 void __declspec(naked) actionStub() {
 	static u32 actVar;
 	static u32 queued;
 	__asm {
+		MOVZX ECX, CX
 		MOV actVar, ECX
 		MOVZX EDX, DL
 		MOV queued, EDX

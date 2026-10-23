@@ -10,6 +10,16 @@
 //ground form's own: header 419's Unused1 (landing) and Unused2 (lift-off)
 //play the morph's sets and end on `sigorder 1`.
 
+//Temporary, for the first in-game tests: a line at each stage of the transform
+//(printText is local only; nothing synced changes). Set to 0 once it works.
+#define VIKING_DEBUG 1
+#if VIKING_DEBUG
+#include <cstdio>
+#define VDBG(...) do { char vdbg[96]; sprintf_s(vdbg, __VA_ARGS__); scbw::printText(vdbg); } while (0)
+#else
+#define VDBG(...) do {} while (0)
+#endif
+
 namespace {
 
 void replaceUnitWithType(CUnit* unit, u16 newUnitId);	//49FED0
@@ -52,6 +62,7 @@ bool settleLanding(CUnit* unit) {
 namespace vikingtransform {
 
 void buttonPressed(u32 actVar, u8 queued) {
+	actVar &= 0xFFFF;	//BUTTON.actVar is a u16, loaded into CX only (0x459918)
 	u8 toForm;
 	if (actVar == ACTVAR_TO_ASSAULT)
 		toForm = (u8)VIKING_ASSAULT;
@@ -59,6 +70,7 @@ void buttonPressed(u32 actVar, u8 queued) {
 		toForm = (u8)VIKING_FIGHTER;
 	else
 		return;
+	VDBG("Viking: button 0x%X, to form %d%s", actVar, toForm, queued ? " (queued)" : "");
 	u8 command[VIKING_TRANSFORM_BYTES] = { CMD_VIKING_TRANSFORM, toForm, (u8)(queued ? 1 : 0) };
 	selexe::queueCommand(command, VIKING_TRANSFORM_BYTES);
 }
@@ -69,8 +81,10 @@ void recvTransform(const u8* packet) {
 	if (toForm == 0)
 		return;
 	const u16 from = sourceForm(toForm);
+	u32 seen = 0, ordered = 0;
 	*selectionIndexStart = 0;
 	for (CUnit* unit = selsync::nextSelected(); unit != NULL; unit = selsync::nextSelected()) {
+		seen++;
 		if (unit->id != from || !(unit->status & UnitStatus::Completed))
 			continue;
 		if (unit->status & (UnitStatus::InTransport | UnitStatus::InBuilding))
@@ -78,7 +92,10 @@ void recvTransform(const u8* packet) {
 		if (!queued && unit->mainOrderId == ORDER_VIKING_TRANSFORM)
 			continue;
 		issueOrder(unit, ORDER_VIKING_TRANSFORM, queued);
+		ordered++;
+		VDBG("Viking: unit %d given order 0x%X (now 0x%X)", unit->id, ORDER_VIKING_TRANSFORM, unit->mainOrderId);
 	}
+	VDBG("Viking: command 0x40 to %d, %d selected, %d ordered", toForm, seen, ordered);
 }
 
 void orderTransform(CUnit* unit) {
@@ -97,6 +114,7 @@ void orderTransform(CUnit* unit) {
 		if (unit->movementFlags & MovementFlags::Accelerating)
 			return;
 		const u8 facing = unit->currentDirection1;
+		VDBG("Viking: order start, unit %d facing %d", unit->id, facing);
 		if (unit->id == VIKING_FIGHTER) {
 			//landing: the ground form from the start, its spot settled now
 			replaceUnitWithType(unit, VIKING_ASSAULT);
@@ -105,6 +123,7 @@ void orderTransform(CUnit* unit) {
 				restoreFacing(unit, facing);
 				if (unit->playerId == *LOCAL_NATION_ID)
 					scbw::printText("Can't land there.");
+				VDBG("Viking: landing refused at %d,%d", unit->position.x, unit->position.y);
 				unit->orderToIdle();
 				return;
 			}
@@ -125,6 +144,7 @@ void orderTransform(CUnit* unit) {
 	if (!(unit->orderSignal & 1))
 		return;
 	unit->orderSignal &= ~1;
+	VDBG("Viking: morph done (state %d), unit %d", unit->mainOrderState, unit->id);
 	if (unit->mainOrderState == STATE_LIFTING) {
 		const u8 facing = unit->currentDirection1;
 		replaceUnitWithType(unit, VIKING_FIGHTER);
