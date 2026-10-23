@@ -38,20 +38,25 @@ void restoreFacing(CUnit* unit, u8 direction) {
 		scbw::setImageDirection(image, (s8)direction);
 }
 
-//Whether a ground Viking may stand where the fighter is: the tile walkable,
-//and a free spot within MAX_LANDING_NUDGE (checkUnitCollisionPos, as Recall
-//places a unit). Called with the unit already the ground form, so the test
-//is the ground form's footprint; moves it to the spot when there is one.
+//Whether a ground Viking may stand where the fighter is: a free, walkable
+//spot within MAX_LANDING_NUDGE (checkUnitCollisionPos, as Recall and Nydus
+//place a unit; it tests terrain itself). Called with the unit already the
+//ground form, so the test is the ground form's footprint; moves it to the
+//spot when there is one. The first build also required the tile's
+//isWalkable bit and refused every landing on open ground (2026-10-24): that
+//bit is not the walkability the engine places units by.
 bool settleLanding(CUnit* unit) {
 	const Point16 at = unit->position;
-	if (!scbw::getActiveTileAt(at.x, at.y).isWalkable)
-		return false;
 	Point16 spot = at;
-	if (!scbw::checkUnitCollisionPos(unit, &at, &spot, NULL, true, 0))
+	if (!scbw::checkUnitCollisionPos(unit, &at, &spot, NULL, true, 0)) {
+		VDBG("Viking: no free spot near %d,%d", at.x, at.y);
 		return false;
+	}
 	const s32 dx = spot.x - at.x, dy = spot.y - at.y;
-	if (dx * dx + dy * dy > vikingtransform::MAX_LANDING_NUDGE * vikingtransform::MAX_LANDING_NUDGE)
+	if (dx * dx + dy * dy > vikingtransform::MAX_LANDING_NUDGE * vikingtransform::MAX_LANDING_NUDGE) {
+		VDBG("Viking: nearest spot %d,%d is too far", spot.x, spot.y);
 		return false;
+	}
 	if (spot.x != at.x || spot.y != at.y)
 		scbw::setUnitPosition(unit, spot.x, spot.y);
 	return true;
@@ -123,8 +128,11 @@ void orderTransform(CUnit* unit) {
 				restoreFacing(unit, facing);
 				if (unit->playerId == *LOCAL_NATION_ID)
 					scbw::printText("Can't land there.");
-				VDBG("Viking: landing refused at %d,%d", unit->position.x, unit->position.y);
-				unit->orderToIdle();
+				//the same way back to idle as a finished transform (the first
+				//build used orderToIdle here, and the refused fighter froze)
+				orderReturnToIdle(unit);
+				VDBG("Viking: refused; now unit %d, status 0x%X, move state %d, order 0x%X",
+					unit->id, unit->status, unit->movementState, unit->mainOrderId);
 				return;
 			}
 			restoreFacing(unit, facing);
@@ -151,6 +159,8 @@ void orderTransform(CUnit* unit) {
 		restoreFacing(unit, facing);
 	}
 	orderReturnToIdle(unit);
+	VDBG("Viking: done; now unit %d, status 0x%X, move state %d, order 0x%X",
+		unit->id, unit->status, unit->movementState, unit->mainOrderId);
 }
 
 } //vikingtransform
