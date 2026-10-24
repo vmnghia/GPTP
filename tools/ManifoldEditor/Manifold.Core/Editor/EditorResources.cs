@@ -3,7 +3,8 @@ using Manifold.Core.Data;
 namespace Manifold.Core.Editor;
 
 /// <summary>
-/// The game files the editor shows: strings, icons, units.dat, and the tables and iscript.bin the .dat tabs name things with. Each is looked up
+/// The game files the editor shows: strings, icons, and the tables and iscript.bin the .dat tabs name things with (the .dat
+/// files themselves are the document's, <see cref="Model.DatSources"/>). Each is looked up
 /// through the resolver (the mod exe first, then the vanilla MPQs); the icons' palette is
 /// PyMS's Icons.pal, passed in (ticon.pcx only recolours highlighted icons). One
 /// that is missing or unreadable is left null and noted: the editor still opens, showing
@@ -13,7 +14,6 @@ public sealed class EditorResources
 {
     public const string StatTxtPath = StringTable.ArchivePath;
     public const string IconsPath = "unit\\cmdbtns\\cmdicons.grp";
-    public const string UnitsDatPath = "arr\\units.dat";
     public const string ImagesTblPath = "arr\\images.tbl";
     public const string SfxdataTblPath = "arr\\sfxdata.tbl";
     public const string PortdataTblPath = "arr\\portdata.tbl";
@@ -25,7 +25,6 @@ public sealed class EditorResources
     public StatTxt? Strings { get; private set; }
     public Grp? Icons { get; private set; }
     public uint[]? IconPalette { get; private set; }
-    public UnitsDat? Units { get; private set; }
     public StringTable? ImagesTbl { get; private set; }
     public StringTable? SfxdataTbl { get; private set; }
     public StringTable? PortdataTbl { get; private set; }
@@ -47,7 +46,6 @@ public sealed class EditorResources
         if (iconPalette is null) r.Notes.Add("Icons.pal: not found; icon numbers are shown instead of icons");
         r.Strings = r.Get(resolver, StatTxtPath, StatTxt.Parse, "string ids are shown instead of text");
         r.Icons = r.Get(resolver, IconsPath, bytes => new Grp(bytes), "icon numbers are shown instead of icons");
-        r.Units = r.Get(resolver, UnitsDatPath, UnitsDat.Parse, "the set list is not grouped by race");
         r.ImagesTbl = r.Get(resolver, ImagesTblPath, StringTable.Parse, "image names show numbers");
         r.SfxdataTbl = r.Get(resolver, SfxdataTblPath, StringTable.Parse, "sound names show numbers");
         r.PortdataTbl = r.Get(resolver, PortdataTblPath, StringTable.Parse, "portrait names show numbers");

@@ -1,3 +1,4 @@
+using ManifoldEditor.App.Dat;
 using ManifoldEditor.App.Services;
 using Manifold.Core.Data;
 using Manifold.Core.Editor;
@@ -96,13 +97,19 @@ public sealed class MainWindow : Window
     /// <summary>Shared strings the user chose to edit for every button using them (Edit for all).</summary>
     readonly HashSet<int> unlockedStrings = new();
 
-    // The pages: button sets, strings (spec §6).
+    // The pages: button sets, strings (spec §6), the .dat files (.dat spec §6).
     readonly SelectorBar pages = new();
     readonly SelectorBarItem setsPageItem = new() { Text = "Button sets", IsSelected = true };
     readonly SelectorBarItem stringsPageItem = new() { Text = "Strings" };
+    readonly SelectorBarItem dataPageItem = new() { Text = "Data" };
     Grid setsPage = null!;
     StringsPage stringsPage = null!;
+    DataPage dataPage = null!;
+    /// <summary>What the set catalog was built from: the names (strings) and the race and kind (units.dat).</summary>
     StringTable? catalogStrings;
+    DatFile? catalogUnits;
+    /// <summary>The exes whose extended .dat files the user chose to save anyway (asked once per exe while the editor runs).</summary>
+    readonly HashSet<string> extendedConfirmed = new(StringComparer.OrdinalIgnoreCase);
 
     public MainWindow()
     {
@@ -120,7 +127,7 @@ public sealed class MainWindow : Window
         {
             if (opened is not null || settings.LastExe is not { } last || !File.Exists(last)) return;
             int? lastSet = settings.LastSetId;
-            bool strings = settings.LastPage == "strings";
+            string? lastPage = settings.LastPage;
             await OpenExe(last);
             if (opened is null) return;
             if (lastSet is int id && id >= 0 && id < Card.SetCount)
@@ -129,7 +136,8 @@ public sealed class MainWindow : Window
                 SelectSet(id);
                 Refresh();
             }
-            if (strings) pages.SelectedItem = stringsPageItem;
+            if (lastPage == "strings") pages.SelectedItem = stringsPageItem;
+            else if (lastPage == "data") pages.SelectedItem = dataPageItem;
         };
     }
 
@@ -170,7 +178,7 @@ public sealed class MainWindow : Window
         {
             Window = restoredBounds ?? settings.Window,
             WindowMaximized = AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Maximized },
-            LastPage = pages.SelectedItem == stringsPageItem ? "strings" : null,
+            LastPage = pages.SelectedItem == stringsPageItem ? "strings" : pages.SelectedItem == dataPageItem ? "data" : null,
             LastSetId = opened?.State.SelectedSetId ?? settings.LastSetId,
         };
         try { settings.Save(Workspace.SettingsPath); }
@@ -243,6 +251,7 @@ public sealed class MainWindow : Window
 
         pages.Items.Add(setsPageItem);
         pages.Items.Add(stringsPageItem);
+        pages.Items.Add(dataPageItem);
         pages.SelectionChanged += (_, _) => ShowPage();
         pages.Margin = new Thickness(0, 0, 0, 8);
         Grid.SetRow(pages, 1);
@@ -252,6 +261,13 @@ public sealed class MainWindow : Window
         Grid.SetRow(stringsPage.Root, 2);
         stringsPage.Root.Visibility = Visibility.Collapsed;
         root.Children.Add(stringsPage.Root);
+
+        // The page keeps its file, sub-tab, entries and names in the settings in memory; they
+        // are written with the rest (on closing, and whenever the window saves the settings).
+        dataPage = new DataPage(() => opened, Refresh, () => settings, changed => settings = changed);
+        Grid.SetRow(dataPage.Root, 2);
+        dataPage.Root.Visibility = Visibility.Collapsed;
+        root.Children.Add(dataPage.Root);
 
         var body = new Grid { ColumnSpacing = 16 };
         setsPage = body;
@@ -380,6 +396,25 @@ public sealed class MainWindow : Window
             Run(s => s.PasteSet());
             return true;
         }, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
+        // The Data page's keys (spec §6, §7): Find, ID Jump, Revert entry.
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.F, () =>
+        {
+            if (!DataPageShows) return false;
+            dataPage.FocusFind();
+            return true;
+        }));
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.G, () =>
+        {
+            if (!DataPageShows) return false;
+            dataPage.FocusJump();
+            return true;
+        }));
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.R, () =>
+        {
+            if (!DataPageShows) return false;
+            dataPage.RevertEntry(toVanilla: false);
+            return true;
+        }, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
         return root;
     }
 
@@ -454,13 +489,19 @@ public sealed class MainWindow : Window
 
     void ShowPage()
     {
-        if (setsPage is null || stringsPage is null) return;   // a selection event while the layout is built
+        if (setsPage is null || stringsPage is null || dataPage is null) return;   // a selection event while the layout is built
         bool strings = pages.SelectedItem == stringsPageItem;
-        setsPage.Visibility = strings ? Visibility.Collapsed : Visibility.Visible;
+        bool data = pages.SelectedItem == dataPageItem;
+        // What the page being left holds in its boxes is kept (its boxes commit on losing focus, which comes later).
+        if (!data) dataPage.CommitPending();
+        setsPage.Visibility = strings || data ? Visibility.Collapsed : Visibility.Visible;
         stringsPage.Root.Visibility = strings ? Visibility.Visible : Visibility.Collapsed;
+        dataPage.Root.Visibility = data ? Visibility.Visible : Visibility.Collapsed;
         if (strings) stringsPage.Refresh();
         else Refresh();
     }
+
+    bool DataPageShows => opened is not null && dataPage.Root.Visibility == Visibility.Visible;
 
     /// <summary>Copy set to units: pick the sets that take a copy of this one (one undo step).</summary>
     async Task CopySetToUnits()
@@ -704,7 +745,8 @@ public sealed class MainWindow : Window
         settings.Save(Workspace.SettingsPath);
         unlockedStrings.Clear();
         catalogStrings = opened.State.Strings;
-        await OfferRepackStrings(path);
+        catalogUnits = opened.State.Document.Dat(DatId.Units);
+        await OfferRepackCopies(path);
         selectedPosition = 0;
         selectedButton = -1;
         panel.Visibility = Visibility.Visible;
@@ -727,12 +769,14 @@ public sealed class MainWindow : Window
             await Message("Not saved", "A string field holds text that doesn't compile: its error shows under it. Fix it, then save.");
             return false;
         }
+        if (!await ConfirmExtended()) return false;
         await WaitForCheck();
         string? error;
         byte[]? strings = null;
+        IReadOnlyList<(DatId File, byte[] Bytes)> dats = [];
         try
         {
-            error = EditorSession.Save(opened.Archive, opened.State.Document, out strings);
+            error = EditorSession.Save(opened.Archive, opened.State.Document, out strings, out dats);
         }
         catch (Exception e)
         {
@@ -744,9 +788,63 @@ public sealed class MainWindow : Window
             return false;
         }
         if (strings is not null) await WriteRepackStrings(strings);
+        WriteRepackDats(dats);
         Refresh();
         _ = CheckPending();
         return true;
+    }
+
+    /// <summary>
+    /// Before a save that writes an extended .dat file the plugin refuses (.dat spec §4): Save
+    /// anyway or Cancel, asked once per exe while the editor runs. True to go on.
+    /// </summary>
+    async Task<bool> ConfirmExtended()
+    {
+        if (opened is null || extendedConfirmed.Contains(opened.ExePath)) return true;
+        var refused = EditorSession.RefusedExtended(opened.State.Document);
+        if (refused.Count == 0) return true;
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Title = "Extended .dat file",
+            Content = new TextBlock
+            {
+                TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true,
+                Text = string.Join("\n\n", refused.Select(id =>
+                {
+                    string name = DatFormats.Of(id).FileName;
+                    return $"{name} is extended: the plugin refuses an extended {name} and the game will show its invalid-file warning.";
+                })),
+            },
+            PrimaryButtonText = "Save anyway", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Close,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return false;
+        extendedConfirmed.Add(opened.ExePath);
+        return true;
+    }
+
+    /// <summary>
+    /// After a save: each .dat file written into the exe also to &lt;to-repack&gt;\arr\ (.dat spec
+    /// §5), so a later Repack files doesn't put old values back. A copy that can't be written is
+    /// a status line; the exe keeps the edit.
+    /// </summary>
+    void WriteRepackDats(IReadOnlyList<(DatId File, byte[] Bytes)> dats)
+    {
+        if (opened is null || dats.Count == 0) return;
+        string folder = settings.RepackFolderFor(opened.ExePath);
+        var failures = new List<string>();
+        foreach (var (file, bytes) in dats)
+        {
+            try
+            {
+                DatMirror.Write(folder, file, bytes);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                failures.Add($"to-repack\\arr\\{DatFormats.Of(file).FileName} not written: {e.Message}");
+            }
+        }
+        if (failures.Count > 0) opened = opened with { Status = [.. opened.Status, .. failures] };
     }
 
     /// <summary>
@@ -777,6 +875,7 @@ public sealed class MainWindow : Window
             await Message("Not saved", refused);
             return;
         }
+        if (!await ConfirmExtended()) return;
         await WaitForCheck();
         string? error;
         // On the UI thread, as Save is: nothing can edit the document, save or repack meanwhile.
@@ -802,8 +901,8 @@ public sealed class MainWindow : Window
         opened.State.ExeName = Path.GetFileName(target);
         settings = settings with { LastExe = target };
         settings.Save(Workspace.SettingsPath);
-        // The to-repack copy is not written here (spec §9): for a test copy beside the mod,
-        // its default would be the mod's own to-repack\rez\stat_txt.tbl.
+        // The to-repack copies (strings and .dat files) are not written here (spec §9): for a
+        // test copy beside the mod, their default would be the mod's own to-repack folder.
         Refresh();
         _ = CheckPending();
     }
@@ -1087,58 +1186,108 @@ public sealed class MainWindow : Window
     }
 
     /// <summary>
-    /// On opening: when the exe's to-repack copy differs from the table in the exe (edited
-    /// in PyTBL, say), the user picks which one to edit.
+    /// On opening: when the exe's to-repack copies differ from what the editor opened (the
+    /// strings edited in PyTBL, a .dat file in PyDAT, say), one dialog lists them all, with
+    /// which side was changed more recently, and the user picks the exe's or to-repack's for
+    /// all of them (.dat spec §5).
     /// </summary>
-    async Task OfferRepackStrings(string exePath)
+    async Task OfferRepackCopies(string exePath)
     {
         var state = opened!.State;
-        if (state.Strings is null) return;
-        string? mirror = settings.MirrorFor(exePath);
-        if (mirror is null)
+        var lines = new List<string>();
+
+        // stat_txt.tbl, as before: its copy may be set elsewhere for this exe.
+        string? mirror = null;
+        if (state.Strings is not null)
         {
-            string suggested = StringMirror.PathIn(settings.RepackFolderFor(exePath));
-            mirror = File.Exists(suggested) ? suggested : "";
+            mirror = settings.MirrorFor(exePath);
+            if (mirror is null)
+            {
+                string suggested = StringMirror.PathIn(settings.RepackFolderFor(exePath));
+                mirror = File.Exists(suggested) ? suggested : "";
+            }
+            try
+            {
+                if (mirror.Length > 0)
+                {
+                    byte[]? exeTable = opened.Archive.TryRead(StringTable.ArchivePath);
+                    if (StringMirror.Compare(exeTable, mirror) == StringMirror.State.Differs)
+                        lines.Add($"{mirror}: {Newer(mirror)} was changed more recently" +
+                                  (exeTable is null ? " (the exe has no stat_txt.tbl; the editor read vanilla's)." : "."));
+                    else mirror = null;
+                }
+                else mirror = null;
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+            {
+                mirror = null;
+            }
         }
-        if (mirror.Length == 0) return;
-        byte[]? exeTable;
+
+        // The .dat files.
+        var notes = new List<string>();
+        IReadOnlyList<MirrorDiff> dats;
         try
         {
-            exeTable = opened.Archive.TryRead(StringTable.ArchivePath);
-            if (StringMirror.Compare(exeTable, mirror) != StringMirror.State.Differs) return;
+            dats = DatMirror.Differing(state.Document, settings.RepackFolderFor(exePath), exePath, notes);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return;
+            dats = [];
+            notes.Add($"to-repack\\arr: {e.Message}");
         }
-        string newer = StringMirror.IsNewerThan(mirror, exePath) ? "The to-repack copy" : "The exe";
+        if (notes.Count > 0) opened = opened with { Status = [.. opened.Status, .. notes] };
+        foreach (var diff in dats)
+            lines.Add($"{diff.Path}: {(diff.Newer ? "The to-repack copy" : "The exe")} was changed more recently.");
+        if (lines.Count == 0) return;
+
         var dialog = new ContentDialog
         {
             XamlRoot = Content.XamlRoot,
-            Title = "Two different stat_txt.tbl",
-            Content = new TextBlock
+            Title = "The to-repack copies differ",
+            Content = new ScrollViewer
             {
-                TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true,
-                Text = $"{mirror}\ndiffers from the stat_txt.tbl in {state.ExeName}" +
-                       (exeTable is null ? " (the exe has none; the editor read vanilla's)" : "") +
-                       $". {newer} was changed more recently.\n\nWhich one do you want to edit? Choosing to-repack's " +
-                       "puts it into the exe at the next save.",
+                MaxHeight = 420,
+                Content = new TextBlock
+                {
+                    TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true,
+                    Text = $"These to-repack copies differ from the files in {state.ExeName}:\n\n" + string.Join("\n", lines) +
+                           "\n\nWhich ones do you want to edit? Choosing to-repack's takes every copy listed, and puts them " +
+                           "into the exe at the next save.",
+                },
             },
             PrimaryButtonText = "The exe's",
             SecondaryButtonText = "to-repack's",
             DefaultButton = ContentDialogButton.Primary,
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Secondary) return;
-        try
+
+        var status = new List<string>();
+        foreach (var diff in dats)
         {
-            state.Document.UseOpenedStrings(StringTable.Parse(File.ReadAllBytes(mirror)));
-            catalogStrings = null;
-            opened = opened with { Status = opened.Status.Append($"Strings from {mirror} (not yet saved into the exe)").ToArray() };
+            state.Document.UseOpenedDat(diff.File, diff.Copy);
+            status.Add($"{DatFormats.Of(diff.File).ArchivePath} from {diff.Path} (not yet saved into the exe)");
         }
-        catch (Exception e) when (e is InvalidDataException or IOException or UnauthorizedAccessException)
+        // The catalog's race and kind come from units.dat: built again on the next redraw.
+        catalogUnits = null;
+        string? unreadable = null;
+        if (mirror is not null)
         {
-            await Message("Can't read the to-repack copy", $"{mirror}: {e.Message}. Editing the exe's strings.");
+            try
+            {
+                state.Document.UseOpenedStrings(StringTable.Parse(File.ReadAllBytes(mirror)));
+                catalogStrings = null;
+                status.Add($"Strings from {mirror} (not yet saved into the exe)");
+            }
+            catch (Exception e) when (e is InvalidDataException or IOException or UnauthorizedAccessException)
+            {
+                unreadable = $"{mirror}: {e.Message}. Editing the exe's strings.";
+            }
         }
+        opened = opened with { Status = [.. opened.Status, .. status] };
+        if (unreadable is not null) await Message("Can't read the to-repack copy", unreadable);
+
+        string Newer(string path) => StringMirror.IsNewerThan(path, exePath) ? "The to-repack copy" : "The exe";
     }
 
     /// <summary>With unsaved changes: Save, Don't save or Cancel. True to go on.</summary>
@@ -1233,6 +1382,8 @@ public sealed class MainWindow : Window
         bool enabled = enabledEditor.CommitPending();
         bool disabled = disabledEditor.CommitPending();
         bool strings = stringsPage.CommitPending();
+        // A .dat box holding a value out of its range stays red and records nothing: no reason to stop.
+        dataPage.CommitPending();
         return enabled && disabled && strings;
     }
 
@@ -1241,6 +1392,12 @@ public sealed class MainWindow : Window
         if (!changed) return false;
         SelectSet(opened!.State.SelectedSetId);
         if (opened.State.LastStringId is int id && stringsPage.Root.Visibility == Visibility.Visible) stringsPage.Select(id);
+        // A .dat step: the Data page, the file's tab (the sub-tab with the property) and the entry.
+        if (opened.State.LastDatPlace is DatPlace place)
+        {
+            pages.SelectedItem = dataPageItem;
+            dataPage.Show(place);
+        }
         return true;
     }
 
@@ -1282,6 +1439,15 @@ public sealed class MainWindow : Window
         updating = false;
     }
 
+    /// <summary>Whether every set keeps its group, race and kind (names are redrawn by UpdateSetItem anyway).</summary>
+    static bool SameGroups(SetCatalog a, SetCatalog b)
+    {
+        for (int i = 0; i < a.Entries.Count; i++)
+            if (a.Entries[i].Group != b.Entries[i].Group || a.Entries[i].Race != b.Entries[i].Race || a.Entries[i].Kind != b.Entries[i].Kind)
+                return false;
+        return true;
+    }
+
     void UpdateSetItem(int id)
     {
         if (opened is null || !setItems.TryGetValue(id, out var item)) return;
@@ -1317,13 +1483,19 @@ public sealed class MainWindow : Window
         if (opened is null) return;
         var state = opened.State;
         Title = state.Title;
-        if (!ReferenceEquals(catalogStrings, state.Strings))
+        var units = state.Document.Dat(DatId.Units);
+        if (!ReferenceEquals(catalogStrings, state.Strings) || !ReferenceEquals(catalogUnits, units))
         {
-            // Unit names are strings: rename the sets when they change.
+            // Unit names are strings: rename the sets when they change. Race and kind are
+            // units.dat's (StarEdit race, hero, building, add-on and subunit flags): regroup.
             catalogStrings = state.Strings;
-            opened = opened with { Catalog = SetCatalog.Build(state.UnitName, opened.Resources.Units) };
+            catalogUnits = units;
+            var before = opened.Catalog;
+            opened = opened with { Catalog = Workspace.Catalog(state) };
+            if (!SameGroups(before, opened.Catalog)) FillSetList();
         }
         if (stringsPage.Root.Visibility == Visibility.Visible) stringsPage.Refresh();
+        if (dataPage.Root.Visibility == Visibility.Visible) dataPage.Refresh();
         foreach (var id in setItems.Keys) UpdateSetItem(id);
         var entry = opened.Catalog.Entries[state.SelectedSetId];
         setTitle.Text = $"{state.SelectedSetId}  {entry.Name}";
