@@ -22,7 +22,8 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
     ButtonSet? clipboardSet;
 
     public ButtonSetDocument Document { get; } = document;
-    public string ExeName { get; } = exeName;
+    /// <summary>The exe edited; Save as moves it to the new exe.</summary>
+    public string ExeName { get; set; } = exeName;
     public int SelectedSetId { get; set; }
     /// <summary>The string the last undo or redo changed, for the window to show; null for a set-only step.</summary>
     public int? LastStringId { get; private set; }

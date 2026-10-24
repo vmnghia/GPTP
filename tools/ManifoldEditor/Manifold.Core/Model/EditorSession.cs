@@ -74,26 +74,86 @@ public static class EditorSession
     public static string? Save(IWritableArchive modExe, ButtonSetDocument document, out byte[]? stringsWritten)
     {
         stringsWritten = null;
-        var files = new List<(string, byte[])> { (ButtonSetFile.ArchivePath, ButtonSetFile.Write(document.Sets)) };
-        if (document.StringsDirty && document.Strings is StringTable strings)
-        {
-            byte[] table;
-            try { table = strings.Write(); }
-            catch (InvalidOperationException e) { return $"{StringTable.ArchivePath}: {e.Message}. Nothing was saved."; }
-            if (strings.CheckWritten(table) is string error) return $"{StringTable.ArchivePath}: {error}. Nothing was saved.";
-            files.Add((StringTable.ArchivePath, table));
-            stringsWritten = table;
-        }
+        if (FilesToSave(document, out var files, out var table) is string problem) return problem;
         try
         {
             modExe.Write(files);
         }
         catch (ArchiveBusyException e)
         {
-            stringsWritten = null;
             return e.Message;
         }
         document.MarkSaved();
+        stringsWritten = table;
+        return null;
+    }
+
+    /// <summary>
+    /// What a save writes: the 250 sets, and stat_txt.tbl when the strings changed, once the
+    /// table passes its self-check (spec §3). The problem when it doesn't; null otherwise.
+    /// </summary>
+    static string? FilesToSave(ButtonSetDocument document, out List<(string, byte[])> files, out byte[]? table)
+    {
+        files = [(ButtonSetFile.ArchivePath, ButtonSetFile.Write(document.Sets))];
+        table = null;
+        if (document.StringsDirty && document.Strings is StringTable strings)
+        {
+            try { table = strings.Write(); }
+            catch (InvalidOperationException e) { table = null; return $"{StringTable.ArchivePath}: {e.Message}. Nothing was saved."; }
+            if (strings.CheckWritten(table) is string error) { table = null; return $"{StringTable.ArchivePath}: {error}. Nothing was saved."; }
+            files.Add((StringTable.ArchivePath, table));
+        }
+        return null;
+    }
+
+    /// <summary>Why Save as can't write to <paramref name="target"/> (QoL spec §9); null when it can.</summary>
+    public static string? SaveAsProblem(string source, string target)
+    {
+        string from = Path.GetFullPath(source), to = Path.GetFullPath(target);
+        if (string.Equals(from, to, StringComparison.OrdinalIgnoreCase)) return "That is the open exe: use Save.";
+        if (string.Equals(from + ".bak", to, StringComparison.OrdinalIgnoreCase)) return "That is the open exe's backup.";
+        return null;
+    }
+
+    /// <summary>
+    /// Save as (QoL spec §9): the open exe copied to &lt;target&gt;.saving, the save's files
+    /// added to the copy, and the copy made the target (an existing target kept as .bak; an
+    /// empty one, as the save picker may leave, counts as new). Any failure leaves the target
+    /// as it was (a new or empty one removed) and the edits unsaved. Null on success, with
+    /// the document marked saved; else why not.
+    /// </summary>
+    public static string? SaveAs(string source, string target, ButtonSetDocument document, IRepackHost host, out byte[]? stringsWritten)
+    {
+        stringsWritten = null;
+        if (SaveAsProblem(source, target) is string refused) return refused;
+        if (FilesToSave(document, out var files, out var table) is string problem) return problem;
+        string name = Path.GetFileName(target), work = target + ".saving";
+        bool existed = File.Exists(target) && new FileInfo(target).Length > 0;
+        bool done = false;
+        try
+        {
+            File.Copy(source, work, overwrite: true);
+            host.AddFiles(work, files);
+            if (existed) File.Replace(work, target, target + ".bak");
+            else File.Move(work, target, overwrite: true);
+            done = true;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            return Repack.IsBusy(e) ? $"{name} is in use by another program. Nothing was saved." : $"Saving {name}: {e.Message}";
+        }
+        finally
+        {
+            // Best effort: a copy left behind is overwritten by the next Save as.
+            try
+            {
+                if (File.Exists(work)) File.Delete(work);
+                if (!done && !existed && File.Exists(target)) File.Delete(target);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        }
+        document.MarkSaved();
+        stringsWritten = table;
         return null;
     }
 

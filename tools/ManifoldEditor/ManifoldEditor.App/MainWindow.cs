@@ -224,6 +224,7 @@ public sealed class MainWindow : Window
         toolbar.Children.Add(ToolButton("Open exe...", async (_, _) => await PickExe()));
         saveButton = ToolButton("Save (Ctrl+S)", async (_, _) => await Save());
         toolbar.Children.Add(saveButton);
+        toolbar.Children.Add(ToolButton("Save as...", async (_, _) => await SaveAs()));
         toolbar.Children.Add(ToolButton("Undo (Ctrl+Z)", (_, _) => Undo()));
         toolbar.Children.Add(ToolButton("Redo (Ctrl+Y)", (_, _) => Redo()));
         repackPluginButton = ToolButton("Repack plugin...", async (_, _) => await RepackExe(RepackKind.Plugin));
@@ -742,6 +743,60 @@ public sealed class MainWindow : Window
         Refresh();
         _ = CheckPending();
         return true;
+    }
+
+    /// <summary>
+    /// Save as (QoL spec §9): the edits into a copy of the open exe at a new path, then the
+    /// editor works on that one. The original is left as it was.
+    /// </summary>
+    async Task SaveAs()
+    {
+        if (opened is null) return;
+        if (repacking)
+        {
+            await Message("Not saved", "Repack is running. Save once it has finished.");
+            return;
+        }
+        if (!CommitFields())
+        {
+            await Message("Not saved", "A string field holds text that doesn't compile: its error shows under it. Fix it, then save.");
+            return;
+        }
+        string source = opened.ExePath;
+        var picker = new FileSavePicker { SuggestedFileName = Path.GetFileNameWithoutExtension(source) + "-copy" };
+        picker.FileTypeChoices.Add("Executable", [".exe"]);
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(this));
+        if (await picker.PickSaveFileAsync() is not { } file) return;
+        string target = file.Path;
+        if (EditorSession.SaveAsProblem(source, target) is string refused)
+        {
+            await Message("Not saved", refused);
+            return;
+        }
+        var document = opened.State.Document;
+        byte[]? strings = null;
+        string? error;
+        try
+        {
+            error = await Task.Run(() => EditorSession.SaveAs(source, target, document, new StormRepackHost(), out strings));
+        }
+        catch (Exception e)
+        {
+            error = e.ToString();
+        }
+        if (error is not null)
+        {
+            await Message("Not saved", error);
+            return;
+        }
+        // The same document carries on in the new exe: undo history and the saved mark with it.
+        opened = opened with { ExePath = target, Archive = new StormArchive(target) };
+        opened.State.ExeName = Path.GetFileName(target);
+        settings = settings with { LastExe = target };
+        settings.Save(Workspace.SettingsPath);
+        if (strings is not null) await WriteRepackStrings(strings);
+        Refresh();
+        _ = CheckPending();
     }
 
     // -------- Markers and Launch (QoL spec §7-8) --------
