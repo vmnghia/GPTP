@@ -5,7 +5,9 @@ editor first") plus two of the editor's own suggestions they picked (remember th
 show the save and repack state). Their answers: Launch checks before it starts; Add new
 button starts from a template picked in a list; Save as switches to the new exe; Condition
 and Action filter as you type; the icon picker's one filter is Unused; the plugin and the
-files are repacked by two commands. Not built yet. Builds on the editor's parts 1-3
+files are repacked by two commands. Built 2026-10-24 (plan
+`docs/superpowers/plans/2026-10-24-editor-qol.md`): the rules are tested on Linux (Core
+tests), the window compiles; not yet run on Windows (§11's steps). Builds on the editor's parts 1-3
 (`2026-10-05-button-set-editor-design.md`, `2026-10-08-string-editor-design.md`,
 `2026-10-14-repack-design.md`).
 
