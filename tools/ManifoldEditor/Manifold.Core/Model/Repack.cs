@@ -201,10 +201,27 @@ public static class Repack
         FireGraftExe? layout;
         try { layout = FireGraftExe.Parse(exe); }
         catch (InvalidDataException) { layout = null; }
+        bool newer = false;
         if (layout is not null && File.Exists(pluginPath))
-            differs = !File.ReadAllBytes(pluginPath).AsSpan().SequenceEqual(exe.AsSpan(layout.PluginOffset, layout.PluginSize));
-        bool newer = differs && File.GetLastWriteTimeUtc(pluginPath) > File.GetLastWriteTimeUtc(exePath);
+        {
+            byte[] file = File.ReadAllBytes(pluginPath), packed = layout.Plugin(exe);
+            differs = !file.AsSpan().SequenceEqual(packed);
+            // Newer by link time, not by file dates: every save rewrites the exe, so a plugin
+            // built before the last save would look older than the exe (the review of 2026-10-24).
+            newer = differs && LinkTime(file) > LinkTime(packed);
+        }
         return new RepackPending(differs, newer, Scan(folder, archive).Count(f => f.TickedByDefault), line);
+    }
+
+    /// <summary>
+    /// A PE's link time (its header's TimeDateStamp): the plugin's build time, as the
+    /// project's linker runs without /Brepro. 0 when the header can't be read.
+    /// </summary>
+    static uint LinkTime(byte[] pe)
+    {
+        if (pe.Length < 0x40) return 0;
+        int at = BitConverter.ToInt32(pe, 0x3C);
+        return at < 0 || at > pe.Length - 12 ? 0 : BitConverter.ToUInt32(pe, at + 8);
     }
 
     /// <summary>The status line: the plugin in the exe against the plugin file.</summary>

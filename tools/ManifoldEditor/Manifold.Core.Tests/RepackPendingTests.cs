@@ -6,7 +6,7 @@ namespace Manifold.Core.Tests;
 public sealed class RepackPendingTests : IDisposable
 {
     readonly string root = Directory.CreateTempSubdirectory("repack-pending-").FullName;
-    readonly byte[] plugin = Make.Dll();
+    readonly byte[] plugin = Linked(Make.Dll(), 1_761_300_000);
     readonly byte[] exe;
     string ExePath => Path.Combine(root, "SCManifold.exe");
     string PluginPath => Path.Combine(root, "GPTP.qdp");
@@ -20,6 +20,13 @@ public sealed class RepackPendingTests : IDisposable
     }
 
     public void Dispose() => Directory.Delete(root, recursive: true);
+
+    /// <summary>A DLL with its PE header's link time (TimeDateStamp) set.</summary>
+    static byte[] Linked(byte[] dll, uint time)
+    {
+        BitConverter.TryWriteBytes(dll.AsSpan(BitConverter.ToInt32(dll, 0x3C) + 8), time);
+        return dll;
+    }
 
     void WritePlugin(byte[] bytes, int minutes)
     {
@@ -40,21 +47,29 @@ public sealed class RepackPendingTests : IDisposable
     }
 
     [Fact]
-    public void A_newer_different_plugin()
+    public void A_plugin_linked_later_is_newer()
     {
-        WritePlugin(Make.Dll(extra: 512), 1);
+        WritePlugin(Linked(Make.Dll(extra: 512), 1_761_300_600), 1);
         var p = Pending();
         Assert.True(p.PluginDiffers);
         Assert.True(p.PluginNewer);
     }
 
     [Fact]
-    public void An_older_different_plugin()
+    public void A_plugin_linked_earlier_is_not_newer()
     {
-        WritePlugin(Make.Dll(extra: 512), -1);
+        WritePlugin(Linked(Make.Dll(extra: 512), 1_761_299_000), 1);
         var p = Pending();
         Assert.True(p.PluginDiffers);
         Assert.False(p.PluginNewer);
+    }
+
+    [Fact]
+    public void A_build_then_a_save_of_the_exe_still_counts_newer()
+    {
+        // The daily loop: build the plugin, then save buttons (the exe's file time moves past the plugin's).
+        WritePlugin(Linked(Make.Dll(extra: 512), 1_761_300_600), -30);
+        Assert.True(Pending().PluginNewer);
     }
 
     [Fact]

@@ -131,7 +131,11 @@ plugin and the folder, so it runs off the UI thread; one at a time, none while a
 runs, and a check that fails (the exe busy) leaves the markers as they were.
 
 Core: `Repack.Pending(exeBytes, exePath, pluginPath, folder, archive)` returning whether
-the plugin differs, whether it is newer than the exe, and the count of files.
+the plugin differs, whether it is newer than the exe's plugin, and the count of files.
+"Newer" compares link times (the PE header's TimeDateStamp; the plugin is linked without
+`/Brepro`, so it is the build time), the file's against the packed plugin's. `[Amended
+2026-10-24, final review: it compared the plugin file's date with the exe's, and every save
+rewrites the exe, so build, save, F5 started the old plugin without asking.]`
 
 ## 8. Launch
 
@@ -143,13 +147,13 @@ Before starting it checks, in order:
 
 1. **Unsaved edits:** "Save the changes to SCManifold.exe before launching?" Save,
    Launch anyway, Cancel. A failed save stops here.
-2. **Newer than the exe:** the plugin differs and is newer than the exe, or files are
+2. **Newer than the exe:** the plugin differs and was built after the exe's plugin, or files are
    pending (§7): "GPTP.qdp is newer than the exe's plugin, and 2 to-repack files are new or
    changed." **Repack first**, Launch anyway, Cancel. Repack first opens Repack plugin...
    and then Repack files... (only those with something pending), as the toolbar would;
    each may be cancelled, and the game starts after them unless a repack failed.
 
-A plugin that differs but is older than the exe asks nothing: packing an older build is a
+A plugin that differs but was built before the exe's asks nothing: packing an older build is a
 choice made in the Repack dialog.
 
 Core: `LaunchCheck.Questions(dirty, pending)`: which of the two questions to ask and the
