@@ -1062,8 +1062,8 @@ public sealed class MainWindow : Window
         foreach (var slot in CardLayout.StackIcons(cell, CellSize).Reverse())
         {
             ushort frame = state.SelectedSet.Buttons[slot.ButtonIndex].Icon;
-            FrameworkElement view = icons?.Get(frame) is { } bitmap
-                ? new Image { Source = bitmap, Stretch = Stretch.Uniform }
+            FrameworkElement view = icons?.View(frame, slot.Size) is { } icon
+                ? icon
                 : new TextBlock { Text = $"#{frame}", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             var frameBorder = new Border
             {
@@ -1231,7 +1231,7 @@ public sealed class MainWindow : Window
         var b = state.SelectedSet.Buttons[selectedButton];
         panelTitle.Text = $"{state.NameOf(selectedButton)} (position {b.Position})";
         var iconRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        if (icons?.Get(b.Icon) is { } bitmap) iconRow.Children.Add(new Image { Source = bitmap, Width = 36, Height = 34 });
+        if (icons?.View(b.Icon, 36) is { } icon) iconRow.Children.Add(icon);
         iconRow.Children.Add(new TextBlock
         {
             Text = b.Icon < iconNames.Count ? $"{b.Icon}: {iconNames[b.Icon]}" : $"{b.Icon}",
@@ -1290,7 +1290,7 @@ public sealed class MainWindow : Window
         for (int frame = 0; frame < count; frame++)
         {
             var tile = new StackPanel { Width = 64, Tag = frame };
-            if (icons.Get(frame) is { } bitmap) tile.Children.Add(new Image { Source = bitmap, Width = 36, Height = 34 });
+            if (icons.View(frame, 36) is { } icon) tile.Children.Add(icon);
             tile.Children.Add(new TextBlock
             {
                 Text = frame < iconNames.Count ? $"{frame} {iconNames[frame]}" : frame.ToString(),
