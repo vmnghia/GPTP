@@ -64,8 +64,11 @@ Landing settleLanding(CUnit* unit, Point16* away) {
 	//its 4th argument (GPTP's "hideErrorMsg") decides an unwalkable start: 0 gives
 	//up there (an error, 0x49D514), 1 searches on for walkable ground - the
 	//Viking over water or a cliff must, as SC2's (2026-10-25)
-	if (!scbw::checkUnitCollisionPos(unit, &at, &spot, NULL, true, 0))
-		VDBG("Viking: no free spot near %d,%d", at.x, at.y);
+	//the search box, LANDING_SEARCH either side (the search clamps it to the map)
+	Box16 area = { (s16)(at.x - vikingtransform::LANDING_SEARCH), (s16)(at.y - vikingtransform::LANDING_SEARCH),
+		(s16)(at.x + vikingtransform::LANDING_SEARCH - 1), (s16)(at.y + vikingtransform::LANDING_SEARCH - 1) };
+	if (!scbw::checkUnitCollisionPos(unit, &at, &spot, &area, true, 0))
+		VDBG("Viking: no free spot near %d,%d (searched %d,%d-%d,%d)", at.x, at.y, area.left, area.top, area.right, area.bottom);
 	else {
 		const s32 dx = spot.x - at.x, dy = spot.y - at.y;
 		found = dx * dx + dy * dy <= vikingtransform::MAX_LANDING_NUDGE * vikingtransform::MAX_LANDING_NUDGE
