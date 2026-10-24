@@ -11,6 +11,12 @@ public sealed record RepackFile(string MpqPath, byte[] Data, RepackState State, 
     public bool TickedByDefault => State != RepackState.Same && Warning is null;
 }
 
+/// <summary>
+/// What waits to be repacked (QoL spec §7): the plugin file differs from the exe's (and is
+/// newer than the exe), how many to-repack files Repack files would tick, and the status line.
+/// </summary>
+public sealed record RepackPending(bool PluginDiffers, bool PluginNewer, int Files, string PluginLine);
+
 /// <summary>What Repack needs from StormLib: adding files to an MPQ, and reading one.</summary>
 public interface IRepackHost
 {
@@ -59,7 +65,7 @@ public static class Repack
     const int ERROR_ACCESS_DENIED = 5, ERROR_SHARING_VIOLATION = 32, ERROR_LOCK_VIOLATION = 33;
 
     /// <summary>Another program holds the exe: .NET's file errors, or StormLib's Win32 error codes.</summary>
-    static bool IsBusy(Exception e) =>
+    internal static bool IsBusy(Exception e) =>
         e is UnauthorizedAccessException ||
         e is IOException && (e.HResult & 0xFFFF) is ERROR_SHARING_VIOLATION or ERROR_LOCK_VIOLATION or ERROR_ACCESS_DENIED ||
         e is Win32Exception { NativeErrorCode: ERROR_SHARING_VIOLATION or ERROR_LOCK_VIOLATION or ERROR_ACCESS_DENIED };
@@ -182,6 +188,23 @@ public static class Repack
             return (null, $"{path} can't be read: {e.Message}");
         }
         return FireGraftExe.DllProblem(bytes) is string problem ? (null, $"{Path.GetFileName(path)}: {problem}") : (bytes, null);
+    }
+
+    /// <summary>
+    /// The toolbar's markers and Launch's check. A missing plugin or folder is nothing
+    /// pending; a busy exe or folder throws, and the caller keeps what it showed.
+    /// </summary>
+    public static RepackPending Pending(byte[] exe, string exePath, string pluginPath, string folder, IArchive archive)
+    {
+        string line = PluginStatus(exe, exePath, pluginPath);
+        bool differs = false;
+        FireGraftExe? layout;
+        try { layout = FireGraftExe.Parse(exe); }
+        catch (InvalidDataException) { layout = null; }
+        if (layout is not null && File.Exists(pluginPath))
+            differs = !File.ReadAllBytes(pluginPath).AsSpan().SequenceEqual(exe.AsSpan(layout.PluginOffset, layout.PluginSize));
+        bool newer = differs && File.GetLastWriteTimeUtc(pluginPath) > File.GetLastWriteTimeUtc(exePath);
+        return new RepackPending(differs, newer, Scan(folder, archive).Count(f => f.TickedByDefault), line);
     }
 
     /// <summary>The status line: the plugin in the exe against the plugin file.</summary>
