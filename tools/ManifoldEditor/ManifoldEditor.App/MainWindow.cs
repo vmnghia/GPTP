@@ -72,7 +72,6 @@ public sealed class MainWindow : Window
     readonly StackPanel panel = new() { Spacing = 8 };
     readonly TextBlock panelTitle = new() { FontWeight = FontWeights.SemiBold };
     readonly Button iconButton = new() { MinWidth = 120, HorizontalContentAlignment = HorizontalAlignment.Left };
-    readonly GridView iconGrid = new() { IsItemClickEnabled = true, SelectionMode = ListViewSelectionMode.None, Width = 560, Height = 420 };
     readonly FunctionBox conditionBox = new("Condition");
     readonly FunctionBox actionBox = new("Action");
     readonly NumberBox slotBox = Number("Slot (1-15)");
@@ -303,9 +302,6 @@ public sealed class MainWindow : Window
 
         // Button panel.
         panel.Children.Add(panelTitle);
-        iconGrid.ItemClick += OnIconPicked;
-        iconButton.Flyout = new Flyout { Content = iconGrid };
-        iconButton.Flyout.Opening += (_, _) => FillIconGrid();
         panel.Children.Add(new TextBlock { Text = "Icon" });
         panel.Children.Add(iconButton);
         slotBox.Maximum = Card.MaxPosition;
@@ -681,6 +677,10 @@ public sealed class MainWindow : Window
             return;
         }
         icons = new IconCache(opened.Resources);
+        // The exe's icons differ from the last one's: a new picker.
+        var picker = new IconPicker(icons, iconNames) { Used = () => IconSearch.Used(opened!.State.Document.Sets) };
+        picker.Picked += frame => EditSelected(b => b with { Icon = (ushort)frame });
+        iconButton.Flyout = picker.Flyout;
         settings = settings with { LastExe = path };
         settings.Save(Workspace.SettingsPath);
         unlockedStrings.Clear();
@@ -1025,15 +1025,6 @@ public sealed class MainWindow : Window
         Run(s => s.EditButton(selectedButton, edit(s.SelectedSet.Buttons[selectedButton])));
     }
 
-    void OnIconPicked(object sender, ItemClickEventArgs e)
-    {
-        if (e.ClickedItem is FrameworkElement { Tag: int frame })
-        {
-            EditSelected(b => b with { Icon = (ushort)frame });
-            iconButton.Flyout.Hide();
-        }
-    }
-
     // -------- Set list --------
 
     void FillSetList()
@@ -1349,24 +1340,6 @@ public sealed class MainWindow : Window
         editor.Show(field == StringField.Enabled ? $"Tooltip, string {id}" : $"Disabled text, string {id}",
             table.Segment(id), field == StringField.Enabled, shared, shared.Length > 0 && !unlockedStrings.Contains(id),
             opened.Resources.TextColours);
-    }
-
-    void FillIconGrid()
-    {
-        if (iconGrid.Items.Count > 0 || icons is null) return;
-        int count = Math.Max(icons.Count, iconNames.Count);
-        for (int frame = 0; frame < count; frame++)
-        {
-            var tile = new StackPanel { Width = 64, Tag = frame };
-            if (icons.View(frame, 36) is { } icon) tile.Children.Add(icon);
-            tile.Children.Add(new TextBlock
-            {
-                Text = frame < iconNames.Count ? $"{frame} {iconNames[frame]}" : frame.ToString(),
-                FontSize = 10, TextTrimming = TextTrimming.CharacterEllipsis,
-            });
-            ToolTipService.SetToolTip(tile, frame < iconNames.Count ? iconNames[frame] : frame.ToString());
-            iconGrid.Items.Add(tile);
-        }
     }
 }
 
