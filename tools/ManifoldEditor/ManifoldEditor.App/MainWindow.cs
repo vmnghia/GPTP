@@ -33,7 +33,7 @@ public sealed class MainWindow : Window
     /// <summary>A repack is running in the background: no save may swap the exe under it.</summary>
     bool repacking;
     /// <summary>The toolbar buttons whose text shows a marker (QoL spec §7).</summary>
-    Button saveButton = null!, repackButton = null!;
+    Button saveButton = null!, repackPluginButton = null!, repackFilesButton = null!;
     /// <summary>The window's bounds while not maximized or minimized, kept for the settings.</summary>
     WindowRect? restoredBounds;
     OpenedExe? opened;
@@ -219,9 +219,11 @@ public sealed class MainWindow : Window
         toolbar.Children.Add(saveButton);
         toolbar.Children.Add(ToolButton("Undo (Ctrl+Z)", (_, _) => Undo()));
         toolbar.Children.Add(ToolButton("Redo (Ctrl+Y)", (_, _) => Redo()));
-        repackButton = ToolButton("Repack...", async (_, _) => await RepackExe());
-        repackButton.Margin = new Thickness(12, 0, 6, 0);
-        toolbar.Children.Add(repackButton);
+        repackPluginButton = ToolButton("Repack plugin...", async (_, _) => await RepackExe(RepackKind.Plugin));
+        repackPluginButton.Margin = new Thickness(12, 0, 6, 0);
+        toolbar.Children.Add(repackPluginButton);
+        repackFilesButton = ToolButton("Repack files...", async (_, _) => await RepackExe(RepackKind.Files));
+        toolbar.Children.Add(repackFilesButton);
         var more = new MenuFlyout();
         more.Items.Add(Item("StarCraft folder...", async () => await PickStarCraftDir()));
         more.Items.Add(Item("Re-import FireGraft's sets...", async () => await ReimportFireGraft()));
@@ -734,12 +736,13 @@ public sealed class MainWindow : Window
     // -------- Repack (Repack spec §6) --------
 
     /// <summary>
-    /// The plugin and the to-repack files into the exe, in place of FireGraft and PyMPQ: on the
-    /// saved exe, so unsaved edits are saved first. The exe is reopened afterwards.
+    /// The plugin, or the to-repack files, into the exe, in place of FireGraft and PyMPQ: on
+    /// the saved exe, so unsaved edits are saved first. The exe is reopened afterwards. True
+    /// when it repacked, false when it failed (its message shown), null when cancelled.
     /// </summary>
-    async Task RepackExe()
+    async Task<bool?> RepackExe(RepackKind kind)
     {
-        if (opened is null || repacking) return;
+        if (opened is null || repacking) return null;
         CommitFields();
         string exePath = opened.ExePath, name = Path.GetFileName(exePath);
         if (opened.State.Document.IsDirty)
@@ -753,22 +756,22 @@ public sealed class MainWindow : Window
                 CloseButtonText = "Cancel",
                 DefaultButton = ContentDialogButton.Primary,
             };
-            if (await ask.ShowAsync() != ContentDialogResult.Primary) return;
-            if (!await Save()) return;
+            if (await ask.ShowAsync() != ContentDialogResult.Primary) return null;
+            if (!await Save()) return false;
         }
 
         RepackChoice? choice;
         try
         {
             choice = await new RepackDialog(Content.XamlRoot, WinRT.Interop.WindowNative.GetWindowHandle(this), exePath,
-                opened.Archive, () => settings, changed => { settings = changed; settings.Save(Workspace.SettingsPath); }).ShowAsync();
+                opened.Archive, kind, () => settings, changed => { settings = changed; settings.Save(Workspace.SettingsPath); }).ShowAsync();
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
         {
             await Message("Can't repack", $"{name} can't be read: {e.Message}", e.ToString());
-            return;
+            return false;
         }
-        if (choice is null) return;
+        if (choice is null) return null;
 
         string? error;
         repacking = true;
@@ -791,7 +794,7 @@ public sealed class MainWindow : Window
         {
             Refresh();
             await Message("Not repacked", error);
-            return;
+            return false;
         }
         await OpenExe(exePath);
         string what = string.Join(" and ", new[]
@@ -800,6 +803,7 @@ public sealed class MainWindow : Window
             choice.Files.Count == 0 ? null : $"{choice.Files.Count} file{(choice.Files.Count == 1 ? "" : "s")}",
         }.OfType<string>());
         await Message("Repacked", $"{name} now holds {what}. The previous exe is {name}.bak.");
+        return true;
     }
 
     // -------- The to-repack copy of stat_txt.tbl (spec §7) --------

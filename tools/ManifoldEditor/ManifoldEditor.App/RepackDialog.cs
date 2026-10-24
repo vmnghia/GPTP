@@ -14,16 +14,26 @@ namespace ManifoldEditor.App;
 /// <summary>What the user chose to repack: the ticked files, and the plugin (null: leave the exe's).</summary>
 sealed record RepackChoice(IReadOnlyList<(string Path, byte[] Data)> Files, byte[]? Plugin);
 
+/// <summary>Which of the two Repack commands (QoL spec §6).</summary>
+enum RepackKind { Plugin, Files }
+
 /// <summary>
-/// The Repack dialog (Repack spec §6): the plugin against the exe's, the to-repack folder's
-/// files with their state, both paths with Change... and Default. It decides nothing:
-/// Manifold.Core's Repack scans and compares, and the caller runs the repack.
+/// The Repack dialogs (Repack spec §6, QoL spec §6). Repack plugin: the plugin against the
+/// exe's, its path with Change... and Default. Repack files: the to-repack folder (Change...,
+/// Default), a filter, Select all, the count, and the files with their state. It decides
+/// nothing: Manifold.Core's Repack and RepackSelection do, and the caller runs the repack.
 /// </summary>
-sealed class RepackDialog(XamlRoot root, nint windowHandle, string exePath, IArchive exe,
+sealed class RepackDialog(XamlRoot root, nint windowHandle, string exePath, IArchive exe, RepackKind kind,
     Func<EditorSettings> settings, Action<EditorSettings> saveSettings)
 {
     readonly StackPanel body = new() { Spacing = 8, MinWidth = 560 };
-    readonly List<(RepackFile File, CheckBox Box)> rows = new();
+    readonly TextBox filter = new() { PlaceholderText = "Filter by path" };
+    readonly CheckBox selectAll = new() { Content = "Select all" };
+    readonly TextBlock count = new() { FontSize = 12, Opacity = 0.75, VerticalAlignment = VerticalAlignment.Center };
+    /// <summary>Select all and the count: one panel for the dialog's life, as Fill runs again on a folder change.</summary>
+    readonly StackPanel selectRow = new() { Orientation = Orientation.Horizontal, Spacing = 12 };
+    readonly List<CheckBox> boxes = new();
+    RepackSelection selection = new([]);
     ContentDialog? dialog;
     byte[] exeBytes = [];
     byte[]? plugin;
@@ -32,10 +42,20 @@ sealed class RepackDialog(XamlRoot root, nint windowHandle, string exePath, IArc
     public async Task<RepackChoice?> ShowAsync()
     {
         exeBytes = File.ReadAllBytes(exePath);
+        selectRow.Children.Add(selectAll);
+        selectRow.Children.Add(count);
+        filter.TextChanged += (_, _) => ApplyFilter();
+        selectAll.Click += (_, _) =>
+        {
+            selection.ClickSelectAll();
+            for (int i = 0; i < boxes.Count; i++) boxes[i].IsChecked = selection.IsTicked(i);
+            UpdateButton();
+        };
+        string name = Path.GetFileName(exePath);
         dialog = new ContentDialog
         {
             XamlRoot = root,
-            Title = $"Repack {Path.GetFileName(exePath)}",
+            Title = kind == RepackKind.Plugin ? $"Repack the plugin into {name}" : $"Repack files into {name}",
             Content = new ScrollViewer { Content = body, MaxHeight = 560 },
             PrimaryButtonText = "Repack",
             CloseButtonText = "Cancel",
@@ -43,8 +63,9 @@ sealed class RepackDialog(XamlRoot root, nint windowHandle, string exePath, IArc
         };
         Fill();
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return null;
-        var files = rows.Where(r => r.Box.IsChecked == true).Select(r => (r.File.MpqPath, r.File.Data)).ToList();
-        return new RepackChoice(files, plugin);
+        return kind == RepackKind.Plugin
+            ? new RepackChoice([], plugin)
+            : new RepackChoice(selection.Ticked.Select(f => (f.MpqPath, f.Data)).ToList(), null);
     }
 
     static TextBlock Text(string text, double size = 13, double opacity = 1) =>
@@ -53,9 +74,14 @@ sealed class RepackDialog(XamlRoot root, nint windowHandle, string exePath, IArc
     void Fill()
     {
         body.Children.Clear();
-        rows.Clear();
-        var s = settings();
+        if (kind == RepackKind.Plugin) FillPlugin();
+        else FillFiles();
+        UpdateButton();
+    }
 
+    void FillPlugin()
+    {
+        var s = settings();
         string pluginPath = s.PluginPathFor(exePath);
         body.Children.Add(new TextBlock { Text = "Plugin", FontWeight = FontWeights.SemiBold });
         body.Children.Add(Text(PluginLine(pluginPath)));
@@ -69,9 +95,13 @@ sealed class RepackDialog(XamlRoot root, nint windowHandle, string exePath, IArc
                 if (await picker.PickSingleFileAsync() is { } file) Change(settings().WithPluginPath(exePath, file.Path));
             },
             () => Change(settings().WithPluginPath(exePath, null))));
+    }
 
+    void FillFiles()
+    {
+        var s = settings();
         string folder = s.RepackFolderFor(exePath);
-        body.Children.Add(new TextBlock { Text = "To-repack folder", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 0) });
+        body.Children.Add(new TextBlock { Text = "To-repack folder", FontWeight = FontWeights.SemiBold });
         body.Children.Add(Text(folder));
         body.Children.Add(PathButtons(s.IsDefaultRepackFolder(exePath),
             async () =>
@@ -95,8 +125,17 @@ sealed class RepackDialog(XamlRoot root, nint windowHandle, string exePath, IArc
         }
         if (!Directory.Exists(folder)) body.Children.Add(Text("The folder doesn't exist: no files to add.", opacity: 0.75));
         else if (files.Count == 0) body.Children.Add(Text("No files in its subfolders (files at its top and *.bak are left out).", opacity: 0.75));
-        foreach (var file in files)
+        selection = new RepackSelection(files);
+        boxes.Clear();
+        if (files.Count > 0)
         {
+            body.Children.Add(filter);
+            body.Children.Add(selectRow);
+        }
+        for (int i = 0; i < files.Count; i++)
+        {
+            var file = files[i];
+            int index = i;
             string state = file.State switch
             {
                 RepackState.New => "new",
@@ -110,11 +149,24 @@ sealed class RepackDialog(XamlRoot root, nint windowHandle, string exePath, IArc
                     Text = $"Differs from the exe's: {file.Warning}", FontSize = 12, TextWrapping = TextWrapping.Wrap,
                     Foreground = new SolidColorBrush(Colors.OrangeRed),
                 });
-            var box = new CheckBox { Content = label, IsChecked = file.TickedByDefault };
-            box.Click += (_, _) => UpdateButton();
-            rows.Add((file, box));
+            var box = new CheckBox { Content = label, IsChecked = selection.IsTicked(index) };
+            box.Click += (_, _) =>
+            {
+                selection.SetTicked(index, box.IsChecked == true);
+                UpdateButton();
+            };
+            boxes.Add(box);
             body.Children.Add(box);
         }
+        ApplyFilter();
+    }
+
+    /// <summary>Rows whose path holds the filter show; the others are collapsed and keep their ticks.</summary>
+    void ApplyFilter()
+    {
+        selection.Filter = filter.Text;
+        var visible = selection.Visible.ToHashSet();
+        for (int i = 0; i < boxes.Count; i++) boxes[i].Visibility = visible.Contains(i) ? Visibility.Visible : Visibility.Collapsed;
         UpdateButton();
     }
 
@@ -151,6 +203,10 @@ sealed class RepackDialog(XamlRoot root, nint windowHandle, string exePath, IArc
 
     void UpdateButton()
     {
-        if (dialog is not null) dialog.IsPrimaryButtonEnabled = plugin is not null || rows.Any(r => r.Box.IsChecked == true);
+        selectAll.IsChecked = selection.SelectAllState;
+        selectAll.IsEnabled = selection.CanSelectAll;
+        count.Text = selection.CountText;
+        if (dialog is not null)
+            dialog.IsPrimaryButtonEnabled = kind == RepackKind.Plugin ? plugin is not null : selection.Ticked.Count > 0;
     }
 }
