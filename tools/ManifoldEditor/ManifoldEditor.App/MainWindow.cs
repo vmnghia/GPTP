@@ -84,6 +84,9 @@ public sealed class MainWindow : Window
     readonly StringEditorView disabledEditor = new(offerCopy: true);
     readonly Button enabledNew = new() { Content = "New string" };
     readonly Button disabledNew = new() { Content = "New string" };
+    /// <summary>Add new button's picker, and the slot it adds to.</summary>
+    readonly ButtonPicker buttonPicker = new();
+    ushort addPosition;
     /// <summary>Shared strings the user chose to edit for every button using them (Edit for all).</summary>
     readonly HashSet<int> unlockedStrings = new();
 
@@ -302,6 +305,7 @@ public sealed class MainWindow : Window
 
         // Button panel.
         panel.Children.Add(panelTitle);
+        buttonPicker.Picked += AddButton;
         panel.Children.Add(new TextBlock { Text = "Icon" });
         panel.Children.Add(iconButton);
         slotBox.Maximum = Card.MaxPosition;
@@ -1229,6 +1233,8 @@ public sealed class MainWindow : Window
         };
 
         var menu = new MenuFlyout();
+        menu.Items.Add(Item("Add new button...", () => ShowButtonPicker(border, cell.Position)));
+        menu.Items.Add(new MenuFlyoutSeparator());
         // The menu acts on the button pressed (the selected one, when it is in this cell).
         int MenuButton() => cell.ButtonIndexes.Contains(selectedButton) ? selectedButton : pressed;
         var copyItem = Item("Copy (Ctrl+C)", () => { if (MenuButton() >= 0) { state.CopyButton(MenuButton()); Refresh(); } });
@@ -1242,6 +1248,29 @@ public sealed class MainWindow : Window
         menu.Items.Add(deleteItem);
         border.ContextFlyout = menu;
         return border;
+    }
+
+    /// <summary>Add new button (QoL spec §3): the templates, at the slot right-clicked.</summary>
+    void ShowButtonPicker(FrameworkElement at, ushort position)
+    {
+        if (opened is null) return;
+        var state = opened.State;
+        addPosition = position;
+        var templates = ButtonTemplates.Build(state.Document.Sets, state.Document.Vanilla, state.Text);
+        buttonPicker.Fill(templates,
+            query => ButtonTemplates.Filter(templates, query, state.Conditions, state.Actions, iconNames),
+            address => state.Actions.ByAddress(address)?.Name ?? $"0x{address:X8}", icons);
+        buttonPicker.Flyout.ShowAt(at);
+    }
+
+    void AddButton(Manifold.Core.Data.Button template)
+    {
+        if (opened is null) return;
+        CommitFields();
+        if (!opened.State.AddButton(addPosition, template)) return;
+        selectedPosition = addPosition;
+        selectedButton = opened.State.SelectedSet.Buttons.Count - 1;
+        Refresh();
     }
 
     static Windows.UI.Color Color(byte a, byte r, byte g, byte b) => Windows.UI.Color.FromArgb(a, r, g, b);

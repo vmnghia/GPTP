@@ -119,6 +119,10 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
         clipboardButton is Button button && IsPosition(position) &&
         Apply(s => CardEdits.Paste(s, button, position), "Paste");
 
+    /// <summary>Add new button: the button at the slot, after the buttons there (as Paste), one undo step.</summary>
+    public bool AddButton(ushort position, Button button) =>
+        IsPosition(position) && Apply(s => CardEdits.Paste(s, button with { Position = position }, position), "Add button");
+
     public bool DeleteButton(int index) => IsIndex(index) && Apply(s => CardEdits.Delete(s, index), "Delete");
 
     public bool EditButton(int index, Button button) =>
