@@ -32,6 +32,10 @@ public sealed class MainWindow : Window
     readonly StackPanel toolbar = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
     /// <summary>A repack is running in the background: no save may swap the exe under it.</summary>
     bool repacking;
+    /// <summary>The toolbar buttons whose text shows a marker (QoL spec §7).</summary>
+    Button saveButton = null!, repackButton = null!;
+    /// <summary>The window's bounds while not maximized or minimized, kept for the settings.</summary>
+    WindowRect? restoredBounds;
     OpenedExe? opened;
     IconCache? icons;
     IReadOnlyList<string> iconNames = Array.Empty<string>();
@@ -59,6 +63,8 @@ public sealed class MainWindow : Window
     readonly TextBlock buttonListTitle = new() { FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 4) };
     readonly TextBlock checks = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0) };
     readonly TextBlock status = new() { TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis };
+    /// <summary>The status line's frame: a click anywhere on it opens the details.</summary>
+    readonly Border statusBar = new() { Background = new SolidColorBrush(Colors.Transparent) };
     readonly Button pasteSetButton = new() { Content = "Paste set" };
     readonly Button renameButton = new() { Content = "Rename..." };
 
@@ -95,16 +101,89 @@ public sealed class MainWindow : Window
         settings = Workspace.LoadSettings();
         Title = "Manifold Editor";
         Content = BuildLayout();
-        AppWindow.Resize(new Windows.Graphics.SizeInt32(1400, 860));
+        PlaceWindow();
         AppWindow.Closing += OnClosing;
         iconNames = Workspace.IconNames();
         ShowNothingOpen();
         // Reopen the last exe once the window is up, so a dialog has somewhere to show.
         ((FrameworkElement)Content).Loaded += async (_, _) =>
         {
-            if (opened is null && settings.LastExe is { } last && File.Exists(last))
-                await OpenExe(last);
+            if (opened is not null || settings.LastExe is not { } last || !File.Exists(last)) return;
+            int? lastSet = settings.LastSetId;
+            bool strings = settings.LastPage == "strings";
+            await OpenExe(last);
+            if (opened is null) return;
+            if (lastSet is int id && id >= 0 && id < Card.SetCount)
+            {
+                opened.State.SelectedSetId = id;
+                SelectSet(id);
+                Refresh();
+            }
+            if (strings) pages.SelectedItem = stringsPageItem;
         };
+    }
+
+    // -------- The window's place (QoL spec §10) --------
+
+    /// <summary>Where the window was left, when that is still on a display; else the default size.</summary>
+    void PlaceWindow()
+    {
+        var areas = new List<WindowRect>();
+        // Indexed: enumerating FindAll's list throws in some Windows App SDK versions.
+        var displays = DisplayArea.FindAll();
+        for (int i = 0; i < displays.Count; i++)
+        {
+            var work = displays[i].WorkArea;
+            areas.Add(new WindowRect(work.X, work.Y, work.Width, work.Height));
+        }
+        if (WindowPlacement.Restore(settings.Window, areas) is { } saved)
+            AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(saved.X, saved.Y, saved.Width, saved.Height));
+        else
+            AppWindow.Resize(new Windows.Graphics.SizeInt32(1400, 860));
+        restoredBounds = CurrentBounds();
+        if (settings.WindowMaximized && AppWindow.Presenter is OverlappedPresenter presenter) presenter.Maximize();
+        AppWindow.Changed += (_, e) =>
+        {
+            if ((e.DidPositionChange || e.DidSizeChange) &&
+                AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Restored })
+                restoredBounds = CurrentBounds();
+        };
+    }
+
+    WindowRect CurrentBounds() =>
+        new(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
+
+    /// <summary>The window, the page and the set, into the settings (on closing).</summary>
+    void SavePlacement()
+    {
+        settings = settings with
+        {
+            Window = restoredBounds ?? settings.Window,
+            WindowMaximized = AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Maximized },
+            LastPage = pages.SelectedItem == stringsPageItem ? "strings" : null,
+            LastSetId = opened?.State.SelectedSetId ?? settings.LastSetId,
+        };
+        try { settings.Save(Workspace.SettingsPath); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+    }
+
+    /// <summary>The status bar's lines in full, selectable, with Copy (QoL spec §10).</summary>
+    void ShowStatusDetails()
+    {
+        string text = string.Join("\r\n", opened is null ? [status.Text] : opened.Status);
+        var box = new TextBox
+        {
+            Text = text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, AcceptsReturn = true,
+            FontFamily = new FontFamily("Consolas"), FontSize = 12, MaxHeight = 360, MinWidth = 400, MaxWidth = 760,
+        };
+        var copy = new Button { Content = "Copy" };
+        copy.Click += (_, _) =>
+        {
+            var data = new DataPackage();
+            data.SetText(text);
+            Clipboard.SetContent(data);
+        };
+        new Flyout { Content = new StackPanel { Spacing = 6, Children = { box, copy } } }.ShowAt(statusBar);
     }
 
     // -------- Layout --------
@@ -132,13 +211,19 @@ public sealed class MainWindow : Window
         root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
+        // QoL spec §7: the file commands, the repack and launch commands, then More.
         toolbar.Children.Add(ToolButton("Open exe...", async (_, _) => await PickExe()));
-        toolbar.Children.Add(ToolButton("Save (Ctrl+S)", async (_, _) => await Save()));
+        saveButton = ToolButton("Save (Ctrl+S)", async (_, _) => await Save());
+        toolbar.Children.Add(saveButton);
         toolbar.Children.Add(ToolButton("Undo (Ctrl+Z)", (_, _) => Undo()));
         toolbar.Children.Add(ToolButton("Redo (Ctrl+Y)", (_, _) => Redo()));
-        toolbar.Children.Add(ToolButton("StarCraft folder...", async (_, _) => await PickStarCraftDir()));
-        toolbar.Children.Add(ToolButton("Re-import FireGraft's sets...", async (_, _) => await ReimportFireGraft()));
-        toolbar.Children.Add(ToolButton("Repack...", async (_, _) => await RepackExe()));
+        repackButton = ToolButton("Repack...", async (_, _) => await RepackExe());
+        repackButton.Margin = new Thickness(12, 0, 6, 0);
+        toolbar.Children.Add(repackButton);
+        var more = new MenuFlyout();
+        more.Items.Add(Item("StarCraft folder...", async () => await PickStarCraftDir()));
+        more.Items.Add(Item("Re-import FireGraft's sets...", async () => await ReimportFireGraft()));
+        toolbar.Children.Add(new DropDownButton { Content = "More", Flyout = more, Margin = new Thickness(12, 0, 6, 0) });
         root.Children.Add(toolbar);
 
         pages.Items.Add(setsPageItem);
@@ -253,9 +338,12 @@ public sealed class MainWindow : Window
         Grid.SetColumn(right, 2);
         body.Children.Add(right);
 
-        Grid.SetRow(status, 3);
-        status.Margin = new Thickness(0, 10, 0, 0);
-        root.Children.Add(status);
+        statusBar.Child = status;
+        Grid.SetRow(statusBar, 3);
+        statusBar.Margin = new Thickness(0, 10, 0, 0);
+        statusBar.Tapped += (_, _) => ShowStatusDetails();
+        ToolTipService.SetToolTip(statusBar, "Click for details");
+        root.Children.Add(statusBar);
 
         // The toolbar already names the shortcuts; no floating accelerator tooltips.
         root.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
@@ -859,6 +947,7 @@ public sealed class MainWindow : Window
 
     async void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
+        SavePlacement();
         if (closeConfirmed || opened is null) return;
         CommitFields();
         if (!opened.State.Document.IsDirty) return;
@@ -1037,7 +1126,6 @@ public sealed class MainWindow : Window
         FillPanel();
         checks.Text = string.Join("\n", state.CheckLines());
         status.Text = string.Join("   |   ", opened.Status);
-        ToolTipService.SetToolTip(status, string.Join("\n", opened.Status));
     }
 
     void DrawCard()
