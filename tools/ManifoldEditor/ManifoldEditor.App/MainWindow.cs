@@ -73,8 +73,8 @@ public sealed class MainWindow : Window
     readonly TextBlock panelTitle = new() { FontWeight = FontWeights.SemiBold };
     readonly Button iconButton = new() { MinWidth = 120, HorizontalContentAlignment = HorizontalAlignment.Left };
     readonly GridView iconGrid = new() { IsItemClickEnabled = true, SelectionMode = ListViewSelectionMode.None, Width = 560, Height = 420 };
-    readonly ComboBox conditionBox = new() { Header = "Condition", HorizontalAlignment = HorizontalAlignment.Stretch };
-    readonly ComboBox actionBox = new() { Header = "Action", HorizontalAlignment = HorizontalAlignment.Stretch };
+    readonly FunctionBox conditionBox = new("Condition");
+    readonly FunctionBox actionBox = new("Action");
     readonly NumberBox slotBox = Number("Slot (1-15)");
     readonly TextBlock slotNote = Small();
     readonly NumberBox conditionVar = Number("Condition var");
@@ -322,10 +322,10 @@ public sealed class MainWindow : Window
         };
         panel.Children.Add(slotBox);
         panel.Children.Add(slotNote);
-        conditionBox.SelectionChanged += (_, _) => EditSelected(b => b with { Condition = Pick(conditionBox, opened!.State.Conditions, b.Condition) });
-        actionBox.SelectionChanged += (_, _) => EditSelected(b => b with { Action = Pick(actionBox, opened!.State.Actions, b.Action) });
-        panel.Children.Add(conditionBox);
-        panel.Children.Add(actionBox);
+        conditionBox.Picked += address => EditSelected(b => b with { Condition = address });
+        actionBox.Picked += address => EditSelected(b => b with { Action = address });
+        panel.Children.Add(conditionBox.Root);
+        panel.Children.Add(actionBox.Root);
         conditionVar.ValueChanged += (_, _) => EditSelected(b => b with { ConditionVar = Value(conditionVar) });
         actionVar.ValueChanged += (_, _) => EditSelected(b => b with { ActionVar = Value(actionVar) });
         enabledString.ValueChanged += (_, _) => EditSelected(b => b with { EnabledString = Value(enabledString) });
@@ -636,12 +636,6 @@ public sealed class MainWindow : Window
 
     static ushort Value(NumberBox box) =>
         double.IsNaN(box.Value) ? (ushort)0 : (ushort)Math.Clamp(Math.Round(box.Value), 0, ushort.MaxValue);
-
-    /// <summary>The address picked in a function box; an unknown one (the last item) stays.</summary>
-    static uint Pick(ComboBox box, FunctionTable table, uint current) =>
-        box.SelectedIndex >= 0 && box.SelectedIndex < table.Functions.Count
-            ? table.Functions[box.SelectedIndex].Address
-            : current;
 
     // -------- Opening and saving --------
 
@@ -1306,8 +1300,8 @@ public sealed class MainWindow : Window
             // Empty, not the last button's values greyed out.
             panelTitle.Text = "Select a button";
             iconButton.Content = null;
-            conditionBox.ItemsSource = null;
-            actionBox.ItemsSource = null;
+            conditionBox.Clear();
+            actionBox.Clear();
             foreach (var box in new[] { slotBox, conditionVar, actionVar, enabledString, disabledString })
                 box.Value = double.NaN;
             slotNote.Text = "";
@@ -1326,8 +1320,8 @@ public sealed class MainWindow : Window
             VerticalAlignment = VerticalAlignment.Center,
         });
         iconButton.Content = iconRow;
-        FillFunctions(conditionBox, state.Conditions, b.Condition, state.ConditionLabel);
-        FillFunctions(actionBox, state.Actions, b.Action, state.ActionLabel);
+        conditionBox.Show(state.Conditions, b.Condition, state.ConditionLabel);
+        actionBox.Show(state.Actions, b.Action, state.ActionLabel);
         slotBox.Value = b.Position;
         slotNote.Text = state.SlotNote(selectedButton, b.Position);
         conditionVar.Value = b.ConditionVar;
@@ -1355,20 +1349,6 @@ public sealed class MainWindow : Window
         editor.Show(field == StringField.Enabled ? $"Tooltip, string {id}" : $"Disabled text, string {id}",
             table.Segment(id), field == StringField.Enabled, shared, shared.Length > 0 && !unlockedStrings.Contains(id),
             opened.Resources.TextColours);
-    }
-
-    /// <summary>The table's functions as "name (address)"; an address not in it is added last.</summary>
-    static void FillFunctions(ComboBox box, FunctionTable table, uint address, Func<uint, string> label)
-    {
-        var items = table.Functions.Select(f => label(f.Address)).ToList();
-        int index = table.Functions.ToList().FindIndex(f => f.Address == address);
-        if (index < 0)
-        {
-            items.Add(label(address));
-            index = items.Count - 1;
-        }
-        box.ItemsSource = items;
-        box.SelectedIndex = index;
     }
 
     void FillIconGrid()
