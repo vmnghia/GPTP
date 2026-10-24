@@ -32,7 +32,8 @@ const u32 ACTVAR_TO_FIGHTER = 0xF05B;
 const s32 MAX_LANDING_NUDGE = 16;
 
 //The order's states (mainOrderState).
-enum State { STATE_STOP = 0, STATE_START = 1, STATE_LANDING = 2, STATE_LIFTING = 3 };
+//STATE_FLYING: a fighter on its way to the nearest spot it can land on
+enum State { STATE_STOP = 0, STATE_START = 1, STATE_LANDING = 2, STATE_LIFTING = 3, STATE_FLYING = 4 };
 
 //The form a command's "to form" byte is, as a unit id; 0 for anything else.
 inline u16 toFormUnit(u8 toForm) {

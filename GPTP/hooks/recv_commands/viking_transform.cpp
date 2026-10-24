@@ -25,6 +25,7 @@ namespace {
 void replaceUnitWithType(CUnit* unit, u16 newUnitId);	//49FED0
 void holdPosition(CUnit* unit);							//4EB5B0
 void orderReturnToIdle(CUnit* unit);					//463770
+bool setMoveTarget(CUnit* unit, int x, int y);			//4EB820
 void issueOrder(CUnit* unit, u32 orderId, Bool32 queued);	//4754F0
 
 //The type change faces the new sprite north (0x49ED05 -> 0x496360, the
@@ -60,7 +61,10 @@ Landing settleLanding(CUnit* unit, Point16* away) {
 	scbw::prepareUnitMove(unit, true);
 	scbw::setUnitPosition(unit, at.x, at.y);
 	Landing found = LAND_NONE;
-	if (!scbw::checkUnitCollisionPos(unit, &at, &spot, NULL, false, 0))
+	//its 4th argument (GPTP's "hideErrorMsg") decides an unwalkable start: 0 gives
+	//up there (an error, 0x49D514), 1 searches on for walkable ground - the
+	//Viking over water or a cliff must, as SC2's (2026-10-25)
+	if (!scbw::checkUnitCollisionPos(unit, &at, &spot, NULL, true, 0))
 		VDBG("Viking: no free spot near %d,%d", at.x, at.y);
 	else {
 		const s32 dx = spot.x - at.x, dy = spot.y - at.y;
@@ -131,6 +135,13 @@ void orderTransform(CUnit* unit) {
 		unit->mainOrderState = STATE_START;
 	}
 
+	if (unit->mainOrderState == STATE_FLYING) {
+		if (unit->getMovableState() == MovableState::NotReachedDestination)
+			return;
+		VDBG("Viking: arrived at %d,%d to land", unit->position.x, unit->position.y);
+		unit->mainOrderState = STATE_START;
+	}
+
 	if (unit->mainOrderState == STATE_START) {
 		if (unit->movementFlags & MovementFlags::Accelerating)
 			return;
@@ -143,12 +154,16 @@ void orderTransform(CUnit* unit) {
 			const Landing found = settleLanding(unit, &away);
 			if (found == LAND_AWAY) {
 				//as SC2's: fly to the nearest spot it can stand on, then land
-				//there (the order again, queued; it searches again on arrival)
+				//there - searched again on arrival, as the spot may be taken.
+				//The flight is this order's own (STATE_FLYING): a Move order
+				//with the transform queued after it never moved the unit, and
+				//the transform started again every tick (2026-10-25)
 				replaceUnitWithType(unit, VIKING_FIGHTER);
 				restoreFacing(unit, facing);
 				VDBG("Viking: flying to land at %d,%d (from %d,%d)", away.x, away.y, unit->position.x, unit->position.y);
-				unit->orderTo(OrderId::Move, away.x, away.y);
-				issueOrder(unit, ORDER_VIKING_TRANSFORM, 1);
+				unit->orderTarget.pt = away;
+				setMoveTarget(unit, away.x, away.y);
+				unit->mainOrderState = STATE_FLYING;
 				return;
 			}
 			if (found == LAND_NONE) {
@@ -215,6 +230,21 @@ void holdPosition(CUnit* unit) {
 		CALL Func_OrdersHoldPositionSuicidal
 		POPAD
 	}
+}
+
+const u32 Func_SetMoveTarget_xy = 0x004EB820;
+bool setMoveTarget(CUnit* unit, int x, int y) {
+	static Bool32 result;
+	__asm {
+		PUSHAD
+		MOV ESI, unit
+		MOV EBX, x
+		MOV EDI, y
+		CALL Func_SetMoveTarget_xy
+		MOV result, EAX
+		POPAD
+	}
+	return result != 0;
 }
 
 const u32 Func_OrderReturnToIdle = 0x00463770;
