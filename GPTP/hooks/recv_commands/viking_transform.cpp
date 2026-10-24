@@ -48,27 +48,34 @@ void restoreFacing(CUnit* unit, u8 direction) {
 //spot or back). Earlier builds refused every landing: the tile isWalkable
 //bit (not the walkability units are placed by), then the unit colliding with
 //its own footprint ("nearest spot too far", 2026-10-24).
-bool settleLanding(CUnit* unit) {
+//What the search found: land where it is (moved to the spot, at most
+//MAX_LANDING_NUDGE away), a spot farther off (in @p away; the unit stays where
+//it is), or none. With no area given, the search covers a box 128 px either
+//side of the unit (0x49D3F2-0x49D418).
+enum Landing { LAND_NONE, LAND_HERE, LAND_AWAY };
+
+Landing settleLanding(CUnit* unit, Point16* away) {
 	const Point16 at = unit->sprite->position;
 	Point16 spot = at;
 	scbw::prepareUnitMove(unit, true);
 	scbw::setUnitPosition(unit, at.x, at.y);
-	bool ok = scbw::checkUnitCollisionPos(unit, &at, &spot, NULL, false, 0);
-	if (!ok)
+	Landing found = LAND_NONE;
+	if (!scbw::checkUnitCollisionPos(unit, &at, &spot, NULL, false, 0))
 		VDBG("Viking: no free spot near %d,%d", at.x, at.y);
 	else {
 		const s32 dx = spot.x - at.x, dy = spot.y - at.y;
-		ok = dx * dx + dy * dy <= vikingtransform::MAX_LANDING_NUDGE * vikingtransform::MAX_LANDING_NUDGE;
-		if (!ok)
-			VDBG("Viking: nearest spot %d,%d is too far from %d,%d", spot.x, spot.y, at.x, at.y);
+		found = dx * dx + dy * dy <= vikingtransform::MAX_LANDING_NUDGE * vikingtransform::MAX_LANDING_NUDGE
+			? LAND_HERE : LAND_AWAY;
 	}
-	if (!ok)
+	if (found == LAND_AWAY)
+		*away = spot;
+	if (found != LAND_HERE)
 		spot = at;
 	scbw::setUnitPosition(unit, spot.x, spot.y);
 	scbw::refreshUnitAfterMove(unit);
-	if (ok)
+	if (found == LAND_HERE)
 		VDBG("Viking: landing at %d,%d (from %d,%d)", spot.x, spot.y, at.x, at.y);
-	return ok;
+	return found;
 }
 
 } //unnamed namespace
@@ -132,7 +139,19 @@ void orderTransform(CUnit* unit) {
 		if (unit->id == VIKING_FIGHTER) {
 			//landing: the ground form from the start, its spot settled now
 			replaceUnitWithType(unit, VIKING_ASSAULT);
-			if (!settleLanding(unit)) {
+			Point16 away;
+			const Landing found = settleLanding(unit, &away);
+			if (found == LAND_AWAY) {
+				//as SC2's: fly to the nearest spot it can stand on, then land
+				//there (the order again, queued; it searches again on arrival)
+				replaceUnitWithType(unit, VIKING_FIGHTER);
+				restoreFacing(unit, facing);
+				VDBG("Viking: flying to land at %d,%d (from %d,%d)", away.x, away.y, unit->position.x, unit->position.y);
+				unit->orderTo(OrderId::Move, away.x, away.y);
+				issueOrder(unit, ORDER_VIKING_TRANSFORM, 1);
+				return;
+			}
+			if (found == LAND_NONE) {
 				replaceUnitWithType(unit, VIKING_FIGHTER);
 				restoreFacing(unit, facing);
 				if (unit->playerId == *LOCAL_NATION_ID)
