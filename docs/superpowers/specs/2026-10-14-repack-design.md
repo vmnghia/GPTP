@@ -6,9 +6,9 @@ scope they chose ("Plugin + to-repack files": one Repack command, no post-build 
 their correction (the to-repack folder defaults to `<exe folder>\to-repack\` and can be
 changed). Built 2026-10-15 (plan `docs/superpowers/plans/2026-10-14-repack.md`): the exe
 reader and writer, the folder scan, the repack and the settings are tested on Linux with fake
-exes. Tested on Windows 2026-10-23: §8 step 1's first half passed (Repack packed a new
-build and the game showed its build stamp); its second half (a plugin of another size)
-and steps 2-5 are not done yet. The exe layout of §2 was read from the user's `SCManifold.exe` with
+exes. Tested on Windows 2026-10-23/24: all of §8 passed (step 1's first half on
+2026-10-23, the rest on 2026-10-24), so Repack replaces FireGraft and PyMPQ for the mod's
+repacks. The exe layout of §2 was read from the user's `SCManifold.exe` with
 two read-only probes on 2026-10-14. Builds on parts 1 and 2,
 `docs/superpowers/specs/2026-10-05-button-set-editor-design.md` and
 `docs/superpowers/specs/2026-10-08-string-editor-design.md`.
@@ -51,7 +51,8 @@ game reads it (part 1, tested in game).
 **Not known until a game runs:** whether FireGraft's loader trusts the header's size and
 reads nothing else (no checksum, no fixed MPQ offset). The two copies of the plugin's bytes
 differ (the exe holds an older build of the same size), so the probe could not compare
-them. §8's first Windows test settles it on a copy of the exe.
+them. §8's first Windows test settles it on a copy of the exe. `[Settled 2026-10-24: a
+plugin of another size loaded and ran, so the loader reads the header's size.]`
 
 ## 3. Reading the exe
 
@@ -172,15 +173,15 @@ On Windows, in order:
    start a game from the copy: the build stamp is the new one. Then Repack again with an
    older or newer `GPTP.qdp` of a different size, and start again. If either fails, the
    loader reads more than the header; stop and report what the game shows.
-   `[First half passed 2026-10-23: the new build's stamp showed in game. The second half
-   is still open; the first may have kept the plugin's size, since builds are padded to
-   512 bytes, in which case the MPQ did not move.]`
+   `[Passed: the first half 2026-10-23 (the new build's stamp showed in game), the
+   second, a plugin of another size, 2026-10-24.]`
 2. **The files.** Change one to-repack file (or add one), Repack, and check it in game
-   (or with `mpqfind.py`). The button sets and strings are unchanged.
+   (or with `mpqfind.py`). The button sets and strings are unchanged. `[Passed 2026-10-24]`
 3. **The warnings.** Edit `to-repack\rez\stat_txt.tbl` in PyTBL: the dialog shows it
-   unticked with its warning.
+   unticked with its warning. `[Passed 2026-10-24]`
 4. **Busy.** Start the game, then Repack: the busy message, and the exe unchanged.
-5. **The real exe.** Repack `SCManifold.exe` itself, and play.
+   `[Passed 2026-10-24]`
+5. **The real exe.** Repack `SCManifold.exe` itself, and play. `[Passed 2026-10-24]`
 
 ## 9. Out of scope
 

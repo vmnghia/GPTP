@@ -116,5 +116,5 @@ warning, when they differ from the exe's, since they would replace the editor's 
 edits are saved first. The repack works on `<exe>.repacking`, checks that the plugin, every
 added file and the editor's files read back, and swaps it in keeping `<exe>.bak`; any failure
 leaves the exe as it was. The status line compares the exe's plugin with `GPTP.qdp`. Only
-FireGraft's one-plugin layout is known; any other is refused. Whether FireGraft's loader
-accepts a plugin of another size is settled by the spec's §8 step 1, on a copy of the exe.
+FireGraft's one-plugin layout is known; any other is refused. Tested in game 2026-10-24
+(all of the spec's §8), including a plugin of another size.

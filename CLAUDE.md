@@ -33,15 +33,15 @@ into the exe caller's frame. Only the offsets listed in its `ALLOWED` table are 
 
 **Deploying.** A post-build step copies `GPTP.qdp` next to `SCManifold.exe`
 (`..\..\SCManifold\` from the solution) when that folder exists. The plugin must then be
-repacked into `SCManifold.exe` before testing: the user adds files from
-`SCManifold\to-repack\` into the exe's MPQ by hand with PyMPQ, so any **new `rez\` file must
-be added by hand too**. Adding replaces files in place; it doesn't rebuild the MPQ, so files
-already in it (such as the Manifold Editor's `Manifold\buttonsets.bin`) stay. A missing `rez\statdata.bin`
-once made the selection panel silently fall back to vanilla's 12 wireframes.
-`docs/resolution.md` §6 "Working tips" has the paths and helper scripts.
-The Manifold Editor's **Repack...** does both (the plugin and every to-repack file) in one
-step, in place of FireGraft and PyMPQ, once its first in-game test passes (spec
-`docs/superpowers/specs/2026-10-14-repack-design.md` §8).
+repacked into `SCManifold.exe` before testing. The user does it with the Manifold Editor's
+**Repack...** (spec `docs/superpowers/specs/2026-10-14-repack-design.md`, tested in game
+2026-10-24): one step packs `GPTP.qdp` and adds every file in a subfolder of
+`SCManifold\to-repack\` to the exe's MPQ, so a **new `rez\` file must be in `to-repack\`**
+to reach the game. Adding replaces files in place; it doesn't rebuild the MPQ, so files
+already in it (such as the editor's `Manifold\buttonsets.bin`) stay. FireGraft (the plugin)
+and PyMPQ (files added by hand, from its own list) remain the fallback. A missing
+`rez\statdata.bin` once made the selection panel silently fall back to vanilla's 12
+wireframes. `docs/resolution.md` §6 "Working tips" has the paths and helper scripts.
 
 The `reshade/` folder is not in the MPQ: its files sit next to `StarCraft.exe`. A changed
 `ManifoldUIMask.fx` is copied into the game folder's `reshade-shaders\Shaders\` by hand and
