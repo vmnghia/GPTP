@@ -15,8 +15,37 @@ public sealed record CardCell(ushort Position, int Row, int Column, IReadOnlyLis
 /// <summary>Where one button's icon is drawn in a cell, as a square: left, top, size.</summary>
 public readonly record struct StackIcon(int ButtonIndex, double Left, double Top, double Size);
 
+/// <summary>The box of an icon's drawn (non-transparent) pixels in its frame.</summary>
+public readonly record struct IconBox(int X, int Y, int Width, int Height);
+
 public static class CardLayout
 {
+    /// <summary>The box of the pixels whose alpha is not zero; null when the frame draws nothing.</summary>
+    public static IconBox? IconBounds(uint[] argb, int width, int height)
+    {
+        int left = width, top = height, right = -1, bottom = -1;
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                if (argb[y * width + x] >> 24 == 0) continue;
+                left = Math.Min(left, x); right = Math.Max(right, x);
+                top = Math.Min(top, y); bottom = Math.Max(bottom, y);
+            }
+        return right < 0 ? null : new IconBox(left, top, right - left + 1, bottom - top + 1);
+    }
+
+    /// <summary>
+    /// Where a frame goes in a square (spec QoL §2): scaled as a uniform fit of the whole
+    /// frame, and moved so the middle of its drawn pixels is the middle of the square. A
+    /// frame that draws nothing is centred as a whole.
+    /// </summary>
+    public static (double Left, double Top, double Scale) IconOffset(IconBox? box, int width, int height, double square)
+    {
+        double scale = square / Math.Max(width, height);
+        if (box is not { } b) return ((square - width * scale) / 2, (square - height * scale) / 2, scale);
+        return (square / 2 - (b.X + b.Width / 2.0) * scale, square / 2 - (b.Y + b.Height / 2.0) * scale, scale);
+    }
+
     public const int Columns = 5;
     public const int Rows = 3;
     /// <summary>A stack draws at most this many icons; the count badge tells the rest.</summary>
