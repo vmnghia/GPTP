@@ -59,6 +59,32 @@ public sealed class DatSaveTests : IDisposable
     }
 
     [Fact]
+    public void RefusedVanillaCopyIsNotedWhenTheExeCopyParses()
+    {
+        var exe = new FakeArchive("SCManifold.exe", new() { ["arr\\weapons.dat"] = Vanilla(DatId.Weapons) });
+        var vanilla = new FakeArchive("StarDat.mpq", DatFormats.All.ToDictionary(f => f.ArchivePath, f => Vanilla(f.Id)));
+        vanilla.Files["arr\\weapons.dat"] = new byte[100];
+        var notes = new List<string>();
+        var set = DatSources.Load(new ResourceResolver([exe, vanilla]), new ResourceResolver([vanilla]), [], notes);
+        string reason = Assert.Throws<InvalidDataException>(() => DatFile.Parse(DatFormats.Of(DatId.Weapons), new byte[100])).Message;
+        Assert.Single(notes);
+        Assert.StartsWith($"arr\\weapons.dat: vanilla's copy was refused ({reason})", notes[0]);
+        Assert.True(set.Opened.ContainsKey(DatId.Weapons));
+        Assert.False(set.Vanilla.ContainsKey(DatId.Weapons));
+    }
+
+    [Fact]
+    public void RefusedVanillaCopyWithNoExeCopyGivesOneNote()
+    {
+        var vanilla = new FakeArchive("StarDat.mpq", new() { ["arr\\weapons.dat"] = new byte[100] });
+        var notes = new List<string>();
+        var set = DatSources.Load(new ResourceResolver([vanilla]), new ResourceResolver([vanilla]), [], notes);
+        Assert.False(set.Opened.ContainsKey(DatId.Weapons));
+        Assert.Equal(2, notes.Count(n => n.StartsWith("arr\\weapons.dat")));   // refused, then its tab is empty: not "not found"
+        Assert.DoesNotContain(notes, n => n.StartsWith("arr\\weapons.dat: not found"));
+    }
+
+    [Fact]
     public void RefusedExeFileOpensVanillaAndStaysClean()
     {
         var notes = new List<string>();

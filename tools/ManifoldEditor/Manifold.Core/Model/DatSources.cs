@@ -28,12 +28,12 @@ public static class DatSources
                 catch (InvalidDataException e) { ownProblem = e.Message; }
             }
             if (own is not null) vanilla[format.Id] = own;
+            else if (ownProblem is not null) notes.Add($"{path}: vanilla's copy was refused ({ownProblem}); modified marks and revert to vanilla are off for it");
 
             if (exeFirst.Find(path) is not { } found)
             {
-                if (own is null) notes.Add($"{path}: not found; its tab is empty");
-                else opened[format.Id] = own;   // the resolver's archives hold it only in vanilla's
-                if (ownProblem is not null) notes.Add($"{path}: vanilla's copy was refused ({ownProblem}); its tab is empty");
+                if (own is not null) opened[format.Id] = own;   // the resolver's archives hold it only in vanilla's
+                else notes.Add(ownProblem is null ? $"{path}: not found; its tab is empty" : $"{path}: its tab is empty");
                 continue;
             }
             try
