@@ -73,6 +73,15 @@ public sealed class RepackPendingTests : IDisposable
     }
 
     [Fact]
+    public void A_plugin_the_dialog_would_refuse_is_not_pending()
+    {
+        WritePlugin([0x4D, 0x5A, 1, 2, 3], 1);            // not a DLL
+        Assert.False(Pending().PluginDiffers);
+        WritePlugin(Linked(Make.Dll(), 1_761_300_600)[..0x100], 1);   // cut short: a build still being written
+        Assert.False(Pending().PluginDiffers);
+    }
+
+    [Fact]
     public void A_missing_plugin_is_not_pending_and_does_not_throw()
     {
         var p = Pending();

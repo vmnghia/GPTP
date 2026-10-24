@@ -205,7 +205,8 @@ public static class Repack
         if (layout is not null && File.Exists(pluginPath))
         {
             byte[] file = File.ReadAllBytes(pluginPath), packed = layout.Plugin(exe);
-            differs = !file.AsSpan().SequenceEqual(packed);
+            // A file the dialog refuses (not a DLL, a build still being written) is nothing to pack.
+            differs = FireGraftExe.DllProblem(file) is null && !file.AsSpan().SequenceEqual(packed);
             // Newer by link time, not by file dates: every save rewrites the exe, so a plugin
             // built before the last save would look older than the exe (the review of 2026-10-24).
             newer = differs && LinkTime(file) > LinkTime(packed);
