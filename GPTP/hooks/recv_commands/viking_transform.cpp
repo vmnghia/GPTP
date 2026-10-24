@@ -39,43 +39,36 @@ void restoreFacing(CUnit* unit, u8 direction) {
 }
 
 //Whether a ground Viking may stand where the fighter is: a free, walkable
-//spot within MAX_LANDING_NUDGE (checkUnitCollisionPos, as Recall and Nydus
-//place a unit; it tests terrain itself). Called with the unit already the
-//ground form, so the test is the ground form's footprint; moves it to the
-//spot when there is one. The first build also required the tile's
-//isWalkable bit and refused every landing on open ground (2026-10-24): that
-//bit is not the walkability the engine places units by.
-//0 while testing the landing itself (the owner, 2026-10-24): it lands where
-//it is, whatever is there
-#define VIKING_LANDING_CHECK 0
-
+//spot within MAX_LANDING_NUDGE, by checkUnitCollisionPos (0x49D3E0, which
+//tests terrain itself); moves it to the spot when there is one. Called with
+//the unit already the ground form, so the test is its ground footprint.
+//The search's collision callback (0x49CCE0) never skips the unit being
+//placed, so the unit is first taken out of the unit finder, as Nydus does
+//(prepareUnitMove hide, then setUnitPosition + refreshUnitAfterMove to the
+//spot or back). Earlier builds refused every landing: the tile isWalkable
+//bit (not the walkability units are placed by), then the unit colliding with
+//its own footprint ("nearest spot too far", 2026-10-24).
 bool settleLanding(CUnit* unit) {
 	const Point16 at = unit->sprite->position;
-#if !VIKING_LANDING_CHECK
-	VDBG("Viking: landing at %d,%d (unit at %d,%d), unchecked", at.x, at.y, unit->position.x, unit->position.y);
-	return true;
-#endif
 	Point16 spot = at;
-	//as scbw::moveUnit, Recall and Nydus do: place the unit (now the ground
-	//form) before asking for a free spot; the second build asked without it,
-	//and with hideErrorMsg true as no other caller does, and was refused
+	scbw::prepareUnitMove(unit, true);
 	scbw::setUnitPosition(unit, at.x, at.y);
-	if (!scbw::checkUnitCollisionPos(unit, &at, &spot, NULL, false, 0)) {
+	bool ok = scbw::checkUnitCollisionPos(unit, &at, &spot, NULL, false, 0);
+	if (!ok)
 		VDBG("Viking: no free spot near %d,%d", at.x, at.y);
-		return false;
+	else {
+		const s32 dx = spot.x - at.x, dy = spot.y - at.y;
+		ok = dx * dx + dy * dy <= vikingtransform::MAX_LANDING_NUDGE * vikingtransform::MAX_LANDING_NUDGE;
+		if (!ok)
+			VDBG("Viking: nearest spot %d,%d is too far from %d,%d", spot.x, spot.y, at.x, at.y);
 	}
-	const s32 dx = spot.x - at.x, dy = spot.y - at.y;
-	if (dx * dx + dy * dy > vikingtransform::MAX_LANDING_NUDGE * vikingtransform::MAX_LANDING_NUDGE) {
-		VDBG("Viking: nearest spot %d,%d is too far from %d,%d", spot.x, spot.y, at.x, at.y);
-		return false;
-	}
-	if (spot.x != at.x || spot.y != at.y) {
-		scbw::prepareUnitMove(unit, false);
-		scbw::setUnitPosition(unit, spot.x, spot.y);
-		scbw::refreshUnitAfterMove(unit);
-	}
-	VDBG("Viking: landing at %d,%d (from %d,%d)", spot.x, spot.y, at.x, at.y);
-	return true;
+	if (!ok)
+		spot = at;
+	scbw::setUnitPosition(unit, spot.x, spot.y);
+	scbw::refreshUnitAfterMove(unit);
+	if (ok)
+		VDBG("Viking: landing at %d,%d (from %d,%d)", spot.x, spot.y, at.x, at.y);
+	return ok;
 }
 
 } //unnamed namespace
