@@ -39,6 +39,7 @@ public sealed class MainWindow : Window
     RepackPending? pending;
     /// <summary>The check running now, which a second caller waits for instead of starting another.</summary>
     Task? check;
+    bool launching;
     /// <summary>The window's bounds while not maximized or minimized, kept for the settings.</summary>
     WindowRect? restoredBounds;
     OpenedExe? opened;
@@ -686,6 +687,7 @@ public sealed class MainWindow : Window
         try
         {
             opened = Workspace.Open(path, Workspace.StarCraftDir(settings), settings.PluginPathFor(path));
+            pending = null;   // the last exe's: the check after opening fills it
         }
         catch (Exception e)
         {
@@ -724,6 +726,7 @@ public sealed class MainWindow : Window
             await Message("Not saved", "A string field holds text that doesn't compile: its error shows under it. Fix it, then save.");
             return false;
         }
+        await WaitForCheck();
         string? error;
         byte[]? strings = null;
         try
@@ -773,12 +776,12 @@ public sealed class MainWindow : Window
             await Message("Not saved", refused);
             return;
         }
-        var document = opened.State.Document;
-        byte[]? strings = null;
+        await WaitForCheck();
         string? error;
+        // On the UI thread, as Save is: nothing can edit the document, save or repack meanwhile.
         try
         {
-            error = await Task.Run(() => EditorSession.SaveAs(source, target, document, new StormRepackHost(), out strings));
+            error = EditorSession.SaveAs(source, target, opened.State.Document, new StormRepackHost(), out _);
         }
         catch (Exception e)
         {
@@ -794,7 +797,8 @@ public sealed class MainWindow : Window
         opened.State.ExeName = Path.GetFileName(target);
         settings = settings with { LastExe = target };
         settings.Save(Workspace.SettingsPath);
-        if (strings is not null) await WriteRepackStrings(strings);
+        // The to-repack copy is not written here (spec §9): for a test copy beside the mod,
+        // its default would be the mod's own to-repack\rez\stat_txt.tbl.
         Refresh();
         _ = CheckPending();
     }
@@ -832,6 +836,14 @@ public sealed class MainWindow : Window
             check = null;
         }
         UpdateMarkers();
+        // Another exe was opened while it ran: look at that one.
+        if (opened is not null && opened.ExePath != exe) _ = CheckPending();
+    }
+
+    /// <summary>Before writing the exe: a running check holds it open for reading.</summary>
+    async Task WaitForCheck()
+    {
+        if (check is { } running) await running;
     }
 
     /// <summary>Save's dot, Repack plugin's dot and Repack files' count.</summary>
@@ -851,6 +863,15 @@ public sealed class MainWindow : Window
     /// files, then starts the exe through the shell from its folder.
     /// </summary>
     async Task Launch()
+    {
+        // F5 twice, or a double click: one launch, and never two dialogs at once.
+        if (launching) return;
+        launching = true;
+        try { await LaunchOnce(); }
+        finally { launching = false; }
+    }
+
+    async Task LaunchOnce()
     {
         if (opened is null || repacking) return;
         CommitFields();
@@ -965,6 +986,7 @@ public sealed class MainWindow : Window
         if (choice is null) return null;
 
         string? error;
+        await WaitForCheck();
         repacking = true;
         foreach (var button in toolbar.Children.OfType<Control>()) button.IsEnabled = false;
         status.Text = $"Repacking {name}...";
