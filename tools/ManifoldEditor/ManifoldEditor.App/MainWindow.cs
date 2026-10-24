@@ -183,7 +183,8 @@ public sealed class MainWindow : Window
         string text = string.Join("\r\n", opened is null ? [status.Text] : opened.StatusLines);
         var box = new TextBox
         {
-            Text = text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, AcceptsReturn = true,
+            // AcceptsReturn before Text: a single-line TextBox cuts the text at its first line break.
+            AcceptsReturn = true, Text = text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap,
             FontFamily = new FontFamily("Consolas"), FontSize = 12, MaxHeight = 360, MinWidth = 400, MaxWidth = 760,
         };
         var copy = new Button { Content = "Copy" };
@@ -1182,7 +1183,8 @@ public sealed class MainWindow : Window
         if (details is not null)
             body.Children.Add(new TextBox
             {
-                Text = details, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, AcceptsReturn = true,
+                // AcceptsReturn before Text: a single-line TextBox cuts the text at its first line break.
+                AcceptsReturn = true, Text = details, IsReadOnly = true, TextWrapping = TextWrapping.Wrap,
                 FontFamily = new FontFamily("Consolas"), FontSize = 11, MaxHeight = 320,
             });
         var dialog = new ContentDialog
