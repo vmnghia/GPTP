@@ -533,6 +533,12 @@ starfield handled (§5). Features 1 and 2 below are done.
    **String editor** (part 2, `stat_txt.tbl`, after PyMS's PyTBL) `[BUILT 2026-10-08; tested
    on Windows and in game 2026-10-09]`: spec
    `docs/superpowers/specs/2026-10-08-string-editor-design.md`, round in its §8.
+   **Editor quality-of-life changes** `[PROPOSED 2026-10-24]`: centred icons, Add new
+   button, filtering Condition/Action boxes, icon search, Repack split in two with a
+   filter and Select all, toolbar markers, Launch (F5), Save as, a remembered window; spec
+   `docs/superpowers/specs/2026-10-24-editor-qol-design.md`. Kept in mind, not planned:
+   **Repack without the dialog** (one press packs the newer plugin and every new or
+   changed file), which the user judged too risky for now.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
    first game frame; every client applies it in the same frame; replays record it. This
    needs the view size switchable at game start. The buffers would be allocated for the
