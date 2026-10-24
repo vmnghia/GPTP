@@ -19,6 +19,14 @@ public sealed record EditorSettings
     /// <summary>Exe path (lower case) to the plugin Repack packs, when not the default.</summary>
     public Dictionary<string, string>? PluginPaths { get; init; }
 
+    /// <summary>The window's restored bounds when it was last closed (QoL spec §10).</summary>
+    public WindowRect? Window { get; init; }
+    public bool WindowMaximized { get; init; }
+    /// <summary>"strings" when the Strings page was shown; null for the button sets.</summary>
+    public string? LastPage { get; init; }
+    /// <summary>The set selected when the window was closed.</summary>
+    public int? LastSetId { get; init; }
+
     static string Key(string exePath) => Path.GetFullPath(exePath).ToLowerInvariant();
     static string ExeFolder(string exePath) => Path.GetDirectoryName(Path.GetFullPath(exePath)) ?? "";
 
