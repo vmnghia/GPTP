@@ -130,8 +130,9 @@ that writes such a file asks once per session: "Save anyway / Cancel".
 ## 5. The document, history and saving
 
 **Document.** `ButtonSetDocument` holds the 11 `DatFile`s, their opened copies and their
-vanilla copies, beside the sets and strings. `DatDirty(file)` is "differs from its opened
-copy" (compared as values, so an edit undone by hand is clean); `IsDirty` includes them.
+vanilla copies, beside the sets and strings. `DatDirty(file)` is "differs from the file
+as the exe holds it" (compared as values, so an edit undone by hand is clean; a
+to-repack copy chosen on opening counts as unsaved); `IsDirty` includes them.
 
 **History.** A `Change` can hold .dat edits `(file, entry, property, before, after)`,
 alongside its set and string edits: still one history for the whole exe. `Place` gains
@@ -141,8 +142,7 @@ commits when it loses focus or on Enter, not per key, and a value equal to the c
 records nothing. A compound display (hit points' whole and fraction, supply's whole and
 half) commits as one edit of its one property. A flag checkbox is one step.
 
-**Saving.** Save writes each .dat file that differs from its opened copy into the exe's MPQ,
-in the same pass as `Manifold\buttonsets.bin` and `rez\stat_txt.tbl` (the existing
+**Saving.** Save writes each .dat file that is `DatDirty` into the exe's MPQ, in the same pass as `Manifold\buttonsets.bin` and `rez\stat_txt.tbl` (the existing
 `FilesToSave`). After the exe is saved, it writes `<to-repack>\arr\<name>.dat` for each,
 as the strings copy is written (`StringMirror.Write`: a temporary file, then replace,
 keeping `.bak`), using the exe's to-repack folder setting. A copy that fails to write is a
@@ -150,9 +150,10 @@ status line naming it; the exe keeps the edit. Save as copies the files along wi
 rest, as today, and writes no to-repack copies (as for strings, QoL spec §9).
 
 **On opening.** The existing to-repack check covers the .dat copies: when
-`<to-repack>\arr\<name>.dat` differs from the exe's file and is newer than the exe, the
-opening dialog lists every such file (strings and .dat files together) with the existing
-choices.
+`<to-repack>\arr\<name>.dat` differs from the file the editor opened, the opening dialog
+lists every such file (strings and .dat files together), says for each which side was
+changed more recently, and offers the existing choices (the exe's, or to-repack's for all
+of them).
 
 **Other pages.** The set list's race and kind grouping reads the current units `DatFile`:
 editing a unit's StarEdit race or its hero, building, add-on or subunit flags regroups its
@@ -171,7 +172,7 @@ A third page, "Data", after Button sets and Strings in the page bar. `LastPage` 
   the current entry, wrapping) and Jump to ID (decimal, or hex with `0x`; Enter jumps).
 - **Top:** a tab per file, PyDAT's names and order: Units, Weapons, Flingy, Sprites,
   Images, Upgrades, Techdata, Sound Effects, Portraits, Campaign, Orders. A tab whose file
-  differs from its opened copy shows ●.
+  is `DatDirty` shows ●.
 - **Units:** PyDAT's sub-tabs: Basic, Advanced, Sounds, Graphics, StarEdit, AI Actions.
 - **Each tab:** PyDAT's groups, labels and field order, from its `*Tab.py`. For example
   Basic has Vital Statistics (hit points, shields, armor, armor upgrade), Build Cost,
@@ -205,21 +206,28 @@ A third page, "Data", after Button sets and Strings in the page bar. `LastPage` 
   (§3) is disabled and empty, as in PyDAT.
 - **Tooltips:** PyMS's `Hints.txt`, per field.
 
-**`DatTabs` (Core).** The table of which properties each tab and sub-tab shows, and in
-which group. The hand-built tabs ask it for their fields' properties, so a name can't be
+**`DatTabs` (Core).** The table of which properties each tab and sub-tab shows (the groups
+are layout, kept in the hand-built tabs). The hand-built tabs ask it for their fields' properties, so a name can't be
 misspelt in the App; part 2's copy sub-tab reads it. A property may show on two tabs, as in
 PyDAT (the weapons on Basic and AI Actions, the placement size on Graphics and StarEdit,
 the group flags on Basic and StarEdit). A test checks that every property of every format
 shows on at least one tab.
 
-**Names (`DatNames`, Core),** following PyMS's `DATEntryName`:
-- units: `rez\unitnames.tbl` when it has the entry, else `stat_txt.tbl`'s unit name (the
-  Strings page's strings, so a rename there shows here); weapons, upgrades, techdata and
-  orders: their `label` in `stat_txt.tbl`;
-- images, sprites, flingy, sfxdata, portdata and mapdata: PyMS's `Images.txt`,
-  `Sprites.txt`, `Flingy.txt`, `Sfxdata.txt`, `Portdata.txt` and `Mapdata.txt`;
-- an entry past a list's end (an expanded file): "Image #1000" and so on, as PyMS names
-  them; a TBL entry that is empty falls back to the list's name;
+**Names (`DatNames`, Core),** following PyMS's `DATEntryName`, with PyDAT's **Names**
+dropdown under the list (Basic, TBL Based, Combined; Basic by default) and its **Simple TBL
+Names** checkbox (units, weapons, upgrades, techdata and orders), both remembered per file:
+- Basic: PyMS's list (`Units.txt`, `Weapons.txt`, `Flingy.txt`, `Sprites.txt`,
+  `Images.txt`, `Upgrades.txt`, `Techdata.txt`, `Sfxdata.txt`, `Portdata.txt`,
+  `Mapdata.txt`, `Orders.txt`);
+- TBL Based: units, `rez\unitnames.tbl` when present, else `stat_txt.tbl`'s first 228
+  strings (the Strings page's strings, so a rename there shows here); weapons, upgrades,
+  techdata and orders, their `label` in `stat_txt.tbl`; images, their `grp_file` in
+  `images.tbl`; sprites, their image's; flingy, their sprite's; sounds, portraits and maps,
+  their file in `sfxdata.tbl`, `portdata.tbl` (idle) and `mapdata.tbl`;
+- Combined: "list name (TBL name)", or one of them when they are the same or one is
+  missing;
+- without a name: "Image #1000", or "Expanded Image #1000" past vanilla's count; units
+  228-250 of an expanded units.dat are "Reserved Unit #N";
 - the TBL dropdowns (images.tbl, sfxdata.tbl, portdata.tbl, mapdata.tbl) show the string,
   with 0 as "None" where PyDAT does.
 
@@ -242,8 +250,8 @@ vanilla with •, so a changed entry is easy to find.
 
 ## 8. Checks
 
-The status bar's check lines gain three cases (PyDAT checks none of these; more in
-part 5):
+The Data page lists check lines under its tabs, for every file (PyDAT checks none of
+these; more in part 5):
 
 - a reference id past its target's entry count (a units `ground weapon` of 140 with 130
   weapons, unless it is that field's None);
@@ -251,7 +259,7 @@ part 5):
   so it names images 561-816; the check is that the image exists);
 - an expanded file of a table the plugin refuses (§4).
 
-Each line names the file, entry and field, and clicking it shows that entry.
+Each line names the file, entry and field, and is a link that shows that entry.
 
 ## 9. Errors
 
@@ -275,8 +283,8 @@ Each line names the file, entry and field, and clicking it shows that entry.
   dirty marks; revert to opened and to vanilla; Save's file list and the to-repack copies;
   the opening check for newer copies; the units view regrouping after an edit.
 - Names: unitnames.tbl first, stat_txt labels, lists running short, expanded ids.
-- `DatTabs`: every property of every format shows on at least one tab; every group and
-  list it names exists.
+- `DatTabs`: every property of every format shows on at least one tab; every PyMS list
+  the editor reads is in `Data\`.
 - Checks: each case in §8.
 
 **App:** the compile check on Linux. On Windows, the user:
