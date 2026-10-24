@@ -72,6 +72,25 @@ slot swaps; **Alt** stacks onto it, **Ctrl** copies the button, **Shift** moves 
 slot (**Ctrl+Shift** copies it). The panel's **Slot** box puts the selected button in an
 exact slot.
 
+**The toolbar** (QoL spec `docs/superpowers/specs/2026-10-24-editor-qol-design.md`): Open
+exe..., Save, Save as..., Undo, Redo, Repack plugin..., Repack files..., Launch (F5), and
+**More** (StarCraft folder..., Re-import FireGraft's sets...). Save shows ● with unsaved
+edits; Repack plugin shows ● when `GPTP.qdp` differs from the exe's plugin (its tooltip says
+how); Repack files shows how many to-repack files are new or changed. They look again on
+opening, after a save or repack, and when the window comes back into focus. **Launch**
+starts the exe from its folder, after asking to save unsaved edits and to repack a newer
+plugin or pending files. **Save as...** saves the edits into a copy of the exe at a new path
+and goes on editing that one (undo history kept); the original stays as it was, and the new
+exe asks again where to write its strings. A click on the status bar lists every status
+line, with Copy. The window opens where it was left, on the page and set left.
+
+**Adding and editing buttons.** Right-click a slot: **Add new button...** picks Blank (icon
+0, Always, Move) or any button of the exe's sets or vanilla's, searched by tooltip, action,
+condition or icon; it lands in the slot, sharing it when taken. Condition and Action filter
+as you type (a name or an address); Enter or a click picks, Esc keeps the old one. The icon
+picker searches by name or number, and **Unused** shows only icons no button uses. Icons are
+centred on their drawn pixels.
+
 **Shortcuts** (on the button sets page, outside text fields): Ctrl+C / Ctrl+V copy the
 selected button and paste it into the selected slot (sharing the slot if it is taken),
 Delete removes it; Ctrl+Shift+C / Ctrl+Shift+V copy and paste the whole set; Ctrl+S,
@@ -106,9 +125,11 @@ to-repack copy doesn't bring the old strings back; the answer is kept per exe. W
 opens and its to-repack copy differs (edited in PyTBL, say), the editor asks which to edit.
 
 **Repack** (spec `docs/superpowers/specs/2026-10-14-repack-design.md`), in place of FireGraft
-and PyMPQ. **Repack...** packs the plugin (`<exe folder>\GPTP.qdp`, where the GPTP build copies
-it) into FireGraft's exe and adds every file in a subfolder of the to-repack folder
-(`<exe folder>\to-repack\`; files at its top and `*.bak` are left out) to the MPQ, imploded.
+and PyMPQ, in two commands. **Repack plugin...** packs the plugin (`<exe folder>\GPTP.qdp`,
+where the GPTP build copies it) into FireGraft's exe; **Repack files...** adds files in a
+subfolder of the to-repack folder (`<exe folder>\to-repack\`; files at its top and `*.bak`
+are left out) to the MPQ, imploded, with a filter by path and **Select all** (which leaves
+the two warned files below to be ticked one at a time).
 Both paths have **Change...** and **Default**, kept per exe; a changed folder also moves the
 strings' to-repack copy for an exe not yet asked. The dialog lists each file as new, changed or
 the same as the exe's; `rez\stat_txt.tbl` and `Manifold\buttonsets.bin` start unticked, with a
