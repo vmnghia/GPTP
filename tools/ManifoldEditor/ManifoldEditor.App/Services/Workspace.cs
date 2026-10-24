@@ -6,9 +6,16 @@ using Microsoft.Win32;
 
 namespace ManifoldEditor.App.Services;
 
-/// <summary>An exe opened in the editor: its archive, its sets, and the resources shown with them.</summary>
+/// <summary>
+/// An exe opened in the editor: its archive, its sets, and the resources shown with them.
+/// The plugin's status line is kept apart, as the markers' recheck replaces it (QoL spec §7).
+/// </summary>
 public sealed record OpenedExe(string ExePath, StormArchive Archive, EditorState State, EditorResources Resources,
-    SetCatalog Catalog, IReadOnlyList<string> Status);
+    SetCatalog Catalog, IReadOnlyList<string> Status, string PluginLine)
+{
+    /// <summary>The status bar's lines: the plugin first, then what opening found.</summary>
+    public IReadOnlyList<string> StatusLines => [PluginLine, .. Status];
+}
 
 /// <summary>An exception while opening, with the step it happened in.</summary>
 public sealed class OpenStepException(string step, Exception inner)
@@ -105,7 +112,7 @@ public static class Workspace
         string plugin;
         try { plugin = Repack.PluginStatus(File.ReadAllBytes(exePath), exePath, pluginPath); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { plugin = $"Plugin: {e.Message}"; }
-        var status = opened.Status.Append(plugin).Concat(resources.Sources).Concat(resources.Notes).ToArray();
-        return new OpenedExe(exePath, exe, state, resources, SetCatalog.Build(state.UnitName, resources.Units), status);
+        var status = opened.Status.Concat(resources.Sources).Concat(resources.Notes).ToArray();
+        return new OpenedExe(exePath, exe, state, resources, SetCatalog.Build(state.UnitName, resources.Units), status, plugin);
     }
 }

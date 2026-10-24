@@ -2,6 +2,7 @@ using ManifoldEditor.App.Services;
 using Manifold.Core.Data;
 using Manifold.Core.Editor;
 using Manifold.Core.Model;
+using Manifold.Storm;
 using Microsoft.UI;
 using Microsoft.UI.Text;
 using Microsoft.UI.Windowing;
@@ -34,6 +35,10 @@ public sealed class MainWindow : Window
     bool repacking;
     /// <summary>The toolbar buttons whose text shows a marker (QoL spec §7).</summary>
     Button saveButton = null!, repackPluginButton = null!, repackFilesButton = null!;
+    /// <summary>What waits to be repacked, from the last check that worked; null before one.</summary>
+    RepackPending? pending;
+    /// <summary>The check running now, which a second caller waits for instead of starting another.</summary>
+    Task? check;
     /// <summary>The window's bounds while not maximized or minimized, kept for the settings.</summary>
     WindowRect? restoredBounds;
     OpenedExe? opened;
@@ -105,6 +110,8 @@ public sealed class MainWindow : Window
         Content = BuildLayout();
         PlaceWindow();
         AppWindow.Closing += OnClosing;
+        // Back from building the plugin: the markers look again (QoL spec §7).
+        Activated += (_, e) => { if (e.WindowActivationState != WindowActivationState.Deactivated) _ = CheckPending(); };
         iconNames = Workspace.IconNames();
         ShowNothingOpen();
         // Reopen the last exe once the window is up, so a dialog has somewhere to show.
@@ -172,7 +179,7 @@ public sealed class MainWindow : Window
     /// <summary>The status bar's lines in full, selectable, with Copy (QoL spec §10).</summary>
     void ShowStatusDetails()
     {
-        string text = string.Join("\r\n", opened is null ? [status.Text] : opened.Status);
+        string text = string.Join("\r\n", opened is null ? [status.Text] : opened.StatusLines);
         var box = new TextBox
         {
             Text = text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, AcceptsReturn = true,
@@ -224,6 +231,7 @@ public sealed class MainWindow : Window
         toolbar.Children.Add(repackPluginButton);
         repackFilesButton = ToolButton("Repack files...", async (_, _) => await RepackExe(RepackKind.Files));
         toolbar.Children.Add(repackFilesButton);
+        toolbar.Children.Add(ToolButton("Launch (F5)", async (_, _) => await Launch()));
         var more = new MenuFlyout();
         more.Items.Add(Item("StarCraft folder...", async () => await PickStarCraftDir()));
         more.Items.Add(Item("Re-import FireGraft's sets...", async () => await ReimportFireGraft()));
@@ -350,6 +358,7 @@ public sealed class MainWindow : Window
         // The toolbar already names the shortcuts; no floating accelerator tooltips.
         root.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.S, async () => await Save()));
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.F5, () => { _ = Launch(); return true; }, VirtualKeyModifiers.None));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Z, Undo));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Y, Redo));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.C, CopyButtonKey));
@@ -698,6 +707,7 @@ public sealed class MainWindow : Window
         FillSetList();
         SelectSet(opened.State.SelectedSetId);
         Refresh();
+        _ = CheckPending();
     }
 
     async Task<bool> Save()
@@ -730,7 +740,133 @@ public sealed class MainWindow : Window
         }
         if (strings is not null) await WriteRepackStrings(strings);
         Refresh();
+        _ = CheckPending();
         return true;
+    }
+
+    // -------- Markers and Launch (QoL spec §7-8) --------
+
+    /// <summary>Looks at the exe, the plugin and the to-repack folder, off the UI thread; one check at a time.</summary>
+    Task CheckPending()
+    {
+        if (opened is null || repacking) return Task.CompletedTask;
+        return check ??= RunCheck();
+    }
+
+    async Task RunCheck()
+    {
+        string exe = opened!.ExePath;
+        var s = settings;
+        try
+        {
+            var result = await Task.Run(() => Repack.Pending(File.ReadAllBytes(exe), exe, s.PluginPathFor(exe),
+                s.RepackFolderFor(exe), new StormArchive(exe)));
+            if (opened?.ExePath == exe)
+            {
+                pending = result;
+                opened = opened with { PluginLine = result.PluginLine };
+                status.Text = string.Join("   |   ", opened.StatusLines);
+            }
+        }
+        catch (Exception)
+        {
+            // The exe busy (the game running), the folder unreadable: the markers stay as they were.
+        }
+        finally
+        {
+            check = null;
+        }
+        UpdateMarkers();
+    }
+
+    /// <summary>Save's dot, Repack plugin's dot and Repack files' count.</summary>
+    void UpdateMarkers()
+    {
+        bool dirty = opened?.State.Document.IsDirty == true;
+        saveButton.Content = dirty ? "Save (Ctrl+S) ●" : "Save (Ctrl+S)";
+        bool plugin = pending?.PluginDiffers == true;
+        repackPluginButton.Content = plugin ? "Repack plugin... ●" : "Repack plugin...";
+        ToolTipService.SetToolTip(repackPluginButton, opened?.PluginLine);
+        int files = pending?.Files ?? 0;
+        repackFilesButton.Content = files > 0 ? $"Repack files... ({files})" : "Repack files...";
+    }
+
+    /// <summary>
+    /// Launch (F5): asks to save unsaved edits, then to repack a newer plugin or pending
+    /// files, then starts the exe through the shell from its folder.
+    /// </summary>
+    async Task Launch()
+    {
+        if (opened is null || repacking) return;
+        CommitFields();
+        string exe = opened.ExePath, name = Path.GetFileName(exe);
+        await CheckPending();
+        var questions = LaunchCheck.Questions(opened.State.Document.IsDirty, pending, Path.GetFileName(settings.PluginPathFor(exe)));
+        if (questions.AskSave)
+        {
+            var ask = new ContentDialog
+            {
+                XamlRoot = Content.XamlRoot,
+                Title = "Unsaved changes",
+                Content = $"Save the changes to {name} before launching?",
+                PrimaryButtonText = "Save", SecondaryButtonText = "Launch anyway", CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Primary,
+            };
+            switch (await ask.ShowAsync())
+            {
+                case ContentDialogResult.Primary:
+                    if (!await Save()) return;
+                    break;
+                case ContentDialogResult.Secondary:
+                    break;
+                default:
+                    return;
+            }
+        }
+        if (questions.RepackText is string text && pending is { } waiting)
+        {
+            var ask = new ContentDialog
+            {
+                XamlRoot = Content.XamlRoot,
+                Title = "Newer than the exe",
+                Content = new TextBlock
+                {
+                    TextWrapping = TextWrapping.Wrap,
+                    Text = text + "\n\nRepack first opens " +
+                           (waiting.PluginNewer && waiting.Files > 0 ? "Repack plugin..., then Repack files..."
+                            : waiting.PluginNewer ? "Repack plugin..." : "Repack files...") + ", then starts the game.",
+                },
+                PrimaryButtonText = "Repack first", SecondaryButtonText = "Launch anyway", CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Primary,
+            };
+            switch (await ask.ShowAsync())
+            {
+                case ContentDialogResult.Primary:
+                    // A failure stops; a cancelled dialog goes on.
+                    if (waiting.PluginNewer && await RepackExe(RepackKind.Plugin) == false) return;
+                    if (waiting.Files > 0 && await RepackExe(RepackKind.Files) == false) return;
+                    break;
+                case ContentDialogResult.Secondary:
+                    break;
+                default:
+                    return;
+            }
+        }
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe)
+            {
+                UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(exe)!,
+            });
+        }
+        catch (System.ComponentModel.Win32Exception e) when (e.NativeErrorCode == 1223)
+        {
+            // The admin prompt was refused: nothing to say.
+        }
+        catch (Exception e)
+        {
+            await Message("Can't launch", $"{name}: {e.Message}", e.ToString());
+        }
     }
 
     // -------- Repack (Repack spec §6) --------
@@ -1118,7 +1254,8 @@ public sealed class MainWindow : Window
         FillButtonList();
         FillPanel();
         checks.Text = string.Join("\n", state.CheckLines());
-        status.Text = string.Join("   |   ", opened.Status);
+        status.Text = string.Join("   |   ", opened.StatusLines);
+        UpdateMarkers();
     }
 
     void DrawCard()
