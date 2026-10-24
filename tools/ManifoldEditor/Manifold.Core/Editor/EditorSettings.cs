@@ -1,6 +1,11 @@
 using System.Text.Json;
 
+using Manifold.Core.Data;
+
 namespace Manifold.Core.Editor;
+
+/// <summary>How a .dat file's entry names are shown: PyDAT's mode and its Simple switch.</summary>
+public sealed record DatNameSetting(NamesMode Mode, bool Simple);
 
 /// <summary>
 /// The editor's settings: the StarCraft folder, the last exe opened, and per exe where its
@@ -22,10 +27,19 @@ public sealed record EditorSettings
     /// <summary>The window's restored bounds when it was last closed (QoL spec §10).</summary>
     public WindowRect? Window { get; init; }
     public bool WindowMaximized { get; init; }
-    /// <summary>"strings" when the Strings page was shown; null for the button sets.</summary>
+    /// <summary>"strings" or "data" when that page was shown; null for the button sets.</summary>
     public string? LastPage { get; init; }
     /// <summary>The set selected when the window was closed.</summary>
     public int? LastSetId { get; init; }
+
+    /// <summary>The .dat file shown on the Data page, a <see cref="DatId"/> name.</summary>
+    public string? LastDat { get; init; }
+    /// <summary>The units.dat tab shown on the Data page, a <see cref="DatTabId"/> name.</summary>
+    public string? LastUnitsTab { get; init; }
+    /// <summary>A <see cref="DatId"/> name to the entry last selected in that file.</summary>
+    public Dictionary<string, int>? DatEntries { get; init; }
+    /// <summary>A <see cref="DatId"/> name to how that file's entry names are shown.</summary>
+    public Dictionary<string, DatNameSetting>? DatNames { get; init; }
 
     static string Key(string exePath) => Path.GetFullPath(exePath).ToLowerInvariant();
     static string ExeFolder(string exePath) => Path.GetDirectoryName(Path.GetFullPath(exePath)) ?? "";
@@ -40,6 +54,23 @@ public sealed record EditorSettings
         else result[Key(exePath)] = value;
         return result;
     }
+
+    static Dictionary<string, T> Set<T>(Dictionary<string, T>? map, string key, T value) =>
+        new(map ?? new()) { [key] = value };
+
+    /// <summary>The entry last selected in the file; 0 when none was.</summary>
+    public int EntryFor(DatId file) =>
+        DatEntries is not null && DatEntries.TryGetValue(file.ToString(), out var entry) ? entry : 0;
+
+    public EditorSettings WithEntry(DatId file, int entry) =>
+        this with { DatEntries = Set(DatEntries, file.ToString(), entry) };
+
+    /// <summary>How the file's entry names are shown; Basic, not simple, when never set.</summary>
+    public DatNameSetting NamesFor(DatId file) =>
+        DatNames is not null && DatNames.TryGetValue(file.ToString(), out var names) ? names : new DatNameSetting(NamesMode.Basic, false);
+
+    public EditorSettings WithNames(DatId file, DatNameSetting names) =>
+        this with { DatNames = Set(DatNames, file.ToString(), names) };
 
     /// <summary>The exe's to-repack folder: its override, else &lt;exe folder&gt;\to-repack.</summary>
     public string RepackFolderFor(string exePath) =>

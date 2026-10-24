@@ -1,3 +1,4 @@
+using Manifold.Core.Data;
 using Manifold.Core.Editor;
 
 namespace Manifold.Core.Tests;
@@ -28,6 +29,34 @@ public sealed class WindowSettingsTests : IDisposable
         Assert.False(old.WindowMaximized);
         Assert.Null(old.LastPage);
         Assert.Null(old.LastSetId);
+    }
+
+    [Fact]
+    public void Data_page_settings_round_trip()
+    {
+        new EditorSettings { LastPage = "data", LastDat = "Weapons", LastUnitsTab = "UnitsSounds" }
+            .WithEntry(DatId.Weapons, 17)
+            .WithNames(DatId.Units, new DatNameSetting(NamesMode.Combined, true))
+            .Save(SettingsFile);
+        var loaded = EditorSettings.Load(SettingsFile);
+        Assert.Equal("data", loaded.LastPage);
+        Assert.Equal("Weapons", loaded.LastDat);
+        Assert.Equal("UnitsSounds", loaded.LastUnitsTab);
+        Assert.Equal(17, loaded.EntryFor(DatId.Weapons));
+        Assert.Equal(0, loaded.EntryFor(DatId.Units));
+        Assert.Equal(new DatNameSetting(NamesMode.Combined, true), loaded.NamesFor(DatId.Units));
+        Assert.Equal(new DatNameSetting(NamesMode.Basic, false), loaded.NamesFor(DatId.Weapons));
+    }
+
+    [Fact]
+    public void Data_page_settings_default_when_absent()
+    {
+        File.WriteAllText(SettingsFile, """{ "LastPage": "strings" }""");
+        var old = EditorSettings.Load(SettingsFile);
+        Assert.Null(old.LastDat);
+        Assert.Null(old.LastUnitsTab);
+        Assert.Equal(0, old.EntryFor(DatId.Units));
+        Assert.Equal(new DatNameSetting(NamesMode.Basic, false), old.NamesFor(DatId.Units));
     }
 
     [Fact]
