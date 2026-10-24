@@ -90,11 +90,8 @@ public static partial class DatNames
     static string Choose(NamesMode mode, string? listName, string? tblName, string fallback)
     {
         string? name = null;
-        if (mode == NamesMode.Combined && !string.IsNullOrEmpty(tblName))
-        {
-            listName ??= fallback;
+        if (mode == NamesMode.Combined && !string.IsNullOrEmpty(tblName) && !string.IsNullOrEmpty(listName))
             name = listName == tblName ? listName : $"{listName} ({tblName})";
-        }
         else if (mode != NamesMode.Tbl && !string.IsNullOrEmpty(listName)) name = listName;
         else if (mode != NamesMode.Basic && !string.IsNullOrEmpty(tblName)) name = tblName;
         return string.IsNullOrEmpty(name) ? fallback : name;

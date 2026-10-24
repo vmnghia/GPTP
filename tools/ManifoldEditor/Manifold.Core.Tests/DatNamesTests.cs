@@ -65,7 +65,9 @@ public class DatNamesTests
         // Only one of the two exists.
         Assert.Equal("Unit #2", names[2]);
         var onlyTbl = DatNames.Build(DatId.Units, Sources(statTxt: Table("Baneling\0")), NamesMode.Combined, true);
-        Assert.Equal("Unit #0 (Baneling)", onlyTbl[0]);
+        Assert.Equal("Baneling", onlyTbl[0]);
+        var emptyList = DatNames.Build(DatId.Units, Sources(statTxt: Table("Baneling\0"), lists: Lists(("Units", [""]))), NamesMode.Combined, true);
+        Assert.Equal("Baneling", emptyList[0]);
         var onlyList = DatNames.Build(DatId.Units, Sources(lists: lists), NamesMode.Combined, true);
         Assert.Equal("Terran Marine", onlyList[0]);
     }
