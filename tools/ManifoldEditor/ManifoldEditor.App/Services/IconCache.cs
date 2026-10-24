@@ -48,6 +48,12 @@ public sealed class IconCache(EditorResources resources)
         var image = new Image { Source = bitmap, Stretch = Stretch.Fill, Width = grp.Width * scale, Height = grp.Height * scale };
         Canvas.SetLeft(image, left);
         Canvas.SetTop(image, top);
-        return new Canvas { Width = square, Height = square, Children = { image } };
+        // Clipped to its square: moving the drawn pixels to the middle can push the frame's
+        // transparent edge out of it, where it would take clicks meant for a neighbour.
+        return new Canvas
+        {
+            Width = square, Height = square, Children = { image },
+            Clip = new RectangleGeometry { Rect = new Windows.Foundation.Rect(0, 0, square, square) },
+        };
     }
 }

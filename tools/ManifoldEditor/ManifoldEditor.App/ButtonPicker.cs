@@ -23,11 +23,26 @@ sealed class ButtonPicker
     Func<string, IReadOnlyList<ButtonTemplate>> filter = _ => [];
     Func<uint, string> actionName = _ => "";
     IconCache? icons;
+    /// <summary>The search waits for a pause in typing: each list is hundreds of rows.</summary>
+    Microsoft.UI.Dispatching.DispatcherQueueTimer? typing;
+    /// <summary>The search the list shows, so clearing it in Fill doesn't draw the list twice.</summary>
+    string shownQuery = "";
 
     public ButtonPicker()
     {
         Flyout = new Flyout { Content = new StackPanel { Spacing = 6, Children = { query, list } } };
-        query.TextChanged += (_, _) => Show();
+        query.TextChanged += (_, _) =>
+        {
+            if (typing is null)
+            {
+                typing = query.DispatcherQueue.CreateTimer();
+                typing.Interval = TimeSpan.FromMilliseconds(150);
+                typing.IsRepeating = false;
+                typing.Tick += (_, _) => { if (query.Text != shownQuery) Show(); };
+            }
+            typing.Stop();
+            typing.Start();
+        };
         list.ItemClick += (_, e) =>
         {
             if (e.ClickedItem is not FrameworkElement { Tag: ButtonTemplate template }) return;
@@ -44,12 +59,14 @@ sealed class ButtonPicker
         filter = filterBy;
         actionName = actionNameOf;
         icons = iconCache;
-        if (query.Text.Length > 0) query.Text = "";   // raises TextChanged, which shows the list
-        else Show();
+        typing?.Stop();
+        query.Text = "";
+        Show();
     }
 
     void Show()
     {
+        shownQuery = query.Text;
         list.Items.Clear();
         foreach (var template in query.Text.Trim().Length == 0 ? all : filter(query.Text))
         {

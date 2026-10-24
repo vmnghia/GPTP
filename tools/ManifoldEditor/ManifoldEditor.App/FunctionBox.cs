@@ -33,17 +33,12 @@ sealed class FunctionBox
     public FunctionBox(string header)
     {
         Root = new AutoSuggestBox { Header = header, HorizontalAlignment = HorizontalAlignment.Stretch, UpdateTextOnSelect = true };
-        Root.GotFocus += (_, _) =>
+        Root.GotFocus += (_, _) => Open();
+        // A click on the box while it has focus (right after a pick) opens the list again.
+        Root.AddHandler(UIElement.TappedEvent, new TappedEventHandler((_, _) =>
         {
-            if (table is null) return;
-            // Coming back mid-search keeps the narrowed list; a fresh click lists all.
-            if (Root.Text == current)
-            {
-                Root.ItemsSource = Items("");
-                Find<TextBox>(Root)?.SelectAll();
-            }
-            Root.IsSuggestionListOpen = true;
-        };
+            if (!Root.IsSuggestionListOpen) Open();
+        }), handledEventsToo: true);
         Root.TextChanged += (_, e) =>
         {
             if (e.Reason != AutoSuggestionBoxTextChangeReason.UserInput || table is null) return;
@@ -81,6 +76,19 @@ sealed class FunctionBox
         current = "";
         Root.Text = "";
         Root.ItemsSource = null;
+    }
+
+    /// <summary>The list, all of it unless a search is under way; the text selected to type over.</summary>
+    void Open()
+    {
+        if (table is null) return;
+        if (Root.Text == current)
+        {
+            Root.ItemsSource = Items("");
+            // After the click that gave the focus has placed the caret, or it undoes the selection.
+            Root.DispatcherQueue.TryEnqueue(() => Find<TextBox>(Root)?.SelectAll());
+        }
+        Root.IsSuggestionListOpen = true;
     }
 
     IReadOnlyList<Item> Items(string query) =>

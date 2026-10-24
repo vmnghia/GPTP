@@ -794,7 +794,11 @@ public sealed class MainWindow : Window
             return;
         }
         // The same document carries on in the new exe: undo history and the saved mark with it.
-        opened = opened with { ExePath = target, Archive = new StormArchive(target) };
+        opened = opened with
+        {
+            ExePath = target, Archive = new StormArchive(target),
+            Status = StatusLines.Renamed(opened.Status, Path.GetFileName(source), Path.GetFileName(target)),
+        };
         opened.State.ExeName = Path.GetFileName(target);
         settings = settings with { LastExe = target };
         settings.Save(Workspace.SettingsPath);

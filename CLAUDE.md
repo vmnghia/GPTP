@@ -34,10 +34,12 @@ into the exe caller's frame. Only the offsets listed in its `ALLOWED` table are 
 **Deploying.** A post-build step copies `GPTP.qdp` next to `SCManifold.exe`
 (`..\..\SCManifold\` from the solution) when that folder exists. The plugin must then be
 repacked into `SCManifold.exe` before testing. The user does it with the Manifold Editor's
-**Repack...** (spec `docs/superpowers/specs/2026-10-14-repack-design.md`, tested in game
-2026-10-24): one step packs `GPTP.qdp` and adds every file in a subfolder of
-`SCManifold\to-repack\` to the exe's MPQ, so a **new `rez\` file must be in `to-repack\`**
-to reach the game. Adding replaces files in place; it doesn't rebuild the MPQ, so files
+**Repack plugin...** and **Repack files...** (spec
+`docs/superpowers/specs/2026-10-14-repack-design.md`, tested in game 2026-10-24; split in
+two by `docs/superpowers/specs/2026-10-24-editor-qol-design.md`): the first packs
+`GPTP.qdp`, the second adds files in a subfolder of `SCManifold\to-repack\` to the exe's
+MPQ, so a **new `rez\` file must be in `to-repack\`** to reach the game. Launch (F5) offers
+both when the plugin or a to-repack file is newer than the exe's. Adding replaces files in place; it doesn't rebuild the MPQ, so files
 already in it (such as the editor's `Manifold\buttonsets.bin`) stay. FireGraft (the plugin)
 and PyMPQ (files added by hand, from its own list) remain the fallback. A missing
 `rez\statdata.bin` once made the selection panel silently fall back to vanilla's 12
