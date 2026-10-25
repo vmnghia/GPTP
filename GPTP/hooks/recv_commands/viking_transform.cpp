@@ -268,13 +268,14 @@ bool orderFly(CUnit* unit) {
 		unit->mainOrderState = 1;
 		return true;
 	}
-	//arrived by distance: the movable state still read "reached" on the tick
-	//after the new move target, so the fighter flew one step at a time, the
-	//transform stopping it between (in game, 2026-10-25); one that has stopped
-	//short of the spot is sent on again
+	//arrived by distance: the movable state still reads "reached" on the tick
+	//after a new move target (in game, 2026-10-25). The target is set once; it
+	//is set again only if the engine dropped or changed it - re-setting it
+	//whenever the state read "reached" restarted the acceleration every other
+	//tick, and the fighter crawled
 	const s32 dx = unit->orderTarget.pt.x - unit->position.x, dy = unit->orderTarget.pt.y - unit->position.y;
 	if (dx * dx + dy * dy > FLY_ARRIVED * FLY_ARRIVED) {
-		if (unit->getMovableState() != MovableState::NotReachedDestination)
+		if (unit->moveTarget.pt.x != unit->orderTarget.pt.x || unit->moveTarget.pt.y != unit->orderTarget.pt.y)
 			setMoveTarget(unit, unit->orderTarget.pt.x, unit->orderTarget.pt.y);
 		return true;
 	}

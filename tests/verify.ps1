@@ -22,6 +22,12 @@ if ($LASTEXITCODE -ne 0) { Write-Output "smart rally test FAILED"; exit 1 }
 if ($LASTEXITCODE -ne 0) { Write-Output "unit morphs test FAILED"; exit 1 }
 New-Item -ItemType Directory -Force "$PSScriptRoot\out" | Out-Null
 $log = "$PSScriptRoot\out\build-plugin.log"
+# the build stamps (__DATE__ __TIME__ in these two) are fixed when their file
+# compiles; an incremental build skips unchanged files, so the in-game stamp
+# showed Oct 24 1:19 on later builds (2026-10-26): touch them every build
+foreach ($stamped in @("$root\GPTP\hooks\main\game_hooks.cpp", "$root\GPTP\configure.cpp")) {
+    (Get-Item $stamped).LastWriteTime = Get-Date
+}
 & "C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe" "$root\GPTP\GPTP.sln" /p:Configuration=Debug /p:Platform=Win32 /nologo /v:minimal > $log
 $code = $LASTEXITCODE
 Select-String -Path $log -Pattern ": error |: warning C\d+.*(selection_ext|sel_)" | ForEach-Object { $_.Line }
