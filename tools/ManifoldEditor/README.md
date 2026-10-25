@@ -5,11 +5,13 @@ A FireGraft replacement for the Manifold mod. Part 1: button sets on the 5x3 com
 `docs/superpowers/plans/2026-10-05-button-set-editor.md`). Part 2: the strings of
 `rez\stat_txt.tbl`, written as PyMS's PyTBL writes them (spec
 `docs/superpowers/specs/2026-10-08-string-editor-design.md`, plan
-`docs/superpowers/plans/2026-10-08-string-editor.md`).
+`docs/superpowers/plans/2026-10-08-string-editor.md`). Part 4: the `.dat` files, a C# port of
+PyMS's PyDAT (spec `docs/superpowers/specs/2026-10-24-dat-editor-design.md`, plan
+`docs/superpowers/plans/2026-10-24-dat-editor.md`).
 
 | Project | What | Builds on |
 |---|---|---|
-| `Manifold.Core` | Data (the `MBTS` file, the `.fgp` import, vanilla sets from `StarCraft.exe`, `stat_txt.tbl`, GRP icons, `units.dat`) and the model (edits, undo, checks, open/save), plus the window's logic (`Editor/`: set list, card cells, commands, settings, resources) | anywhere (.NET 8) |
+| `Manifold.Core` | Data (the `MBTS` file, the `.fgp` import, vanilla sets from `StarCraft.exe`, `stat_txt.tbl`, GRP icons, the 11 `.dat` files in `Data/Dat/`) and the model (edits, undo, checks, open/save), plus the window's logic (`Editor/`: set list, card cells, commands, settings, resources) | anywhere (.NET 8) |
 | `Manifold.Core.Tests` | xunit tests of all of it | anywhere |
 | `Manifold.Storm` | `IWritableArchive` over PyMS's 32-bit `StormLib.dll` | compiles anywhere, runs on Windows |
 | `ManifoldEditor.App` | the WinUI 3 window, built in C# (no `.xaml` files) | compiles anywhere, builds and runs on Windows |
@@ -33,6 +35,9 @@ $env:MANIFOLD_STAT_TXT = "D:\SC Modding\SCManifold\to-repack\rez\stat_txt.tbl"
 $env:MANIFOLD_SC_DIR = "D:\Games\Starcraft 1.16.1"
 dotnet test tools/ManifoldEditor/Manifold.Core.Tests --filter StatTxtReport
 ```
+`MANIFOLD_ARR_DIR=<a folder of vanilla's arr\*.dat>` runs the tests that read the real `.dat`
+files (every file reads and saves byte for byte, and some values are spot-checked); they are
+skipped when it is unset. PyMS's own copies of the vanilla files do.
 Don't run `dotnet test` on the whole `.sln` outside Windows: the app's packaging steps need
 Windows tools.
 
@@ -139,3 +144,50 @@ added file and the editor's files read back, and swaps it in keeping `<exe>.bak`
 leaves the exe as it was. The status line compares the exe's plugin with `GPTP.qdp`. Only
 FireGraft's one-plugin layout is known; any other is refused. Tested in game 2026-10-24
 (all of the spec's §8), including a plugin of another size.
+
+## The Data page
+
+The **Data** page (after Button sets and Strings) edits the 11 `.dat` files of the exe's
+`arr\` folder, as PyMS's PyDAT does: units, weapons, flingy, sprites, images, upgrades,
+techdata, sfxdata, portdata, mapdata and orders. It follows PyDAT's layout: a tab per file,
+the units' sub-tabs (Basic, Advanced, Sounds, Graphics, StarEdit, AI Actions), PyDAT's groups,
+labels and tooltips (its `Hints.txt`). Every field is there: numbers, references (a dropdown
+and an id box), fixed lists, flags, and the derived displays (hit points' fraction, supply's
+half, times in seconds at Fastest, flingy's speed in pixels per frame). Files in the expanded
+layout (more entries than vanilla) open and save too.
+
+The exe is the document, as on the other pages: there is no Open or New. Edits share the one
+undo history with the button sets and strings, and Undo and Redo show the page, tab and entry
+they changed. A tab with unsaved edits shows ●, and an entry that differs from vanilla shows
+• in the list. A number box commits when it loses focus or on Enter; a value outside the
+field's type is refused (the box goes red, its tooltip has the range). A field that does not
+cover the entry (units.dat has some for entries 106-201 only) is disabled.
+
+**The entry list.** Find (Ctrl+F) searches the names and goes to the next match; Jump to ID
+(Ctrl+G) takes decimal or hex with `0x`. The **Names** box under the list is PyDAT's: Basic
+(PyMS's lists), TBL Based (from `stat_txt.tbl`, `unitnames.tbl`, `images.tbl`, `sfxdata.tbl`,
+`portdata.tbl` or `mapdata.tbl`, so a string renamed on the Strings page shows here) or
+Combined, with **Simple TBL Names**; both are kept per file. The list's right-click menu has
+**Revert entry** (to the file as opened, Ctrl+Shift+R) and **Revert entry to vanilla**, each
+one undo step. Check lines under the tabs list a reference past the end of its table, a
+sprite's selection circle image that names no image, and an expanded file the plugin refuses;
+each is a link to the entry.
+
+**Save and the to-repack copies.** Save writes every edited `.dat` file into the exe's MPQ
+with the button sets and strings, then writes `<to-repack>\arr\<name>.dat` (kept as `.bak`),
+so a later Repack files doesn't bring the old file back. A copy that fails to write is a
+status line; the exe keeps the edit. Save as writes no to-repack copies. When an exe opens
+and a to-repack `.dat` differs from the exe's, the opening dialog lists it with the strings
+copy and asks which to edit. An expanded file of a table the plugin cannot extend (the plugin
+reads images, sprites and flingy only) is flagged on opening, and the first Save that writes
+one asks to confirm. The plugin's extension is on `origin/feat/dat-extender`, not on master.
+
+**`Data\pydat\` must ship beside the exe.** It holds PyMS's name lists and `Hints.txt`
+(MIT; `LICENSE.md` is in it). The build copies it from `fixtures\pydat\`.
+
+**Not yet** (the later parts of the port, in the spec's header): Jump buttons, Used by, copy
+and paste, TXT import and export; previews (GRP frames, icons, sound playback); Add entry and
+Set count for images, sprites and flingy; improvements. Two differences from PyDAT: its
+seconds boxes are editable, here they are read-only text; and a box is limited to its
+property's type, not to PyDAT's tighter ranges. Built 2026-10-25; the rules are tested on
+Linux and the window compiles, but it has not been run on Windows.

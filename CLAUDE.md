@@ -128,7 +128,10 @@ installed there, not only in `injectHudHooks`.
   replacement: part 1 button sets, saved as `Manifold\buttonsets.bin` in the mod exe's MPQ
   and applied at game start by `hooks/interface/buttonsets_loader.cpp`; part 2 the strings
   of `rez\stat_txt.tbl` (spec `docs/superpowers/specs/2026-10-08-string-editor-design.md`),
-  which follows PyMS's PyTBL. Unlike the plugin,
+  which follows PyMS's PyTBL; part 4 the 11 `arr\*.dat` files on a Data page, a port of
+  PyMS's PyDAT (spec `docs/superpowers/specs/2026-10-24-dat-editor-design.md`; its parts 2-5,
+  links, previews, entry counts and improvements, are not built; `MANIFOLD_ARR_DIR` runs the
+  tests on the real files). Unlike the plugin,
   most of it **can** be checked in the Linux session: `dotnet test
   tools/ManifoldEditor/Manifold.Core.Tests` (after `apt-get install -y dotnet-sdk-8.0`),
   and the WinUI window compiles with `dotnet msbuild -restore -t:Compile
