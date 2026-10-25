@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using ManifoldEditor.App.Dat.Tabs;
 using ManifoldEditor.App.Services;
 using Manifold.Core.Data;
 using Manifold.Core.Editor;
@@ -549,6 +550,12 @@ sealed class DataPage
     /// </summary>
     static IDatTab CreateTab(DatTabId id, DatContext context) => id switch
     {
+        DatTabId.UnitsBasic => new UnitsBasicTab(context),
+        DatTabId.UnitsAdvanced => new UnitsAdvancedTab(context),
+        DatTabId.UnitsSounds => new UnitsSoundsTab(context),
+        DatTabId.UnitsGraphics => new UnitsGraphicsTab(context),
+        DatTabId.UnitsStarEdit => new UnitsStarEditTab(context),
+        DatTabId.UnitsAiActions => new UnitsAiActionsTab(context),
         _ => new PlaceholderTab(id),
     };
 
