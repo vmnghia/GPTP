@@ -227,7 +227,8 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
     public string CopyEntryText(DatId file, int entry, DatTabId? subTab)
     {
         if (Document.Dat(file) is not DatFile dat || entry < 0 || entry >= dat.Count) return "";
-        var tab = subTab is DatTabId id ? DatTabs.Of(id) : null;
+        // Only the Units sub-tabs narrow the copy; elsewhere the command copies the entry (spec §3).
+        var tab = file == DatId.Units && subTab is DatTabId id ? DatTabs.Of(id) : null;
         return DatText.Export(dat, [entry], tab is not null && tab.File == file ? tab.Properties : null);
     }
 
@@ -238,17 +239,14 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
     /// </summary>
     public string? PasteEntry(DatId file, int entry, string? clipboard)
     {
-        if (string.IsNullOrWhiteSpace(clipboard)) return NoEntryOnClipboard;
+        // Text with no header line isn't an entry; text with one keeps its "line N" refusals.
+        if (string.IsNullOrWhiteSpace(clipboard) || !DatText.HasHeader(clipboard)) return NoEntryOnClipboard;
         if (Document.Dat(file) is not DatFile dat) return $"There is no {DatFormats.Of(file).FileName} to paste onto";
         try
         {
             var (after, changed) = DatText.Apply(dat, DatText.Parse(clipboard), entry);
             if (changed.Count > 0) Document.ApplyDatFile(file, after, entry, "Paste entry");
             return null;
-        }
-        catch (DatTextException e) when (e.Message == "No entries found" && e.Line is null)
-        {
-            return NoEntryOnClipboard;
         }
         catch (DatTextException e)
         {
@@ -257,7 +255,8 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
     }
 
     /// <summary>
-    /// PyMS's text imported onto the file, every entry in it, as one step named after the file.
+    /// PyMS's text imported onto the file, every entry in it, as one step named after the file
+    /// and the number of entries the text lists.
     /// Null on success (also when nothing changes: nothing recorded); else the refusal, with
     /// its line when it has one, and nothing applied.
     /// </summary>
@@ -266,10 +265,12 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
         if (Document.Dat(file) is not DatFile dat) return $"There is no {DatFormats.Of(file).FileName} to import onto";
         try
         {
-            var (after, changed) = DatText.Apply(dat, DatText.Parse(text));
+            var entries = DatText.Parse(text);
+            var (after, changed) = DatText.Apply(dat, entries);
             if (changed.Count > 0)
             {
-                int n = changed.Count;
+                // The label counts the entries the text lists, not the ones that differ.
+                int n = entries.Count;
                 Document.ApplyDatFile(file, after, changed[0], $"Import {fileName} ({n} entr{(n == 1 ? "y" : "ies")})");
             }
             return null;

@@ -107,6 +107,34 @@ public sealed class DatTextEditTests : IDisposable
     }
 
     [Fact]
+    public void OutsideUnitsTheCopyIsTheWholeEntry()
+    {
+        var state = State(out _);
+        Assert.Equal(state.CopyEntryText(DatId.Weapons, 0, null), state.CopyEntryText(DatId.Weapons, 0, DatTabId.Weapons));
+        Assert.Equal(state.CopyEntryText(DatId.Flingy, 0, null), state.CopyEntryText(DatId.Flingy, 0, DatTabId.Flingy));
+    }
+
+    [Theory]
+    [InlineData("hello world")]
+    [InlineData("hello 5")]
+    [InlineData("\tarmor 4\n")]
+    public void TextWithNoHeaderIsNotAnEntry(string clipboard)
+    {
+        var state = State(out var doc);
+        Assert.Equal("The clipboard holds no PyDAT entry", state.PasteEntry(DatId.Units, 0, clipboard));
+        Assert.False(doc.CanUndo);
+    }
+
+    [Fact]
+    public void AHeaderWithABadLineKeepsItsLine()
+    {
+        var state = State(out var doc);
+        string? refused = state.PasteEntry(DatId.Units, 0, "Unit(0):\n\tarmor 4\n\tarmor banana\n");
+        Assert.StartsWith("line 3: ", refused);
+        Assert.False(doc.CanUndo);
+    }
+
+    [Fact]
     public void SubTabPasteTouchesOnlyWhatTheTextHolds()
     {
         var state = State(out var doc);
@@ -124,6 +152,10 @@ public sealed class DatTextEditTests : IDisposable
         var state = State(out var doc);
         Assert.Null(state.ImportText(DatId.Units, "Unit(2):\n\tarmor 4\n\nUnit(5):\n\tarmor 6\n", "units.txt"));
         Assert.Equal("Import units.txt (2 entries)", doc.UndoLabel);
+
+        // the count is the entries the text lists, not the ones that changed
+        Assert.Null(state.ImportText(DatId.Units, "Unit(2):\n\tarmor 4\n\nUnit(3):\n\tarmor 0\n\nUnit(4):\n\tarmor 1\n", "three.txt"));
+        Assert.Equal("Import three.txt (3 entries)", doc.UndoLabel);
         Assert.Equal(4UL, doc.Dat(DatId.Units)!.Get(2, "armor"));
         Assert.Equal(6UL, doc.Dat(DatId.Units)!.Get(5, "armor"));
 

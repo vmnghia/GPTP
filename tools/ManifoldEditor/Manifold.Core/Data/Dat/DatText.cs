@@ -261,6 +261,21 @@ public static class DatText
     static readonly Regex flagPattern = new(@"^flag_0x([0-9a-fA-F]+)$", RegexOptions.Compiled);
 
     /// <summary>
+    /// Whether the text has a header line "Name(id):" at all (after the BOM and comments are dropped),
+    /// as <see cref="Parse"/> reads them: false for prose and for lines with no header above them.
+    /// </summary>
+    public static bool HasHeader(string text)
+    {
+        if (text.StartsWith('\uFEFF')) text = text[1..];
+        foreach (string raw in text.Split(["\r\n", "\n"], StringSplitOptions.None))
+        {
+            int hash = raw.IndexOf('#');
+            if (headerPattern.IsMatch(hash >= 0 ? raw[..hash].TrimEnd() : raw.TrimEnd())) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
     /// PyMS's parse_text: a header "Name(id):" and a "key value" or "key.sub value" line for each
     /// value, a value a number, True or False. A BOM, CRLF line ends, comments after # and
     /// trailing whitespace are dropped. Refuses as PyMS does, with the line it found.
