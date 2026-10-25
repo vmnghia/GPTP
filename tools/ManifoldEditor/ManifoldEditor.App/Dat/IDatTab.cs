@@ -75,14 +75,6 @@ abstract class DatTabBase : IDatTab
     }
 }
 
-/// <summary>A tab not built yet: its name, nothing else. Tasks 9-11 replace each in <see cref="DataPage"/>'s factory.</summary>
-sealed class PlaceholderTab(DatTabId id) : IDatTab
-{
-    public DatTabId Id => id;
-    public UIElement Root { get; } = new TextBlock { Text = DatTabs.Of(id).Name, Opacity = 0.75 };
-    public void Show(int entry) { }
-}
-
 /// <summary>
 /// What every tab reads and edits through: the open exe's .dat files, their entry names,
 /// PyDAT's lists and hints, and the one way to edit (a history step, then the window redraws).

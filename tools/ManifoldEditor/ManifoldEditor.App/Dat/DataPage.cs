@@ -544,10 +544,7 @@ sealed class DataPage
         return (tab, scroller);
     }
 
-    /// <summary>
-    /// The tab for an id. Tasks 9-11 replace the placeholders here, one case per tab
-    /// (<c>DatTabId.UnitsBasic =&gt; new UnitsBasicTab(context),</c>).
-    /// </summary>
+    /// <summary>The tab for an id, one case per tab.</summary>
     static IDatTab CreateTab(DatTabId id, DatContext context) => id switch
     {
         DatTabId.UnitsBasic => new UnitsBasicTab(context),
@@ -560,7 +557,13 @@ sealed class DataPage
         DatTabId.Flingy => new FlingyTab(context),
         DatTabId.Sprites => new SpritesTab(context),
         DatTabId.Images => new ImagesTab(context),
-        _ => new PlaceholderTab(id),
+        DatTabId.Upgrades => new UpgradesTab(context),
+        DatTabId.Techdata => new TechdataTab(context),
+        DatTabId.Sounds => new SoundsTab(context),
+        DatTabId.Portraits => new PortraitsTab(context),
+        DatTabId.Campaign => new CampaignTab(context),
+        DatTabId.Orders => new OrdersTab(context),
+        _ => throw new ArgumentOutOfRangeException(nameof(id), id, "no such Data tab"),
     };
 
     /// <summary>The check lines of every file (spec §8), at most 50; each with an entry is a link that shows it.</summary>
