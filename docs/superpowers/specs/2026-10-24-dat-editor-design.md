@@ -1,6 +1,6 @@
 # Manifold Editor part 4: the .dat files (PyDAT's fields)
 
-Status: design 2026-10-24. Built 2026-10-25 (plan `docs/superpowers/plans/2026-10-24-dat-editor.md`): the rules are tested on Linux (Core tests), the window compiles; not yet run on Windows. The user asked for the editor to edit the .dat files next:
+Status: design 2026-10-24. Built 2026-10-25 (plan `docs/superpowers/plans/2026-10-24-dat-editor.md`): the rules are tested on Linux (Core tests), the window compiles. Tested on Windows 2026-10-25: all of §10 passed. The user asked for the editor to edit the .dat files next:
 "Porting the entirety of PyDAT is what I want, then add improvements on top", keeping the
 plugin's .dat extension in mind. PyDAT is split into five parts, each with its own spec,
 plan and test round, in this order (the user's choice):

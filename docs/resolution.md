@@ -540,10 +540,10 @@ starfield handled (§5). Features 1 and 2 below are done.
    **Repack without the dialog** (one press packs the newer plugin and every new or
    changed file), which the user judged too risky for now.
    **Data page** (part 4 of the editor, the `.dat` files after PyMS's PyDAT; fields) `[BUILT 2026-10-25;
-   not yet run on Windows]`: all 11 files, every field of PyDAT's 16 tabs, undo, revert to opened
+   tested on Windows 2026-10-25]`: all 11 files, every field of PyDAT's 16 tabs, undo, revert to opened
    and to vanilla, Save into the exe and `to-repack\arr\`; spec
-   `docs/superpowers/specs/2026-10-24-dat-editor-design.md`, test round in its §10. The rules
-   are tested on Linux; the window only compiles there. Remaining parts of the .dat port
+   `docs/superpowers/specs/2026-10-24-dat-editor-design.md`, test round in its §10. All of §10
+   passed on Windows. Remaining parts of the .dat port
    `[PROPOSED]`, each with its own spec: 2 links (Jump, Used by, copy and paste, name
    overrides, TXT import and export), 3 previews (GRP, icons, sound playback), 4 entry counts
    (Add entry and Set count for images, sprites and flingy; needs `feat/dat-extender` on
