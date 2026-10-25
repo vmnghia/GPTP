@@ -87,9 +87,13 @@ sealed class DatContext
     readonly Action changed;
     readonly Dictionary<DatId, (NamesKey Key, IReadOnlyList<string> Names)> names = new();
 
-    /// <summary>What a file's names are built from: when one of these changes, they are built again.</summary>
+    /// <summary>
+    /// What a file's names are built from: when one of these changes, they are built again.
+    /// Compared by reference (an edit makes a new file, table or overrides). Only the file's
+    /// own overrides: another file's never name its entries.
+    /// </summary>
     readonly record struct NamesKey(EditorState State, DatFile? File, DatFile? Sprites, DatFile? Images,
-        StringTable? Strings, DatNameSetting Setting);
+        StringTable? Strings, DatNameSetting Setting, NameOverrides Overrides);
 
     /// <param name="opened">The open exe, or null.</param>
     /// <param name="nameSetting">How a file's names are shown (the page's Names and Simple TBL Names, per file).</param>
@@ -115,7 +119,7 @@ sealed class DatContext
     /// <summary>
     /// The names of the file's entries (<see cref="DatNames.Build"/>, with the file's Names
     /// setting), one per entry of the file as edited now. Built again only when the file,
-    /// the files its names come from, the strings or the setting change. Empty when nothing is open.
+    /// the files its names come from, the strings, the setting or the file's name overrides change. Empty when nothing is open.
     /// </summary>
     public IReadOnlyList<string> Names(DatId id)
     {
@@ -126,11 +130,11 @@ sealed class DatContext
         var key = new NamesKey(exe.State, doc.Dat(id),
             id is DatId.Flingy ? doc.Dat(DatId.Sprites) : null,
             id is DatId.Flingy or DatId.Sprites ? doc.Dat(DatId.Images) : null,
-            exe.State.Strings, setting);
+            exe.State.Strings, setting, doc.Overrides(id));
         if (names.TryGetValue(id, out var cached) && cached.Key == key) return cached.Names;
         var r = exe.Resources;
         var sources = new DatNameSources(doc.Dat, exe.State.Strings, r.UnitNames, r.ImagesTbl, r.SfxdataTbl,
-            r.PortdataTbl, r.MapdataTbl, exe.Lists);
+            r.PortdataTbl, r.MapdataTbl, exe.Lists, doc.Overrides);
         var built = DatNames.Build(id, sources, setting.Mode, setting.Simple);
         names[id] = (key, built);
         return built;

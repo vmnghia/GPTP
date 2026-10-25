@@ -58,6 +58,16 @@ public sealed partial class NameOverrides
         return new NameOverrides(result);
     }
 
+    /// <summary>The file's encoding: UTF-8 without a byte order mark (one read, BOM or not, is stripped by <see cref="Parse"/>).</summary>
+    static readonly UTF8Encoding FileEncoding = new(false);
+
+    /// <summary><see cref="Parse"/> of a file's bytes (in the exe, or a PyDAT <c>.txt</c> on disk).</summary>
+    public static NameOverrides FromBytes(byte[] bytes, List<string> notes, string path) =>
+        Parse(FileEncoding.GetString(bytes), notes, path);
+
+    /// <summary><see cref="Write"/> as the file's bytes: UTF-8 without a byte order mark.</summary>
+    public byte[] ToBytes() => FileEncoding.GetBytes(Write());
+
     /// <summary>The file's text: <c>id:name</c> or <c>id+:name</c>, in id order, each line ended by a line feed (as PyDAT writes it).</summary>
     public string Write()
     {

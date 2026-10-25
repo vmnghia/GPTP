@@ -134,7 +134,7 @@ public static class EditorSession
         {
             // Only the files whose overrides changed; emptied ones are written empty (an MPQ file can't be removed here).
             if (document.OverridesDirty(format.Id))
-                files.Add((NameOverrides.ArchivePath(format.Id), new UTF8Encoding(false).GetBytes(document.Overrides(format.Id).Write())));
+                files.Add((NameOverrides.ArchivePath(format.Id), document.Overrides(format.Id).ToBytes()));
         }
         return null;
     }

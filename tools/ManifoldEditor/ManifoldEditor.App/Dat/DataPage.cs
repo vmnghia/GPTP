@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Text;
 using ManifoldEditor.App.Dat.Tabs;
 using ManifoldEditor.App.Services;
 using Manifold.Core.Data;
@@ -11,6 +12,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage.Pickers;
 using Windows.System;
 using Button = Microsoft.UI.Xaml.Controls.Button;
 
@@ -21,6 +24,8 @@ namespace ManifoldEditor.App.Dat;
 /// Find, ID Jump and the Names settings; on the right a bar of the 11 files, the units
 /// sub-tabs, the tab, and the check lines. Edits go through <see cref="DatContext.Edit"/>;
 /// the window redraws after one and calls <see cref="Refresh"/> while the page shows.
+/// The list's menu and the TXT menu copy, paste, export and import PyDAT's text, and edit
+/// the file's name overrides (links spec §3, §6).
 /// </summary>
 sealed class DataPage
 {
@@ -33,6 +38,8 @@ sealed class DataPage
 
     readonly Func<OpenedExe?> opened;
     readonly Action changed;
+    readonly Func<string, string, Task> message;
+    readonly Func<nint> windowHandle;
     readonly Func<EditorSettings> settings;
     readonly Action<EditorSettings> setSettings;
     readonly DatContext context;
@@ -44,8 +51,17 @@ sealed class DataPage
     readonly ListView list = new() { SelectionMode = ListViewSelectionMode.Single, FontFamily = new FontFamily("Consolas") };
     readonly ComboBox namesMode = new() { MinWidth = 160 };
     readonly CheckBox simpleNames = new() { Content = "Simple TBL Names" };
+    // The list's menu, PyDAT's order and names (links spec §3, §6).
+    readonly MenuFlyoutItem copyEntryItem = new() { Text = "Copy Entry to Clipboard", KeyboardAcceleratorTextOverride = "Ctrl+Shift+C" };
+    readonly MenuFlyoutItem copySubTabItem = new() { Text = "Copy Sub-Tab to Clipboard", KeyboardAcceleratorTextOverride = "Ctrl+Shift+Y" };
+    readonly MenuFlyoutItem pasteItem = new() { Text = "Paste from Clipboard", KeyboardAcceleratorTextOverride = "Ctrl+Shift+P" };
     readonly MenuFlyoutItem revertItem = new() { Text = "Revert entry", KeyboardAcceleratorTextOverride = "Ctrl+Shift+R" };
     readonly MenuFlyoutItem revertVanillaItem = new() { Text = "Revert entry to vanilla" };
+    readonly MenuFlyoutItem overrideItem = new() { Text = "Override Name", KeyboardAcceleratorTextOverride = "Ctrl+Shift+N" };
+    // The TXT menu above the tabs.
+    readonly DropDownButton txtButton = new() { Content = "TXT", VerticalAlignment = VerticalAlignment.Center };
+    readonly MenuFlyoutItem exportItem = new() { Text = "Export to TXT...", KeyboardAcceleratorTextOverride = "Ctrl+E" };
+    readonly MenuFlyoutItem importItem = new() { Text = "Import from TXT...", KeyboardAcceleratorTextOverride = "Ctrl+I" };
 
     // The right: the files, the units sub-tabs, the tab, the checks.
     readonly SelectorBar files = new();
@@ -85,15 +101,22 @@ sealed class DataPage
 
     /// <summary>True while the page fills its controls: their selection events are its own.</summary>
     bool updating;
+    /// <summary>True while a command waits on the clipboard, a file picker or the overrides dialog: another one waits its turn.</summary>
+    bool busy;
 
     /// <param name="opened">The open exe, or null.</param>
     /// <param name="changed">After an edit or a revert: the window redraws (and calls Refresh).</param>
     /// <param name="settings">The window's settings now.</param>
     /// <param name="setSettings">Replaces the window's settings (kept in memory; the window writes them to disk).</param>
-    public DataPage(Func<OpenedExe?> opened, Action changed, Func<EditorSettings> settings, Action<EditorSettings> setSettings)
+    /// <param name="message">The window's message dialog (a refused paste or import).</param>
+    /// <param name="windowHandle">The window, for the file pickers.</param>
+    public DataPage(Func<OpenedExe?> opened, Action changed, Func<EditorSettings> settings, Action<EditorSettings> setSettings,
+        Func<string, string, Task> message, Func<nint> windowHandle)
     {
         this.opened = opened;
         this.changed = changed;
+        this.message = message;
+        this.windowHandle = windowHandle;
         this.settings = settings;
         this.setSettings = setSettings;
         context = new DatContext(opened, NameSetting, changed);
@@ -149,10 +172,20 @@ sealed class DataPage
             SelectEntry(list.SelectedIndex, scroll: false);
         };
         var menu = new MenuFlyout();
+        copyEntryItem.Click += (_, _) => CopyEntry(subTab: false);
+        copySubTabItem.Click += (_, _) => CopyEntry(subTab: true);
+        pasteItem.Click += async (_, _) => await PasteEntry();
         revertItem.Click += (_, _) => RevertEntry(toVanilla: false);
         revertVanillaItem.Click += (_, _) => RevertEntry(toVanilla: true);
+        overrideItem.Click += async (_, _) => await OverrideName();
+        menu.Items.Add(copyEntryItem);
+        menu.Items.Add(copySubTabItem);
+        menu.Items.Add(pasteItem);
+        menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(revertItem);
         menu.Items.Add(revertVanillaItem);
+        menu.Items.Add(new MenuFlyoutSeparator());
+        menu.Items.Add(overrideItem);
         menu.Opening += (_, _) => UpdateMenu();
         // Not ContextFlyout: a right click doesn't select the row, and the menu acts on the
         // selected entry. The row under the pointer (or the focused row, from the keyboard) is
@@ -202,8 +235,21 @@ sealed class DataPage
             int index = Array.IndexOf(fileItems, item);
             if (index >= 0 && (DatId)index != file) SelectFile((DatId)index);
         };
-        // Eleven names may not fit beside the list: the bar scrolls sideways.
-        right.Children.Add(SideScroll(files));
+        // Eleven names may not fit beside the list: the bar scrolls sideways. The TXT menu at its end.
+        exportItem.Click += async (_, _) => await ExportText();
+        importItem.Click += async (_, _) => await ImportText();
+        var txtMenu = new MenuFlyout { Placement = FlyoutPlacementMode.BottomEdgeAlignedRight };
+        txtMenu.Items.Add(exportItem);
+        txtMenu.Items.Add(importItem);
+        txtMenu.Opening += (_, _) => UpdateMenu();
+        txtButton.Flyout = txtMenu;
+        var filesRow = new Grid { ColumnSpacing = 8 };
+        filesRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        filesRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        filesRow.Children.Add(SideScroll(files));
+        Grid.SetColumn(txtButton, 1);
+        filesRow.Children.Add(txtButton);
+        right.Children.Add(filesRow);
 
         unitsItems = UnitsTabIds.Select(id => new SelectorBarItem { Text = DatTabs.Of(id).Name }).ToArray();
         foreach (var item in unitsItems) unitsTabs.Items.Add(item);
@@ -396,9 +442,208 @@ sealed class DataPage
     {
         var doc = opened()?.State.Document;
         int entry = Entry;
+        bool hasEntry = doc?.Dat(file) is { } dat && entry < dat.Count;
+        copyEntryItem.IsEnabled = hasEntry;
+        copySubTabItem.IsEnabled = hasEntry;
+        pasteItem.IsEnabled = hasEntry;
         revertItem.IsEnabled = doc?.OpenedDat(file) is { } o && entry < o.Count && doc.Dat(file) is not null;
         revertVanillaItem.IsEnabled = doc?.VanillaDat(file) is { } v && entry < v.Count && doc.Dat(file) is not null;
+        overrideItem.IsEnabled = hasEntry;
+        exportItem.IsEnabled = doc?.Dat(file) is not null;
+        importItem.IsEnabled = doc?.Dat(file) is not null;
     }
+
+    // -------- Copy, paste, TXT, name overrides (links spec §3, §6) --------
+
+    /// <summary>
+    /// Copy Entry (or Copy Sub-Tab: the shown units sub-tab's properties) to the Windows
+    /// clipboard, as PyDAT's text. False when there is no entry to copy.
+    /// </summary>
+    public bool CopyEntry(bool subTab)
+    {
+        if (DialogOpen()) return false;
+        CommitPending();
+        if (opened() is not { } exe || exe.State.Document.Dat(file) is null) return false;
+        string text = exe.State.CopyEntryText(file, Entry, subTab ? CurrentTab : null);
+        if (text.Length == 0) return false;
+        try
+        {
+            var package = new DataPackage();
+            package.SetText(text);
+            Clipboard.SetContent(package);
+        }
+        catch (Exception e)
+        {
+            // Another program holding the clipboard.
+            _ = Tell("Not copied", $"The clipboard can't be written: {e.Message}");
+            return false;
+        }
+        try
+        {
+            // Kept after the editor closes, to paste into PyDAT or a text file.
+            Clipboard.Flush();
+        }
+        catch (Exception)
+        {
+            // Copied all the same, for as long as the editor runs.
+        }
+        return true;
+    }
+
+    /// <summary>Paste from Clipboard: the clipboard's one entry onto the selected entry (one undo step); a refusal in a message.</summary>
+    public async Task PasteEntry()
+    {
+        if (busy || DialogOpen()) return;
+        CommitPending();
+        if (opened() is not { } exe || exe.State.Document.Dat(file) is null) return;
+        var state = exe.State;
+        var at = file;
+        int entry = Entry;
+        string? text = null;
+        busy = true;
+        try
+        {
+            var content = Clipboard.GetContent();
+            if (content.Contains(StandardDataFormats.Text)) text = await content.GetTextAsync();
+        }
+        catch (Exception)
+        {
+            text = null;   // a clipboard another program holds, or text it can't give: no entry
+        }
+        finally
+        {
+            busy = false;
+        }
+        if (!ReferenceEquals(opened()?.State, state)) return;   // another exe opened meanwhile
+        string? refused;
+        // Core refuses what it can name; anything else is said too, rather than closing the editor (an async click).
+        try { refused = state.PasteEntry(at, entry, text); }
+        catch (Exception e) { refused = e.Message; }
+        if (refused is not null) await Tell("Not pasted", refused);
+        else changed();
+    }
+
+    /// <summary>Export to TXT: every entry of the current file, to a .txt the user picks (a temporary file, then replaced).</summary>
+    public async Task ExportText()
+    {
+        if (busy || DialogOpen()) return;
+        CommitPending();
+        if (opened() is not { } exe || exe.State.Document.Dat(file) is not { } dat) return;
+        string fileName = DatFormats.Of(file).FileName;
+        string text = DatText.Export(dat, Enumerable.Range(0, dat.Count));
+        var picker = new FileSavePicker { SuggestedFileName = Path.GetFileNameWithoutExtension(fileName) };
+        picker.FileTypeChoices.Add("PyDAT text", [".txt"]);
+        if (await Pick(picker, () => picker.PickSaveFileAsync().AsTask()) is not string path) return;
+        try
+        {
+            TextFiles.Write(path, new UTF8Encoding(false).GetBytes(text));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            await Tell("Not exported", $"{fileName} could not be written to {path}: {e.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Import from TXT: the entries a .txt lists replace those entries of the current file, as
+    /// one undo step; any refusal refuses the whole file, in a message with its line.
+    /// </summary>
+    public async Task ImportText()
+    {
+        if (busy || DialogOpen()) return;
+        CommitPending();
+        if (opened() is not { } exe || exe.State.Document.Dat(file) is null) return;
+        var state = exe.State;
+        var at = file;
+        var picker = new FileOpenPicker();
+        picker.FileTypeFilter.Add(".txt");
+        if (await Pick(picker, () => picker.PickSingleFileAsync().AsTask()) is not string path) return;
+        string name = Path.GetFileName(path);
+        string text;
+        try
+        {
+            text = File.ReadAllText(path);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            await Tell("Not imported", $"{name} can't be read: {e.Message}");
+            return;
+        }
+        if (!ReferenceEquals(opened()?.State, state)) return;
+        string? refused;
+        try { refused = state.ImportText(at, text, name); }
+        catch (Exception e) { refused = e.Message; }
+        if (refused is not null) await Tell("Not imported", $"{name}: {refused}");
+        else changed();
+    }
+
+    /// <summary>Override Name: PyDAT's Name Overrides dialog for the current file, on the selected entry; OK is one undo step.</summary>
+    public async Task OverrideName()
+    {
+        if (busy || DialogOpen() || Root.XamlRoot is not { } xamlRoot) return;
+        CommitPending();
+        if (opened() is not { } exe || exe.State.Document.Dat(file) is null) return;
+        var state = exe.State;
+        var at = file;
+        int entry = Entry;
+        NameOverrides? after;
+        busy = true;
+        try
+        {
+            after = await new NameOverridesDialog(xamlRoot, windowHandle(), at, state.Document.Overrides(at), entry).ShowAsync();
+        }
+        catch (Exception)
+        {
+            after = null;   // a dialog that couldn't open (another one showing): nothing changes
+        }
+        finally
+        {
+            busy = false;
+        }
+        if (after is null || !ReferenceEquals(opened()?.State, state)) return;
+        if (state.EditOverrides(at, after, entry)) changed();
+    }
+
+    /// <summary>A file picker shown for the window: the path picked, or null (cancelled, or the picker failed: said in a message).</summary>
+    async Task<string?> Pick(object picker, Func<Task<Windows.Storage.StorageFile>> show)
+    {
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle());
+        Windows.Storage.StorageFile? picked = null;
+        string? failure = null;
+        busy = true;
+        try
+        {
+            picked = await show();
+        }
+        catch (Exception e)
+        {
+            failure = e.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
+        if (failure is not null) await Tell("No file chosen", failure);
+        return picked?.Path;
+    }
+
+    /// <summary>A message in the window's dialog, unless a dialog already shows (one at a time).</summary>
+    async Task Tell(string title, string text)
+    {
+        if (DialogOpen()) return;
+        try
+        {
+            await message(title, text);
+        }
+        catch (Exception)
+        {
+            // A dialog opened meanwhile: the message is dropped rather than the editor closed.
+        }
+    }
+
+    /// <summary>Whether a ContentDialog shows: a second one can't open (and its keys shouldn't reach the page).</summary>
+    bool DialogOpen() =>
+        Root.XamlRoot is { } xamlRoot && VisualTreeHelper.GetOpenPopupsForXamlRoot(xamlRoot).Any(p => p.Child is ContentDialog);
 
     // -------- Drawing --------
 
@@ -419,7 +664,8 @@ sealed class DataPage
             for (int i = 0; i < fileItems.Length; i++)
             {
                 var id = (DatId)i;
-                string text = FileTabName(id) + (doc.DatDirty(id) ? " ●" : "");
+                // Unsaved: the .dat file or its name overrides (links spec §6).
+                string text = FileTabName(id) + (doc.DatDirty(id) || doc.OverridesDirty(id) ? " ●" : "");
                 if (fileItems[i].Text != text) fileItems[i].Text = text;
             }
             files.SelectedItem = fileItems[(int)file];

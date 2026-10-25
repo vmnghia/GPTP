@@ -264,7 +264,8 @@ public sealed class MainWindow : Window
 
         // The page keeps its file, sub-tab, entries and names in the settings in memory; they
         // are written with the rest (on closing, and whenever the window saves the settings).
-        dataPage = new DataPage(() => opened, Refresh, () => settings, changed => settings = changed);
+        dataPage = new DataPage(() => opened, Refresh, () => settings, changed => settings = changed,
+            (title, text) => Message(title, text), () => WinRT.Interop.WindowNative.GetWindowHandle(this));
         Grid.SetRow(dataPage.Root, 2);
         dataPage.Root.Visibility = Visibility.Collapsed;
         root.Children.Add(dataPage.Root);
@@ -383,8 +384,10 @@ public sealed class MainWindow : Window
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.C, CopyButtonKey));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.V, PasteButtonKey));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Delete, DeleteButtonKey, VirtualKeyModifiers.None));
+        // Ctrl+Shift+C: Copy set on the sets page, Copy Entry to Clipboard on the Data page.
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.C, () =>
         {
+            if (DataPageShows) return dataPage.CopyEntry(subTab: false);
             if (!CardKeysApply()) return false;
             opened!.State.CopySet();
             Refresh();
@@ -415,6 +418,17 @@ public sealed class MainWindow : Window
             dataPage.RevertEntry(toVanilla: false);
             return true;
         }, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
+        // Copy Sub-Tab (PyDAT's Ctrl+Y is Redo here), Paste from Clipboard, Override Name, Export and Import TXT (links spec §3, §6).
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Y, () =>
+        {
+            if (!DataPageShows) return false;
+            dataPage.CopyEntry(subTab: true);
+            return true;
+        }, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
+        root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.P, dataPage.PasteEntry, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
+        root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.N, dataPage.OverrideName, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
+        root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.E, dataPage.ExportText, VirtualKeyModifiers.Control));
+        root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.I, dataPage.ImportText, VirtualKeyModifiers.Control));
         return root;
     }
 
@@ -644,6 +658,15 @@ public sealed class MainWindow : Window
         accelerator.Invoked += (_, e) => e.Handled = action();
         return accelerator;
     }
+
+    /// <summary>A Data page shortcut running an async command (which catches its own failures); only while the page shows.</summary>
+    KeyboardAccelerator DataAccelerator(VirtualKey key, Func<Task> command, VirtualKeyModifiers modifiers) =>
+        Accelerator(key, () =>
+        {
+            if (!DataPageShows) return false;
+            _ = command();
+            return true;
+        }, modifiers);
 
     /// <summary>The card's shortcuts apply: a set is open, its page shows, and no text field has the keys.</summary>
     bool CardKeysApply() =>

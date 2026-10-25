@@ -1,4 +1,3 @@
-using System.Text;
 using Manifold.Core.Data;
 using Manifold.Core.Editor;
 
@@ -71,7 +70,7 @@ public static class DatSources
         {
             string path = NameOverrides.ArchivePath(format.Id);
             if (exe.TryRead(path) is not { } bytes) continue;
-            result[format.Id] = NameOverrides.Parse(new UTF8Encoding(false).GetString(bytes), notes, path);
+            result[format.Id] = NameOverrides.FromBytes(bytes, notes, path);
         }
         return result;
     }

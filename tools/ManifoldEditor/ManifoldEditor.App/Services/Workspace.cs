@@ -109,6 +109,12 @@ public static class Workspace
         var datNotes = new List<string>();
         var dats = Step("Reading the .dat files (arr\\*.dat)",
             () => DatSources.Load(new ResourceResolver(archives), new ResourceResolver(vanillaArchives), datSources, datNotes));
+        // The name overrides are the exe's alone (links spec §6): a line that isn't one is a status note.
+        var overrideNotes = new List<string>();
+        dats = dats with
+        {
+            Overrides = Step("Reading the name overrides (Manifold\\names\\*.txt)", () => DatSources.LoadOverrides(exe, overrideNotes)),
+        };
         var lists = Step("Reading Data\\pydat", LoadDatLists);
 
         string starCraftExe = Path.Combine(starCraftDir, "StarCraft.exe");
@@ -128,7 +134,7 @@ public static class Workspace
         string plugin;
         try { plugin = Repack.PluginStatus(File.ReadAllBytes(exePath), exePath, pluginPath); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { plugin = $"Plugin: {e.Message}"; }
-        var status = opened.Status.Concat(resources.Sources).Concat(datSources).Concat(resources.Notes).Concat(datNotes).ToArray();
+        var status = opened.Status.Concat(resources.Sources).Concat(datSources).Concat(resources.Notes).Concat(datNotes).Concat(overrideNotes).ToArray();
         return new OpenedExe(exePath, exe, state, resources, Catalog(state), status, plugin, lists);
     }
 }

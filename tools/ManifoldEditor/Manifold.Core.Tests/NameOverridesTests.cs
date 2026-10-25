@@ -183,6 +183,20 @@ public class NameOverridesTests
     }
 
     [Fact]
+    public void BytesAreUtf8WithoutAByteOrderMark()
+    {
+        var overrides = NameOverrides.Empty.With(3, true, "Zéro").With(1, false, "Un");
+        byte[] bytes = overrides.ToBytes();
+        Assert.Equal(Encoding.UTF8.GetBytes("1:Un\n3+:Zéro\n"), bytes);
+        var notes = new List<string>();
+        Assert.True(NameOverrides.FromBytes(bytes, notes, "names.txt").SameAs(overrides));
+        // A file written with a byte order mark (by another editor) reads the same.
+        byte[] withMark = [.. Encoding.UTF8.GetPreamble(), .. bytes];
+        Assert.True(NameOverrides.FromBytes(withMark, notes, "names.txt").SameAs(overrides));
+        Assert.Empty(notes);
+    }
+
+    [Fact]
     public void LoadOverridesReadsTheExeAndNotesBadLines()
     {
         var exe = new FakeArchive("SCManifold.exe", new()
