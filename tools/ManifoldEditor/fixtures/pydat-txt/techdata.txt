@@ -1,0 +1,571 @@
+Technology(0):
+	mineral_cost 8253
+	vespene_cost 8096
+	research_time 47675
+	energy_required 30625
+	research_requirements 48611
+	use_requirements 12147
+	icon 28285
+	label 40498
+	staredit_race 226
+	researched False
+	broodwar_only False
+
+Technology(1):
+	mineral_cost 24957
+	vespene_cost 11538
+	research_time 15587
+	energy_required 6853
+	research_requirements 21259
+	use_requirements 62857
+	icon 54090
+	label 43907
+	staredit_race 4
+	researched True
+	broodwar_only True
+
+Technology(2):
+	mineral_cost 46305
+	vespene_cost 48856
+	research_time 12636
+	energy_required 19511
+	research_requirements 27242
+	use_requirements 19086
+	icon 60168
+	label 63620
+	staredit_race 180
+	researched 62
+	broodwar_only 197
+
+Technology(3):
+	mineral_cost 60045
+	vespene_cost 30773
+	research_time 50361
+	energy_required 10587
+	research_requirements 6272
+	use_requirements 23380
+	icon 47526
+	label 14785
+	staredit_race 60
+	researched False
+	broodwar_only False
+
+Technology(4):
+	mineral_cost 37274
+	vespene_cost 48893
+	research_time 36782
+	energy_required 19597
+	research_requirements 35866
+	use_requirements 39142
+	icon 57529
+	label 16985
+	staredit_race 97
+	researched True
+	broodwar_only True
+
+Technology(5):
+	mineral_cost 2169
+	vespene_cost 57181
+	research_time 58902
+	energy_required 63632
+	research_requirements 45255
+	use_requirements 60
+	icon 33512
+	label 63673
+	staredit_race 17
+	researched 169
+	broodwar_only 127
+
+Technology(6):
+	mineral_cost 29502
+	vespene_cost 34806
+	research_time 32085
+	energy_required 38284
+	research_requirements 8264
+	use_requirements 7665
+	icon 64302
+	label 962
+	staredit_race 66
+	researched False
+	broodwar_only False
+
+Technology(7):
+	mineral_cost 57928
+	vespene_cost 18617
+	research_time 58127
+	energy_required 62290
+	research_requirements 20572
+	use_requirements 49374
+	icon 61537
+	label 22154
+	staredit_race 38
+	researched True
+	broodwar_only True
+
+Technology(8):
+	mineral_cost 53108
+	vespene_cost 8475
+	research_time 284
+	energy_required 31640
+	research_requirements 11260
+	use_requirements 2452
+	icon 13229
+	label 646
+	staredit_race 247
+	researched 168
+	broodwar_only 141
+
+Technology(9):
+	mineral_cost 4091
+	vespene_cost 51049
+	research_time 25723
+	energy_required 59507
+	research_requirements 2355
+	use_requirements 38962
+	icon 54566
+	label 28787
+	staredit_race 93
+	researched False
+	broodwar_only False
+
+Technology(10):
+	mineral_cost 51686
+	vespene_cost 52918
+	research_time 34578
+	energy_required 28242
+	research_requirements 61788
+	use_requirements 31854
+	icon 57581
+	label 16903
+	staredit_race 196
+	researched True
+	broodwar_only True
+
+Technology(11):
+	mineral_cost 37336
+	vespene_cost 17238
+	research_time 34003
+	energy_required 64989
+	research_requirements 16421
+	use_requirements 43711
+	icon 14049
+	label 60175
+	staredit_race 129
+	researched 166
+	broodwar_only 27
+
+Technology(12):
+	mineral_cost 34670
+	vespene_cost 8841
+	research_time 28653
+	energy_required 9750
+	research_requirements 32152
+	use_requirements 47968
+	icon 51122
+	label 48439
+	staredit_race 249
+	researched False
+	broodwar_only False
+
+Technology(13):
+	mineral_cost 43499
+	vespene_cost 35806
+	research_time 12962
+	energy_required 5986
+	research_requirements 61598
+	use_requirements 11043
+	icon 34876
+	label 500
+	staredit_race 76
+	researched True
+	broodwar_only True
+
+Technology(14):
+	mineral_cost 61015
+	vespene_cost 28111
+	research_time 39861
+	energy_required 40311
+	research_requirements 17780
+	use_requirements 6487
+	icon 55917
+	label 65015
+	staredit_race 200
+	researched 187
+	broodwar_only 152
+
+Technology(15):
+	mineral_cost 13990
+	vespene_cost 37644
+	research_time 36649
+	energy_required 17822
+	research_requirements 35191
+	use_requirements 28153
+	icon 36622
+	label 55729
+	staredit_race 127
+	researched False
+	broodwar_only False
+
+Technology(16):
+	mineral_cost 4950
+	vespene_cost 33459
+	research_time 772
+	energy_required 5145
+	research_requirements 24112
+	use_requirements 3861
+	icon 37392
+	label 23520
+	staredit_race 204
+	researched True
+	broodwar_only True
+
+Technology(17):
+	mineral_cost 44072
+	vespene_cost 42887
+	research_time 29628
+	energy_required 26287
+	research_requirements 28012
+	use_requirements 29240
+	icon 4077
+	label 8208
+	staredit_race 206
+	researched 195
+	broodwar_only 254
+
+Technology(18):
+	mineral_cost 34141
+	vespene_cost 28238
+	research_time 21079
+	energy_required 47037
+	research_requirements 24709
+	use_requirements 53251
+	icon 469
+	label 13557
+	staredit_race 244
+	researched False
+	broodwar_only False
+
+Technology(19):
+	mineral_cost 15415
+	vespene_cost 37660
+	research_time 16335
+	energy_required 12220
+	research_requirements 24780
+	use_requirements 49363
+	icon 6688
+	label 52913
+	staredit_race 36
+	researched True
+	broodwar_only True
+
+Technology(20):
+	mineral_cost 2789
+	vespene_cost 58764
+	research_time 8362
+	energy_required 57258
+	research_requirements 32763
+	use_requirements 38030
+	icon 58752
+	label 53734
+	staredit_race 53
+	researched 145
+	broodwar_only 236
+
+Technology(21):
+	mineral_cost 16924
+	vespene_cost 44461
+	research_time 54250
+	energy_required 24083
+	research_requirements 44523
+	use_requirements 47184
+	icon 23595
+	label 26491
+	staredit_race 238
+	researched False
+	broodwar_only False
+
+Technology(22):
+	mineral_cost 10676
+	vespene_cost 46557
+	research_time 27909
+	energy_required 51866
+	research_requirements 35110
+	use_requirements 52745
+	icon 51130
+	label 20509
+	staredit_race 157
+	researched True
+	broodwar_only True
+
+Technology(23):
+	mineral_cost 17275
+	vespene_cost 22024
+	research_time 32829
+	energy_required 7801
+	research_requirements 13112
+	use_requirements 5636
+	icon 48595
+	label 61121
+	staredit_race 235
+	researched 92
+	broodwar_only 231
+
+Technology(24):
+	mineral_cost 11698
+	vespene_cost 25197
+	research_time 4582
+	energy_required 64947
+	research_requirements 27104
+	use_requirements 51550
+	icon 28828
+	label 27168
+	staredit_race 24
+	researched False
+	broodwar_only False
+
+Technology(25):
+	mineral_cost 19618
+	vespene_cost 7507
+	research_time 12438
+	energy_required 21176
+	research_requirements 11445
+	use_requirements 51009
+	icon 13453
+	label 9336
+	staredit_race 117
+	researched True
+	broodwar_only True
+
+Technology(26):
+	mineral_cost 45750
+	vespene_cost 48045
+	research_time 6701
+	energy_required 35609
+	research_requirements 62322
+	use_requirements 39979
+	icon 18532
+	label 47335
+	staredit_race 79
+	researched 245
+	broodwar_only 29
+
+Technology(27):
+	mineral_cost 26787
+	vespene_cost 42374
+	research_time 11983
+	energy_required 22990
+	research_requirements 48799
+	use_requirements 44723
+	icon 24946
+	label 20254
+	staredit_race 49
+	researched False
+	broodwar_only False
+
+Technology(28):
+	mineral_cost 42026
+	vespene_cost 11974
+	research_time 57890
+	energy_required 8507
+	research_requirements 6484
+	use_requirements 42783
+	icon 5783
+	label 23261
+	staredit_race 50
+	researched True
+	broodwar_only True
+
+Technology(29):
+	mineral_cost 26727
+	vespene_cost 8595
+	research_time 65030
+	energy_required 30363
+	research_requirements 62616
+	use_requirements 62710
+	icon 57704
+	label 25416
+	staredit_race 56
+	researched 138
+	broodwar_only 163
+
+Technology(30):
+	mineral_cost 52829
+	vespene_cost 5790
+	research_time 27520
+	energy_required 55986
+	research_requirements 18733
+	use_requirements 3078
+	icon 22076
+	label 54479
+	staredit_race 179
+	researched False
+	broodwar_only False
+
+Technology(31):
+	mineral_cost 64757
+	vespene_cost 19332
+	research_time 1576
+	energy_required 14288
+	research_requirements 987
+	use_requirements 1884
+	icon 40703
+	label 59403
+	staredit_race 202
+	researched True
+	broodwar_only True
+
+Technology(32):
+	mineral_cost 46566
+	vespene_cost 18949
+	research_time 48874
+	energy_required 62796
+	research_requirements 33266
+	use_requirements 26585
+	icon 21970
+	label 2950
+	staredit_race 238
+	researched 114
+	broodwar_only 68
+
+Technology(33):
+	mineral_cost 46435
+	vespene_cost 44650
+	research_time 36373
+	energy_required 47464
+	research_requirements 26752
+	use_requirements 32809
+	icon 26623
+	label 3187
+	staredit_race 5
+	researched False
+	broodwar_only False
+
+Technology(34):
+	mineral_cost 24287
+	vespene_cost 39784
+	research_time 6582
+	energy_required 37697
+	research_requirements 54457
+	use_requirements 64918
+	icon 52927
+	label 40348
+	staredit_race 102
+	researched True
+	broodwar_only True
+
+Technology(35):
+	mineral_cost 13985
+	vespene_cost 35331
+	research_time 33572
+	energy_required 25368
+	research_requirements 1786
+	use_requirements 13806
+	icon 58975
+	label 17292
+	staredit_race 56
+	researched 90
+	broodwar_only False
+
+Technology(36):
+	mineral_cost 48361
+	vespene_cost 12713
+	research_time 23412
+	energy_required 17550
+	research_requirements 19920
+	use_requirements 60797
+	icon 33653
+	label 5284
+	staredit_race 114
+	researched False
+	broodwar_only False
+
+Technology(37):
+	mineral_cost 40836
+	vespene_cost 54528
+	research_time 17896
+	energy_required 39914
+	research_requirements 22028
+	use_requirements 21486
+	icon 40749
+	label 39391
+	staredit_race 174
+	researched True
+	broodwar_only True
+
+Technology(38):
+	mineral_cost 22281
+	vespene_cost 19921
+	research_time 24099
+	energy_required 27721
+	research_requirements 51463
+	use_requirements 42939
+	icon 45117
+	label 23761
+	staredit_race 3
+	researched 33
+	broodwar_only 144
+
+Technology(39):
+	mineral_cost 13324
+	vespene_cost 63029
+	research_time 40463
+	energy_required 14714
+	research_requirements 12568
+	use_requirements 21871
+	icon 1533
+	label 4616
+	staredit_race 242
+	researched False
+	broodwar_only False
+
+Technology(40):
+	mineral_cost 28403
+	vespene_cost 37093
+	research_time 19594
+	energy_required 41180
+	research_requirements 58463
+	use_requirements 46301
+	icon 50977
+	label 16768
+	staredit_race 169
+	researched True
+	broodwar_only True
+
+Technology(41):
+	mineral_cost 46354
+	vespene_cost 62006
+	research_time 51522
+	energy_required 26497
+	research_requirements 13274
+	use_requirements 52961
+	icon 38433
+	label 45246
+	staredit_race 203
+	researched 132
+	broodwar_only 114
+
+Technology(42):
+	mineral_cost 57858
+	vespene_cost 4799
+	research_time 55506
+	energy_required 45671
+	research_requirements 12231
+	use_requirements 15808
+	icon 15072
+	label 1074
+	staredit_race 153
+	researched False
+	broodwar_only False
+
+Technology(43):
+	mineral_cost 34373
+	vespene_cost 3779
+	research_time 43304
+	energy_required 54351
+	research_requirements 50057
+	use_requirements 34217
+	icon 33210
+	label 23333
+	staredit_race 51
+	researched True
+	broodwar_only True

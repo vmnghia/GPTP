@@ -1,0 +1,3745 @@
+Sprite(0):
+	image 49592
+	unused False
+	is_visible False
+
+Sprite(1):
+	image 1594
+	unused True
+	is_visible True
+
+Sprite(2):
+	image 40458
+	unused 72
+	is_visible 50
+
+Sprite(3):
+	image 46663
+	unused False
+	is_visible False
+
+Sprite(4):
+	image 36581
+	unused True
+	is_visible True
+
+Sprite(5):
+	image 12658
+	unused 227
+	is_visible 118
+
+Sprite(6):
+	image 14623
+	unused False
+	is_visible False
+
+Sprite(7):
+	image 61725
+	unused True
+	is_visible True
+
+Sprite(8):
+	image 12056
+	unused 111
+	is_visible 75
+
+Sprite(9):
+	image 50631
+	unused False
+	is_visible False
+
+Sprite(10):
+	image 47517
+	unused True
+	is_visible True
+
+Sprite(11):
+	image 7635
+	unused 224
+	is_visible 75
+
+Sprite(12):
+	image 4012
+	unused False
+	is_visible False
+
+Sprite(13):
+	image 33776
+	unused True
+	is_visible True
+
+Sprite(14):
+	image 18541
+	unused 65
+	is_visible 187
+
+Sprite(15):
+	image 24995
+	unused False
+	is_visible False
+
+Sprite(16):
+	image 64887
+	unused True
+	is_visible True
+
+Sprite(17):
+	image 45385
+	unused False
+	is_visible 238
+
+Sprite(18):
+	image 47694
+	unused False
+	is_visible False
+
+Sprite(19):
+	image 13834
+	unused True
+	is_visible True
+
+Sprite(20):
+	image 37064
+	unused 44
+	is_visible 67
+
+Sprite(21):
+	image 55017
+	unused False
+	is_visible False
+
+Sprite(22):
+	image 28067
+	unused True
+	is_visible True
+
+Sprite(23):
+	image 63444
+	unused 210
+	is_visible 187
+
+Sprite(24):
+	image 39899
+	unused False
+	is_visible False
+
+Sprite(25):
+	image 59485
+	unused True
+	is_visible True
+
+Sprite(26):
+	image 3457
+	unused 183
+	is_visible 221
+
+Sprite(27):
+	image 2225
+	unused False
+	is_visible False
+
+Sprite(28):
+	image 52261
+	unused True
+	is_visible True
+
+Sprite(29):
+	image 10297
+	unused 249
+	is_visible 233
+
+Sprite(30):
+	image 49410
+	unused False
+	is_visible False
+
+Sprite(31):
+	image 28324
+	unused True
+	is_visible True
+
+Sprite(32):
+	image 41818
+	unused 24
+	is_visible 56
+
+Sprite(33):
+	image 61643
+	unused False
+	is_visible False
+
+Sprite(34):
+	image 38272
+	unused True
+	is_visible True
+
+Sprite(35):
+	image 14008
+	unused 232
+	is_visible 253
+
+Sprite(36):
+	image 37956
+	unused False
+	is_visible False
+
+Sprite(37):
+	image 6033
+	unused True
+	is_visible True
+
+Sprite(38):
+	image 23289
+	unused 24
+	is_visible 242
+
+Sprite(39):
+	image 62530
+	unused False
+	is_visible False
+
+Sprite(40):
+	image 33206
+	unused True
+	is_visible True
+
+Sprite(41):
+	image 35670
+	unused 63
+	is_visible 231
+
+Sprite(42):
+	image 6284
+	unused False
+	is_visible False
+
+Sprite(43):
+	image 52610
+	unused True
+	is_visible True
+
+Sprite(44):
+	image 64768
+	unused 155
+	is_visible 17
+
+Sprite(45):
+	image 40725
+	unused False
+	is_visible False
+
+Sprite(46):
+	image 25774
+	unused True
+	is_visible True
+
+Sprite(47):
+	image 4451
+	unused 160
+	is_visible 112
+
+Sprite(48):
+	image 38502
+	unused False
+	is_visible False
+
+Sprite(49):
+	image 33865
+	unused True
+	is_visible True
+
+Sprite(50):
+	image 64622
+	unused 124
+	is_visible 183
+
+Sprite(51):
+	image 2320
+	unused False
+	is_visible False
+
+Sprite(52):
+	image 54268
+	unused True
+	is_visible True
+
+Sprite(53):
+	image 21172
+	unused 144
+	is_visible 159
+
+Sprite(54):
+	image 32619
+	unused False
+	is_visible False
+
+Sprite(55):
+	image 34202
+	unused True
+	is_visible True
+
+Sprite(56):
+	image 19389
+	unused 247
+	is_visible 211
+
+Sprite(57):
+	image 5569
+	unused False
+	is_visible False
+
+Sprite(58):
+	image 26246
+	unused True
+	is_visible True
+
+Sprite(59):
+	image 31321
+	unused 130
+	is_visible 80
+
+Sprite(60):
+	image 17582
+	unused False
+	is_visible False
+
+Sprite(61):
+	image 36660
+	unused True
+	is_visible True
+
+Sprite(62):
+	image 14086
+	unused 135
+	is_visible 238
+
+Sprite(63):
+	image 25442
+	unused False
+	is_visible False
+
+Sprite(64):
+	image 42324
+	unused True
+	is_visible True
+
+Sprite(65):
+	image 48682
+	unused 221
+	is_visible 66
+
+Sprite(66):
+	image 10763
+	unused False
+	is_visible False
+
+Sprite(67):
+	image 1222
+	unused True
+	is_visible True
+
+Sprite(68):
+	image 4256
+	unused 182
+	is_visible 30
+
+Sprite(69):
+	image 8184
+	unused False
+	is_visible False
+
+Sprite(70):
+	image 36148
+	unused True
+	is_visible True
+
+Sprite(71):
+	image 22874
+	unused 15
+	is_visible 239
+
+Sprite(72):
+	image 17225
+	unused False
+	is_visible False
+
+Sprite(73):
+	image 29150
+	unused True
+	is_visible True
+
+Sprite(74):
+	image 49628
+	unused 197
+	is_visible 49
+
+Sprite(75):
+	image 50367
+	unused False
+	is_visible False
+
+Sprite(76):
+	image 59317
+	unused True
+	is_visible True
+
+Sprite(77):
+	image 33281
+	unused 84
+	is_visible 248
+
+Sprite(78):
+	image 5804
+	unused False
+	is_visible False
+
+Sprite(79):
+	image 7053
+	unused True
+	is_visible True
+
+Sprite(80):
+	image 3755
+	unused 111
+	is_visible 123
+
+Sprite(81):
+	image 9886
+	unused False
+	is_visible False
+
+Sprite(82):
+	image 24928
+	unused True
+	is_visible True
+
+Sprite(83):
+	image 57277
+	unused 174
+	is_visible 30
+
+Sprite(84):
+	image 21780
+	unused False
+	is_visible False
+
+Sprite(85):
+	image 24888
+	unused True
+	is_visible True
+
+Sprite(86):
+	image 21526
+	unused 141
+	is_visible 65
+
+Sprite(87):
+	image 9793
+	unused False
+	is_visible False
+
+Sprite(88):
+	image 46501
+	unused True
+	is_visible True
+
+Sprite(89):
+	image 4556
+	unused 58
+	is_visible 133
+
+Sprite(90):
+	image 44827
+	unused False
+	is_visible False
+
+Sprite(91):
+	image 6364
+	unused True
+	is_visible True
+
+Sprite(92):
+	image 47758
+	unused 113
+	is_visible 162
+
+Sprite(93):
+	image 12408
+	unused False
+	is_visible False
+
+Sprite(94):
+	image 3819
+	unused True
+	is_visible True
+
+Sprite(95):
+	image 63028
+	unused 152
+	is_visible 226
+
+Sprite(96):
+	image 58866
+	unused False
+	is_visible False
+
+Sprite(97):
+	image 27496
+	unused True
+	is_visible True
+
+Sprite(98):
+	image 4305
+	unused 130
+	is_visible 225
+
+Sprite(99):
+	image 55645
+	unused False
+	is_visible False
+
+Sprite(100):
+	image 3773
+	unused True
+	is_visible True
+
+Sprite(101):
+	image 24752
+	unused 3
+	is_visible 126
+
+Sprite(102):
+	image 51495
+	unused False
+	is_visible False
+
+Sprite(103):
+	image 3913
+	unused True
+	is_visible True
+
+Sprite(104):
+	image 29956
+	unused 123
+	is_visible 174
+
+Sprite(105):
+	image 13310
+	unused False
+	is_visible False
+
+Sprite(106):
+	image 49989
+	unused True
+	is_visible True
+
+Sprite(107):
+	image 11290
+	unused 104
+	is_visible 101
+
+Sprite(108):
+	image 21987
+	unused False
+	is_visible False
+
+Sprite(109):
+	image 46259
+	unused True
+	is_visible True
+
+Sprite(110):
+	image 64538
+	unused 251
+	is_visible 5
+
+Sprite(111):
+	image 61419
+	unused False
+	is_visible False
+
+Sprite(112):
+	image 8868
+	unused True
+	is_visible True
+
+Sprite(113):
+	image 13378
+	unused 113
+	is_visible 150
+
+Sprite(114):
+	image 14480
+	unused False
+	is_visible False
+
+Sprite(115):
+	image 61406
+	unused True
+	is_visible True
+
+Sprite(116):
+	image 57600
+	unused 214
+	is_visible 207
+
+Sprite(117):
+	image 34
+	unused False
+	is_visible False
+
+Sprite(118):
+	image 14873
+	unused True
+	is_visible True
+
+Sprite(119):
+	image 57909
+	unused 127
+	is_visible 85
+
+Sprite(120):
+	image 36027
+	unused False
+	is_visible False
+
+Sprite(121):
+	image 12235
+	unused True
+	is_visible True
+
+Sprite(122):
+	image 5960
+	unused 182
+	is_visible 218
+
+Sprite(123):
+	image 47718
+	unused False
+	is_visible False
+
+Sprite(124):
+	image 64289
+	unused True
+	is_visible True
+
+Sprite(125):
+	image 55850
+	unused 178
+	is_visible 250
+
+Sprite(126):
+	image 28750
+	unused False
+	is_visible False
+
+Sprite(127):
+	image 38553
+	unused True
+	is_visible True
+
+Sprite(128):
+	image 33824
+	unused 21
+	is_visible 43
+
+Sprite(129):
+	image 16425
+	unused False
+	is_visible False
+
+Sprite(130):
+	image 53784
+	health_bar 74
+	unused True
+	is_visible True
+	selection_circle_image 175
+	selection_circle_offset 154
+
+Sprite(131):
+	image 57876
+	health_bar 39
+	unused 228
+	is_visible 179
+	selection_circle_image 189
+	selection_circle_offset 181
+
+Sprite(132):
+	image 57718
+	health_bar 133
+	unused False
+	is_visible False
+	selection_circle_image 63
+	selection_circle_offset 204
+
+Sprite(133):
+	image 7566
+	health_bar 95
+	unused True
+	is_visible True
+	selection_circle_image 190
+	selection_circle_offset 212
+
+Sprite(134):
+	image 5664
+	health_bar 51
+	unused 104
+	is_visible 254
+	selection_circle_image 204
+	selection_circle_offset 230
+
+Sprite(135):
+	image 41882
+	health_bar 118
+	unused False
+	is_visible False
+	selection_circle_image 218
+	selection_circle_offset 28
+
+Sprite(136):
+	image 47313
+	health_bar 156
+	unused True
+	is_visible True
+	selection_circle_image 22
+	selection_circle_offset 25
+
+Sprite(137):
+	image 5803
+	health_bar 194
+	unused 72
+	is_visible 52
+	selection_circle_image 104
+	selection_circle_offset 79
+
+Sprite(138):
+	image 35139
+	health_bar 175
+	unused False
+	is_visible False
+	selection_circle_image 30
+	selection_circle_offset 199
+
+Sprite(139):
+	image 29856
+	health_bar 147
+	unused True
+	is_visible True
+	selection_circle_image 212
+	selection_circle_offset 105
+
+Sprite(140):
+	image 13116
+	health_bar 212
+	unused 166
+	is_visible 22
+	selection_circle_image 6
+	selection_circle_offset 56
+
+Sprite(141):
+	image 9691
+	health_bar 115
+	unused False
+	is_visible False
+	selection_circle_image 80
+	selection_circle_offset 178
+
+Sprite(142):
+	image 27648
+	health_bar 103
+	unused True
+	is_visible True
+	selection_circle_image 119
+	selection_circle_offset 134
+
+Sprite(143):
+	image 41855
+	health_bar 53
+	unused 146
+	is_visible 87
+	selection_circle_image 238
+	selection_circle_offset 174
+
+Sprite(144):
+	image 9317
+	health_bar 58
+	unused False
+	is_visible False
+	selection_circle_image 36
+	selection_circle_offset 203
+
+Sprite(145):
+	image 19830
+	health_bar 190
+	unused True
+	is_visible True
+	selection_circle_image 214
+	selection_circle_offset 15
+
+Sprite(146):
+	image 39620
+	health_bar 82
+	unused 5
+	is_visible 252
+	selection_circle_image 179
+	selection_circle_offset 134
+
+Sprite(147):
+	image 12492
+	health_bar 8
+	unused False
+	is_visible False
+	selection_circle_image 128
+	selection_circle_offset 248
+
+Sprite(148):
+	image 64896
+	health_bar 247
+	unused True
+	is_visible True
+	selection_circle_image 80
+	selection_circle_offset 92
+
+Sprite(149):
+	image 60064
+	health_bar 204
+	unused 73
+	is_visible 191
+	selection_circle_image 126
+	selection_circle_offset 130
+
+Sprite(150):
+	image 34234
+	health_bar 247
+	unused False
+	is_visible False
+	selection_circle_image 71
+	selection_circle_offset 195
+
+Sprite(151):
+	image 65511
+	health_bar 127
+	unused True
+	is_visible True
+	selection_circle_image 10
+	selection_circle_offset 140
+
+Sprite(152):
+	image 11186
+	health_bar 46
+	unused 83
+	is_visible 226
+	selection_circle_image 35
+	selection_circle_offset 19
+
+Sprite(153):
+	image 2194
+	health_bar 138
+	unused False
+	is_visible False
+	selection_circle_image 181
+	selection_circle_offset 245
+
+Sprite(154):
+	image 41507
+	health_bar 71
+	unused True
+	is_visible True
+	selection_circle_image 137
+	selection_circle_offset 30
+
+Sprite(155):
+	image 18979
+	health_bar 161
+	unused 219
+	is_visible 5
+	selection_circle_image 145
+	selection_circle_offset 112
+
+Sprite(156):
+	image 1606
+	health_bar 69
+	unused False
+	is_visible False
+	selection_circle_image 28
+	selection_circle_offset 92
+
+Sprite(157):
+	image 5099
+	health_bar 209
+	unused True
+	is_visible True
+	selection_circle_image 124
+	selection_circle_offset 223
+
+Sprite(158):
+	image 56098
+	health_bar 252
+	unused 232
+	is_visible 236
+	selection_circle_image 76
+	selection_circle_offset 134
+
+Sprite(159):
+	image 62168
+	health_bar 185
+	unused False
+	is_visible False
+	selection_circle_image 163
+	selection_circle_offset 251
+
+Sprite(160):
+	image 39664
+	health_bar 249
+	unused True
+	is_visible True
+	selection_circle_image 108
+	selection_circle_offset 28
+
+Sprite(161):
+	image 43584
+	health_bar 129
+	unused 187
+	is_visible 9
+	selection_circle_image 47
+	selection_circle_offset 167
+
+Sprite(162):
+	image 62820
+	health_bar 110
+	unused False
+	is_visible False
+	selection_circle_image 63
+	selection_circle_offset 203
+
+Sprite(163):
+	image 13935
+	health_bar 203
+	unused True
+	is_visible True
+	selection_circle_image 138
+	selection_circle_offset 225
+
+Sprite(164):
+	image 63822
+	health_bar 220
+	unused 223
+	is_visible 92
+	selection_circle_image 153
+	selection_circle_offset 95
+
+Sprite(165):
+	image 28573
+	health_bar 215
+	unused False
+	is_visible False
+	selection_circle_image 48
+	selection_circle_offset 0
+
+Sprite(166):
+	image 39931
+	health_bar 32
+	unused True
+	is_visible True
+	selection_circle_image 246
+	selection_circle_offset 41
+
+Sprite(167):
+	image 20453
+	health_bar 112
+	unused 127
+	is_visible 99
+	selection_circle_image 92
+	selection_circle_offset 46
+
+Sprite(168):
+	image 5479
+	health_bar 84
+	unused False
+	is_visible False
+	selection_circle_image 151
+	selection_circle_offset 62
+
+Sprite(169):
+	image 55681
+	health_bar 224
+	unused True
+	is_visible True
+	selection_circle_image 152
+	selection_circle_offset 152
+
+Sprite(170):
+	image 27263
+	health_bar 10
+	unused 111
+	is_visible 211
+	selection_circle_image 224
+	selection_circle_offset 243
+
+Sprite(171):
+	image 53167
+	health_bar 14
+	unused False
+	is_visible False
+	selection_circle_image 101
+	selection_circle_offset 204
+
+Sprite(172):
+	image 29444
+	health_bar 98
+	unused True
+	is_visible True
+	selection_circle_image 124
+	selection_circle_offset 217
+
+Sprite(173):
+	image 26569
+	health_bar 215
+	unused 188
+	is_visible 119
+	selection_circle_image 71
+	selection_circle_offset 64
+
+Sprite(174):
+	image 13993
+	health_bar 146
+	unused False
+	is_visible False
+	selection_circle_image 226
+	selection_circle_offset 21
+
+Sprite(175):
+	image 15405
+	health_bar 27
+	unused True
+	is_visible True
+	selection_circle_image 134
+	selection_circle_offset 119
+
+Sprite(176):
+	image 63771
+	health_bar 46
+	unused 233
+	is_visible 221
+	selection_circle_image 129
+	selection_circle_offset 74
+
+Sprite(177):
+	image 36786
+	health_bar 136
+	unused False
+	is_visible False
+	selection_circle_image 30
+	selection_circle_offset 242
+
+Sprite(178):
+	image 12010
+	health_bar 174
+	unused True
+	is_visible True
+	selection_circle_image 7
+	selection_circle_offset 74
+
+Sprite(179):
+	image 23314
+	health_bar 98
+	unused 52
+	is_visible 91
+	selection_circle_image 36
+	selection_circle_offset 241
+
+Sprite(180):
+	image 24306
+	health_bar 52
+	unused False
+	is_visible False
+	selection_circle_image 27
+	selection_circle_offset 237
+
+Sprite(181):
+	image 53146
+	health_bar 48
+	unused True
+	is_visible True
+	selection_circle_image 104
+	selection_circle_offset 132
+
+Sprite(182):
+	image 31308
+	health_bar 67
+	unused True
+	is_visible 177
+	selection_circle_image 145
+	selection_circle_offset 213
+
+Sprite(183):
+	image 29441
+	health_bar 55
+	unused False
+	is_visible False
+	selection_circle_image 112
+	selection_circle_offset 197
+
+Sprite(184):
+	image 52239
+	health_bar 180
+	unused True
+	is_visible True
+	selection_circle_image 235
+	selection_circle_offset 147
+
+Sprite(185):
+	image 53919
+	health_bar 64
+	unused 209
+	is_visible 110
+	selection_circle_image 143
+	selection_circle_offset 74
+
+Sprite(186):
+	image 8158
+	health_bar 116
+	unused False
+	is_visible False
+	selection_circle_image 192
+	selection_circle_offset 22
+
+Sprite(187):
+	image 20376
+	health_bar 123
+	unused True
+	is_visible True
+	selection_circle_image 87
+	selection_circle_offset 95
+
+Sprite(188):
+	image 34195
+	health_bar 46
+	unused 135
+	is_visible 108
+	selection_circle_image 107
+	selection_circle_offset 151
+
+Sprite(189):
+	image 14971
+	health_bar 222
+	unused False
+	is_visible False
+	selection_circle_image 186
+	selection_circle_offset 189
+
+Sprite(190):
+	image 55363
+	health_bar 114
+	unused True
+	is_visible True
+	selection_circle_image 189
+	selection_circle_offset 240
+
+Sprite(191):
+	image 33821
+	health_bar 112
+	unused 13
+	is_visible 243
+	selection_circle_image 207
+	selection_circle_offset 40
+
+Sprite(192):
+	image 19706
+	health_bar 181
+	unused False
+	is_visible False
+	selection_circle_image 201
+	selection_circle_offset 136
+
+Sprite(193):
+	image 7982
+	health_bar 52
+	unused True
+	is_visible True
+	selection_circle_image 212
+	selection_circle_offset 21
+
+Sprite(194):
+	image 5916
+	health_bar 137
+	unused 103
+	is_visible 221
+	selection_circle_image 62
+	selection_circle_offset 117
+
+Sprite(195):
+	image 8546
+	health_bar 0
+	unused False
+	is_visible False
+	selection_circle_image 53
+	selection_circle_offset 126
+
+Sprite(196):
+	image 34419
+	health_bar 26
+	unused True
+	is_visible True
+	selection_circle_image 189
+	selection_circle_offset 141
+
+Sprite(197):
+	image 9443
+	health_bar 82
+	unused 232
+	is_visible 151
+	selection_circle_image 235
+	selection_circle_offset 72
+
+Sprite(198):
+	image 23005
+	health_bar 213
+	unused False
+	is_visible False
+	selection_circle_image 191
+	selection_circle_offset 171
+
+Sprite(199):
+	image 38081
+	health_bar 97
+	unused True
+	is_visible True
+	selection_circle_image 236
+	selection_circle_offset 218
+
+Sprite(200):
+	image 48957
+	health_bar 113
+	unused 255
+	is_visible 155
+	selection_circle_image 240
+	selection_circle_offset 33
+
+Sprite(201):
+	image 11044
+	health_bar 184
+	unused False
+	is_visible False
+	selection_circle_image 109
+	selection_circle_offset 59
+
+Sprite(202):
+	image 10264
+	health_bar 124
+	unused True
+	is_visible True
+	selection_circle_image 195
+	selection_circle_offset 142
+
+Sprite(203):
+	image 2903
+	health_bar 106
+	unused 151
+	is_visible 73
+	selection_circle_image 18
+	selection_circle_offset 219
+
+Sprite(204):
+	image 50675
+	health_bar 241
+	unused False
+	is_visible False
+	selection_circle_image 52
+	selection_circle_offset 186
+
+Sprite(205):
+	image 52014
+	health_bar 121
+	unused True
+	is_visible True
+	selection_circle_image 125
+	selection_circle_offset 7
+
+Sprite(206):
+	image 43184
+	health_bar 219
+	unused 57
+	is_visible 32
+	selection_circle_image 96
+	selection_circle_offset 20
+
+Sprite(207):
+	image 452
+	health_bar 201
+	unused False
+	is_visible False
+	selection_circle_image 6
+	selection_circle_offset 230
+
+Sprite(208):
+	image 32611
+	health_bar 19
+	unused True
+	is_visible True
+	selection_circle_image 56
+	selection_circle_offset 235
+
+Sprite(209):
+	image 51361
+	health_bar 97
+	unused 249
+	is_visible 91
+	selection_circle_image 130
+	selection_circle_offset 76
+
+Sprite(210):
+	image 17894
+	health_bar 245
+	unused False
+	is_visible False
+	selection_circle_image 222
+	selection_circle_offset 210
+
+Sprite(211):
+	image 33680
+	health_bar 178
+	unused True
+	is_visible True
+	selection_circle_image 167
+	selection_circle_offset 162
+
+Sprite(212):
+	image 59196
+	health_bar 82
+	unused 2
+	is_visible 175
+	selection_circle_image 125
+	selection_circle_offset 224
+
+Sprite(213):
+	image 48459
+	health_bar 63
+	unused False
+	is_visible False
+	selection_circle_image 217
+	selection_circle_offset 196
+
+Sprite(214):
+	image 16236
+	health_bar 214
+	unused True
+	is_visible True
+	selection_circle_image 58
+	selection_circle_offset 38
+
+Sprite(215):
+	image 5682
+	health_bar 176
+	unused 174
+	is_visible 115
+	selection_circle_image 205
+	selection_circle_offset 102
+
+Sprite(216):
+	image 31320
+	health_bar 135
+	unused False
+	is_visible False
+	selection_circle_image 134
+	selection_circle_offset 131
+
+Sprite(217):
+	image 20538
+	health_bar 3
+	unused True
+	is_visible True
+	selection_circle_image 138
+	selection_circle_offset 221
+
+Sprite(218):
+	image 14005
+	health_bar 4
+	unused 246
+	is_visible 37
+	selection_circle_image 13
+	selection_circle_offset 177
+
+Sprite(219):
+	image 38073
+	health_bar 41
+	unused False
+	is_visible False
+	selection_circle_image 74
+	selection_circle_offset 185
+
+Sprite(220):
+	image 15335
+	health_bar 96
+	unused True
+	is_visible True
+	selection_circle_image 54
+	selection_circle_offset 192
+
+Sprite(221):
+	image 43670
+	health_bar 127
+	unused 112
+	is_visible 58
+	selection_circle_image 31
+	selection_circle_offset 197
+
+Sprite(222):
+	image 46327
+	health_bar 128
+	unused False
+	is_visible False
+	selection_circle_image 58
+	selection_circle_offset 197
+
+Sprite(223):
+	image 35544
+	health_bar 179
+	unused True
+	is_visible True
+	selection_circle_image 152
+	selection_circle_offset 255
+
+Sprite(224):
+	image 45278
+	health_bar 228
+	unused 193
+	is_visible 55
+	selection_circle_image 180
+	selection_circle_offset 5
+
+Sprite(225):
+	image 16376
+	health_bar 41
+	unused False
+	is_visible False
+	selection_circle_image 147
+	selection_circle_offset 52
+
+Sprite(226):
+	image 42434
+	health_bar 163
+	unused True
+	is_visible True
+	selection_circle_image 153
+	selection_circle_offset 254
+
+Sprite(227):
+	image 21179
+	health_bar 66
+	unused 33
+	is_visible 9
+	selection_circle_image 24
+	selection_circle_offset 212
+
+Sprite(228):
+	image 59437
+	health_bar 220
+	unused False
+	is_visible False
+	selection_circle_image 99
+	selection_circle_offset 109
+
+Sprite(229):
+	image 23801
+	health_bar 186
+	unused True
+	is_visible True
+	selection_circle_image 60
+	selection_circle_offset 253
+
+Sprite(230):
+	image 51755
+	health_bar 93
+	unused 136
+	is_visible 178
+	selection_circle_image 63
+	selection_circle_offset 54
+
+Sprite(231):
+	image 5730
+	health_bar 34
+	unused False
+	is_visible False
+	selection_circle_image 38
+	selection_circle_offset 121
+
+Sprite(232):
+	image 3226
+	health_bar 66
+	unused True
+	is_visible True
+	selection_circle_image 108
+	selection_circle_offset 232
+
+Sprite(233):
+	image 28757
+	health_bar 168
+	unused 160
+	is_visible 250
+	selection_circle_image 240
+	selection_circle_offset 227
+
+Sprite(234):
+	image 41118
+	health_bar 186
+	unused False
+	is_visible False
+	selection_circle_image 138
+	selection_circle_offset 61
+
+Sprite(235):
+	image 37510
+	health_bar 158
+	unused True
+	is_visible True
+	selection_circle_image 92
+	selection_circle_offset 180
+
+Sprite(236):
+	image 27296
+	health_bar 78
+	unused 217
+	is_visible 18
+	selection_circle_image 5
+	selection_circle_offset 108
+
+Sprite(237):
+	image 754
+	health_bar 81
+	unused False
+	is_visible False
+	selection_circle_image 0
+	selection_circle_offset 18
+
+Sprite(238):
+	image 22400
+	health_bar 113
+	unused True
+	is_visible True
+	selection_circle_image 38
+	selection_circle_offset 35
+
+Sprite(239):
+	image 35526
+	health_bar 30
+	unused 146
+	is_visible 220
+	selection_circle_image 184
+	selection_circle_offset 46
+
+Sprite(240):
+	image 25885
+	health_bar 131
+	unused False
+	is_visible False
+	selection_circle_image 189
+	selection_circle_offset 146
+
+Sprite(241):
+	image 44087
+	health_bar 12
+	unused True
+	is_visible True
+	selection_circle_image 118
+	selection_circle_offset 97
+
+Sprite(242):
+	image 13602
+	health_bar 135
+	unused 219
+	is_visible 41
+	selection_circle_image 80
+	selection_circle_offset 252
+
+Sprite(243):
+	image 10653
+	health_bar 182
+	unused False
+	is_visible False
+	selection_circle_image 174
+	selection_circle_offset 60
+
+Sprite(244):
+	image 8293
+	health_bar 172
+	unused True
+	is_visible True
+	selection_circle_image 50
+	selection_circle_offset 252
+
+Sprite(245):
+	image 42399
+	health_bar 198
+	unused 203
+	is_visible 58
+	selection_circle_image 106
+	selection_circle_offset 154
+
+Sprite(246):
+	image 11757
+	health_bar 65
+	unused False
+	is_visible False
+	selection_circle_image 44
+	selection_circle_offset 25
+
+Sprite(247):
+	image 19530
+	health_bar 93
+	unused True
+	is_visible True
+	selection_circle_image 234
+	selection_circle_offset 146
+
+Sprite(248):
+	image 13711
+	health_bar 77
+	unused 149
+	is_visible 69
+	selection_circle_image 94
+	selection_circle_offset 155
+
+Sprite(249):
+	image 1670
+	health_bar 225
+	unused False
+	is_visible False
+	selection_circle_image 144
+	selection_circle_offset 14
+
+Sprite(250):
+	image 25045
+	health_bar 83
+	unused True
+	is_visible True
+	selection_circle_image 161
+	selection_circle_offset 230
+
+Sprite(251):
+	image 45543
+	health_bar 200
+	unused 193
+	is_visible 180
+	selection_circle_image 232
+	selection_circle_offset 69
+
+Sprite(252):
+	image 25446
+	health_bar 23
+	unused False
+	is_visible False
+	selection_circle_image 252
+	selection_circle_offset 210
+
+Sprite(253):
+	image 39833
+	health_bar 202
+	unused True
+	is_visible True
+	selection_circle_image 6
+	selection_circle_offset 87
+
+Sprite(254):
+	image 23528
+	health_bar 188
+	unused 226
+	is_visible 208
+	selection_circle_image 229
+	selection_circle_offset 111
+
+Sprite(255):
+	image 32409
+	health_bar 79
+	unused False
+	is_visible False
+	selection_circle_image 105
+	selection_circle_offset 164
+
+Sprite(256):
+	image 1243
+	health_bar 163
+	unused True
+	is_visible True
+	selection_circle_image 71
+	selection_circle_offset 187
+
+Sprite(257):
+	image 20625
+	health_bar 147
+	unused 80
+	is_visible 41
+	selection_circle_image 159
+	selection_circle_offset 102
+
+Sprite(258):
+	image 32351
+	health_bar 223
+	unused False
+	is_visible False
+	selection_circle_image 25
+	selection_circle_offset 104
+
+Sprite(259):
+	image 64483
+	health_bar 76
+	unused True
+	is_visible True
+	selection_circle_image 135
+	selection_circle_offset 20
+
+Sprite(260):
+	image 36523
+	health_bar 207
+	unused 27
+	is_visible 3
+	selection_circle_image 31
+	selection_circle_offset 86
+
+Sprite(261):
+	image 31083
+	health_bar 192
+	unused False
+	is_visible False
+	selection_circle_image 4
+	selection_circle_offset 93
+
+Sprite(262):
+	image 46188
+	health_bar 125
+	unused True
+	is_visible True
+	selection_circle_image 165
+	selection_circle_offset 49
+
+Sprite(263):
+	image 19797
+	health_bar 51
+	unused 4
+	is_visible 125
+	selection_circle_image 86
+	selection_circle_offset 225
+
+Sprite(264):
+	image 53418
+	health_bar 56
+	unused False
+	is_visible False
+	selection_circle_image 106
+	selection_circle_offset 53
+
+Sprite(265):
+	image 768
+	health_bar 34
+	unused True
+	is_visible True
+	selection_circle_image 50
+	selection_circle_offset 64
+
+Sprite(266):
+	image 55213
+	health_bar 6
+	unused 164
+	is_visible 67
+	selection_circle_image 147
+	selection_circle_offset 116
+
+Sprite(267):
+	image 27548
+	health_bar 133
+	unused False
+	is_visible False
+	selection_circle_image 65
+	selection_circle_offset 181
+
+Sprite(268):
+	image 21634
+	health_bar 20
+	unused True
+	is_visible True
+	selection_circle_image 103
+	selection_circle_offset 16
+
+Sprite(269):
+	image 22001
+	health_bar 248
+	unused 205
+	is_visible 150
+	selection_circle_image 163
+	selection_circle_offset 229
+
+Sprite(270):
+	image 20152
+	health_bar 30
+	unused False
+	is_visible False
+	selection_circle_image 194
+	selection_circle_offset 226
+
+Sprite(271):
+	image 17210
+	health_bar 193
+	unused True
+	is_visible True
+	selection_circle_image 101
+	selection_circle_offset 58
+
+Sprite(272):
+	image 57315
+	health_bar 84
+	unused 233
+	is_visible 146
+	selection_circle_image 201
+	selection_circle_offset 247
+
+Sprite(273):
+	image 1510
+	health_bar 58
+	unused False
+	is_visible False
+	selection_circle_image 44
+	selection_circle_offset 105
+
+Sprite(274):
+	image 63799
+	health_bar 76
+	unused True
+	is_visible True
+	selection_circle_image 48
+	selection_circle_offset 212
+
+Sprite(275):
+	image 58580
+	health_bar 207
+	unused 146
+	is_visible 104
+	selection_circle_image 197
+	selection_circle_offset 140
+
+Sprite(276):
+	image 61509
+	health_bar 29
+	unused False
+	is_visible False
+	selection_circle_image 211
+	selection_circle_offset 169
+
+Sprite(277):
+	image 31430
+	health_bar 206
+	unused True
+	is_visible True
+	selection_circle_image 39
+	selection_circle_offset 86
+
+Sprite(278):
+	image 24971
+	health_bar 29
+	unused 137
+	is_visible 106
+	selection_circle_image 196
+	selection_circle_offset 156
+
+Sprite(279):
+	image 9268
+	health_bar 51
+	unused False
+	is_visible False
+	selection_circle_image 2
+	selection_circle_offset 245
+
+Sprite(280):
+	image 36115
+	health_bar 194
+	unused True
+	is_visible True
+	selection_circle_image 197
+	selection_circle_offset 16
+
+Sprite(281):
+	image 61862
+	health_bar 125
+	unused 216
+	is_visible 253
+	selection_circle_image 194
+	selection_circle_offset 184
+
+Sprite(282):
+	image 48012
+	health_bar 65
+	unused False
+	is_visible False
+	selection_circle_image 159
+	selection_circle_offset 126
+
+Sprite(283):
+	image 48516
+	health_bar 79
+	unused True
+	is_visible True
+	selection_circle_image 161
+	selection_circle_offset 170
+
+Sprite(284):
+	image 23276
+	health_bar 5
+	unused 219
+	is_visible 163
+	selection_circle_image 196
+	selection_circle_offset 116
+
+Sprite(285):
+	image 54408
+	health_bar 164
+	unused False
+	is_visible False
+	selection_circle_image 226
+	selection_circle_offset 146
+
+Sprite(286):
+	image 22265
+	health_bar 117
+	unused True
+	is_visible True
+	selection_circle_image 109
+	selection_circle_offset 153
+
+Sprite(287):
+	image 21993
+	health_bar 50
+	unused 254
+	is_visible 169
+	selection_circle_image 72
+	selection_circle_offset 94
+
+Sprite(288):
+	image 56115
+	health_bar 202
+	unused False
+	is_visible False
+	selection_circle_image 102
+	selection_circle_offset 130
+
+Sprite(289):
+	image 13324
+	health_bar 85
+	unused True
+	is_visible True
+	selection_circle_image 94
+	selection_circle_offset 158
+
+Sprite(290):
+	image 34730
+	health_bar 91
+	unused True
+	is_visible 204
+	selection_circle_image 174
+	selection_circle_offset 223
+
+Sprite(291):
+	image 27340
+	health_bar 99
+	unused False
+	is_visible False
+	selection_circle_image 172
+	selection_circle_offset 238
+
+Sprite(292):
+	image 458
+	health_bar 52
+	unused True
+	is_visible True
+	selection_circle_image 148
+	selection_circle_offset 152
+
+Sprite(293):
+	image 36928
+	health_bar 143
+	unused 54
+	is_visible 175
+	selection_circle_image 226
+	selection_circle_offset 198
+
+Sprite(294):
+	image 13384
+	health_bar 103
+	unused False
+	is_visible False
+	selection_circle_image 168
+	selection_circle_offset 128
+
+Sprite(295):
+	image 9967
+	health_bar 135
+	unused True
+	is_visible True
+	selection_circle_image 145
+	selection_circle_offset 254
+
+Sprite(296):
+	image 30689
+	health_bar 131
+	unused 51
+	is_visible 59
+	selection_circle_image 232
+	selection_circle_offset 18
+
+Sprite(297):
+	image 18439
+	health_bar 187
+	unused False
+	is_visible False
+	selection_circle_image 244
+	selection_circle_offset 199
+
+Sprite(298):
+	image 49603
+	health_bar 153
+	unused True
+	is_visible True
+	selection_circle_image 248
+	selection_circle_offset 195
+
+Sprite(299):
+	image 7752
+	health_bar 82
+	unused 127
+	is_visible 140
+	selection_circle_image 116
+	selection_circle_offset 204
+
+Sprite(300):
+	image 39651
+	health_bar 41
+	unused False
+	is_visible False
+	selection_circle_image 69
+	selection_circle_offset 165
+
+Sprite(301):
+	image 65081
+	health_bar 11
+	unused True
+	is_visible True
+	selection_circle_image 30
+	selection_circle_offset 113
+
+Sprite(302):
+	image 32284
+	health_bar 140
+	unused 103
+	is_visible 196
+	selection_circle_image 165
+	selection_circle_offset 16
+
+Sprite(303):
+	image 54923
+	health_bar 24
+	unused False
+	is_visible False
+	selection_circle_image 144
+	selection_circle_offset 129
+
+Sprite(304):
+	image 43824
+	health_bar 146
+	unused True
+	is_visible True
+	selection_circle_image 254
+	selection_circle_offset 170
+
+Sprite(305):
+	image 47512
+	health_bar 242
+	unused 221
+	is_visible 161
+	selection_circle_image 151
+	selection_circle_offset 80
+
+Sprite(306):
+	image 58576
+	health_bar 97
+	unused False
+	is_visible False
+	selection_circle_image 41
+	selection_circle_offset 50
+
+Sprite(307):
+	image 57714
+	health_bar 61
+	unused True
+	is_visible True
+	selection_circle_image 145
+	selection_circle_offset 237
+
+Sprite(308):
+	image 55876
+	health_bar 252
+	unused 116
+	is_visible 178
+	selection_circle_image 32
+	selection_circle_offset 14
+
+Sprite(309):
+	image 8227
+	health_bar 145
+	unused False
+	is_visible False
+	selection_circle_image 146
+	selection_circle_offset 148
+
+Sprite(310):
+	image 10342
+	health_bar 82
+	unused True
+	is_visible True
+	selection_circle_image 86
+	selection_circle_offset 45
+
+Sprite(311):
+	image 30933
+	health_bar 66
+	unused 216
+	is_visible 174
+	selection_circle_image 54
+	selection_circle_offset 95
+
+Sprite(312):
+	image 62889
+	health_bar 2
+	unused False
+	is_visible False
+	selection_circle_image 32
+	selection_circle_offset 154
+
+Sprite(313):
+	image 12787
+	health_bar 150
+	unused True
+	is_visible True
+	selection_circle_image 137
+	selection_circle_offset 148
+
+Sprite(314):
+	image 50513
+	health_bar 204
+	unused 114
+	is_visible 215
+	selection_circle_image 28
+	selection_circle_offset 7
+
+Sprite(315):
+	image 62377
+	health_bar 225
+	unused False
+	is_visible False
+	selection_circle_image 131
+	selection_circle_offset 11
+
+Sprite(316):
+	image 58266
+	health_bar 223
+	unused True
+	is_visible True
+	selection_circle_image 97
+	selection_circle_offset 41
+
+Sprite(317):
+	image 64606
+	health_bar 218
+	unused 205
+	is_visible 114
+	selection_circle_image 139
+	selection_circle_offset 142
+
+Sprite(318):
+	image 515
+	health_bar 215
+	unused False
+	is_visible False
+	selection_circle_image 145
+	selection_circle_offset 7
+
+Sprite(319):
+	image 35885
+	health_bar 178
+	unused True
+	is_visible True
+	selection_circle_image 178
+	selection_circle_offset 249
+
+Sprite(320):
+	image 65265
+	health_bar 221
+	unused 148
+	is_visible 207
+	selection_circle_image 146
+	selection_circle_offset 144
+
+Sprite(321):
+	image 40953
+	health_bar 64
+	unused False
+	is_visible False
+	selection_circle_image 119
+	selection_circle_offset 137
+
+Sprite(322):
+	image 41793
+	health_bar 121
+	unused True
+	is_visible True
+	selection_circle_image 224
+	selection_circle_offset 185
+
+Sprite(323):
+	image 56680
+	health_bar 249
+	unused 96
+	is_visible 162
+	selection_circle_image 209
+	selection_circle_offset 190
+
+Sprite(324):
+	image 60201
+	health_bar 155
+	unused False
+	is_visible False
+	selection_circle_image 215
+	selection_circle_offset 94
+
+Sprite(325):
+	image 45915
+	health_bar 231
+	unused True
+	is_visible True
+	selection_circle_image 7
+	selection_circle_offset 87
+
+Sprite(326):
+	image 55603
+	health_bar 210
+	unused 91
+	is_visible 165
+	selection_circle_image 146
+	selection_circle_offset 124
+
+Sprite(327):
+	image 64617
+	health_bar 186
+	unused False
+	is_visible False
+	selection_circle_image 149
+	selection_circle_offset 119
+
+Sprite(328):
+	image 62411
+	health_bar 13
+	unused True
+	is_visible True
+	selection_circle_image 130
+	selection_circle_offset 118
+
+Sprite(329):
+	image 60500
+	health_bar 245
+	unused 115
+	is_visible 55
+	selection_circle_image 17
+	selection_circle_offset 14
+
+Sprite(330):
+	image 11832
+	health_bar 231
+	unused False
+	is_visible False
+	selection_circle_image 42
+	selection_circle_offset 177
+
+Sprite(331):
+	image 20800
+	health_bar 158
+	unused True
+	is_visible True
+	selection_circle_image 106
+	selection_circle_offset 26
+
+Sprite(332):
+	image 23925
+	health_bar 137
+	unused 88
+	is_visible 12
+	selection_circle_image 78
+	selection_circle_offset 27
+
+Sprite(333):
+	image 17415
+	health_bar 26
+	unused False
+	is_visible False
+	selection_circle_image 220
+	selection_circle_offset 178
+
+Sprite(334):
+	image 51480
+	health_bar 242
+	unused True
+	is_visible True
+	selection_circle_image 37
+	selection_circle_offset 224
+
+Sprite(335):
+	image 5701
+	health_bar 18
+	unused False
+	is_visible 110
+	selection_circle_image 176
+	selection_circle_offset 23
+
+Sprite(336):
+	image 50244
+	health_bar 186
+	unused False
+	is_visible False
+	selection_circle_image 242
+	selection_circle_offset 28
+
+Sprite(337):
+	image 49866
+	health_bar 60
+	unused True
+	is_visible True
+	selection_circle_image 100
+	selection_circle_offset 106
+
+Sprite(338):
+	image 58429
+	health_bar 0
+	unused 30
+	is_visible 35
+	selection_circle_image 223
+	selection_circle_offset 130
+
+Sprite(339):
+	image 39592
+	health_bar 247
+	unused False
+	is_visible False
+	selection_circle_image 189
+	selection_circle_offset 58
+
+Sprite(340):
+	image 29298
+	health_bar 214
+	unused True
+	is_visible True
+	selection_circle_image 173
+	selection_circle_offset 146
+
+Sprite(341):
+	image 10177
+	health_bar 159
+	unused 32
+	is_visible 154
+	selection_circle_image 52
+	selection_circle_offset 112
+
+Sprite(342):
+	image 60684
+	health_bar 218
+	unused False
+	is_visible False
+	selection_circle_image 68
+	selection_circle_offset 186
+
+Sprite(343):
+	image 14553
+	health_bar 1
+	unused True
+	is_visible True
+	selection_circle_image 157
+	selection_circle_offset 133
+
+Sprite(344):
+	image 65283
+	health_bar 214
+	unused 22
+	is_visible 193
+	selection_circle_image 77
+	selection_circle_offset 164
+
+Sprite(345):
+	image 13001
+	health_bar 214
+	unused False
+	is_visible False
+	selection_circle_image 155
+	selection_circle_offset 65
+
+Sprite(346):
+	image 27975
+	health_bar 70
+	unused True
+	is_visible True
+	selection_circle_image 111
+	selection_circle_offset 108
+
+Sprite(347):
+	image 20375
+	health_bar 63
+	unused 48
+	is_visible 87
+	selection_circle_image 189
+	selection_circle_offset 232
+
+Sprite(348):
+	image 59891
+	health_bar 187
+	unused False
+	is_visible False
+	selection_circle_image 38
+	selection_circle_offset 104
+
+Sprite(349):
+	image 48238
+	health_bar 136
+	unused True
+	is_visible True
+	selection_circle_image 70
+	selection_circle_offset 39
+
+Sprite(350):
+	image 45900
+	health_bar 198
+	unused 226
+	is_visible 210
+	selection_circle_image 199
+	selection_circle_offset 196
+
+Sprite(351):
+	image 45585
+	health_bar 200
+	unused False
+	is_visible False
+	selection_circle_image 240
+	selection_circle_offset 107
+
+Sprite(352):
+	image 23616
+	health_bar 201
+	unused True
+	is_visible True
+	selection_circle_image 143
+	selection_circle_offset 233
+
+Sprite(353):
+	image 58123
+	health_bar 95
+	unused 44
+	is_visible 232
+	selection_circle_image 12
+	selection_circle_offset 64
+
+Sprite(354):
+	image 14319
+	health_bar 223
+	unused False
+	is_visible False
+	selection_circle_image 48
+	selection_circle_offset 165
+
+Sprite(355):
+	image 13703
+	health_bar 163
+	unused True
+	is_visible True
+	selection_circle_image 194
+	selection_circle_offset 220
+
+Sprite(356):
+	image 15557
+	health_bar 23
+	unused 109
+	is_visible 119
+	selection_circle_image 71
+	selection_circle_offset 84
+
+Sprite(357):
+	image 64002
+	health_bar 130
+	unused False
+	is_visible False
+	selection_circle_image 127
+	selection_circle_offset 245
+
+Sprite(358):
+	image 29785
+	health_bar 88
+	unused True
+	is_visible True
+	selection_circle_image 9
+	selection_circle_offset 5
+
+Sprite(359):
+	image 6563
+	health_bar 191
+	unused 208
+	is_visible 117
+	selection_circle_image 146
+	selection_circle_offset 190
+
+Sprite(360):
+	image 62741
+	health_bar 244
+	unused False
+	is_visible False
+	selection_circle_image 77
+	selection_circle_offset 158
+
+Sprite(361):
+	image 38316
+	health_bar 2
+	unused True
+	is_visible True
+	selection_circle_image 154
+	selection_circle_offset 217
+
+Sprite(362):
+	image 47604
+	health_bar 15
+	unused 151
+	is_visible 157
+	selection_circle_image 148
+	selection_circle_offset 139
+
+Sprite(363):
+	image 7720
+	health_bar 241
+	unused False
+	is_visible False
+	selection_circle_image 228
+	selection_circle_offset 127
+
+Sprite(364):
+	image 7059
+	health_bar 4
+	unused True
+	is_visible True
+	selection_circle_image 247
+	selection_circle_offset 10
+
+Sprite(365):
+	image 23446
+	health_bar 10
+	unused 214
+	is_visible 81
+	selection_circle_image 147
+	selection_circle_offset 104
+
+Sprite(366):
+	image 17105
+	health_bar 174
+	unused False
+	is_visible False
+	selection_circle_image 244
+	selection_circle_offset 215
+
+Sprite(367):
+	image 6173
+	health_bar 230
+	unused True
+	is_visible True
+	selection_circle_image 113
+	selection_circle_offset 85
+
+Sprite(368):
+	image 57311
+	health_bar 141
+	unused 171
+	is_visible 175
+	selection_circle_image 56
+	selection_circle_offset 141
+
+Sprite(369):
+	image 41128
+	health_bar 84
+	unused False
+	is_visible False
+	selection_circle_image 170
+	selection_circle_offset 114
+
+Sprite(370):
+	image 6309
+	health_bar 209
+	unused True
+	is_visible True
+	selection_circle_image 224
+	selection_circle_offset 131
+
+Sprite(371):
+	image 31573
+	health_bar 38
+	unused 56
+	is_visible 255
+	selection_circle_image 76
+	selection_circle_offset 122
+
+Sprite(372):
+	image 62632
+	health_bar 131
+	unused False
+	is_visible False
+	selection_circle_image 84
+	selection_circle_offset 103
+
+Sprite(373):
+	image 41723
+	health_bar 88
+	unused True
+	is_visible True
+	selection_circle_image 2
+	selection_circle_offset 236
+
+Sprite(374):
+	image 49
+	health_bar 107
+	unused 161
+	is_visible 21
+	selection_circle_image 120
+	selection_circle_offset 38
+
+Sprite(375):
+	image 2476
+	health_bar 142
+	unused False
+	is_visible False
+	selection_circle_image 5
+	selection_circle_offset 48
+
+Sprite(376):
+	image 63663
+	health_bar 40
+	unused True
+	is_visible True
+	selection_circle_image 37
+	selection_circle_offset 131
+
+Sprite(377):
+	image 34841
+	health_bar 212
+	unused 39
+	is_visible 147
+	selection_circle_image 108
+	selection_circle_offset 10
+
+Sprite(378):
+	image 38900
+	health_bar 41
+	unused False
+	is_visible False
+	selection_circle_image 141
+	selection_circle_offset 134
+
+Sprite(379):
+	image 37524
+	health_bar 178
+	unused True
+	is_visible True
+	selection_circle_image 203
+	selection_circle_offset 57
+
+Sprite(380):
+	image 14982
+	health_bar 91
+	unused 215
+	is_visible 29
+	selection_circle_image 115
+	selection_circle_offset 198
+
+Sprite(381):
+	image 45410
+	health_bar 92
+	unused False
+	is_visible False
+	selection_circle_image 192
+	selection_circle_offset 124
+
+Sprite(382):
+	image 19049
+	health_bar 100
+	unused True
+	is_visible True
+	selection_circle_image 86
+	selection_circle_offset 247
+
+Sprite(383):
+	image 26547
+	health_bar 96
+	unused 148
+	is_visible 124
+	selection_circle_image 60
+	selection_circle_offset 128
+
+Sprite(384):
+	image 60338
+	health_bar 221
+	unused False
+	is_visible False
+	selection_circle_image 151
+	selection_circle_offset 137
+
+Sprite(385):
+	image 58245
+	health_bar 21
+	unused True
+	is_visible True
+	selection_circle_image 231
+	selection_circle_offset 95
+
+Sprite(386):
+	image 47182
+	health_bar 93
+	unused 121
+	is_visible 75
+	selection_circle_image 181
+	selection_circle_offset 184
+
+Sprite(387):
+	image 42972
+	health_bar 252
+	unused False
+	is_visible False
+	selection_circle_image 187
+	selection_circle_offset 95
+
+Sprite(388):
+	image 30564
+	health_bar 170
+	unused True
+	is_visible True
+	selection_circle_image 98
+	selection_circle_offset 209
+
+Sprite(389):
+	image 18543
+	health_bar 35
+	unused 45
+	is_visible 48
+	selection_circle_image 55
+	selection_circle_offset 48
+
+Sprite(390):
+	image 48124
+	health_bar 102
+	unused False
+	is_visible False
+	selection_circle_image 182
+	selection_circle_offset 103
+
+Sprite(391):
+	image 49688
+	health_bar 102
+	unused True
+	is_visible True
+	selection_circle_image 110
+	selection_circle_offset 93
+
+Sprite(392):
+	image 30604
+	health_bar 18
+	unused 82
+	is_visible 238
+	selection_circle_image 100
+	selection_circle_offset 91
+
+Sprite(393):
+	image 24608
+	health_bar 13
+	unused False
+	is_visible False
+	selection_circle_image 36
+	selection_circle_offset 66
+
+Sprite(394):
+	image 65406
+	health_bar 121
+	unused True
+	is_visible True
+	selection_circle_image 159
+	selection_circle_offset 166
+
+Sprite(395):
+	image 46583
+	health_bar 221
+	unused 46
+	is_visible 67
+	selection_circle_image 144
+	selection_circle_offset 226
+
+Sprite(396):
+	image 18826
+	health_bar 14
+	unused False
+	is_visible False
+	selection_circle_image 24
+	selection_circle_offset 9
+
+Sprite(397):
+	image 38989
+	health_bar 28
+	unused True
+	is_visible True
+	selection_circle_image 153
+	selection_circle_offset 151
+
+Sprite(398):
+	image 43120
+	health_bar 191
+	unused 96
+	is_visible 122
+	selection_circle_image 63
+	selection_circle_offset 102
+
+Sprite(399):
+	image 23022
+	health_bar 243
+	unused False
+	is_visible False
+	selection_circle_image 192
+	selection_circle_offset 118
+
+Sprite(400):
+	image 62734
+	health_bar 55
+	unused True
+	is_visible True
+	selection_circle_image 32
+	selection_circle_offset 231
+
+Sprite(401):
+	image 43203
+	health_bar 176
+	unused 98
+	is_visible 141
+	selection_circle_image 123
+	selection_circle_offset 98
+
+Sprite(402):
+	image 20104
+	health_bar 157
+	unused False
+	is_visible False
+	selection_circle_image 153
+	selection_circle_offset 54
+
+Sprite(403):
+	image 52373
+	health_bar 125
+	unused True
+	is_visible True
+	selection_circle_image 104
+	selection_circle_offset 123
+
+Sprite(404):
+	image 18650
+	health_bar 74
+	unused 120
+	is_visible 38
+	selection_circle_image 137
+	selection_circle_offset 88
+
+Sprite(405):
+	image 57667
+	health_bar 15
+	unused False
+	is_visible False
+	selection_circle_image 210
+	selection_circle_offset 169
+
+Sprite(406):
+	image 32135
+	health_bar 190
+	unused True
+	is_visible True
+	selection_circle_image 206
+	selection_circle_offset 244
+
+Sprite(407):
+	image 12318
+	health_bar 110
+	unused 149
+	is_visible 41
+	selection_circle_image 236
+	selection_circle_offset 134
+
+Sprite(408):
+	image 2078
+	health_bar 200
+	unused False
+	is_visible False
+	selection_circle_image 240
+	selection_circle_offset 38
+
+Sprite(409):
+	image 26816
+	health_bar 229
+	unused True
+	is_visible True
+	selection_circle_image 230
+	selection_circle_offset 6
+
+Sprite(410):
+	image 44523
+	health_bar 8
+	unused 203
+	is_visible 46
+	selection_circle_image 164
+	selection_circle_offset 208
+
+Sprite(411):
+	image 16023
+	health_bar 91
+	unused False
+	is_visible False
+	selection_circle_image 90
+	selection_circle_offset 178
+
+Sprite(412):
+	image 7904
+	health_bar 170
+	unused True
+	is_visible True
+	selection_circle_image 84
+	selection_circle_offset 131
+
+Sprite(413):
+	image 26415
+	health_bar 5
+	unused 149
+	is_visible 38
+	selection_circle_image 88
+	selection_circle_offset 33
+
+Sprite(414):
+	image 1782
+	health_bar 211
+	unused False
+	is_visible False
+	selection_circle_image 246
+	selection_circle_offset 207
+
+Sprite(415):
+	image 61730
+	health_bar 146
+	unused True
+	is_visible True
+	selection_circle_image 204
+	selection_circle_offset 18
+
+Sprite(416):
+	image 37100
+	health_bar 19
+	unused 52
+	is_visible 54
+	selection_circle_image 26
+	selection_circle_offset 225
+
+Sprite(417):
+	image 42173
+	health_bar 129
+	unused False
+	is_visible False
+	selection_circle_image 197
+	selection_circle_offset 104
+
+Sprite(418):
+	image 12148
+	health_bar 225
+	unused True
+	is_visible True
+	selection_circle_image 67
+	selection_circle_offset 181
+
+Sprite(419):
+	image 57578
+	health_bar 203
+	unused 209
+	is_visible 133
+	selection_circle_image 110
+	selection_circle_offset 32
+
+Sprite(420):
+	image 26882
+	health_bar 184
+	unused False
+	is_visible False
+	selection_circle_image 21
+	selection_circle_offset 160
+
+Sprite(421):
+	image 48228
+	health_bar 76
+	unused True
+	is_visible True
+	selection_circle_image 8
+	selection_circle_offset 213
+
+Sprite(422):
+	image 53396
+	health_bar 6
+	unused 222
+	is_visible 86
+	selection_circle_image 99
+	selection_circle_offset 49
+
+Sprite(423):
+	image 21783
+	health_bar 226
+	unused False
+	is_visible False
+	selection_circle_image 155
+	selection_circle_offset 65
+
+Sprite(424):
+	image 21040
+	health_bar 208
+	unused True
+	is_visible True
+	selection_circle_image 23
+	selection_circle_offset 113
+
+Sprite(425):
+	image 60815
+	health_bar 110
+	unused 53
+	is_visible 160
+	selection_circle_image 34
+	selection_circle_offset 255
+
+Sprite(426):
+	image 36939
+	health_bar 63
+	unused False
+	is_visible False
+	selection_circle_image 61
+	selection_circle_offset 5
+
+Sprite(427):
+	image 54568
+	health_bar 62
+	unused True
+	is_visible True
+	selection_circle_image 55
+	selection_circle_offset 18
+
+Sprite(428):
+	image 34354
+	health_bar 86
+	unused 80
+	is_visible 195
+	selection_circle_image 79
+	selection_circle_offset 11
+
+Sprite(429):
+	image 14402
+	health_bar 230
+	unused False
+	is_visible False
+	selection_circle_image 183
+	selection_circle_offset 155
+
+Sprite(430):
+	image 9624
+	health_bar 173
+	unused True
+	is_visible True
+	selection_circle_image 202
+	selection_circle_offset 212
+
+Sprite(431):
+	image 63224
+	health_bar 229
+	unused 178
+	is_visible 137
+	selection_circle_image 11
+	selection_circle_offset 237
+
+Sprite(432):
+	image 50309
+	health_bar 62
+	unused False
+	is_visible False
+	selection_circle_image 216
+	selection_circle_offset 77
+
+Sprite(433):
+	image 34553
+	health_bar 110
+	unused True
+	is_visible True
+	selection_circle_image 184
+	selection_circle_offset 106
+
+Sprite(434):
+	image 50501
+	health_bar 236
+	unused 190
+	is_visible 53
+	selection_circle_image 133
+	selection_circle_offset 201
+
+Sprite(435):
+	image 11957
+	health_bar 130
+	unused False
+	is_visible False
+	selection_circle_image 94
+	selection_circle_offset 238
+
+Sprite(436):
+	image 20061
+	health_bar 107
+	unused True
+	is_visible True
+	selection_circle_image 44
+	selection_circle_offset 158
+
+Sprite(437):
+	image 35017
+	health_bar 147
+	unused 215
+	is_visible 185
+	selection_circle_image 57
+	selection_circle_offset 41
+
+Sprite(438):
+	image 1363
+	health_bar 218
+	unused False
+	is_visible False
+	selection_circle_image 186
+	selection_circle_offset 91
+
+Sprite(439):
+	image 65100
+	health_bar 4
+	unused True
+	is_visible True
+	selection_circle_image 201
+	selection_circle_offset 182
+
+Sprite(440):
+	image 53901
+	health_bar 174
+	unused 103
+	is_visible 84
+	selection_circle_image 217
+	selection_circle_offset 124
+
+Sprite(441):
+	image 23747
+	health_bar 93
+	unused False
+	is_visible False
+	selection_circle_image 116
+	selection_circle_offset 253
+
+Sprite(442):
+	image 21032
+	health_bar 216
+	unused True
+	is_visible True
+	selection_circle_image 77
+	selection_circle_offset 24
+
+Sprite(443):
+	image 39913
+	health_bar 56
+	unused 62
+	is_visible 124
+	selection_circle_image 128
+	selection_circle_offset 197
+
+Sprite(444):
+	image 40646
+	health_bar 22
+	unused False
+	is_visible False
+	selection_circle_image 210
+	selection_circle_offset 254
+
+Sprite(445):
+	image 482
+	health_bar 48
+	unused True
+	is_visible True
+	selection_circle_image 104
+	selection_circle_offset 193
+
+Sprite(446):
+	image 45690
+	health_bar 131
+	unused 123
+	is_visible 230
+	selection_circle_image 24
+	selection_circle_offset 65
+
+Sprite(447):
+	image 25150
+	health_bar 160
+	unused False
+	is_visible False
+	selection_circle_image 18
+	selection_circle_offset 189
+
+Sprite(448):
+	image 1182
+	health_bar 47
+	unused True
+	is_visible True
+	selection_circle_image 241
+	selection_circle_offset 95
+
+Sprite(449):
+	image 17493
+	health_bar 24
+	unused 201
+	is_visible 131
+	selection_circle_image 206
+	selection_circle_offset 3
+
+Sprite(450):
+	image 32605
+	health_bar 96
+	unused False
+	is_visible False
+	selection_circle_image 185
+	selection_circle_offset 104
+
+Sprite(451):
+	image 12567
+	health_bar 202
+	unused True
+	is_visible True
+	selection_circle_image 107
+	selection_circle_offset 104
+
+Sprite(452):
+	image 54179
+	health_bar 40
+	unused 219
+	is_visible 136
+	selection_circle_image 85
+	selection_circle_offset 147
+
+Sprite(453):
+	image 40309
+	health_bar 192
+	unused False
+	is_visible False
+	selection_circle_image 28
+	selection_circle_offset 50
+
+Sprite(454):
+	image 27676
+	health_bar 87
+	unused True
+	is_visible True
+	selection_circle_image 123
+	selection_circle_offset 103
+
+Sprite(455):
+	image 32270
+	health_bar 254
+	unused 222
+	is_visible 207
+	selection_circle_image 252
+	selection_circle_offset 218
+
+Sprite(456):
+	image 49471
+	health_bar 98
+	unused False
+	is_visible False
+	selection_circle_image 112
+	selection_circle_offset 25
+
+Sprite(457):
+	image 23773
+	health_bar 237
+	unused True
+	is_visible True
+	selection_circle_image 242
+	selection_circle_offset 213
+
+Sprite(458):
+	image 39717
+	health_bar 205
+	unused 103
+	is_visible 101
+	selection_circle_image 171
+	selection_circle_offset 209
+
+Sprite(459):
+	image 43628
+	health_bar 90
+	unused False
+	is_visible False
+	selection_circle_image 195
+	selection_circle_offset 111
+
+Sprite(460):
+	image 36717
+	health_bar 118
+	unused True
+	is_visible True
+	selection_circle_image 90
+	selection_circle_offset 42
+
+Sprite(461):
+	image 45259
+	health_bar 204
+	unused 59
+	is_visible 212
+	selection_circle_image 118
+	selection_circle_offset 176
+
+Sprite(462):
+	image 9941
+	health_bar 228
+	unused False
+	is_visible False
+	selection_circle_image 200
+	selection_circle_offset 44
+
+Sprite(463):
+	image 55264
+	health_bar 59
+	unused True
+	is_visible True
+	selection_circle_image 152
+	selection_circle_offset 97
+
+Sprite(464):
+	image 34038
+	health_bar 135
+	unused 8
+	is_visible 207
+	selection_circle_image 35
+	selection_circle_offset 150
+
+Sprite(465):
+	image 8696
+	health_bar 85
+	unused False
+	is_visible False
+	selection_circle_image 91
+	selection_circle_offset 241
+
+Sprite(466):
+	image 12807
+	health_bar 223
+	unused True
+	is_visible True
+	selection_circle_image 177
+	selection_circle_offset 131
+
+Sprite(467):
+	image 15206
+	health_bar 234
+	unused 147
+	is_visible 149
+	selection_circle_image 114
+	selection_circle_offset 123
+
+Sprite(468):
+	image 11377
+	health_bar 90
+	unused False
+	is_visible False
+	selection_circle_image 21
+	selection_circle_offset 154
+
+Sprite(469):
+	image 43176
+	health_bar 19
+	unused True
+	is_visible True
+	selection_circle_image 60
+	selection_circle_offset 8
+
+Sprite(470):
+	image 45271
+	health_bar 12
+	unused 200
+	is_visible 10
+	selection_circle_image 213
+	selection_circle_offset 141
+
+Sprite(471):
+	image 59440
+	health_bar 16
+	unused False
+	is_visible False
+	selection_circle_image 55
+	selection_circle_offset 10
+
+Sprite(472):
+	image 25554
+	health_bar 200
+	unused True
+	is_visible True
+	selection_circle_image 34
+	selection_circle_offset 58
+
+Sprite(473):
+	image 27570
+	health_bar 41
+	unused 145
+	is_visible 178
+	selection_circle_image 11
+	selection_circle_offset 249
+
+Sprite(474):
+	image 62462
+	health_bar 201
+	unused False
+	is_visible False
+	selection_circle_image 179
+	selection_circle_offset 162
+
+Sprite(475):
+	image 42000
+	health_bar 124
+	unused True
+	is_visible True
+	selection_circle_image 175
+	selection_circle_offset 113
+
+Sprite(476):
+	image 52042
+	health_bar 46
+	unused 130
+	is_visible 129
+	selection_circle_image 84
+	selection_circle_offset 25
+
+Sprite(477):
+	image 33182
+	health_bar 24
+	unused False
+	is_visible False
+	selection_circle_image 72
+	selection_circle_offset 17
+
+Sprite(478):
+	image 18333
+	health_bar 175
+	unused True
+	is_visible True
+	selection_circle_image 60
+	selection_circle_offset 126
+
+Sprite(479):
+	image 39809
+	health_bar 250
+	unused 23
+	is_visible 182
+	selection_circle_image 171
+	selection_circle_offset 40
+
+Sprite(480):
+	image 39076
+	health_bar 175
+	unused False
+	is_visible False
+	selection_circle_image 28
+	selection_circle_offset 9
+
+Sprite(481):
+	image 45944
+	health_bar 140
+	unused True
+	is_visible True
+	selection_circle_image 85
+	selection_circle_offset 224
+
+Sprite(482):
+	image 20475
+	health_bar 40
+	unused 38
+	is_visible 161
+	selection_circle_image 23
+	selection_circle_offset 181
+
+Sprite(483):
+	image 31425
+	health_bar 214
+	unused False
+	is_visible False
+	selection_circle_image 133
+	selection_circle_offset 92
+
+Sprite(484):
+	image 52471
+	health_bar 150
+	unused True
+	is_visible True
+	selection_circle_image 162
+	selection_circle_offset 38
+
+Sprite(485):
+	image 48744
+	health_bar 6
+	unused 230
+	is_visible 255
+	selection_circle_image 10
+	selection_circle_offset 122
+
+Sprite(486):
+	image 40934
+	health_bar 55
+	unused False
+	is_visible False
+	selection_circle_image 231
+	selection_circle_offset 0
+
+Sprite(487):
+	image 31252
+	health_bar 27
+	unused True
+	is_visible True
+	selection_circle_image 254
+	selection_circle_offset 169
+
+Sprite(488):
+	image 64177
+	health_bar 22
+	unused 94
+	is_visible 4
+	selection_circle_image 68
+	selection_circle_offset 98
+
+Sprite(489):
+	image 34926
+	health_bar 118
+	unused False
+	is_visible False
+	selection_circle_image 121
+	selection_circle_offset 209
+
+Sprite(490):
+	image 43771
+	health_bar 79
+	unused True
+	is_visible True
+	selection_circle_image 19
+	selection_circle_offset 71
+
+Sprite(491):
+	image 18939
+	health_bar 220
+	unused 99
+	is_visible 81
+	selection_circle_image 162
+	selection_circle_offset 248
+
+Sprite(492):
+	image 26343
+	health_bar 116
+	unused False
+	is_visible False
+	selection_circle_image 156
+	selection_circle_offset 232
+
+Sprite(493):
+	image 45771
+	health_bar 7
+	unused True
+	is_visible True
+	selection_circle_image 99
+	selection_circle_offset 147
+
+Sprite(494):
+	image 34733
+	health_bar 22
+	unused 187
+	is_visible 186
+	selection_circle_image 68
+	selection_circle_offset 136
+
+Sprite(495):
+	image 29324
+	health_bar 144
+	unused False
+	is_visible False
+	selection_circle_image 130
+	selection_circle_offset 253
+
+Sprite(496):
+	image 12909
+	health_bar 172
+	unused True
+	is_visible True
+	selection_circle_image 105
+	selection_circle_offset 190
+
+Sprite(497):
+	image 40241
+	health_bar 72
+	unused 49
+	is_visible 182
+	selection_circle_image 72
+	selection_circle_offset 101
+
+Sprite(498):
+	image 30739
+	health_bar 86
+	unused False
+	is_visible False
+	selection_circle_image 0
+	selection_circle_offset 3
+
+Sprite(499):
+	image 21433
+	health_bar 182
+	unused True
+	is_visible True
+	selection_circle_image 63
+	selection_circle_offset 125
+
+Sprite(500):
+	image 46334
+	health_bar 180
+	unused 235
+	is_visible 76
+	selection_circle_image 229
+	selection_circle_offset 1
+
+Sprite(501):
+	image 43510
+	health_bar 131
+	unused False
+	is_visible False
+	selection_circle_image 169
+	selection_circle_offset 37
+
+Sprite(502):
+	image 5265
+	health_bar 236
+	unused True
+	is_visible True
+	selection_circle_image 124
+	selection_circle_offset 4
+
+Sprite(503):
+	image 32324
+	health_bar 105
+	unused 190
+	is_visible 215
+	selection_circle_image 7
+	selection_circle_offset 53
+
+Sprite(504):
+	image 58659
+	health_bar 141
+	unused False
+	is_visible False
+	selection_circle_image 193
+	selection_circle_offset 60
+
+Sprite(505):
+	image 65246
+	health_bar 218
+	unused True
+	is_visible True
+	selection_circle_image 253
+	selection_circle_offset 100
+
+Sprite(506):
+	image 7820
+	health_bar 229
+	unused 180
+	is_visible 16
+	selection_circle_image 22
+	selection_circle_offset 69
+
+Sprite(507):
+	image 30668
+	health_bar 152
+	unused False
+	is_visible False
+	selection_circle_image 40
+	selection_circle_offset 8
+
+Sprite(508):
+	image 45763
+	health_bar 151
+	unused True
+	is_visible True
+	selection_circle_image 136
+	selection_circle_offset 131
+
+Sprite(509):
+	image 45048
+	health_bar 142
+	unused 171
+	is_visible 146
+	selection_circle_image 171
+	selection_circle_offset 3
+
+Sprite(510):
+	image 12105
+	health_bar 9
+	unused False
+	is_visible False
+	selection_circle_image 49
+	selection_circle_offset 163
+
+Sprite(511):
+	image 39751
+	health_bar 37
+	unused True
+	is_visible True
+	selection_circle_image 249
+	selection_circle_offset 104
+
+Sprite(512):
+	image 42702
+	health_bar 126
+	unused 102
+	is_visible 110
+	selection_circle_image 190
+	selection_circle_offset 53
+
+Sprite(513):
+	image 44085
+	health_bar 152
+	unused False
+	is_visible False
+	selection_circle_image 191
+	selection_circle_offset 77
+
+Sprite(514):
+	image 51178
+	health_bar 7
+	unused True
+	is_visible True
+	selection_circle_image 204
+	selection_circle_offset 233
+
+Sprite(515):
+	image 42503
+	health_bar 75
+	unused 152
+	is_visible 172
+	selection_circle_image 166
+	selection_circle_offset 89
+
+Sprite(516):
+	image 61883
+	health_bar 22
+	unused False
+	is_visible False
+	selection_circle_image 139
+	selection_circle_offset 114
