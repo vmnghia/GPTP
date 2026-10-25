@@ -8,6 +8,7 @@ using Microsoft.UI;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Windows.System;
 using Button = Microsoft.UI.Xaml.Controls.Button;
@@ -152,7 +153,22 @@ sealed class DataPage
         menu.Items.Add(revertItem);
         menu.Items.Add(revertVanillaItem);
         menu.Opening += (_, _) => UpdateMenu();
-        list.ContextFlyout = menu;
+        // Not ContextFlyout: a right click doesn't select the row, and the menu acts on the
+        // selected entry. The row under the pointer (or the focused row, from the keyboard) is
+        // selected first, then the menu opens for it.
+        list.ContextRequested += (_, e) =>
+        {
+            if (Ancestor<ListViewItem>(e.OriginalSource as DependencyObject) is not { } item) return;
+            int index = list.IndexFromContainer(item);
+            if (index < 0) return;
+            // Where to open, read before the selection redraws (and may recycle the row's container).
+            bool atPointer = e.TryGetPosition(list, out var point);
+            if (index != Entry) SelectEntry(index, scroll: false);
+            UpdateMenu();
+            if (atPointer) menu.ShowAt(list, new FlyoutShowOptions { Position = point });
+            else menu.ShowAt(list);
+            e.Handled = true;
+        };
         Grid.SetRow(list, 1);
         left.Children.Add(list);
 
@@ -421,7 +437,7 @@ sealed class DataPage
     }
 
     /// <summary>
-    /// The entry list, " {id} {name}" with the id padded as PyDAT pads it and • after an entry
+    /// The entry list, " {id}  {name}" (PyDAT's ' %s  %s') with the id padded as PyDAT pads it and • after an entry
     /// that differs from vanilla's. Only the rows that changed are replaced. True when the list
     /// was made anew (another file, another count, or many rows at once).
     /// </summary>
@@ -469,7 +485,7 @@ sealed class DataPage
     }
 
     string Row(int id) =>
-        $" {id.ToString(CultureInfo.InvariantCulture).PadLeft(rowsPad)} {rowNames[id]}" + (rowDots[id] ? " •" : "");
+        $" {id.ToString(CultureInfo.InvariantCulture).PadLeft(rowsPad)}  {rowNames[id]}" + (rowDots[id] ? " •" : "");
 
     /// <summary>The current tab, showing the entry; or why there is none.</summary>
     void ShowTab(DatFile? dat)
@@ -607,6 +623,14 @@ sealed class DataPage
         Content = content, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollMode = ScrollMode.Auto,
         VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, VerticalScrollMode = ScrollMode.Disabled,
     };
+
+    /// <summary>The nearest element of type T at or above <paramref name="element"/> in the visual tree.</summary>
+    static T? Ancestor<T>(DependencyObject? element) where T : DependencyObject
+    {
+        for (; element is not null; element = VisualTreeHelper.GetParent(element))
+            if (element is T found) return found;
+        return null;
+    }
 
     static TextBlock Failure(string text) => new() { Text = text, TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true };
 
