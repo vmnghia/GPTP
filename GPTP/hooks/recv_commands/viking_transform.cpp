@@ -169,13 +169,6 @@ void orderTransform(CUnit* unit) {
 		unit->mainOrderState = STATE_START;
 	}
 
-	if (unit->mainOrderState == STATE_FLYING) {
-		if (unit->getMovableState() == MovableState::NotReachedDestination)
-			return;
-		VDBG("Viking: arrived at %d,%d to land", unit->position.x, unit->position.y);
-		unit->mainOrderState = STATE_START;
-	}
-
 	if (unit->mainOrderState == STATE_START) {
 		if (unit->movementFlags & MovementFlags::Accelerating)
 			return;
@@ -189,15 +182,15 @@ void orderTransform(CUnit* unit) {
 			if (found == LAND_AWAY) {
 				//as SC2's: fly to the nearest spot it can stand on, then land
 				//there - searched again on arrival, as the spot may be taken.
-				//The flight is this order's own (STATE_FLYING): a Move order
-				//with the transform queued after it never moved the unit, and
-				//the transform started again every tick (2026-10-25)
+				//The flight is an order of its own (ORDER_VIKING_FLY), which any
+				//command interrupts, as SC2's; it gives the transform back on
+				//arrival as a new order. (A Move with this order queued after it
+				//never moved: this order is not queueable, so it replaced the
+				//Move - 2026-10-25.)
 				replaceUnitWithType(unit, VIKING_FIGHTER);
 				restoreFacing(unit, facing);
 				VDBG("Viking: flying to land at %d,%d (from %d,%d)", away.x, away.y, unit->position.x, unit->position.y);
-				unit->orderTarget.pt = away;
-				setMoveTarget(unit, away.x, away.y);
-				unit->mainOrderState = STATE_FLYING;
+				unit->orderTo(ORDER_VIKING_FLY, away.x, away.y);
 				return;
 			}
 			if (found == LAND_NONE) {
@@ -238,6 +231,26 @@ void orderTransform(CUnit* unit) {
 	orderReturnToIdle(unit);
 	VDBG("Viking: done; now unit %d, status 0x%X, move state %d, order 0x%X",
 		unit->id, unit->status, unit->movementState, unit->mainOrderId);
+}
+
+bool orderFly(CUnit* unit) {
+	if (unit->id != VIKING_FIGHTER && unit->id != VIKING_ASSAULT)
+		return false;	//a Reaver's own ReaverStop
+	if (unit->id != VIKING_FIGHTER) {
+		orderReturnToIdle(unit);
+		return true;
+	}
+	//0: set off for the spot (orderTarget.pt, from orderTo); 1: on the way
+	if (unit->mainOrderState == 0) {
+		setMoveTarget(unit, unit->orderTarget.pt.x, unit->orderTarget.pt.y);
+		unit->mainOrderState = 1;
+		return true;
+	}
+	if (unit->getMovableState() == MovableState::NotReachedDestination)
+		return true;
+	VDBG("Viking: arrived at %d,%d to land", unit->position.x, unit->position.y);
+	unit->orderTo(ORDER_VIKING_TRANSFORM);
+	return true;
 }
 
 } //vikingtransform

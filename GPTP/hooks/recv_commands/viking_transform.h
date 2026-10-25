@@ -17,6 +17,10 @@ void recvTransform(const u8* packet);
 //for a unit that is not frozen.
 void orderTransform(CUnit* unit);
 
+//The flight to a landing spot (ORDER_VIKING_FLY, ReaverStop reused) for a
+//Viking; false for any other unit, whose order the exe runs as usual.
+bool orderFly(CUnit* unit);
+
 } //vikingtransform
 
 namespace hooks {

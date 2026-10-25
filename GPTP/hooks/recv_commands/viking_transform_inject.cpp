@@ -31,20 +31,41 @@ void __declspec(naked) actionStub() {
 //transform's order runs here and goes on where a handled case goes
 //(0x4EC6F1, as SiegeMode's 0x4EC582); anything else redoes the two
 //instructions. Frozen units (Lockdown, Stasis, Maelstrom) never get here
-//(0x4EC518).
+//(0x4EC518). The flight to a landing spot reuses ReaverStop (0x07): run here
+//for a Viking only (orderFly says), the Reaver's goes on to the exe's case.
 const u32 Back_OrderSwitch = 0x004EC564;
 const u32 Back_OrderDone = 0x004EC6F1;
+CUnit* flyUnit;
+u32 flyHandled;
+//an ordinary function, so the naked stub needs no temporary on a frame it
+//doesn't have (a `?:` in the stub did: check_naked_wrappers, 2026-10-25)
+void runFly() {
+	flyHandled = vikingtransform::orderFly(flyUnit) ? 1 : 0;
+}
 void __declspec(naked) orderSwitchStub() {
 	static CUnit* unit;
 	__asm {
 		CMP BYTE PTR [ESI+0x4D], 0x68
+		JE transform
+		CMP BYTE PTR [ESI+0x4D], 0x07
 		JNE notOurs
+		MOV flyUnit, ESI
+		PUSHAD
+	}
+	runFly();
+	__asm {
+		POPAD
+		CMP flyHandled, 0
+		JNE done
+		JMP notOurs
+	transform:
 		MOV unit, ESI
 		PUSHAD
 	}
 	vikingtransform::orderTransform(unit);
 	__asm {
 		POPAD
+	done:
 		JMP Back_OrderDone
 	notOurs:
 		MOVZX EAX, BYTE PTR [ESI+0x4D]

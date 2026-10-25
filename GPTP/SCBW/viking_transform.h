@@ -22,6 +22,14 @@ const u16 VIKING_FIGHTER = 91;	//air (the Cargo Ship's slot)
 //(the design's A5), with SiegeMode's orders.dat flags.
 const u8 ORDER_VIKING_TRANSFORM = 0x68;
 
+//The flight to a landing spot, when there is no room where the fighter is:
+//ReaverStop (0x07) reused - a rarely used order, run by the plugin only for
+//units 10 and 91, which never use it themselves (the Reaver keeps its own;
+//the hook checks the unit). Its orders.dat entry is Move's but for
+//waypoints_slowdown: interruptable and queueable, so any command cancels the
+//flight, as SC2's; the transform's own order (above) stays uninterruptable.
+const u8 ORDER_VIKING_FLY = 0x07;
+
 //The buttons' variables (the Manifold Editor's actVar), on BTNSACT_DoNothing
 //0x423180: to the ground form (on unit 91's set), to the air form (on unit 10's).
 const u32 ACTVAR_TO_ASSAULT = 0xF00A;
