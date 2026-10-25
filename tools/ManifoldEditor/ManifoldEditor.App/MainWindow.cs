@@ -839,8 +839,10 @@ public sealed class MainWindow : Window
             {
                 DatMirror.Write(folder, file, bytes);
             }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            catch (Exception e)
             {
+                // Any failure (an odd to-repack path throws ArgumentException or NotSupportedException
+                // too): the exe is saved already, so a status line, as WriteRepackStrings does.
                 failures.Add($"to-repack\\arr\\{DatFormats.Of(file).FileName} not written: {e.Message}");
             }
         }

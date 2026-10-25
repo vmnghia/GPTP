@@ -130,7 +130,12 @@ public sealed class DatFile
         return true;
     }
 
-    /// <summary>Whether the entry has the same values in both files (an entry the other file lacks differs).</summary>
+    /// <summary>
+    /// Whether the entry has the same values in both files, over the properties both cover on
+    /// it, as <see cref="WithEntryFrom"/> copies them: a value only one file has is no difference
+    /// (an expanded file's sprites 0-129 have a health bar, vanilla's do not). An entry the
+    /// other file lacks differs.
+    /// </summary>
     public bool EntrySameAs(int entry, DatFile other)
     {
         if (other.Format.Id != Format.Id) return false;
@@ -140,8 +145,7 @@ public sealed class DatFile
         {
             int a = entry - offsets[i], b = entry - other.offsets[i];
             bool hasA = a >= 0 && a < values[i].Length, hasB = b >= 0 && b < other.values[i].Length;
-            if (hasA != hasB) return false;
-            if (hasA && values[i][a] != other.values[i][b]) return false;
+            if (hasA && hasB && values[i][a] != other.values[i][b]) return false;
         }
         return true;
     }

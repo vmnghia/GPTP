@@ -238,11 +238,12 @@ sealed class DataPage
 
     /// <summary>
     /// Shows a place (after an undo or redo, or a check line): its file, the tab that shows
-    /// its property (the current units sub-tab when it does), and its entry.
+    /// its property (the current units sub-tab when it does), and its entry. It commits
+    /// nothing: after an undo the boxes still hold what the step took away, and the window
+    /// committed them before it (a check line's link commits first itself).
     /// </summary>
     public void Show(DatPlace place)
     {
-        CommitPending();
         if (opened() is not { } exe) return;
         TakeState(exe);
         file = place.File;
@@ -270,8 +271,15 @@ sealed class DataPage
         jump.SelectAll();
     }
 
-    /// <summary>Commits what the shown tab's boxes hold (before Save, Undo, Redo, and before the page shows something else).</summary>
-    public void CommitPending() => shownTab?.CommitPending();
+    /// <summary>
+    /// Commits what the shown tab's boxes hold (before Save, Undo, Redo, and before the page
+    /// shows something else); only into the exe the tab shows: after another exe is opened
+    /// (with the page hidden, it is not redrawn) its boxes are the last exe's.
+    /// </summary>
+    public void CommitPending()
+    {
+        if (shownState is not null && ReferenceEquals(opened()?.State, shownState)) shownTab?.CommitPending();
+    }
 
     /// <summary>
     /// Revert entry (to the file as opened or last saved) or Revert entry to vanilla, on the
@@ -327,6 +335,7 @@ sealed class DataPage
     {
         if (ReferenceEquals(exe.State, shownState)) return;
         shownState = exe.State;
+        shownTab = null;   // the last exe's boxes: shown again (reloaded) by the redraw that follows
         var s = settings();
         file = Enum.TryParse<DatId>(s.LastDat, out var f) && Enum.IsDefined(f) ? f : DatId.Units;
         unitsTab = Enum.TryParse<DatTabId>(s.LastUnitsTab, out var t) && Enum.IsDefined(t) && DatTabs.Of(t).File == DatId.Units
@@ -586,7 +595,11 @@ sealed class DataPage
                     Content = new TextBlock { Text = line.Text, TextWrapping = TextWrapping.Wrap }, Padding = new Thickness(0), FontSize = 12,
                 };
                 var place = new DatPlace(line.File, entry, line.Property);
-                link.Click += (_, _) => Show(place);
+                link.Click += (_, _) =>
+                {
+                    CommitPending();
+                    Show(place);
+                };
                 checkLines.Children.Add(link);
             }
             else checkLines.Children.Add(new TextBlock { Text = line.Text, FontSize = 12, TextWrapping = TextWrapping.Wrap });

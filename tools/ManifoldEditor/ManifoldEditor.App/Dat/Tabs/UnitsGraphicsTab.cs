@@ -18,7 +18,7 @@ sealed class UnitsGraphicsTab : DatTabBase
             ReferenceField(this, File, P("graphics"), "Graphics", "UnitGfx", () => Context.Names(DatId.Flingy), null, 300),
             ReferenceField(this, File, P("construction_animation"), "Construction", "UnitConstruction",
                 () => Context.Names(DatId.Images), null, 300),
-            ReferenceField(this, File, P("portrait"), "Portraits", "UnitPortrait", () => Context.Names(DatId.Portdata), "None", 300, noneValue: 65535),
+            ReferenceField(this, File, P("portrait"), "Portraits", "UnitPortrait", () => Context.Names(DatId.Portdata), "None", 300),
             ChoiceField(this, File, P("elevation_level"), "Elevation", "UnitElevationLevel", "ElevationLevels", 300),
             NumberField(this, File, P("unit_direction"), "Direction", "UnitDirection", 64)));
 

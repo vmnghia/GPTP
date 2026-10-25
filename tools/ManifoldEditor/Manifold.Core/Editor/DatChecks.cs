@@ -8,7 +8,8 @@ public sealed record DatCheck(DatId File, int? Entry, string? Property, string T
 
 /// <summary>
 /// What the .dat files get wrong, for the Data page's list: a value that points past the
-/// file it points into, a sprite's selection circle naming an image that does not exist, and
+/// file it points into (the target's count and the property's <see cref="DatProperty.NoneValue"/>
+/// name nothing and pass), a sprite's selection circle naming an image that does not exist, and
 /// an expanded file the plugin does not read. A file that is not open is skipped, and so is
 /// a reference into one that is not open.
 /// </summary>
@@ -39,7 +40,7 @@ public static class DatChecks
             for (int entry = 0; entry < file.Count; entry++)
             {
                 foreach (var (property, count) in targets)
-                    if (file.Get(entry, property.Name) is { } value && value > (ulong)count)
+                    if (file.Get(entry, property.Name) is { } value && value > (ulong)count && value != property.NoneValue)
                         lines.Add(new DatCheck(format.Id, entry, property.Name,
                             $"{name} {entry}, {property.Name}: {value} is past {DatFormats.Of(property.Target!.Value).FileName}'s {count} entries"));
 

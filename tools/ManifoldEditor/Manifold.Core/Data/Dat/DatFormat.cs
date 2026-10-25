@@ -39,8 +39,12 @@ public static class DatTypes
 /// <param name="VanillaCount">How many entries it covers in the vanilla layout; null: all of them.</param>
 /// <param name="ExpandedType">The type in the expanded layout, when it differs.</param>
 /// <param name="Target">The .dat file the value is an index into, when it is one.</param>
+/// <param name="NoneValue">
+/// The value that names nothing, when it is not the target's entry count (PyDAT's none_value):
+/// the checks pass it and the App's reference fields show it as None.
+/// </param>
 public sealed record DatProperty(string Name, DatType Type, int? VanillaFirst = null, int? VanillaCount = null,
-    DatType? ExpandedType = null, DatId? Target = null)
+    DatType? ExpandedType = null, DatId? Target = null, ulong? NoneValue = null)
 {
     public DatType TypeIn(bool expanded) => expanded && ExpandedType is { } t ? t : Type;
 

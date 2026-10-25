@@ -246,7 +246,9 @@ Two commands on the entry list's context menu (and Ctrl+Shift+R for the first):
 
 Each is one undo step, labelled "Revert entry" / "Revert entry to vanilla"; nothing is
 recorded when the entry already matches. The entry list marks an entry that differs from
-vanilla with •, so a changed entry is easy to find.
+vanilla with •, so a changed entry is easy to find; as Revert, it compares only the
+properties both files have on the entry (an expanded sprites.dat's health bars on sprites
+0-129 are no difference), so a • always clears with Revert entry to vanilla.
 
 ## 8. Checks
 
@@ -254,7 +256,9 @@ The Data page lists check lines under its tabs, for every file (PyDAT checks non
 these; more in part 5):
 
 - a reference id past its target's entry count (a units `ground weapon` of 140 with 130
-  weapons, unless it is that field's None);
+  weapons, unless it is that field's None: the count, or the property's own none value
+  where PyDAT has one, a units `portrait` of 65535; the format holds it, and the Data
+  page's dropdown reads the same value);
 - a sprite's selection circle image that names no image (the field holds `image - 561`,
   so it names images 561-816; the check is that the image exists);
 - an expanded file of a table the plugin refuses (§4).
@@ -285,7 +289,7 @@ Each line names the file, entry and field, and is a link that shows that entry.
 - Names: unitnames.tbl first, stat_txt labels, lists running short, expanded ids.
 - `DatTabs`: every property of every format shows on at least one tab; every PyMS list
   the editor reads is in `Data\`.
-- Checks: each case in §8.
+- Checks: each case in §8, and none on the vanilla files (under `MANIFOLD_ARR_DIR`).
 
 **App:** the compile check on Linux. On Windows, the user:
 1. Opens the exe: the status bar names each .dat file's source; the Data page shows the
@@ -299,6 +303,9 @@ Each line names the file, entry and field, and is a link that shows that entry.
 7. Starts a game: a changed value shows (e.g. the Marine's hit points).
 8. Find and Jump to ID, including hex.
 9. A set's race changed in StarEdit flags regroups the set list.
+10. Type in a Data field, open a second exe from the Button sets page, then Save: nothing
+    changes in the second exe.
+11. Type a value in a field, then Undo: the field goes back and stays back.
 
 ## 11. Out of this part
 

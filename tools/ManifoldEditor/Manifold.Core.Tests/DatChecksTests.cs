@@ -44,6 +44,25 @@ public class DatChecksTests
     }
 
     [Fact]
+    public void A_reference_holding_its_property_s_none_value_is_fine()
+    {
+        // units.dat's portrait names no portrait with 65535 (PyDAT's none_value), not with portdata's count.
+        Assert.Equal(65535UL, DatFormats.Of(DatId.Units)["portrait"].NoneValue);
+        Assert.Empty(DatChecks.Lines(Document(new() { [DatId.Units] = Zero(DatId.Units).With(91, "portrait", 65535) })));
+
+        var past = Document(new() { [DatId.Units] = Zero(DatId.Units).With(91, "portrait", 65534) });
+        Assert.Equal(new DatCheck(DatId.Units, 91, "portrait", "units.dat 91, portrait: 65534 is past portdata.dat's 110 entries"),
+            Assert.Single(DatChecks.Lines(past)));
+    }
+
+    [Fact]
+    public void Only_the_portrait_and_the_highlight_icon_have_a_none_value()
+    {
+        var withNone = DatFormats.All.SelectMany(f => f.Properties.Where(p => p.NoneValue is not null).Select(p => (f.Id, p.Name, p.NoneValue)));
+        Assert.Equal([(DatId.Units, "portrait", (ulong?)65535), (DatId.Orders, "highlight_icon", (ulong?)65535)], withNone.ToArray());
+    }
+
+    [Fact]
     public void A_missing_target_file_skips_its_reference_check()
     {
         var opened = DatFormats.All.Where(f => f.Id is DatId.Units).ToDictionary(f => f.Id, f => Zero(f.Id).With(0, "ground_weapon", 140));

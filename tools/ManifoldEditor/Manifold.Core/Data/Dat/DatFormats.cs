@@ -58,7 +58,7 @@ public static class DatFormats
         P("staredit_placement_size", Size),
         Ranged("addon_position", Position, 106, 96),
         P("unit_extents", Extents),
-        P("portrait", Short, DatId.Portdata),
+        new DatProperty("portrait", Short, Target: DatId.Portdata, NoneValue: 65535),   // PyDAT's none_value
         P("mineral_cost", Short),
         P("vespene_cost", Short),
         P("build_time", Short),
@@ -216,7 +216,7 @@ public static class DatFormats
         P("targeting", Byte, DatId.Weapons),
         P("technology_energy", Byte, DatId.Techdata),
         P("iscript_animation", Byte),
-        P("highlight_icon", Short),
+        new DatProperty("highlight_icon", Short, NoneValue: 65535),   // a cmdicons frame; PyDAT's none_value
         P("requirements", Short),
         P("obscured_order", Byte, DatId.Orders),
     }, ExpandedMax: 255);

@@ -194,12 +194,22 @@ public class DatFileTests
     }
 
     [Fact]
-    public void EntrySameAsCountsAMissingValueAsDifferent()
+    public void EntrySameAsComparesOnlyThePropertiesBothFilesCover()
     {
+        // As WithEntryFrom copies: a value only one file has is not a difference Revert could clear.
         var vanilla = Zeros(DatId.Sprites);
         var expanded = Expanded(DatId.Sprites, 600);
-        Assert.False(vanilla.EntrySameAs(5, expanded));    // health_bar: no value vs 0
+        Assert.True(vanilla.EntrySameAs(5, expanded));     // health_bar: no value vs 0
+        Assert.True(expanded.EntrySameAs(5, vanilla));
+        Assert.True(vanilla.EntrySameAs(5, expanded.With(5, "health_bar", 19)));
+        Assert.False(vanilla.EntrySameAs(5, expanded.With(5, "image", 7)));
         Assert.True(vanilla.EntrySameAs(200, expanded));
         Assert.False(expanded.EntrySameAs(550, vanilla));  // vanilla has no entry 550
+
+        var units = Zeros(DatId.Units);
+        var unitsExpanded = Expanded(DatId.Units, 252);
+        Assert.True(unitsExpanded.EntrySameAs(0, units));  // infestation, add-on position, sounds: only the expanded file has them on 0
+        Assert.True(unitsExpanded.EntrySameAs(150, units));
+        Assert.False(unitsExpanded.With(0, "armor", 1).EntrySameAs(0, units));
     }
 }

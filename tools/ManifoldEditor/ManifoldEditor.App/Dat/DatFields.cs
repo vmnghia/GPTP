@@ -73,15 +73,17 @@ static class DatFields
     /// <param name="names">The target's names, asked on every load (<see cref="DatContext.Names"/>, an iscript or TBL list...).</param>
     /// <param name="noneName">PyDAT's extra last entry, when it has one: a units ground weapon of 130 (weapons' count) is "None".</param>
     /// <param name="boxWidth">The dropdown's width.</param>
-    /// <param name="noneValue">
-    /// The id the "None" entry writes and that shows as "None" (with <paramref name="noneName"/>); null: the list's
-    /// count, where the entry sits. A units portrait's none is 65535, as in PyDAT. The count itself then shows as
-    /// an id without a name.
-    /// </param>
+    /// <remarks>
+    /// The id the "None" entry writes and that shows as "None" (with <paramref name="noneName"/>) is the
+    /// property's <see cref="DatProperty.NoneValue"/> when it has one (a units portrait's 65535, as in PyDAT;
+    /// the checks read the same), the list's count otherwise, where the entry sits. With a none value the
+    /// count itself shows as an id without a name.
+    /// </remarks>
     public static FrameworkElement ReferenceField(DatTabBase tab, DatId file, string property, string label, string? hintKey,
-        Func<IReadOnlyList<string>> names, string? noneName = null, double boxWidth = 260, ulong? noneValue = null)
+        Func<IReadOnlyList<string>> names, string? noneName = null, double boxWidth = 260)
     {
         Check(tab, file, property);
+        ulong? noneValue = DatFormats.Of(file)[property].NoneValue;
         int shown = -1;
         var entryBox = new EntryBox(boxWidth);
         IReadOnlyList<string>? lastNames = null, withNone = null;
@@ -567,15 +569,20 @@ static class DatFields
 
     /// <summary>
     /// A number box that commits on losing focus, on Enter and on the tab's CommitPending, but
-    /// only text typed since the last <see cref="Load"/>: a box the document has moved on from
-    /// (after an undo, before the tab is shown again) puts nothing back.
+    /// only text typed since the last <see cref="Load"/> or the last commit: a box the document
+    /// has moved on from (after an undo, before the tab is shown again) puts nothing back, and
+    /// text that recorded nothing ("045" over 45, a refused value) does not commit again.
     /// </summary>
     static TextBox Box(DatTabBase tab, double width, Action commit)
     {
         var box = new TextBox { Width = width, MinWidth = 0, FontFamily = new FontFamily("Consolas"), VerticalAlignment = VerticalAlignment.Center };
         void CommitTyped()
         {
-            if (box.Text != (box.Tag as string ?? "")) commit();
+            if (box.Text == (box.Tag as string ?? "")) return;
+            commit();
+            // An edit reloaded the box (Text and Tag the canonical value); an equal or refused
+            // value left the typed text: either way it is committed now, until the next typing.
+            box.Tag = box.Text;
         }
         box.LostFocus += (_, _) => CommitTyped();
         box.KeyDown += (_, e) =>

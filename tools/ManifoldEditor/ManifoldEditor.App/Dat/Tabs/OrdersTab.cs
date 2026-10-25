@@ -25,7 +25,7 @@ sealed class OrdersTab : DatTabBase
             ReferenceField(this, File, P("obscured_order"), "Obscured", "OrdObscured", () => Context.Names(DatId.Orders), "None", 300),
             ReferenceField(this, File, P("label"), "Label", "OrdLabel", statTxt.WithNone, null, 300),
             ChoiceField(this, File, P("iscript_animation"), "Animation", "OrdAnimation", "Animations", 300),
-            ReferenceField(this, File, P("highlight_icon"), "Highlight", "OrdHighlight", () => Context.Lists["Icons"], "None", 300, noneValue: 65535),
+            ReferenceField(this, File, P("highlight_icon"), "Highlight", "OrdHighlight", () => Context.Lists["Icons"], "None", 300),
             NumberField(this, File, P("requirements"), "ReqIndex", "OrdReq", 64)));
 
         Panel.Children.Add(Group("Flags",

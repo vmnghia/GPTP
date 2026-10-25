@@ -1,4 +1,6 @@
 using Manifold.Core.Data;
+using Manifold.Core.Editor;
+using Manifold.Core.Model;
 
 namespace Manifold.Core.Tests;
 
@@ -28,6 +30,15 @@ public class DatVanillaTests
             Assert.Equal(format.Entries, file.Count);
             Assert.Equal(bytes, file.Save());
         }
+    }
+
+    [SkippableFact]
+    public void TheVanillaFilesHaveNoChecks()
+    {
+        Skip.If(ArrDir is null, "MANIFOLD_ARR_DIR is not set");
+        var files = DatFormats.All.ToDictionary(f => f.Id, f => Load(f.Id));
+        var doc = new ButtonSetDocument(Make.EmptySets(), Make.EmptySets(), dats: new DatSet(files, files));
+        Assert.Empty(DatChecks.Lines(doc));
     }
 
     [SkippableFact]

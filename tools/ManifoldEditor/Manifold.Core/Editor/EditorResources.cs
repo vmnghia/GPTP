@@ -29,7 +29,7 @@ public sealed class EditorResources
     public StringTable? SfxdataTbl { get; private set; }
     public StringTable? PortdataTbl { get; private set; }
     public StringTable? MapdataTbl { get; private set; }
-    /// <summary>rez\unitnames.tbl, which only the Expanded names mode reads.</summary>
+    /// <summary>rez\unitnames.tbl, when the exe has one: the TBL and Combined names modes read units' names from it instead of stat_txt.tbl.</summary>
     public StringTable? UnitNames { get; private set; }
     /// <summary>The ids iscript.bin defines, for the Images tab's script box.</summary>
     public IReadOnlyList<int>? IscriptIds { get; private set; }
