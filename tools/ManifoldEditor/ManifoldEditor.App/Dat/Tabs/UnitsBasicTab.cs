@@ -18,30 +18,30 @@ sealed class UnitsBasicTab : DatTabBase
             HitPointsField(this, File, P("hit_points"), "Hit Points", "UnitHP", "UnitHPFraction"),
             Row(
                 NumberField(this, File, P("shield_amount"), "Shields", "UnitSP", 100),
-                Titled(CheckField(this, File, P("shield_enabled"), "Enabled", null), "Shields Enabled", "UnitShieldEnable")),
+                Titled(this, CheckField(this, File, P("shield_enabled"), "Enabled", null), "Shields Enabled", "UnitShieldEnable")),
             NumberField(this, File, P("armor"), "Armor", "UnitArmor", 100),
-            Titled(ReferenceField(this, File, P("armor_upgrade"), "Upgrade", null,
+            Titled(this, ReferenceField(this, File, P("armor_upgrade"), "Upgrade", null,
                 () => Context.Names(DatId.Upgrades), "None", 200), "Armor Upgrade", "UnitArmorUpgrade"));
 
         var cost = Group("Build Cost",
             NumberField(this, File, P("mineral_cost"), "Minerals", "UnitMinerals", 64),
             NumberField(this, File, P("vespene_cost"), "Vespene", "UnitVespene", 64),
             Row(
-                Titled(NumberField(this, File, P("build_time"), "Time", null, 64), "Build Time", "UnitTime"),
+                Titled(this, NumberField(this, File, P("build_time"), "Time", null, 64), "Build Time", "UnitTime"),
                 DerivedText(this, e => Seconds(ValueOf(Context, File, e, P("build_time"))))),
             CheckField(this, File, P("broodwar_unit_flag"), "BroodWar", "UnitIsBW"));
 
         var weapons = Group("Weapons",
-            Titled(ReferenceField(this, File, P("ground_weapon"), "Ground", null,
+            Titled(this, ReferenceField(this, File, P("ground_weapon"), "Ground", null,
                 () => Context.Names(DatId.Weapons), "None"), "Ground Weapon", "UnitWeaponGround"),
-            Titled(NumberField(this, File, P("max_ground_hits"), "Max Hits", null, 44), "Max Ground Hits", "UnitGroundMax"),
-            Titled(ReferenceField(this, File, P("air_weapon"), "Air", null,
+            Titled(this, NumberField(this, File, P("max_ground_hits"), "Max Hits", null, 44), "Max Ground Hits", "UnitGroundMax"),
+            Titled(this, ReferenceField(this, File, P("air_weapon"), "Air", null,
                 () => Context.Names(DatId.Weapons), "None"), "Air Weapon", "UnitWeaponAir"),
-            Titled(NumberField(this, File, P("max_air_hits"), "Max Hits", null, 44), "Max Air Hits", "UnitAirMax"));
+            Titled(this, NumberField(this, File, P("max_air_hits"), "Max Hits", null, 44), "Max Air Hits", "UnitAirMax"));
 
         var supply = Group("Supply",
-            Titled(SupplyField(this, File, P("supply_required"), "Required", null), "Supply Required", "UnitSupReq"),
-            Titled(SupplyField(this, File, P("supply_provided"), "Provided", null), "Supply Provided", "UnitSupProv"),
+            Titled(this, SupplyField(this, File, P("supply_required"), "Required", null), "Supply Required", "UnitSupReq"),
+            Titled(this, SupplyField(this, File, P("supply_provided"), "Provided", null), "Supply Provided", "UnitSupProv"),
             FlagsField(this, File, P("staredit_group_flags"), new (string Label, ulong Mask, string? HintKey)[]
             {
                 ("Zerg", 1UL << 0, "UnitSEGroupZerg"),
@@ -50,17 +50,17 @@ sealed class UnitsBasicTab : DatTabBase
             }, 3));
 
         var space = Group("Space",
-            Titled(NumberField(this, File, P("space_required"), "Required", null, 44), "Space Required", "UnitSpaceReq"),
-            Titled(NumberField(this, File, P("space_provided"), "Provided", null, 44), "Space Provided", "UnitSpaceProv"));
+            Titled(this, NumberField(this, File, P("space_required"), "Required", null, 44), "Space Required", "UnitSpaceReq"),
+            Titled(this, NumberField(this, File, P("space_provided"), "Provided", null, 44), "Space Provided", "UnitSpaceProv"));
 
         var score = Group("Score",
-            Titled(NumberField(this, File, P("build_score"), "Build", null, 64), "Build Score", "UnitScoreBuild"),
-            Titled(NumberField(this, File, P("destroy_score"), "Destroy", null, 64), "Destroy Score", "UnitScoreDestroy"));
+            Titled(this, NumberField(this, File, P("build_score"), "Build", null, 64), "Build Score", "UnitScoreBuild"),
+            Titled(this, NumberField(this, File, P("destroy_score"), "Destroy", null, 64), "Destroy Score", "UnitScoreDestroy"));
 
         var other = Group("Other",
             Row(
                 ChoiceField(this, File, P("unit_size"), "Unit Size", "UnitSize", "UnitSize", 140),
-                Titled(NumberField(this, File, P("sight_range"), "Sight", null, 44), "Sight Range", "UnitSight"),
+                Titled(this, NumberField(this, File, P("sight_range"), "Sight", null, 44), "Sight Range", "UnitSight"),
                 NumberField(this, File, P("target_acquisition_range"), "Target Acquisition Range", "UnitTAR", 44)));
 
         Panel.Children.Add(Row(vital, cost));
@@ -69,10 +69,4 @@ sealed class UnitsBasicTab : DatTabBase
         Panel.Children.Add(other);
     }
 
-    /// <summary>PyDAT's tooltip title where it differs from the label ("Armor Upgrade" for "Upgrade").</summary>
-    FrameworkElement Titled(FrameworkElement field, string title, string hintKey)
-    {
-        Tip(this, field, title, hintKey);
-        return field;
-    }
 }

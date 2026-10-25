@@ -73,8 +73,13 @@ static class DatFields
     /// <param name="names">The target's names, asked on every load (<see cref="DatContext.Names"/>, an iscript or TBL list...).</param>
     /// <param name="noneName">PyDAT's extra last entry, when it has one: a units ground weapon of 130 (weapons' count) is "None".</param>
     /// <param name="boxWidth">The dropdown's width.</param>
+    /// <param name="noneValue">
+    /// The id the "None" entry writes and that shows as "None" (with <paramref name="noneName"/>); null: the list's
+    /// count, where the entry sits. A units portrait's none is 65535, as in PyDAT. The count itself then shows as
+    /// an id without a name.
+    /// </param>
     public static FrameworkElement ReferenceField(DatTabBase tab, DatId file, string property, string label, string? hintKey,
-        Func<IReadOnlyList<string>> names, string? noneName = null, double boxWidth = 260)
+        Func<IReadOnlyList<string>> names, string? noneName = null, double boxWidth = 260, ulong? noneValue = null)
     {
         Check(tab, file, property);
         int shown = -1;
@@ -88,6 +93,17 @@ static class DatFields
             return withNone!;
         }
         TextBox idBox = null!;
+        // The "None" entry is the list's last; its id is noneValue when there is one.
+        bool HasNoneValue() => noneName is not null && noneValue is not null;
+        void ShowValue(ulong value)
+        {
+            var list = List();
+            if (!HasNoneValue()) { entryBox.Show(list, (long)value); return; }
+            int last = list.Count - 1;
+            if (value == noneValue) entryBox.Show(list, last);
+            else if (value == (ulong)last) entryBox.Show(list, (long)value, $"#{value} (no name)");
+            else entryBox.Show(list, (long)value);
+        }
         void Set(ulong value)
         {
             if (Current(tab, file, shown, property) is not { } dat) return;
@@ -95,7 +111,7 @@ static class DatFields
             if (value > max)
             {
                 Refuse(idBox, Range(max));
-                entryBox.Show(List(), (long)dat.Get(shown, property)!.Value);
+                ShowValue(dat.Get(shown, property)!.Value);
                 return;
             }
             Accept(idBox);
@@ -108,7 +124,7 @@ static class DatFields
             if (DatValues.ParseNumber(idBox.Text, TypeOf(dat, property)) is { } value) Set(value);
             else Refuse(idBox, Range(max));
         });
-        entryBox.Picked += id => Set((ulong)id);
+        entryBox.Picked += index => Set(HasNoneValue() && index == List().Count - 1 ? noneValue!.Value : (ulong)index);
         tab.AddLoader(entry =>
         {
             shown = entry;
@@ -116,7 +132,7 @@ static class DatFields
             var value = ValueOf(tab.Context, file, entry, property);
             idBox.IsEnabled = entryBox.Root.IsEnabled = value is not null;
             Load(idBox, value?.ToString(CultureInfo.InvariantCulture) ?? "");
-            if (value is { } v) entryBox.Show(List(), (long)v);
+            if (value is { } v) ShowValue(v);
             else entryBox.Clear();
         });
         return Line(tab, label, hintKey, idBox, EqualsSign(), entryBox.Root);
@@ -449,6 +465,17 @@ static class DatFields
         foreach (var control in controls) line.Children.Add(control);
         Tip(tab, line, label, hintKey);
         return line;
+    }
+
+    /// <summary>
+    /// A field with PyDAT's tooltip title where it differs from the label ("Armor Upgrade" on the
+    /// field labelled "Upgrade"): sets the tooltip to "title:\n(hint)" and returns the element. Build
+    /// the field with a null hint key and wrap it: <c>Titled(this, NumberField(..., "Time", null), "Build Time", "UnitTime")</c>.
+    /// </summary>
+    public static T Titled<T>(DatTabBase tab, T element, string title, string? hintKey) where T : FrameworkElement
+    {
+        Tip(tab, element, title, hintKey);
+        return element;
     }
 
     /// <summary>PyDAT's tooltip: "Label:\n(hint)"; nothing without a hint.</summary>

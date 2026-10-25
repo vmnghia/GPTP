@@ -74,7 +74,7 @@ sealed class UnitsAdvancedTab : DatTabBase
             ReferenceField(this, File, P("infestation"), "Infestation", "UnitInfestation", UnitsWithNone),
             ReferenceField(this, File, P("subunit1"), "Subunit 1", "UnitSub1", UnitsWithNone),
             ReferenceField(this, File, P("subunit2"), "Subunit 2", "UnitSub2", UnitsWithNone),
-            Row(Titled(NumberField(this, File, P("requirements"), "ReqIndex", null, 64), "Requirements Index", "UnitReq"), unknown)));
+            Row(Titled(this, NumberField(this, File, P("requirements"), "ReqIndex", null, 64), "Requirements Index", "UnitReq"), unknown)));
     }
 
     /// <summary>
@@ -94,9 +94,4 @@ sealed class UnitsAdvancedTab : DatTabBase
         return list;
     }
 
-    FrameworkElement Titled(FrameworkElement field, string title, string hintKey)
-    {
-        Tip(this, field, title, hintKey);
-        return field;
-    }
 }

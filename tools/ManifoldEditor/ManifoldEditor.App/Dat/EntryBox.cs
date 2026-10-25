@@ -61,12 +61,13 @@ sealed class EntryBox
 
     /// <summary>
     /// The box for an entry: its name in <paramref name="names"/>, or "#300 (no name)" for an
-    /// id past the list's end, and the list to search.
+    /// id past the list's end, and the list to search. <paramref name="unlisted"/> replaces the
+    /// shown text (for an id whose own index in the list is another entry).
     /// </summary>
-    public void Show(IReadOnlyList<string> names, long id)
+    public void Show(IReadOnlyList<string> names, long id, string? unlisted = null)
     {
         this.names = names;
-        current = Label(names, id);
+        current = unlisted ?? Label(names, id);
         Root.Text = current;
         Root.ItemsSource = null;
     }

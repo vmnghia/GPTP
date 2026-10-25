@@ -33,8 +33,6 @@ sealed class UnitsAiActionsTab : DatTabBase
         + "Weapons Override:\n  - Carrier/Gantrithor: Uses Interceptor weapons\n"
         + "  - Reaver/Warbringer: Uses Scarab weapons\n  - Has a subunit: Uses subunit weapons";
 
-    IReadOnlyList<string>? ordersFrom, ordersWithNone;
-
     public UnitsAiActionsTab(DatContext context) : base(DatTabId.UnitsAiActions, context)
     {
         Panel.Children.Add(Group("AI Actions",
@@ -61,17 +59,7 @@ sealed class UnitsAiActionsTab : DatTabBase
     }
 
     FrameworkElement Order(string property, string label, string hintKey) =>
-        ReferenceField(this, File, P(property), label, hintKey, OrdersWithNone, null, 300);
-
-    /// <summary>The order names with "None" after the last one (PyDAT's), cached while the names are.</summary>
-    IReadOnlyList<string> OrdersWithNone()
-    {
-        var names = Context.Names(DatId.Orders);
-        if (ordersWithNone is not null && ReferenceEquals(names, ordersFrom)) return ordersWithNone;
-        ordersFrom = names;
-        ordersWithNone = [.. names, "None"];
-        return ordersWithNone;
-    }
+        ReferenceField(this, File, P(property), label, hintKey, () => Context.Names(DatId.Orders), "None", 300);
 
     // -------- AI force values (PyDAT's build_force_value) --------
 

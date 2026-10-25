@@ -18,9 +18,7 @@ sealed class UnitsGraphicsTab : DatTabBase
             ReferenceField(this, File, P("graphics"), "Graphics", "UnitGfx", () => Context.Names(DatId.Flingy), null, 300),
             ReferenceField(this, File, P("construction_animation"), "Construction", "UnitConstruction",
                 () => Context.Names(DatId.Images), null, 300),
-            // PyDAT's list ends with "None" (id 65535); a reference field can only append it after the last
-            // portrait, which is not a value the game reads as none, so it is left out (65535 reads "#65535 (no name)").
-            ReferenceField(this, File, P("portrait"), "Portraits", "UnitPortrait", () => Context.Names(DatId.Portdata), null, 300),
+            ReferenceField(this, File, P("portrait"), "Portraits", "UnitPortrait", () => Context.Names(DatId.Portdata), "None", 300, noneValue: 65535),
             ChoiceField(this, File, P("elevation_level"), "Elevation", "UnitElevationLevel", "ElevationLevels", 300),
             NumberField(this, File, P("unit_direction"), "Direction", "UnitDirection", 64)));
 
@@ -33,16 +31,11 @@ sealed class UnitsGraphicsTab : DatTabBase
                 Dimension(extents, 1, "Up", "UnitDimUp"),
                 Dimension(extents, 3, "Down", "UnitDimDown")),
             Group("Addon Position",
-                Titled(PartField(this, File, addon, 0, "Horizontal", null), "Addons Horizontal Position", "UnitAddPosX"),
-                Titled(PartField(this, File, addon, 1, "Vertical", null), "Addons Vertical Position", "UnitAddPosY"))));
+                Titled(this, PartField(this, File, addon, 0, "Horizontal", null), "Addons Horizontal Position", "UnitAddPosX"),
+                Titled(this, PartField(this, File, addon, 1, "Vertical", null), "Addons Vertical Position", "UnitAddPosY"))));
     }
 
     FrameworkElement Dimension(string property, int part, string label, string hintKey) =>
-        Titled(PartField(this, File, property, part, label, null), label + " Dimension", hintKey);
+        Titled(this, PartField(this, File, property, part, label, null), label + " Dimension", hintKey);
 
-    FrameworkElement Titled(FrameworkElement field, string title, string hintKey)
-    {
-        Tip(this, field, title, hintKey);
-        return field;
-    }
 }

@@ -55,8 +55,8 @@ sealed class UnitsStarEditTab : DatTabBase
             ReferenceField(this, File, P("sublabel"), "Rank/Sublabel", "UnitRank", Sublabels, null, 300),
             NumberField(this, File, P("unit_map_string"), "Map String", "UnitMapString", 64)));
         Panel.Children.Add(Group("Placement Box (Pixels)",
-            Titled(PartField(this, File, placement, 0, "Width", null), "Placement Width", "UnitSEPlaceWidth"),
-            Titled(PartField(this, File, placement, 1, "Height", null), "Placement Height", "UnitSEPlaceHeight")));
+            Titled(this, PartField(this, File, placement, 0, "Width", null), "Placement Width", "UnitSEPlaceWidth"),
+            Titled(this, PartField(this, File, placement, 1, "Height", null), "Placement Height", "UnitSEPlaceHeight")));
     }
 
     /// <summary>
@@ -76,9 +76,4 @@ sealed class UnitsStarEditTab : DatTabBase
         return list;
     }
 
-    FrameworkElement Titled(FrameworkElement field, string title, string hintKey)
-    {
-        Tip(this, field, title, hintKey);
-        return field;
-    }
 }
