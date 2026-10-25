@@ -255,7 +255,10 @@ bool orderFly(CUnit* unit) {
 	if (unit->getMovableState() == MovableState::NotReachedDestination)
 		return true;
 	VDBG("Viking: arrived at %d,%d to land", unit->position.x, unit->position.y);
-	unit->orderTo(ORDER_VIKING_TRANSFORM);
+	//back to the transform by hand, as it came here: orderTo from inside an
+	//order's handler never took (in game, 2026-10-25: "arrived" every tick)
+	unit->mainOrderId = ORDER_VIKING_TRANSFORM;
+	unit->mainOrderState = STATE_STOP;
 	return true;
 }
 
