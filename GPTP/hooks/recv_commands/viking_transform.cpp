@@ -55,20 +55,51 @@ void restoreFacing(CUnit* unit, u8 direction) {
 //side of the unit (0x49D3F2-0x49D418).
 enum Landing { LAND_NONE, LAND_HERE, LAND_AWAY };
 
+bool groundFits(u16 unitId, s32 x, s32 y);	//42D810
+
+//From unwalkable ground (water, a cliff), the engine's search finds nothing even
+//when told to search on (in game, 2026-10-25: walkable dirt 150 px off, none
+//found): rings LANDING_STEP apart out to LANDING_SEARCH, each point tried with
+//the terrain test the search starts with (0x42D810), then the search itself from
+//it (which handles units); the nearest spot of the first ring with one.
+const s32 LANDING_STEP = 16;
+bool nearestGround(CUnit* unit, const Point16& at, Point16* out) {
+	for (s32 r = LANDING_STEP; r <= vikingtransform::LANDING_SEARCH; r += LANDING_STEP) {
+		s32 best = -1;
+		for (s32 dy = -r; dy <= r; dy += LANDING_STEP)
+			for (s32 dx = -r; dx <= r; dx += LANDING_STEP) {
+				if (dx != -r && dx != r && dy != -r && dy != r)
+					continue;	//the ring only
+				const s32 x = at.x + dx, y = at.y + dy;
+				if (x < 0 || y < 0 || !groundFits(unit->id, x, y))
+					continue;
+				Point16 from = { (u16)x, (u16)y }, got;
+				if (!scbw::checkUnitCollisionPos(unit, &from, &got, NULL, true, 0))
+					continue;
+				const s32 ddx = got.x - at.x, ddy = got.y - at.y;
+				if (best < 0 || ddx * ddx + ddy * ddy < best) {
+					best = ddx * ddx + ddy * ddy;
+					*out = got;
+				}
+			}
+		if (best >= 0)
+			return true;
+	}
+	return false;
+}
+
 Landing settleLanding(CUnit* unit, Point16* away) {
 	const Point16 at = unit->sprite->position;
 	Point16 spot = at;
 	scbw::prepareUnitMove(unit, true);
 	scbw::setUnitPosition(unit, at.x, at.y);
 	Landing found = LAND_NONE;
-	//its 4th argument (GPTP's "hideErrorMsg") decides an unwalkable start: 0 gives
-	//up there (an error, 0x49D514), 1 searches on for walkable ground - the
-	//Viking over water or a cliff must, as SC2's (2026-10-25)
-	//the search box, LANDING_SEARCH either side (the search clamps it to the map)
-	Box16 area = { (s16)(at.x - vikingtransform::LANDING_SEARCH), (s16)(at.y - vikingtransform::LANDING_SEARCH),
-		(s16)(at.x + vikingtransform::LANDING_SEARCH - 1), (s16)(at.y + vikingtransform::LANDING_SEARCH - 1) };
-	if (!scbw::checkUnitCollisionPos(unit, &at, &spot, &area, true, 0))
-		VDBG("Viking: no free spot near %d,%d (searched %d,%d-%d,%d)", at.x, at.y, area.left, area.top, area.right, area.bottom);
+	//on walkable ground the engine's search (its own 128 px either side) finds the
+	//nearest spot free of units; off it, nearestGround
+	const bool onGround = groundFits(unit->id, at.x, at.y);
+	if (!(onGround ? scbw::checkUnitCollisionPos(unit, &at, &spot, NULL, true, 0) : nearestGround(unit, at, &spot)))
+		VDBG("Viking: no free spot near %d,%d (%s, %d px)", at.x, at.y, onGround ? "on ground" : "off ground",
+			onGround ? 128 : vikingtransform::LANDING_SEARCH);
 	else {
 		const s32 dx = spot.x - at.x, dy = spot.y - at.y;
 		found = dx * dx + dy * dy <= vikingtransform::MAX_LANDING_NUDGE * vikingtransform::MAX_LANDING_NUDGE
@@ -233,6 +264,26 @@ void holdPosition(CUnit* unit) {
 		CALL Func_OrdersHoldPositionSuicidal
 		POPAD
 	}
+}
+
+//0x42D810: whether a unit of @p unitId fits at (x, y): inside the map, on
+//walkable ground and in a walkable region (x in EAX, the unit id in BX, y in DI;
+//the first test checkUnitCollisionPos makes, 0x49D50B)
+const u32 Func_GroundFits = 0x0042D810;
+bool groundFits(u16 unitId, s32 x, s32 y) {
+	static u32 result;
+	u32 id = unitId, yy = (u16)y;
+	s32 xx = (s16)x;
+	__asm {
+		PUSHAD
+		MOV EBX, id
+		MOV EAX, xx
+		MOV EDI, yy
+		CALL Func_GroundFits
+		MOV result, EAX
+		POPAD
+	}
+	return result != 0;
 }
 
 const u32 Func_SetMoveTarget_xy = 0x004EB820;
