@@ -1,4 +1,5 @@
 using Manifold.Core.Data;
+using Manifold.Core.Editor;
 
 namespace Manifold.Core.Model;
 
@@ -17,14 +18,15 @@ public sealed record DatEdit(DatId File, DatFile Before, DatFile After, int Entr
 /// <summary>
 /// One step of the history: sets before and after (usually one; several for Copy set to
 /// units and Re-import), the string table before and after, or both (a button given a copy
-/// of its string is one step), or one .dat file before and after.
+/// of its string is one step), or one .dat file before and after, or one file's name overrides.
 /// </summary>
 public sealed record Change(IReadOnlyList<SetEdit> Sets,
-    StringTable? StringsBefore, StringTable? StringsAfter, int? StringId, string Label, DatEdit? Dat = null)
+    StringTable? StringsBefore, StringTable? StringsAfter, int? StringId, string Label, DatEdit? Dat = null, NamesEdit? Names = null)
 {
-    /// <summary>Where the step shows: its first set (the one being edited), its string, and its .dat entry.</summary>
+    /// <summary>Where the step shows: its first set (the one being edited), its string, and its .dat entry (an overrides step: the entry it was made at, no property).</summary>
     public Place Place => new(Sets.Count > 0 ? Sets[0].SetId : null, StringId,
-        Dat is { } d ? new DatPlace(d.File, d.Entry, d.Property) : null);
+        Dat is { } d ? new DatPlace(d.File, d.Entry, d.Property) :
+        Names is { } n ? new DatPlace(n.File, n.Entry, null) : null);
 }
 
 /// <summary>
@@ -43,6 +45,8 @@ public sealed class ButtonSetDocument
     readonly Dictionary<DatId, DatFile> openedDats; // as opened (Revert entry); the saved ones after a save
     readonly Dictionary<DatId, DatFile> savedDats;  // what the exe holds
     readonly Dictionary<DatId, DatFile> vanillaDats;
+    readonly Dictionary<DatId, NameOverrides> overrides;       // being edited; a file with none is absent
+    readonly Dictionary<DatId, NameOverrides> savedOverrides;  // what the exe holds
 
     /// <summary>The sets as opened from the exe (Revert set, to the opened version).</summary>
     public IReadOnlyList<ButtonSet> Opened { get; private set; }
@@ -73,6 +77,8 @@ public sealed class ButtonSetDocument
         openedDats = new(this.dats);
         savedDats = new(this.dats);
         vanillaDats = dats is null ? new() : new(dats.Vanilla);
+        overrides = dats?.Overrides is { } o ? new(o) : new();
+        savedOverrides = new(overrides);
     }
 
     /// <summary>
@@ -109,6 +115,13 @@ public sealed class ButtonSetDocument
     public bool DatDirty(DatId file) =>
         dats.TryGetValue(file, out var current) && (!savedDats.TryGetValue(file, out var saved) || !current.SameAs(saved));
 
+    /// <summary>The file's name overrides being edited; empty when it has none.</summary>
+    public NameOverrides Overrides(DatId file) => overrides.GetValueOrDefault(file) ?? NameOverrides.Empty;
+
+    /// <summary>The file's overrides differ from those last saved: the save writes them.</summary>
+    public bool OverridesDirty(DatId file) =>
+        !Overrides(file).SameAs(savedOverrides.GetValueOrDefault(file) ?? NameOverrides.Empty);
+
     /// <summary>Whether the entry differs from vanilla's; false past vanilla's last entry or without a vanilla file.</summary>
     public bool EntryDiffersFromVanilla(DatId file, int entry) =>
         dats.TryGetValue(file, out var current) && vanillaDats.TryGetValue(file, out var vanilla) &&
@@ -118,7 +131,7 @@ public sealed class ButtonSetDocument
     public ButtonSet this[int setId] => sets[setId];
 
     /// <summary>Unsaved changes (the title bar's mark).</summary>
-    public bool IsDirty => done != savedAt || StringsDirty || dats.Keys.Any(DatDirty);
+    public bool IsDirty => done != savedAt || StringsDirty || dats.Keys.Any(DatDirty) || DatFormats.All.Any(f => OverridesDirty(f.Id));
     /// <summary>The strings differ from the table last saved: the save writes stat_txt.tbl.</summary>
     public bool StringsDirty => !ReferenceEquals(Strings, savedStrings);
     /// <summary>The set list's dot: the set differs from vanilla.</summary>
@@ -140,6 +153,7 @@ public sealed class ButtonSetDocument
         foreach (var edit in change.Sets) sets[edit.SetId] = after ? edit.After : edit.Before;
         if (change.StringsBefore is not null) Strings = after ? change.StringsAfter : change.StringsBefore;
         if (change.Dat is { } d) dats[d.File] = after ? d.After : d.Before;
+        if (change.Names is { } n) overrides[n.File] = after ? n.After : n.Before;
     }
 
     /// <summary>
@@ -204,6 +218,18 @@ public sealed class ButtonSetDocument
         return true;
     }
 
+    /// <summary>
+    /// A file's name overrides replaced as one step ("Edit name overrides"), shown at
+    /// <paramref name="entry"/> after an undo (null: entry 0). False when nothing changes.
+    /// </summary>
+    public bool ApplyOverrides(DatId file, NameOverrides after, int? entry)
+    {
+        var before = Overrides(file);
+        if (after.SameAs(before)) return false;
+        Record(new Change([], null, null, null, "Edit name overrides", Names: new NamesEdit(file, before, after, entry ?? 0)));
+        return true;
+    }
+
     public bool RevertToOpened(int setId) => Apply(setId, _ => Opened[setId], "Revert set");
     public bool RevertToVanilla(int setId) => Apply(setId, _ => Vanilla[setId], "Revert set to vanilla");
 
@@ -236,5 +262,7 @@ public sealed class ButtonSetDocument
         Opened = sets.ToArray();
         savedStrings = Strings;
         foreach (var (file, current) in dats) openedDats[file] = savedDats[file] = current;
+        savedOverrides.Clear();
+        foreach (var (file, current) in overrides) savedOverrides[file] = current;
     }
 }

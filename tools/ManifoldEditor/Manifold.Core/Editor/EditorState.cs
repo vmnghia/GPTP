@@ -209,6 +209,13 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
             toVanilla ? "Revert entry to vanilla" : "Revert entry");
     }
 
+    /// <summary>
+    /// The file's name overrides replaced, as one step (spec 2026-10-25 §6). False when they
+    /// are the same. An undo shows <paramref name="entry"/> (null: the first).
+    /// </summary>
+    public bool EditOverrides(DatId file, NameOverrides overrides, int? entry = null) =>
+        Document.ApplyOverrides(file, overrides, entry);
+
     // Strings (spec §5, §6).
 
     public StringTable? Strings => Document.Strings;

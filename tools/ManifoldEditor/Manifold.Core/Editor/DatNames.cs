@@ -15,7 +15,8 @@ public sealed record DatNameSources(
     StringTable? SfxdataTbl,
     StringTable? PortdataTbl,
     StringTable? MapdataTbl,
-    DatLists Lists);
+    DatLists Lists,
+    Func<DatId, NameOverrides?>? Overrides = null);
 
 /// <summary>
 /// The names PyDAT shows for a .dat file's entries (PyMS's <c>DATEntryName</c>, spec §6).
@@ -69,6 +70,7 @@ public static partial class DatNames
         var dat = sources.Dat(file);
         int count = dat?.Count ?? format.Entries;
         var list = sources.Lists[file.ToString()];
+        var overrides = sources.Overrides?.Invoke(file)?.Entries;
         simple = simple && HasSimple(file);
         var names = new string[count];
         for (int id = 0; id < count; id++)
@@ -78,11 +80,20 @@ public static partial class DatNames
                 names[id] = $"Reserved Unit #{id}";
                 continue;
             }
+            // PyMS's rule: a replace override is the name, an append adds to the name the mode gives.
+            (bool Append, string Name) over = (false, "");
+            bool overridden = overrides is not null && overrides.TryGetValue(id, out over);
+            if (overridden && !over.Append)
+            {
+                names[id] = over.Name;
+                continue;
+            }
             string fallback = $"{TypeName(file)} #{id}";
             if (id >= format.Entries) fallback = "Expanded " + fallback;
             string? listName = id < list.Count && list[id].Length > 0 ? list[id] : null;
             string? tblName = mode == NamesMode.Basic ? null : TblName(file, id, dat, sources, simple);
             names[id] = Choose(mode, listName, tblName, fallback);
+            if (overridden) names[id] += " " + over.Name;
         }
         return names;
     }

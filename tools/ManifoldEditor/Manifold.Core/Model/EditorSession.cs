@@ -1,4 +1,6 @@
+using System.Text;
 using Manifold.Core.Data;
+using Manifold.Core.Editor;
 
 namespace Manifold.Core.Model;
 
@@ -127,6 +129,12 @@ public static class EditorSession
             var bytes = document.Dat(format.Id)!.Save();
             dats.Add((format.Id, bytes));
             files.Add((format.ArchivePath, bytes));
+        }
+        foreach (var format in DatFormats.All)
+        {
+            // Only the files whose overrides changed; emptied ones are written empty (an MPQ file can't be removed here).
+            if (document.OverridesDirty(format.Id))
+                files.Add((NameOverrides.ArchivePath(format.Id), new UTF8Encoding(false).GetBytes(document.Overrides(format.Id).Write())));
         }
         return null;
     }

@@ -1,4 +1,6 @@
+using System.Text;
 using Manifold.Core.Data;
+using Manifold.Core.Editor;
 
 namespace Manifold.Core.Model;
 
@@ -55,6 +57,23 @@ public static class DatSources
             }
         }
         return new DatSet(opened, vanilla);
+    }
+
+    /// <summary>
+    /// The exe's name overrides (<c>Manifold\names\units.txt</c> and so on). A missing file is
+    /// no overrides (absent from the result); a line that isn't one is added to
+    /// <paramref name="notes"/> and the rest load.
+    /// </summary>
+    public static IReadOnlyDictionary<DatId, NameOverrides> LoadOverrides(IArchive exe, List<string> notes)
+    {
+        var result = new Dictionary<DatId, NameOverrides>();
+        foreach (var format in DatFormats.All)
+        {
+            string path = NameOverrides.ArchivePath(format.Id);
+            if (exe.TryRead(path) is not { } bytes) continue;
+            result[format.Id] = NameOverrides.Parse(new UTF8Encoding(false).GetString(bytes), notes, path);
+        }
+        return result;
     }
 }
 
