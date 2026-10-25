@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Manifold.Core.Data;
 
@@ -31,6 +33,19 @@ public sealed record DatCoder(DatCoderKind Kind, int Bits = 0, IReadOnlyDictiona
 /// <param name="Property">The format property (<see cref="DatProperty.Name"/>).</param>
 /// <param name="Key">PyMS's name for it in the text; for a portrait, idle.portrait_file and the like (the dot is in the key, the coder is Plain).</param>
 public sealed record DatTextKey(string Property, string Key, DatCoder Coder);
+
+/// <summary>One entry of PyMS's text, as <see cref="DatText.Parse"/> reads it, before any file is looked at.</summary>
+/// <param name="Type">The header's name ("Unit").</param>
+/// <param name="Id">The header's id; null for "Unit():", which only a paste accepts.</param>
+/// <param name="Line">The header's 1-based line.</param>
+/// <param name="Values">Each value line in order: the key as written ("hit_points.whole"), the value as written (a number, True or False) and its 1-based line.</param>
+public sealed record TextEntry(string Type, int? Id, int Line, IReadOnlyList<(string Key, string Value, int Line)> Values);
+
+/// <summary>PyMS's text could not be read or does not fit the file; <see cref="Line"/> is the 1-based line it found, when it has one.</summary>
+public sealed class DatTextException(string message, int? line = null) : Exception(message)
+{
+    public int? Line { get; } = line;
+}
 
 /// <summary>
 /// PyMS's text form of the .dat files (AbstractDAT.export_entries, PyMS/FileFormats/DAT, MIT):
@@ -239,5 +254,262 @@ public static class DatText
                 Line(".down", DatValues.Part(value, 3).ToString());
                 break;
         }
+    }
+
+    static readonly Regex headerPattern = new(@"^\s*(\w+)\(([0-9]+)?\):\s*$", RegexOptions.Compiled);
+    static readonly Regex valuePattern = new(@"^\s*(\w+)(?:\.(\w+))?\s+([0-9]+|True|False)\s*$", RegexOptions.Compiled);
+    static readonly Regex flagPattern = new(@"^flag_0x([0-9a-fA-F]+)$", RegexOptions.Compiled);
+
+    /// <summary>
+    /// PyMS's parse_text: a header "Name(id):" and a "key value" or "key.sub value" line for each
+    /// value, a value a number, True or False. A BOM, CRLF line ends, comments after # and
+    /// trailing whitespace are dropped. Refuses as PyMS does, with the line it found.
+    /// </summary>
+    public static IReadOnlyList<TextEntry> Parse(string text)
+    {
+        if (text.StartsWith('\uFEFF')) text = text[1..];
+        var entries = new List<TextEntry>();
+        var seen = new HashSet<int>();
+        string? type = null;
+        int? id = null;
+        int headerLine = 0;
+        List<(string, string, int)>? values = null;
+
+        void Finish()
+        {
+            if (values is null) return;
+            if (values.Count == 0)
+                throw new DatTextException(id is { } n ? $"Entry {n} is empty" : "Entry is empty", headerLine);
+            entries.Add(new TextEntry(type!, id, headerLine, values));
+        }
+
+        var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None);
+        for (int i = 0; i < lines.Length; i++)
+        {
+            int number = i + 1;
+            string line = lines[i];
+            int hash = line.IndexOf('#');
+            if (hash >= 0) line = line[..hash];
+            line = line.TrimEnd();
+            if (line.Length == 0) continue;
+
+            if (headerPattern.Match(line) is { Success: true } header)
+            {
+                Finish();
+                type = header.Groups[1].Value;
+                id = null;
+                if (header.Groups[2].Success)
+                {
+                    if (!int.TryParse(header.Groups[2].Value, NumberStyles.None, CultureInfo.InvariantCulture, out int n))
+                        throw new DatTextException($"Entry id {header.Groups[2].Value} is too big", number);
+                    if (!seen.Add(n)) throw new DatTextException($"Entry {n} already exists", number);
+                    id = n;
+                }
+                headerLine = number;
+                values = [];
+                continue;
+            }
+            if (valuePattern.Match(line) is { Success: true } value)
+            {
+                if (values is null) throw new DatTextException("Missing header before defining properties", number);
+                string key = value.Groups[2].Success ? value.Groups[1].Value + "." + value.Groups[2].Value : value.Groups[1].Value;
+                values.Add((key, value.Groups[3].Value, number));
+                continue;
+            }
+            throw new DatTextException("Unexpected line, expected a header or a property definition", number);
+        }
+        Finish();
+        if (entries.Count == 0) throw new DatTextException("No entries found");
+        return entries;
+    }
+
+    /// <summary>
+    /// PyMS's import_data: puts the parsed entries on the file. Only the properties the text lists
+    /// change (a flags or compound key must list all its parts; a flags key sets the whole value
+    /// from the flags listed). <paramref name="onto"/> takes the text's one entry for that entry,
+    /// ignoring the header's id. Returns the new file and the entries whose values changed, in
+    /// ascending order; the given file is never touched, and a refusal applies nothing.
+    /// </summary>
+    public static (DatFile File, IReadOnlyList<int> Changed) Apply(DatFile file, IReadOnlyList<TextEntry> entries, int? onto = null)
+    {
+        if (onto is not null && entries.Count != 1)
+            throw new DatTextException($"Too many entries to import (expected 1, got {entries.Count})");
+        string expectedType = ExportName(file.Format.Id);
+        var result = file;
+        var changed = new SortedSet<int>();
+        foreach (var entry in entries)
+        {
+            int target;
+            if (onto is { } at) target = at;
+            else if (entry.Id is { } given) target = given;
+            else throw new DatTextException("Entry missing id", entry.Line);
+            if (target < 0 || target >= file.Count)
+                throw new DatTextException($"Invalid entry id (must be between 0 and {file.Count}, got {target})", entry.Line);
+            if (entry.Type != expectedType)
+                throw new DatTextException($"Invalid type (expected '{expectedType}', got '{entry.Type}')", entry.Line);
+
+            var before = result;
+            foreach (var (property, value) in Decode(file, target, entry))
+                if (result.Get(target, property) != value) result = result.With(target, property, value);
+            if (!result.EntrySameAs(target, before)) changed.Add(target);
+        }
+        return (result, changed.ToList());
+    }
+
+    /// <summary>One key's parts as written: sub name (null for a plain key), number, line.</summary>
+    sealed class Group(DatTextKey key, int line)
+    {
+        public DatTextKey Key { get; } = key;
+        public int Line { get; } = line;
+        public Dictionary<string, (ulong Value, int Line)> Parts { get; } = [];
+        public (ulong Value, int Line)? Whole { get; set; }
+    }
+
+    static IEnumerable<(string Property, ulong Value)> Decode(DatFile file, int entry, TextEntry text)
+    {
+        var id = file.Format.Id;
+        var keys = Keys(id);
+        var groups = new List<Group>();
+        var byKey = new Dictionary<DatTextKey, Group>();
+
+        foreach (var (written, valueText, line) in text.Values)
+        {
+            DatTextKey? key = keys.FirstOrDefault(k => k.Key == written && k.Coder.Kind is DatCoderKind.Plain or DatCoderKind.Bool);
+            string? sub = null;
+            if (key is null)
+            {
+                int dot = written.IndexOf('.');
+                if (dot > 0)
+                {
+                    string head = written[..dot];
+                    sub = written[(dot + 1)..];
+                    key = keys.FirstOrDefault(k => k.Key == head && k.Coder.Kind is not (DatCoderKind.Plain or DatCoderKind.Bool));
+                }
+            }
+            if (key is null || !file.Covers(entry, key.Property))
+                throw new DatTextException($"Unrecognized property '{written}'", line);
+            if (sub is not null && key.Coder.Kind != DatCoderKind.Flags && !Parts(key.Coder.Kind).Contains(sub))
+                throw new DatTextException($"Unrecognized property '{written}'", line);
+
+            if (!byKey.TryGetValue(key, out var group))
+            {
+                group = new Group(key, line);
+                byKey[key] = group;
+                groups.Add(group);
+            }
+            if (key.Coder.Kind is DatCoderKind.Plain or DatCoderKind.Bool)
+            {
+                group.Whole = (Number(valueText, written, line), line);
+            }
+            else
+            {
+                if (sub is null)
+                    throw new DatTextException($"Unrecognized property '{written}'", line);
+                if (key.Coder.Kind == DatCoderKind.Flags) CheckFlagName(key.Coder, sub, line);
+                group.Parts[sub] = (Number(valueText, written, line), line);
+            }
+        }
+
+        foreach (var group in groups)
+        {
+            var key = group.Key;
+            var type = file.Format[key.Property].TypeIn(file.IsExpanded);
+            ulong max = DatTypes.Max(type);
+            ulong value;
+            switch (key.Coder.Kind)
+            {
+                case DatCoderKind.Plain:
+                case DatCoderKind.Bool:
+                    value = group.Whole!.Value.Value;
+                    CheckMax(value, max, key.Key, group.Whole.Value.Line);
+                    break;
+                case DatCoderKind.Flags:
+                    value = 0;
+                    foreach (var (name, (enabled, _)) in group.Parts)
+                        if (enabled != 0) value |= FlagOf(key.Coder, name);
+                    CheckMax(value, max, key.Key, group.Line);
+                    break;
+                case DatCoderKind.HitPoints:
+                    Need(group, "Hit Points", "whole", "fraction");
+                    value = (Part(group, "whole", max >> 8) << 8) | Part(group, "fraction", 0xFF);
+                    break;
+                case DatCoderKind.Supply:
+                    Need(group, "Supply", "whole", "half");
+                    value = (Part(group, "whole", max >> 1) << 1) | (group.Parts["half"].Value != 0 ? 1UL : 0);
+                    break;
+                case DatCoderKind.Size:
+                    Need(group, "Size", "width", "height");
+                    value = Part(group, "width", 0xFFFF) | (Part(group, "height", 0xFFFF) << 16);
+                    break;
+                case DatCoderKind.Position:
+                    Need(group, "Position", "x", "y");
+                    value = Part(group, "x", 0xFFFF) | (Part(group, "y", 0xFFFF) << 16);
+                    break;
+                case DatCoderKind.Extents:
+                    Need(group, "Extents", "left", "up", "right", "down");
+                    value = Part(group, "left", 0xFFFF) | (Part(group, "up", 0xFFFF) << 16)
+                        | (Part(group, "right", 0xFFFF) << 32) | (Part(group, "down", 0xFFFF) << 48);
+                    break;
+                default:
+                    throw new InvalidOperationException();
+            }
+            yield return (key.Property, value);
+        }
+
+        // A part of a compound that is bigger than its field.
+        static ulong Part(Group g, string name, ulong limit)
+        {
+            var (v, line) = g.Parts[name];
+            CheckMax(v, limit, g.Key.Key + "." + name, line);
+            return v;
+        }
+    }
+
+    static string[] Parts(DatCoderKind kind) => kind switch
+    {
+        DatCoderKind.HitPoints => ["whole", "fraction"],
+        DatCoderKind.Supply => ["whole", "half"],
+        DatCoderKind.Size => ["width", "height"],
+        DatCoderKind.Position => ["x", "y"],
+        DatCoderKind.Extents => ["left", "up", "right", "down"],
+        _ => [],
+    };
+
+    // PyMS's DATCoders messages, one per missing part in the order it checks them.
+    static void Need(Group group, string label, params string[] names)
+    {
+        foreach (var name in names)
+            if (!group.Parts.ContainsKey(name))
+                throw new DatTextException($"{label} missing `{name}` value", group.Line);
+    }
+
+    static ulong Number(string text, string written, int line)
+    {
+        if (text == "True") return 1;
+        if (text == "False") return 0;
+        if (!ulong.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out ulong n))
+            throw new DatTextException($"Value {text} is too big for {written}", line);
+        return n;
+    }
+
+    static void CheckMax(ulong value, ulong max, string written, int line)
+    {
+        if (value > max)
+            throw new DatTextException($"Value {value} is too big for {written} (at most {max})", line);
+    }
+
+    static void CheckFlagName(DatCoder coder, string name, int line)
+    {
+        if (coder.FlagNames is { } names && names.Values.Contains(name)) return;
+        if (flagPattern.IsMatch(name) && ulong.TryParse(name[7..], NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out _)) return;
+        throw new DatTextException($"Invalid flag name {name}", line);
+    }
+
+    static ulong FlagOf(DatCoder coder, string name)
+    {
+        if (coder.FlagNames is { } names)
+            foreach (var (flag, flagName) in names)
+                if (flagName == name) return flag;
+        return ulong.Parse(name[7..], NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
     }
 }
