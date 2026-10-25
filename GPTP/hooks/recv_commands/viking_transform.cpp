@@ -30,6 +30,25 @@ void issueOrder(CUnit* unit, u32 orderId, Bool32 queued);	//4754F0
 
 //The type change faces the new sprite north (0x49ED05 -> 0x496360, the
 //design's A4): give the unit, and every image of its sprite, its facing back.
+//Hands the unit from the order running now to another of the plugin's, by
+//hand: orderTo from inside an order's handler never takes (iscript-facts). The
+//running order is also the head of the unit's order queue, and the engine reads
+//that entry (whether the order can be interrupted, the next order when one
+//ends), so it changes too - a first build changed mainOrderId only, and the
+//flight could not be interrupted and kept stopping (in game, 2026-10-25).
+void switchOrder(CUnit* unit, u8 orderId, u8 state, Point16 pt) {
+	COrder* head = unit->orderQueueHead;
+	if (head != NULL && head->orderId == unit->mainOrderId) {
+		head->orderId = orderId;
+		head->target.pt = pt;
+		head->target.unit = NULL;
+	}
+	unit->mainOrderId = orderId;
+	unit->mainOrderState = state;
+	unit->orderTarget.pt = pt;
+	unit->orderTarget.unit = NULL;
+}
+
 void restoreFacing(CUnit* unit, u8 direction) {
 	unit->currentDirection1 = direction;
 	unit->velocityDirection1 = direction;
@@ -193,10 +212,7 @@ void orderTransform(CUnit* unit) {
 				replaceUnitWithType(unit, VIKING_FIGHTER);
 				restoreFacing(unit, facing);
 				VDBG("Viking: flying to land at %d,%d (from %d,%d)", away.x, away.y, unit->position.x, unit->position.y);
-				unit->orderTarget.unit = NULL;
-				unit->orderTarget.pt = away;
-				unit->mainOrderId = ORDER_VIKING_FLY;
-				unit->mainOrderState = 0;
+				switchOrder(unit, ORDER_VIKING_FLY, 0, away);
 				return;
 			}
 			if (found == LAND_NONE) {
@@ -265,8 +281,9 @@ bool orderFly(CUnit* unit) {
 	VDBG("Viking: arrived at %d,%d to land", unit->position.x, unit->position.y);
 	//back to the transform by hand, as it came here: orderTo from inside an
 	//order's handler never took (in game, 2026-10-25: "arrived" every tick)
-	unit->mainOrderId = ORDER_VIKING_TRANSFORM;
-	unit->mainOrderState = STATE_STOP;
+	//straight to the landing step: STATE_STOP would brake it (holdPosition)
+	//short of the spot; STATE_START waits until it has stopped
+	switchOrder(unit, ORDER_VIKING_TRANSFORM, STATE_START, unit->orderTarget.pt);
 	return true;
 }
 
