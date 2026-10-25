@@ -186,11 +186,17 @@ void orderTransform(CUnit* unit) {
 				//command interrupts, as SC2's; it gives the transform back on
 				//arrival as a new order. (A Move with this order queued after it
 				//never moved: this order is not queueable, so it replaced the
-				//Move - 2026-10-25.)
+				//Move - 2026-10-25.) The switch is made by hand: this order is
+				//not interruptable, so issuing the flight (orderTo) from inside
+				//it was refused and this order began again every tick - the
+				//loop in game, 2026-10-25.
 				replaceUnitWithType(unit, VIKING_FIGHTER);
 				restoreFacing(unit, facing);
 				VDBG("Viking: flying to land at %d,%d (from %d,%d)", away.x, away.y, unit->position.x, unit->position.y);
-				unit->orderTo(ORDER_VIKING_FLY, away.x, away.y);
+				unit->orderTarget.unit = NULL;
+				unit->orderTarget.pt = away;
+				unit->mainOrderId = ORDER_VIKING_FLY;
+				unit->mainOrderState = 0;
 				return;
 			}
 			if (found == LAND_NONE) {
