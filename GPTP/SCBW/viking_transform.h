@@ -29,6 +29,8 @@ const u8 ORDER_VIKING_TRANSFORM = 0x68;
 //waypoints_slowdown: interruptable and queueable, so any command cancels the
 //flight, as SC2's; the transform's own order (above) stays uninterruptable.
 const u8 ORDER_VIKING_FLY = 0x07;
+//How near the landing spot the flight counts as arrived (pixels)
+const s32 FLY_ARRIVED = 8;
 
 //The buttons' variables (the Manifold Editor's actVar), on BTNSACT_DoNothing
 //0x423180: to the ground form (on unit 91's set), to the air form (on unit 10's).

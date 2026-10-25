@@ -252,8 +252,16 @@ bool orderFly(CUnit* unit) {
 		unit->mainOrderState = 1;
 		return true;
 	}
-	if (unit->getMovableState() == MovableState::NotReachedDestination)
+	//arrived by distance: the movable state still read "reached" on the tick
+	//after the new move target, so the fighter flew one step at a time, the
+	//transform stopping it between (in game, 2026-10-25); one that has stopped
+	//short of the spot is sent on again
+	const s32 dx = unit->orderTarget.pt.x - unit->position.x, dy = unit->orderTarget.pt.y - unit->position.y;
+	if (dx * dx + dy * dy > FLY_ARRIVED * FLY_ARRIVED) {
+		if (unit->getMovableState() != MovableState::NotReachedDestination)
+			setMoveTarget(unit, unit->orderTarget.pt.x, unit->orderTarget.pt.y);
 		return true;
+	}
 	VDBG("Viking: arrived at %d,%d to land", unit->position.x, unit->position.y);
 	//back to the transform by hand, as it came here: orderTo from inside an
 	//order's handler never took (in game, 2026-10-25: "arrived" every tick)
