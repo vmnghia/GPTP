@@ -33,7 +33,7 @@ sealed class WeaponsTab : DatTabBase
                 Titled(this, NumberField(this, File, P("weapon_cooldown"), "Cooldown", null, 64), "Cooldown", "WeapDamageCooldown"),
                 DerivedText(this, e => Seconds(ValueOf(Context, File, e, P("weapon_cooldown"))))),
             Titled(this, ReferenceField(this, File, P("damage_upgrade"), "Upgrade", null,
-                () => Context.Names(DatId.Upgrades), "None", 220), "Damage Upgrade", "WeapDamageUpgrade"));
+                () => Context.Names(DatId.Upgrades), "None", 220, jump: DatId.Upgrades), "Damage Upgrade", "WeapDamageUpgrade"));
 
         var display = Group("Weapon Display",
             Titled(this, ReferenceField(this, File, P("label"), "Label", null, statTxt.WithNone, null, 300), "Label", "WeapLabel"),
@@ -43,7 +43,7 @@ sealed class WeaponsTab : DatTabBase
         var graphics = Group("Weapon Display",
             ChoiceField(this, File, P("weapon_behavior"), "Behaviour", "WeapBehaviour", "Behaviours", 240),
             NumberField(this, File, P("remove_after"), "Remove After", "WeapRemoveAfter", 64),
-            ReferenceField(this, File, P("graphics"), "Graphics", "WeapGraphics", () => Context.Names(DatId.Flingy), null, 300),
+            ReferenceField(this, File, P("graphics"), "Graphics", "WeapGraphics", () => Context.Names(DatId.Flingy), null, 300, jump: DatId.Flingy),
             ReferenceField(this, File, P("icon"), "Icon", "WeapIcon", () => Context.Lists["Icons"], null, 300),
             Row(
                 new StackPanel

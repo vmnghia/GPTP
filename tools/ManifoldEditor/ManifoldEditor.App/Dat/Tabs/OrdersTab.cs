@@ -20,9 +20,9 @@ sealed class OrdersTab : DatTabBase
         statTxt = new TblChoices(() => Context.Opened()?.State.Strings);
 
         Panel.Children.Add(Group("Order Properties",
-            ReferenceField(this, File, P("targeting"), "Targeting", "OrdTargeting", () => Context.Names(DatId.Weapons), "None", 300),
-            ReferenceField(this, File, P("technology_energy"), "Energy", "OrdEnergy", () => Context.Names(DatId.Techdata), "None", 300),
-            ReferenceField(this, File, P("obscured_order"), "Obscured", "OrdObscured", () => Context.Names(DatId.Orders), "None", 300),
+            ReferenceField(this, File, P("targeting"), "Targeting", "OrdTargeting", () => Context.Names(DatId.Weapons), "None", 300, jump: DatId.Weapons),
+            ReferenceField(this, File, P("technology_energy"), "Energy", "OrdEnergy", () => Context.Names(DatId.Techdata), "None", 300, jump: DatId.Techdata),
+            ReferenceField(this, File, P("obscured_order"), "Obscured", "OrdObscured", () => Context.Names(DatId.Orders), "None", 300, jump: DatId.Orders),
             ReferenceField(this, File, P("label"), "Label", "OrdLabel", statTxt.WithNone, null, 300),
             ChoiceField(this, File, P("iscript_animation"), "Animation", "OrdAnimation", "Animations", 300),
             ReferenceField(this, File, P("highlight_icon"), "Highlight", "OrdHighlight", () => Context.Lists["Icons"], "None", 300),

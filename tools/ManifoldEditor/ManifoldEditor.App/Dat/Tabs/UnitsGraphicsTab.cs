@@ -7,18 +7,17 @@ namespace ManifoldEditor.App.Dat.Tabs;
 
 /// <summary>
 /// units.dat, Graphics (PyDAT's GraphicsUnitsTab): the sprite graphics, the unit dimensions
-/// (extents: left, up, right, down) and the addon position. The preview and the jump buttons
-/// are left out for now.
+/// (extents: left, up, right, down) and the addon position. The preview is left out for now.
 /// </summary>
 sealed class UnitsGraphicsTab : DatTabBase
 {
     public UnitsGraphicsTab(DatContext context) : base(DatTabId.UnitsGraphics, context)
     {
         Panel.Children.Add(Group("Sprite Graphics",
-            ReferenceField(this, File, P("graphics"), "Graphics", "UnitGfx", () => Context.Names(DatId.Flingy), null, 300),
+            ReferenceField(this, File, P("graphics"), "Graphics", "UnitGfx", () => Context.Names(DatId.Flingy), null, 300, jump: DatId.Flingy),
             ReferenceField(this, File, P("construction_animation"), "Construction", "UnitConstruction",
-                () => Context.Names(DatId.Images), null, 300),
-            ReferenceField(this, File, P("portrait"), "Portraits", "UnitPortrait", () => Context.Names(DatId.Portdata), "None", 300),
+                () => Context.Names(DatId.Images), null, 300, jump: DatId.Images),
+            ReferenceField(this, File, P("portrait"), "Portraits", "UnitPortrait", () => Context.Names(DatId.Portdata), "None", 300, jump: DatId.Portdata),
             ChoiceField(this, File, P("elevation_level"), "Elevation", "UnitElevationLevel", "ElevationLevels", 300),
             NumberField(this, File, P("unit_direction"), "Direction", "UnitDirection", 64)));
 

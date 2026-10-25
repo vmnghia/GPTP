@@ -85,6 +85,8 @@ sealed class DatContext
 
     readonly Func<DatId, DatNameSetting> nameSetting;
     readonly Action changed;
+    readonly Action<DatId, int> jump;
+    readonly Action<IReadOnlyList<DatRefMatch>> showUsedBy;
     readonly Dictionary<DatId, (NamesKey Key, IReadOnlyList<string> Names)> names = new();
 
     /// <summary>
@@ -98,14 +100,28 @@ sealed class DatContext
     /// <param name="opened">The open exe, or null.</param>
     /// <param name="nameSetting">How a file's names are shown (the page's Names and Simple TBL Names, per file).</param>
     /// <param name="changed">Called after an edit: the window redraws.</param>
-    public DatContext(Func<OpenedExe?> opened, Func<DatId, DatNameSetting> nameSetting, Action changed)
+    /// <param name="jump">Shows a file's tab at an entry (the Jump buttons): no edit.</param>
+    /// <param name="showUsedBy">Fills the "Used by" list with these lines (the Check buttons) and opens it.</param>
+    public DatContext(Func<OpenedExe?> opened, Func<DatId, DatNameSetting> nameSetting, Action changed,
+        Action<DatId, int> jump, Action<IReadOnlyList<DatRefMatch>> showUsedBy)
     {
         Opened = opened;
         this.nameSetting = nameSetting;
         this.changed = changed;
+        this.jump = jump;
+        this.showUsedBy = showUsedBy;
     }
 
     public Func<OpenedExe?> Opened { get; }
+
+    /// <summary>
+    /// Shows <paramref name="file"/>'s tab and selects its <paramref name="entry"/> (PyDAT's Jump -&gt; button).
+    /// Not an edit: nothing is recorded; a box still being typed in commits first.
+    /// </summary>
+    public void Jump(DatId file, int entry) => jump(file, entry);
+
+    /// <summary>Fills the page's "Used by" list with <paramref name="matches"/> and opens it (the Images tab's Check buttons).</summary>
+    public void ShowUsedBy(IReadOnlyList<DatRefMatch> matches) => showUsedBy(matches);
 
     /// <summary>The file as edited now; null when nothing is open or the file was found nowhere.</summary>
     public DatFile? File(DatId id) => Opened()?.State.Document.Dat(id);

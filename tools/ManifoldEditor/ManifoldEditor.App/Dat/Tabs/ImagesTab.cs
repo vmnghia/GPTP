@@ -8,7 +8,8 @@ namespace ManifoldEditor.App.Dat.Tabs;
 /// <summary>
 /// images.dat (PyDAT's ImagesTab): the GRP (an images.tbl string, "None" at 0) and the iscript id (the
 /// ids iscript.bin defines), the general and drawing properties, and the extra overlay placements (images.tbl
-/// strings too) with the shield size. The preview and the "Check" buttons are left out for now.
+/// strings too) with the shield size. The "Check" buttons beside GRP File and Iscript ID list the other images
+/// with the same value in "Used by". The preview is left out for now.
 /// </summary>
 sealed class ImagesTab : DatTabBase
 {
@@ -26,8 +27,10 @@ sealed class ImagesTab : DatTabBase
         imagesTbl = new TblChoices(() => Context.Opened()?.Resources.ImagesTbl);
 
         var image = Group("Image",
-            Titled(this, ReferenceField(this, File, P("grp_file"), "GRP", null, imagesTbl.WithNone, null, 300), "GRP File", "ImgGRP"),
-            Titled(this, ReferenceField(this, File, P("iscript_id"), "Iscript ID", null, IscriptNames, null, 300), "Iscript ID", "ImgIscriptID"));
+            WithCheck(Titled(this, ReferenceField(this, File, P("grp_file"), "GRP", null, imagesTbl.WithNone, null, 300), "GRP File", "ImgGRP"),
+                "grp_file", "GRP File"),
+            WithCheck(Titled(this, ReferenceField(this, File, P("iscript_id"), "Iscript ID", null, IscriptNames, null, 300), "Iscript ID", "ImgIscriptID"),
+                "iscript_id", "IScript ID"));
 
         var general = Group("General Properties",
             Row(
@@ -67,6 +70,31 @@ sealed class ImagesTab : DatTabBase
         Panel.Children.Add(image);
         Panel.Children.Add(Row(general, drawing));
         Panel.Children.Add(overlays);
+    }
+
+    /// <summary>
+    /// PyDAT's "Check" button after a field's line: fills "Used by" with the other images whose
+    /// <paramref name="property"/> equals the shown one's (<see cref="DatRefs.SameValue"/>), and opens it.
+    /// The field is a <see cref="DatFields.Line"/> (the button joins it).
+    /// </summary>
+    Microsoft.UI.Xaml.FrameworkElement WithCheck(Microsoft.UI.Xaml.FrameworkElement field, string property, string label)
+    {
+        string name = P(property);
+        var button = new Microsoft.UI.Xaml.Controls.Button
+        {
+            Content = "Check", VerticalAlignment = Microsoft.UI.Xaml.VerticalAlignment.Center,
+            Padding = new Microsoft.UI.Xaml.Thickness(8, 3, 8, 3),
+        };
+        ToolTipService.SetToolTip(button, $"List the other images with this {label}");
+        button.Click += (_, _) =>
+        {
+            // A box still being typed in commits first: the value checked is the one shown.
+            CommitPending();
+            if (Entry >= 0 && Context.File(File) is { } images && Entry < images.Count)
+                Context.ShowUsedBy(DatRefs.SameValue(images, Entry, name, label));
+        };
+        ((StackPanel)field).Children.Add(button);
+        return field;
     }
 
     /// <summary>One overlay placement: an images.tbl string, titled "Attack Overlay" in the tooltip.</summary>

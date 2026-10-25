@@ -4,7 +4,7 @@ using static ManifoldEditor.App.Dat.DatFields;
 
 namespace ManifoldEditor.App.Dat.Tabs;
 
-/// <summary>units.dat, Sounds (PyDAT's SoundsUnitsTab): the seven sound ranges, each a sound effect. Jump buttons are left out for now.</summary>
+/// <summary>units.dat, Sounds (PyDAT's SoundsUnitsTab): the seven sound ranges, each a sound effect.</summary>
 sealed class UnitsSoundsTab : DatTabBase
 {
     public UnitsSoundsTab(DatContext context) : base(DatTabId.UnitsSounds, context)
@@ -20,5 +20,5 @@ sealed class UnitsSoundsTab : DatTabBase
     }
 
     Microsoft.UI.Xaml.FrameworkElement Sound(string property, string label, string hintKey) =>
-        ReferenceField(this, File, P(property), label, hintKey, () => Context.Names(DatId.Sfxdata), null, 300);
+        ReferenceField(this, File, P(property), label, hintKey, () => Context.Names(DatId.Sfxdata), null, 300, jump: DatId.Sfxdata);
 }

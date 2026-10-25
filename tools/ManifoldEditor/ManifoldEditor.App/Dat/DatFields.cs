@@ -73,6 +73,8 @@ static class DatFields
     /// <param name="names">The target's names, asked on every load (<see cref="DatContext.Names"/>, an iscript or TBL list...).</param>
     /// <param name="noneName">PyDAT's extra last entry, when it has one: a units ground weapon of 130 (weapons' count) is "None".</param>
     /// <param name="boxWidth">The dropdown's width.</param>
+    /// <param name="jump">PyDAT's "Jump ->" button after the dropdown: the file whose tab it shows, at the entry the value names (see <see cref="JumpButton"/>).</param>
+    /// <param name="jumpOffset">Added to the value to get the entry to show (the selection circle's 561).</param>
     /// <remarks>
     /// The id the "None" entry writes and that shows as "None" (with <paramref name="noneName"/>) is the
     /// property's <see cref="DatProperty.NoneValue"/> when it has one (a units portrait's 65535, as in PyDAT;
@@ -80,7 +82,7 @@ static class DatFields
     /// count itself shows as an id without a name.
     /// </remarks>
     public static FrameworkElement ReferenceField(DatTabBase tab, DatId file, string property, string label, string? hintKey,
-        Func<IReadOnlyList<string>> names, string? noneName = null, double boxWidth = 260)
+        Func<IReadOnlyList<string>> names, string? noneName = null, double boxWidth = 260, DatId? jump = null, int jumpOffset = 0)
     {
         Check(tab, file, property);
         ulong? noneValue = DatFormats.Of(file)[property].NoneValue;
@@ -137,21 +139,24 @@ static class DatFields
             if (value is { } v) ShowValue(v);
             else entryBox.Clear();
         });
+        if (jump is { } target) return Line(tab, label, hintKey, idBox, EqualsSign(), entryBox.Root, JumpButton(tab, file, property, target, jumpOffset, noneValue));
         return Line(tab, label, hintKey, idBox, EqualsSign(), entryBox.Root);
     }
 
     /// <summary>A fixed list (PyDAT's DropDown of a PyMS list): a ComboBox of the list named (DatLists, e.g. "DamTypes"), plus the id box.</summary>
     /// <param name="list">The list's name in <see cref="DatLists.Names"/>, without ".txt".</param>
+    /// <param name="jump">A "Jump ->" button after the dropdown, as on <see cref="ReferenceField"/>.</param>
+    /// <param name="jumpOffset">Added to the value to get the entry to show.</param>
     public static FrameworkElement ChoiceField(DatTabBase tab, DatId file, string property, string label, string? hintKey,
-        string list, double width = 200) =>
-        ChoiceField(tab, file, property, label, hintKey, () => tab.Context.Lists[list], width);
+        string list, double width = 200, DatId? jump = null, int jumpOffset = 0) =>
+        ChoiceField(tab, file, property, label, hintKey, () => tab.Context.Lists[list], width, jump, jumpOffset);
 
     /// <summary>
     /// A fixed list from items the tab gives (when PyDAT's aren't a PyMS list file): a ComboBox
     /// plus the id box. An id past the list's end shows "#9 (no name)" with nothing selected.
     /// </summary>
     public static FrameworkElement ChoiceField(DatTabBase tab, DatId file, string property, string label, string? hintKey,
-        Func<IReadOnlyList<string>> items, double width = 200)
+        Func<IReadOnlyList<string>> items, double width = 200, DatId? jump = null, int jumpOffset = 0)
     {
         Check(tab, file, property);
         int shown = -1;
@@ -200,6 +205,7 @@ static class DatFields
             }
             finally { loading = false; }
         });
+        if (jump is { } target) return Line(tab, label, hintKey, idBox, EqualsSign(), combo, JumpButton(tab, file, property, target, jumpOffset, null));
         return Line(tab, label, hintKey, idBox, EqualsSign(), combo);
     }
 
@@ -561,6 +567,43 @@ static class DatFields
     {
         if (hintKey is not null && tab.Context.Hint(hintKey) is { } hint)
             ToolTipService.SetToolTip(element, label.Length > 0 ? $"{label}:\n{hint}" : hint);
+    }
+
+    // -------- Jump --------
+
+    /// <summary>
+    /// PyDAT's "Jump -&gt;" button: shows the entry <c>value + offset</c> of the <paramref name="target"/> file's
+    /// tab (<see cref="DatContext.Jump"/>; no edit is recorded). Disabled when the field holds no value for the
+    /// entry, holds its None (<paramref name="none"/>, the property's NoneValue; a count-valued None is past the
+    /// target's end anyway), or names an entry past the target's end. A box still being typed in commits first.
+    /// </summary>
+    static Microsoft.UI.Xaml.Controls.Button JumpButton(DatTabBase tab, DatId file, string property, DatId target, int offset, ulong? none)
+    {
+        int shown = -1;
+        var button = new Microsoft.UI.Xaml.Controls.Button
+        {
+            Content = "Jump ->", VerticalAlignment = VerticalAlignment.Center, Padding = new Thickness(8, 3, 8, 3),
+        };
+        ToolTipService.SetToolTip(button, $"Show the entry in {DatFormats.Of(target).FileName}");
+        int? Destination()
+        {
+            if (shown < 0 || ValueOf(tab.Context, file, shown, property) is not { } value || value == none) return null;
+            ulong count = (ulong)(tab.Context.File(target)?.Count ?? 0);
+            ulong at = value + (ulong)offset;
+            return at < count ? (int)at : null;
+        }
+        button.Click += (_, _) =>
+        {
+            // The commit may edit (and redraw) the value the button goes by: read it after.
+            tab.CommitPending();
+            if (Destination() is { } at) tab.Context.Jump(target, at);
+        };
+        tab.AddLoader(entry =>
+        {
+            shown = entry;
+            button.IsEnabled = Destination() is not null;
+        });
+        return button;
     }
 
     // -------- Inside --------

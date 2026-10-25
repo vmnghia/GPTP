@@ -13,7 +13,7 @@ sealed class FlingyTab : DatTabBase
     public FlingyTab(DatContext context) : base(DatTabId.Flingy, context)
     {
         Panel.Children.Add(Group("Flingy Properties",
-            ReferenceField(this, File, P("sprite"), "Sprite", "FlingySprite", () => Context.Names(DatId.Sprites), null, 300),
+            ReferenceField(this, File, P("sprite"), "Sprite", "FlingySprite", () => Context.Names(DatId.Sprites), null, 300, jump: DatId.Sprites),
             Row(
                 NumberField(this, File, P("speed"), "Top Speed", "FlingySpeed", 100),
                 DerivedText(this, e => Speed(ValueOf(Context, File, e, P("speed"))))),

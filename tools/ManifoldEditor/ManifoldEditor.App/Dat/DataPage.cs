@@ -75,6 +75,15 @@ sealed class DataPage
     readonly TextBlock checksTitle = new() { Text = "Checks", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 2) };
     readonly StackPanel checkLines = new() { Spacing = 0 };
     readonly ScrollViewer checksScroll;
+    // "Used by" (links spec §5), under the tab host: a header that folds the list, and the list.
+    readonly StackPanel usedByPanel = new() { Spacing = 2, Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed };
+    readonly HyperlinkButton usedByHeader = new() { Padding = new Thickness(0) };
+    readonly FontIcon usedByArrow = new() { FontSize = 12 };
+    readonly TextBlock usedByTitle = new() { VerticalAlignment = VerticalAlignment.Center };
+    readonly ListView usedByList = new()
+    {
+        MaxHeight = 132, FontFamily = new FontFamily("Consolas"), FontSize = 12, SelectionMode = ListViewSelectionMode.Single,
+    };
 
     /// <summary>Each file's tabs (DatTabs.For allocates: asked once).</summary>
     readonly Dictionary<DatId, IReadOnlyList<DatTab>> fileTabs = new();
@@ -99,6 +108,19 @@ sealed class DataPage
     DatFile?[]? checksKey;
     EditorState? checksState;
 
+    // "Used by": the lines for the shown file and entry, and what they were worked out from (an edit makes
+    // new files, so one pass over the referring files is paid per entry shown or edit, not per redraw).
+    EditorState? usedByState;
+    DatId usedByFile;
+    int usedByEntry = -1;
+    DatFile?[]? usedByDats;
+    IReadOnlyList<DatRefMatch> usedByFound = [];
+    /// <summary>The Check buttons' lines, in place of the found ones until the entry, the file or the data changes.</summary>
+    IReadOnlyList<DatRefMatch>? usedByChecked;
+    /// <summary>The lines the list shows (what a double-click acts on) and their text.</summary>
+    IReadOnlyList<DatRefMatch> usedByShown = [];
+    List<string> usedByText = [];
+
     /// <summary>True while the page fills its controls: their selection events are its own.</summary>
     bool updating;
     /// <summary>True while a command waits on the clipboard, a file picker or the overrides dialog: another one waits its turn.</summary>
@@ -119,7 +141,7 @@ sealed class DataPage
         this.windowHandle = windowHandle;
         this.settings = settings;
         this.setSettings = setSettings;
-        context = new DatContext(opened, NameSetting, changed);
+        context = new DatContext(opened, NameSetting, changed, (id, entry) => JumpTo(id, entry, null), ShowChecked);
         foreach (var format in DatFormats.All) fileTabs[format.Id] = DatTabs.For(format.Id);
 
         Root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(340) });
@@ -226,6 +248,7 @@ sealed class DataPage
         right.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         right.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         right.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        right.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         fileItems = DatFormats.All.Select(f => new SelectorBarItem { Text = FileTabName(f.Id) }).ToArray();
         foreach (var item in fileItems) files.Items.Add(item);
@@ -267,9 +290,31 @@ sealed class DataPage
         Grid.SetRow(tabHost, 2);
         right.Children.Add(tabHost);
 
+        usedByHeader.Content = new StackPanel
+        {
+            Orientation = Orientation.Horizontal, Spacing = 6, Children = { usedByArrow, usedByTitle },
+        };
+        usedByHeader.Click += (_, _) => SetUsedByOpen(!settings().UsedByOpen);
+        usedByList.DoubleTapped += (_, e) =>
+        {
+            // The row under the pointer (the first tap selected it); else the selected one.
+            int index = Ancestor<ListViewItem>(e.OriginalSource as DependencyObject) is { } item ? usedByList.IndexFromContainer(item) : usedByList.SelectedIndex;
+            UsedByJump(index);
+        };
+        usedByList.KeyDown += (_, e) =>
+        {
+            if (e.Key != VirtualKey.Enter) return;
+            e.Handled = true;
+            UsedByJump(usedByList.SelectedIndex);
+        };
+        usedByPanel.Children.Add(usedByHeader);
+        usedByPanel.Children.Add(usedByList);
+        Grid.SetRow(usedByPanel, 3);
+        right.Children.Add(usedByPanel);
+
         checksScroll = new ScrollViewer { MaxHeight = 160, Content = checkLines };
         var checks = new StackPanel { Children = { checksTitle, checksScroll } };
-        Grid.SetRow(checks, 3);
+        Grid.SetRow(checks, 4);
         right.Children.Add(checks);
         Grid.SetColumn(right, 1);
         Root.Children.Add(right);
@@ -370,6 +415,24 @@ sealed class DataPage
         unitsTab = id;
         Remember();
         Refresh(scroll: false);
+    }
+
+    /// <summary>
+    /// Shows <paramref name="target"/>'s tab at <paramref name="entry"/>, on the units sub-tab <paramref name="subTab"/>
+    /// when it names one (the Jump buttons, a "Used by" line). Not an edit. Nothing happens for a file the exe
+    /// lacks or an entry it lacks.
+    /// </summary>
+    void JumpTo(DatId target, int entry, DatTabId? subTab)
+    {
+        if (opened() is not { } exe || exe.State.Document.Dat(target) is not { } dat || entry < 0 || entry >= dat.Count) return;
+        CommitPending();
+        TakeState(exe);
+        file = target;
+        if (target == DatId.Units && subTab is { } tab && DatTabs.Of(tab).File == DatId.Units) unitsTab = tab;
+        entries[file] = entry;
+        Remember();
+        findNote.Visibility = Visibility.Collapsed;
+        Refresh(scroll: true);
     }
 
     /// <summary>The file, the units sub-tab and the file's entry, into the settings.</summary>
@@ -689,6 +752,7 @@ sealed class DataPage
             updating = false;
         }
         ShowTab(dat);
+        ShowUsedBy(exe.State, dat);
         ShowChecks(exe.State);
     }
 
@@ -821,6 +885,78 @@ sealed class DataPage
         _ => throw new ArgumentOutOfRangeException(nameof(id), id, "no such Data tab"),
     };
 
+    /// <summary>
+    /// "Used by" (links spec §5): every entry of every file whose field points at the shown entry. Worked out
+    /// again only when the entry, the file or any file's data changed (an edit makes a new file), else the lines
+    /// stay (and with them the Check buttons' lines, and the list's selection and scroll).
+    /// </summary>
+    void ShowUsedBy(EditorState state, DatFile? dat)
+    {
+        var doc = state.Document;
+        var dats = DatFormats.All.Select(f => doc.Dat(f.Id)).ToArray();
+        if (!(ReferenceEquals(state, usedByState) && usedByFile == file && usedByEntry == Entry && usedByDats is not null
+              && dats.SequenceEqual(usedByDats, ReferenceComparer)))
+        {
+            usedByState = state;
+            usedByFile = file;
+            usedByEntry = Entry;
+            usedByDats = dats;
+            usedByChecked = null;
+            usedByFound = dat is not null && DatRefs.All.Any(r => r.Target == file)
+                ? DatRefs.UsedBy(file, Entry, id => doc.Dat(id))
+                : [];
+        }
+        RenderUsedBy(dat is not null && (usedByChecked is not null || DatRefs.All.Any(r => r.Target == file)));
+    }
+
+    /// <summary>The Check buttons' lines (the Images tab) in place of the found ones, and the list open.</summary>
+    void ShowChecked(IReadOnlyList<DatRefMatch> matches)
+    {
+        if (shownState is null) return;
+        usedByChecked = matches;
+        if (!settings().UsedByOpen) setSettings(settings() with { UsedByOpen = true });
+        RenderUsedBy(true);
+    }
+
+    /// <summary>The header's arrow and count and the list, from the lines held. The list's items are replaced only when their text changed.</summary>
+    void RenderUsedBy(bool visible)
+    {
+        usedByPanel.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        if (!visible) return;
+        var matches = usedByChecked ?? usedByFound;
+        var text = new List<string>(matches.Count);
+        foreach (var match in matches)
+        {
+            var names = context.Names(match.File);
+            text.Add(DatRefs.Describe(match, match.Entry < names.Count ? names[match.Entry] : ""));
+        }
+        usedByShown = matches;
+        if (!text.SequenceEqual(usedByText))
+        {
+            usedByText = text;
+            usedByList.ItemsSource = text.ToList();   // a fresh list: the one shown is never edited
+        }
+        bool open = settings().UsedByOpen;
+        usedByTitle.Text = $"Used By ({matches.Count})" + (open ? ":" : "");
+        usedByArrow.Glyph = open ? "\uE70D" : "\uE76C";   // chevron down; chevron right
+        usedByList.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    /// <summary>The header: fold or unfold the list, remembered in the settings.</summary>
+    void SetUsedByOpen(bool open)
+    {
+        if (settings().UsedByOpen != open) setSettings(settings() with { UsedByOpen = open });
+        RenderUsedBy(usedByPanel.Visibility == Visibility.Visible);
+    }
+
+    /// <summary>A line of "Used by" (double-click, Enter): its file, its sub-tab when it has one, its entry.</summary>
+    void UsedByJump(int index)
+    {
+        if (index < 0 || index >= usedByShown.Count) return;
+        var match = usedByShown[index];
+        JumpTo(match.File, match.Entry, match.SubTab);
+    }
+
     /// <summary>The check lines of every file (spec §8), at most 50; each with an entry is a link that shows it.</summary>
     void ShowChecks(EditorState state)
     {
@@ -869,6 +1005,10 @@ sealed class DataPage
         checksState = null;
         checkLines.Children.Clear();
         checksTitle.Text = "";
+        usedByState = null;
+        usedByDats = null;
+        usedByChecked = null;
+        usedByPanel.Visibility = Visibility.Collapsed;
         foreach (var (_, host) in tabs.Values) host.Visibility = Visibility.Collapsed;
         missing.Text = "Open an exe to edit its .dat files.";
         missing.Visibility = Visibility.Visible;

@@ -59,7 +59,7 @@ sealed class UnitsAiActionsTab : DatTabBase
     }
 
     FrameworkElement Order(string property, string label, string hintKey) =>
-        ReferenceField(this, File, P(property), label, hintKey, () => Context.Names(DatId.Orders), "None", 300);
+        ReferenceField(this, File, P(property), label, hintKey, () => Context.Names(DatId.Orders), "None", 300, jump: DatId.Orders);
 
     // -------- AI force values (PyDAT's build_force_value) --------
 

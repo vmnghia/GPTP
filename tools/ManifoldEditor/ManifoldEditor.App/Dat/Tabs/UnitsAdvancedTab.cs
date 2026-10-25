@@ -71,9 +71,9 @@ sealed class UnitsAdvancedTab : DatTabBase
 
         Panel.Children.Add(Group("Advanced Properties", columns));
         Panel.Children.Add(Group("Other Properties",
-            ReferenceField(this, File, P("infestation"), "Infestation", "UnitInfestation", UnitsWithNone),
-            ReferenceField(this, File, P("subunit1"), "Subunit 1", "UnitSub1", UnitsWithNone),
-            ReferenceField(this, File, P("subunit2"), "Subunit 2", "UnitSub2", UnitsWithNone),
+            ReferenceField(this, File, P("infestation"), "Infestation", "UnitInfestation", UnitsWithNone, jump: DatId.Units),
+            ReferenceField(this, File, P("subunit1"), "Subunit 1", "UnitSub1", UnitsWithNone, jump: DatId.Units),
+            ReferenceField(this, File, P("subunit2"), "Subunit 2", "UnitSub2", UnitsWithNone, jump: DatId.Units),
             Row(Titled(this, NumberField(this, File, P("requirements"), "ReqIndex", null, 64), "Requirements Index", "UnitReq"), unknown)));
     }
 

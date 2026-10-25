@@ -21,7 +21,7 @@ sealed class UnitsBasicTab : DatTabBase
                 Titled(this, CheckField(this, File, P("shield_enabled"), "Enabled", null), "Shields Enabled", "UnitShieldEnable")),
             NumberField(this, File, P("armor"), "Armor", "UnitArmor", 100),
             Titled(this, ReferenceField(this, File, P("armor_upgrade"), "Upgrade", null,
-                () => Context.Names(DatId.Upgrades), "None", 200), "Armor Upgrade", "UnitArmorUpgrade"));
+                () => Context.Names(DatId.Upgrades), "None", 200, jump: DatId.Upgrades), "Armor Upgrade", "UnitArmorUpgrade"));
 
         var cost = Group("Build Cost",
             NumberField(this, File, P("mineral_cost"), "Minerals", "UnitMinerals", 64),
@@ -33,10 +33,10 @@ sealed class UnitsBasicTab : DatTabBase
 
         var weapons = Group("Weapons",
             Titled(this, ReferenceField(this, File, P("ground_weapon"), "Ground", null,
-                () => Context.Names(DatId.Weapons), "None"), "Ground Weapon", "UnitWeaponGround"),
+                () => Context.Names(DatId.Weapons), "None", jump: DatId.Weapons), "Ground Weapon", "UnitWeaponGround"),
             Titled(this, NumberField(this, File, P("max_ground_hits"), "Max Hits", null, 44), "Max Ground Hits", "UnitGroundMax"),
             Titled(this, ReferenceField(this, File, P("air_weapon"), "Air", null,
-                () => Context.Names(DatId.Weapons), "None"), "Air Weapon", "UnitWeaponAir"),
+                () => Context.Names(DatId.Weapons), "None", jump: DatId.Weapons), "Air Weapon", "UnitWeaponAir"),
             Titled(this, NumberField(this, File, P("max_air_hits"), "Max Hits", null, 44), "Max Air Hits", "UnitAirMax"));
 
         var supply = Group("Supply",
