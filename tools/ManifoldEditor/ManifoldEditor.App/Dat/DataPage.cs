@@ -556,6 +556,10 @@ sealed class DataPage
         DatTabId.UnitsGraphics => new UnitsGraphicsTab(context),
         DatTabId.UnitsStarEdit => new UnitsStarEditTab(context),
         DatTabId.UnitsAiActions => new UnitsAiActionsTab(context),
+        DatTabId.Weapons => new WeaponsTab(context),
+        DatTabId.Flingy => new FlingyTab(context),
+        DatTabId.Sprites => new SpritesTab(context),
+        DatTabId.Images => new ImagesTab(context),
         _ => new PlaceholderTab(id),
     };
 

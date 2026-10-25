@@ -202,6 +202,82 @@ static class DatFields
     }
 
     /// <summary>
+    /// A dropdown whose entries stand for fixed values of the property rather than for their own
+    /// index (PyDAT's shield size on the Images tab: None, Small, Medium, Large write 0, 133, 2, 184).
+    /// No id box: the property's own field is elsewhere. A value none of them stands for selects
+    /// nothing and shows "(other)". An empty <paramref name="label"/> keeps the label's room, so the
+    /// dropdown lines up with the fields above it.
+    /// </summary>
+    /// <param name="items">The entries (cache the list: it is refilled when the reference changes).</param>
+    /// <param name="values">The value each entry writes, by position.</param>
+    public static FrameworkElement MappedChoiceField(DatTabBase tab, DatId file, string property, string label, string? hintKey,
+        Func<IReadOnlyList<string>> items, IReadOnlyList<ulong> values, double width = 120)
+    {
+        Check(tab, file, property);
+        int shown = -1;
+        bool loading = false;
+        IReadOnlyList<string>? filled = null;
+        var combo = new ComboBox { Width = width, VerticalAlignment = VerticalAlignment.Center };
+        combo.SelectionChanged += (_, _) =>
+        {
+            if (loading || combo.SelectedIndex < 0 || combo.SelectedIndex >= values.Count) return;
+            if (Current(tab, file, shown, property) is not { } dat) return;
+            ulong value = values[combo.SelectedIndex];
+            if (value != dat.Get(shown, property)) tab.Context.Edit(file, shown, property, value);
+        };
+        tab.AddLoader(entry =>
+        {
+            shown = entry;
+            loading = true;
+            try
+            {
+                var names = items();
+                if (!ReferenceEquals(names, filled))
+                {
+                    filled = names;
+                    combo.Items.Clear();
+                    foreach (string name in names) combo.Items.Add(name);
+                }
+                var value = ValueOf(tab.Context, file, entry, property);
+                combo.IsEnabled = value is not null;
+                int at = -1;
+                for (int i = 0; value is { } v && i < values.Count && i < names.Count; i++)
+                    if (values[i] == v) { at = i; break; }
+                combo.SelectedIndex = at;
+                combo.PlaceholderText = value is not null && at < 0 ? "(other)" : "";
+            }
+            finally { loading = false; }
+        });
+        if (label.Length > 0) return Line(tab, label, hintKey, combo);
+        var line = Line(tab, "", hintKey, new Border { Width = LabelWidth }, combo);
+        return line;
+    }
+
+    /// <summary>
+    /// The strings of a .tbl as a reference list (PyDAT's <c>('None',) + strings</c>): "None" at 0, then
+    /// string 1, 2... so an entry's position is its id. Built once per table, and again only when
+    /// <paramref name="table"/> answers another one (the cached list the reference fields want).
+    /// A string that can't be read is "String #n".
+    /// </summary>
+    public sealed class TblChoices(Func<StringTable?> table)
+    {
+        StringTable? from;
+        IReadOnlyList<string>? list;
+
+        public IReadOnlyList<string> WithNone()
+        {
+            var current = table();
+            if (list is not null && ReferenceEquals(current, from)) return list;
+            var built = new List<string> { "None" };
+            for (int i = 1; current is not null && i <= current.Count; i++)
+                built.Add(DatNames.TblString(current, (ulong)i) ?? $"String #{i}");
+            from = current;
+            list = built;
+            return built;
+        }
+    }
+
+    /// <summary>
     /// Flags: a grid of checkboxes, <paramref name="columns"/> wide, each its own bit(s) of the
     /// one property (a click is one step that changes only that bit). A box shows checked
     /// when every bit of its mask is set.
