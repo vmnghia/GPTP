@@ -68,7 +68,11 @@ sealed class FakeArchive(string name, Dictionary<string, byte[]>? files = null) 
     public bool Busy { get; set; }
     public int Writes { get; private set; }
     public string Name => name;
-    public byte[]? TryRead(string path) => Files.TryGetValue(path, out var data) ? data : null;
+    /// <summary>Paths whose read fails (as StormLib's can), present or not.</summary>
+    public HashSet<string> Unreadable { get; } = new();
+    public byte[]? TryRead(string path) =>
+        Unreadable.Contains(path) ? throw new IOException($"{name}: cannot read {path}")
+        : Files.TryGetValue(path, out var data) ? data : null;
 
     /// <summary>Files matching "folder\\*.ext" (the only masks the editor uses).</summary>
     public IReadOnlyList<string> List(string mask)

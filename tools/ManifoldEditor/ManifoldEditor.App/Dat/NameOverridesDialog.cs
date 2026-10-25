@@ -181,10 +181,10 @@ sealed class NameOverridesDialog(XamlRoot root, nint windowHandle, DatId file, N
     {
         var picker = new FileOpenPicker();
         picker.FileTypeFilter.Add(".txt");
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
         string path;
         try
         {
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
             if (await picker.PickSingleFileAsync() is not { } picked) return;
             path = picked.Path;
         }
@@ -198,7 +198,7 @@ sealed class NameOverridesDialog(XamlRoot root, nint windowHandle, DatId file, N
         {
             bytes = File.ReadAllBytes(path);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (Exception e)
         {
             ShowNote($"Couldn't open name overrides '{path}': {e.Message}", error: true);
             return;
@@ -216,10 +216,10 @@ sealed class NameOverridesDialog(XamlRoot root, nint windowHandle, DatId file, N
     {
         var picker = new FileSavePicker { SuggestedFileName = Path.GetFileNameWithoutExtension(FileName) };
         picker.FileTypeChoices.Add("Name overrides", [".txt"]);
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
         string path;
         try
         {
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
             if (await picker.PickSaveFileAsync() is not { } picked) return;
             path = picked.Path;
         }
@@ -233,7 +233,7 @@ sealed class NameOverridesDialog(XamlRoot root, nint windowHandle, DatId file, N
             TextFiles.Write(path, working.ToBytes());
             ShowNote($"Saved {working.Entries.Count} overrides to {Path.GetFileName(path)}.", error: false);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (Exception e)
         {
             ShowNote($"Couldn't save name overrides to '{path}': {e.Message}", error: true);
         }

@@ -30,9 +30,9 @@ public sealed record Change(IReadOnlyList<SetEdit> Sets,
 }
 
 /// <summary>
-/// The 250 sets, the string table and the .dat files being edited, the versions they are
-/// compared with, and the undo history. Every edit is one step across all sets and strings; saving does
-/// not clear the history.
+/// The 250 sets, the string table, the .dat files and their name overrides being edited, the
+/// versions they are compared with, and the undo history. Every edit is one step in one history
+/// across all of them; saving does not clear the history.
 /// </summary>
 public sealed class ButtonSetDocument
 {
@@ -269,7 +269,7 @@ public sealed class ButtonSetDocument
         return change.Place;
     }
 
-    /// <summary>After a successful save: the current sets and strings are what the exe holds.</summary>
+    /// <summary>After a successful save: the current sets, strings, .dat files and name overrides are what the exe holds.</summary>
     public void MarkSaved()
     {
         savedAt = done;

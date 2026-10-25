@@ -39,10 +39,11 @@ public sealed partial class NameOverrides
     {
         var result = new SortedDictionary<int, (bool, string)>();
         if (text.StartsWith('﻿')) text = text[1..];
-        var lines = text.Split('\n');
+        // Python's universal newlines, as PyMS reads the file: \r\n, a lone \r and \n each end a line.
+        var lines = text.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
         for (int i = 0; i < lines.Length; i++)
         {
-            string line = lines[i].TrimEnd('\r');
+            string line = lines[i];
             if (line.Length == 0) continue;
             var m = LineRegex().Match(line);
             if (!m.Success)
@@ -77,9 +78,13 @@ public sealed partial class NameOverrides
         return text.ToString();
     }
 
-    /// <summary>These overrides with the entry's set to <paramref name="name"/>; an empty name removes the entry's override.</summary>
+    /// <summary>
+    /// These overrides with the entry's set to <paramref name="name"/>; an empty name removes the
+    /// entry's override. A line break in the name becomes a space (the file has one override a line).
+    /// </summary>
     public NameOverrides With(int id, bool append, string name)
     {
+        name = name.Replace("\r\n", " ").Replace('\r', ' ').Replace('\n', ' ');
         var copy = new SortedDictionary<int, (bool, string)>(entries);
         if (string.IsNullOrEmpty(name)) copy.Remove(id);
         else copy[id] = (append, name);

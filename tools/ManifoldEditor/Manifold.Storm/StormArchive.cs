@@ -27,6 +27,9 @@ public sealed class StormArchive(string path, string? name = null) : IWritableAr
                 uint size = Native.SFileGetFileSize(handle, IntPtr.Zero);
                 if (size == SizeError)
                     throw new Win32Exception(Marshal.GetLastWin32Error(), $"{Name}: StormLib can't tell the size of {file}");
+                // An empty file (every name override removed, then saved): nothing to read, and
+                // no zero-length read asked of StormLib.
+                if (size == 0) return [];
                 var data = new byte[size];
                 if (!Native.SFileReadFile(handle, data, size, out var read, IntPtr.Zero) || read != size)
                     throw new Win32Exception(Marshal.GetLastWin32Error(), $"{Name}: cannot read {file}");

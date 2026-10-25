@@ -261,7 +261,45 @@ public class DatTextImportTests
     public void PasteNeedsExactlyOneEntry()
     {
         var two = DatText.Parse("Unit(0):\n\tarmor 3\nUnit(1):\n\tarmor 4\n");
-        Refused(() => DatText.Apply(VanillaUnits(), two, onto: 5));
+        var e = Refused(() => DatText.Apply(VanillaUnits(), two, onto: 5));
+        Assert.Equal("Too many entries to import (expected 1, got 2)", e.Message);
+        Assert.Null(e.Line);
+    }
+
+    [Theory]
+    [InlineData("unknown_flags.flag_0x100 True")]    // bit 8 of an 8-bit coder: the text can't carry it
+    [InlineData("unknown_flags.flag_0x100 False")]
+    [InlineData("unknown_flags.flag_0x03 True")]     // two bits
+    [InlineData("unknown_flags.flag_0x00 True")]     // no bit
+    [InlineData("special_ability_flags.flag_0x100000000 True")]   // bit 32 of a 32-bit coder
+    public void ApplyRefusesAFlagHexThatIsNotOneOfTheCodersBits(string line)
+    {
+        string name = line[(line.IndexOf('.') + 1)..line.IndexOf(' ')];
+        var e = Refused(() => DatText.Apply(VanillaUnits(), DatText.Parse($"Unit(0):\n\t{line}\n")));
+        Assert.Equal($"Invalid flag name {name}", e.Message);
+        Assert.Equal(2, e.Line);
+    }
+
+    [Fact]
+    public void ARepeatedKeyTakesItsLastValue()
+    {
+        // PyMS reads the values into a dict: a later line for the same key replaces the earlier one.
+        var (file, _) = DatText.Apply(VanillaUnits(), DatText.Parse(
+            "Unit(0):\n\tarmor 3\n\tarmor 5\n\tstaredit_group_flags.zerg True\n\tstaredit_group_flags.zerg False\n" +
+            "\thit_points.whole 1\n\thit_points.fraction 0\n\thit_points.whole 2\n"));
+        Assert.Equal(5UL, file.Get(0, "armor"));
+        Assert.Equal(0UL, file.Get(0, "staredit_group_flags"));
+        Assert.Equal(2UL << 8, file.Get(0, "hit_points"));
+    }
+
+    [Fact]
+    public void ALoneCarriageReturnIsALineBreak()
+    {
+        // As Python's universal newlines: \r\n, \r and \n each end a line.
+        var entry = Assert.Single(DatText.Parse("Unit(0):\r\tarmor 3\r\n\tsight_range 4\r"));
+        Assert.Equal([("armor", "3", 2), ("sight_range", "4", 3)], entry.Values.ToArray());
+        var e = Refused(() => DatText.Parse("Unit(0):\r\tarmor 3\r\tarmor three\n"));
+        Assert.Equal(3, e.Line);
     }
 
     [Fact]

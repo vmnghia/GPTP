@@ -54,6 +54,30 @@ public class NameOverridesTests
     }
 
     [Fact]
+    public void ALoneCarriageReturnIsALineBreak()
+    {
+        // As Python's universal newlines: \r\n, \r and \n each end a line, so line numbers count each once.
+        var notes = new List<string>();
+        var overrides = Parse("1:a\r2:b\r\nbad\n4:d", notes);
+        Assert.Equal((false, "a"), overrides.Entries[1]);
+        Assert.Equal((false, "b"), overrides.Entries[2]);
+        Assert.Equal((false, "d"), overrides.Entries[4]);
+        Assert.Equal([UnitsPath + " line 3: not an override"], notes);
+    }
+
+    [Fact]
+    public void WithPutsSpacesForLineBreaks()
+    {
+        // A name holding a line break would write two lines, the second "not an override" on reopen.
+        var overrides = NameOverrides.Empty.With(1, false, "a\nb\r\nc\rd").With(2, true, "x\n");
+        Assert.Equal((false, "a b c d"), overrides.Entries[1]);
+        Assert.Equal((true, "x "), overrides.Entries[2]);
+        var notes = new List<string>();
+        Assert.True(Parse(overrides.Write(), notes).SameAs(overrides));
+        Assert.Empty(notes);
+    }
+
+    [Fact]
     public void OverrideKeepsColonsAndSpaces()
     {
         var overrides = Parse("3: a:b ");
@@ -163,7 +187,8 @@ public class NameOverridesTests
         var doc = Document();
         Assert.True(doc.ApplyOverrides(DatId.Weapons, NameOverrides.Empty.With(2, true, "x"), 2));
         Assert.Equal(new Place(null, null, new DatPlace(DatId.Weapons, 2, null)), doc.Undo());
-        Assert.Equal("Edit name overrides", doc.Redo() is null ? "" : "Edit name overrides");
+        Assert.NotNull(doc.Redo());
+        Assert.Equal("Edit name overrides", doc.UndoLabel);
     }
 
     [Fact]
@@ -210,6 +235,39 @@ public class NameOverridesTests
         Assert.Equal((false, "Zéro"), loaded[DatId.Units].Entries[0]);
         Assert.Equal((true, "x"), loaded[DatId.Weapons].Entries[1]);
         Assert.False(loaded.ContainsKey(DatId.Flingy));   // a missing file is no overrides
+    }
+
+    [Fact]
+    public void AnUnreadableOverrideFileIsANoteAndTheOthersLoad()
+    {
+        var exe = new FakeArchive("SCManifold.exe", new()
+        {
+            [UnitsPath] = Encoding.UTF8.GetBytes("0:Zero\n"),
+            ["Manifold\\names\\weapons.txt"] = [],   // every override removed, then saved
+            ["Manifold\\names\\flingy.txt"] = Encoding.UTF8.GetBytes("1:x\n"),
+        });
+        exe.Unreadable.Add("Manifold\\names\\weapons.txt");
+        exe.Unreadable.Add("Manifold\\names\\sprites.txt");   // unreadable though absent: the archive itself fails
+        var notes = new List<string>();
+        var loaded = DatSources.LoadOverrides(exe, notes);
+        Assert.Equal(2, notes.Count);
+        Assert.StartsWith("Manifold\\names\\weapons.txt: can't be read (", notes[0]);
+        Assert.StartsWith("Manifold\\names\\sprites.txt: can't be read (", notes[1]);
+        Assert.EndsWith("); its name overrides are not shown", notes[0]);
+        Assert.Equal((false, "Zero"), loaded[DatId.Units].Entries[0]);
+        Assert.Equal((false, "x"), loaded[DatId.Flingy].Entries[1]);
+        Assert.False(loaded.ContainsKey(DatId.Weapons));
+        Assert.False(loaded.ContainsKey(DatId.Sprites));
+    }
+
+    [Fact]
+    public void AnEmptyOverrideFileIsNoOverrides()
+    {
+        var exe = new FakeArchive("SCManifold.exe", new() { [UnitsPath] = [] });
+        var notes = new List<string>();
+        var loaded = DatSources.LoadOverrides(exe, notes);
+        Assert.Empty(notes);
+        Assert.True(loaded[DatId.Units].IsEmpty);
     }
 
     [Fact]

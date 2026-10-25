@@ -422,8 +422,7 @@ public sealed class MainWindow : Window
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Y, () =>
         {
             if (!DataPageShows) return false;
-            dataPage.CopyEntry(subTab: true);
-            return true;
+            return dataPage.CopyEntry(subTab: true);
         }, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
         root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.P, dataPage.PasteEntry, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
         root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.N, dataPage.OverrideName, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
@@ -647,15 +646,27 @@ public sealed class MainWindow : Window
         return item;
     }
 
-    static KeyboardAccelerator Accelerator(VirtualKey key, Action action) =>
+    KeyboardAccelerator Accelerator(VirtualKey key, Action action) =>
         Accelerator(key, () => { action(); return true; });
 
-    /// <summary>A shortcut whose action says whether it took the key (false lets a text box have it).</summary>
-    static KeyboardAccelerator Accelerator(VirtualKey key, Func<bool> action,
+    /// <summary>
+    /// A shortcut whose action says whether it took the key (false lets a text box have it).
+    /// While a ContentDialog shows, no shortcut acts: the key is the dialog's (Ctrl+Z in its Name
+    /// box undoes the typing, not a document step behind it; Ctrl+S, F5 and the rest wait).
+    /// </summary>
+    KeyboardAccelerator Accelerator(VirtualKey key, Func<bool> action,
         VirtualKeyModifiers modifiers = VirtualKeyModifiers.Control)
     {
         var accelerator = new KeyboardAccelerator { Key = key, Modifiers = modifiers };
-        accelerator.Invoked += (_, e) => e.Handled = action();
+        accelerator.Invoked += (_, e) =>
+        {
+            if (ContentDialogs.Open(Content?.XamlRoot))
+            {
+                e.Handled = false;
+                return;
+            }
+            e.Handled = action();
+        };
         return accelerator;
     }
 

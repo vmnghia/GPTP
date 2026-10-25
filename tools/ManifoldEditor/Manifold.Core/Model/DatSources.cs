@@ -61,7 +61,8 @@ public static class DatSources
     /// <summary>
     /// The exe's name overrides (<c>Manifold\names\units.txt</c> and so on). A missing file is
     /// no overrides (absent from the result); a line that isn't one is added to
-    /// <paramref name="notes"/> and the rest load.
+    /// <paramref name="notes"/> and the rest load. A file the archive fails to read is a note
+    /// too, and left out: the exe still opens (links spec §7).
     /// </summary>
     public static IReadOnlyDictionary<DatId, NameOverrides> LoadOverrides(IArchive exe, List<string> notes)
     {
@@ -69,7 +70,18 @@ public static class DatSources
         foreach (var format in DatFormats.All)
         {
             string path = NameOverrides.ArchivePath(format.Id);
-            if (exe.TryRead(path) is not { } bytes) continue;
+            byte[]? bytes;
+            try
+            {
+                bytes = exe.TryRead(path);
+            }
+            catch (Exception e)
+            {
+                // StormLib's Win32Exception, an IOException, or anything else the read throws.
+                notes.Add($"{path}: can't be read ({e.Message}); its name overrides are not shown");
+                continue;
+            }
+            if (bytes is null) continue;
             result[format.Id] = NameOverrides.FromBytes(bytes, notes, path);
         }
         return result;

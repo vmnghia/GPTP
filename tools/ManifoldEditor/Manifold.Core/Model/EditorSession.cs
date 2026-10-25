@@ -1,4 +1,3 @@
-using System.Text;
 using Manifold.Core.Data;
 using Manifold.Core.Editor;
 

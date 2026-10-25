@@ -86,6 +86,7 @@ public static class DatRefs
     static bool Matches(DatFile file, int e, DatRef row, ulong value, int entry)
     {
         if (row.RangeEnd is not { } end) return value == (ulong)entry;
+        // A range row is always a range, start to end (PyDAT's falsy end 0 matches the start alone).
         return file.Get(e, end) is { } last && value <= (ulong)entry && (ulong)entry <= last;
     }
 

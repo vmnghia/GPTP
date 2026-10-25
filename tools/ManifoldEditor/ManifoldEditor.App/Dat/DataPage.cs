@@ -554,7 +554,9 @@ sealed class DataPage
     }
 
     /// <summary>Paste from Clipboard: the clipboard's one entry onto the selected entry (one undo step); a refusal in a message.</summary>
-    public async Task PasteEntry()
+    public Task PasteEntry() => Guard("Not pasted", Paste);
+
+    async Task Paste()
     {
         if (busy || DialogOpen()) return;
         CommitPending();
@@ -587,7 +589,9 @@ sealed class DataPage
     }
 
     /// <summary>Export to TXT: every entry of the current file, to a .txt the user picks (a temporary file, then replaced).</summary>
-    public async Task ExportText()
+    public Task ExportText() => Guard("Not exported", Export);
+
+    async Task Export()
     {
         if (busy || DialogOpen()) return;
         CommitPending();
@@ -601,7 +605,7 @@ sealed class DataPage
         {
             TextFiles.Write(path, new UTF8Encoding(false).GetBytes(text));
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (Exception e)
         {
             await Tell("Not exported", $"{fileName} could not be written to {path}: {e.Message}");
         }
@@ -611,7 +615,9 @@ sealed class DataPage
     /// Import from TXT: the entries a .txt lists replace those entries of the current file, as
     /// one undo step; any refusal refuses the whole file, in a message with its line.
     /// </summary>
-    public async Task ImportText()
+    public Task ImportText() => Guard("Not imported", Import);
+
+    async Task Import()
     {
         if (busy || DialogOpen()) return;
         CommitPending();
@@ -627,7 +633,7 @@ sealed class DataPage
         {
             text = File.ReadAllText(path);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (Exception e)
         {
             await Tell("Not imported", $"{name} can't be read: {e.Message}");
             return;
@@ -640,8 +646,15 @@ sealed class DataPage
         else changed();
     }
 
-    /// <summary>Override Name: PyDAT's Name Overrides dialog for the current file, on the selected entry; OK is one undo step.</summary>
-    public async Task OverrideName()
+    /// <summary>
+    /// Override Name: PyDAT's Name Overrides dialog for the current file, on the selected entry;
+    /// OK is one undo step. The dialog edits a copy of the overrides it opened with: when the
+    /// document's have changed by the time it closes, OK applies nothing (it would put the copy
+    /// back over the change).
+    /// </summary>
+    public Task OverrideName() => Guard("Name overrides not changed", EditOverrides);
+
+    async Task EditOverrides()
     {
         if (busy || DialogOpen() || Root.XamlRoot is not { } xamlRoot) return;
         CommitPending();
@@ -649,33 +662,62 @@ sealed class DataPage
         var state = exe.State;
         var at = file;
         int entry = Entry;
-        NameOverrides? after;
+        var before = state.Document.Overrides(at);
+        NameOverrides? after = null;
+        string? failure = null;
         busy = true;
         try
         {
-            after = await new NameOverridesDialog(xamlRoot, windowHandle(), at, state.Document.Overrides(at), entry).ShowAsync();
+            after = await new NameOverridesDialog(xamlRoot, windowHandle(), at, before, entry).ShowAsync();
         }
-        catch (Exception)
+        catch (Exception e)
         {
-            after = null;   // a dialog that couldn't open (another one showing): nothing changes
+            failure = e.Message;   // the dialog couldn't open or failed while showing: nothing changes
         }
         finally
         {
             busy = false;
         }
+        if (failure is not null)
+        {
+            await Tell("Name overrides not changed", $"The Name Overrides dialog failed: {failure}");
+            return;
+        }
         if (after is null || !ReferenceEquals(opened()?.State, state)) return;
+        if (!state.Document.Overrides(at).SameAs(before))
+        {
+            await Tell("Name overrides not changed", "The overrides changed while the dialog was open; nothing applied.");
+            return;
+        }
         if (state.EditOverrides(at, after, entry)) changed();
+    }
+
+    /// <summary>
+    /// Runs a Data page command started by a click or a key (whose handler is async void): a
+    /// failure the command doesn't name itself ends in a message, rather than closing the editor
+    /// and losing unsaved work.
+    /// </summary>
+    async Task Guard(string title, Func<Task> command)
+    {
+        try
+        {
+            await command();
+        }
+        catch (Exception e)
+        {
+            await Tell(title, e.Message);
+        }
     }
 
     /// <summary>A file picker shown for the window: the path picked, or null (cancelled, or the picker failed: said in a message).</summary>
     async Task<string?> Pick(object picker, Func<Task<Windows.Storage.StorageFile>> show)
     {
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle());
         Windows.Storage.StorageFile? picked = null;
         string? failure = null;
         busy = true;
         try
         {
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle());
             picked = await show();
         }
         catch (Exception e)
@@ -705,8 +747,7 @@ sealed class DataPage
     }
 
     /// <summary>Whether a ContentDialog shows: a second one can't open (and its keys shouldn't reach the page).</summary>
-    bool DialogOpen() =>
-        Root.XamlRoot is { } xamlRoot && VisualTreeHelper.GetOpenPopupsForXamlRoot(xamlRoot).Any(p => p.Child is ContentDialog);
+    bool DialogOpen() => ContentDialogs.Open(Root.XamlRoot);
 
     // -------- Drawing --------
 

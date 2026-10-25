@@ -66,6 +66,33 @@ public class DatRefsTests
     }
 
     [Fact]
+    public void ARangeEndingAtZeroIsStillARange()
+    {
+        // Unlike PyDAT, whose falsy end 0 makes the row match its start alone.
+        var units = Zero(DatId.Units).With(2, "yes_sound_start", 5).With(2, "yes_sound_end", 0);
+        Assert.DoesNotContain(DatRefs.UsedBy(DatId.Sfxdata, 5, Lookup(new() { [DatId.Units] = units })), m => m.Entry == 2);
+    }
+
+    public static IEnumerable<object[]> Rows() => DatRefs.All.Select((_, i) => new object[] { i });
+
+    /// <summary>
+    /// Each row on its own: its field on a fresh entry of an all-zero file points at entry 5
+    /// (a range from 5 to 5), and only that row's line comes back.
+    /// </summary>
+    [Theory, MemberData(nameof(Rows))]
+    public void EachRowFindsItsOwnField(int index)
+    {
+        var row = DatRefs.All[index];
+        var file = Zero(row.From);
+        int entry = Enumerable.Range(0, file.Count)
+            .First(e => file.Covers(e, row.Property) && (row.RangeEnd is null || file.Covers(e, row.RangeEnd)));
+        file = file.With(entry, row.Property, 5);
+        if (row.RangeEnd is { } end) file = file.With(entry, end, 5);
+        var matches = DatRefs.UsedBy(row.Target, 5, Lookup(new() { [row.From] = file }));
+        Assert.Equal([new DatRefMatch(row.From, entry, row.Label, row.SubTab)], matches);
+    }
+
+    [Fact]
     public void MissingFileIsSkipped()
     {
         var orders = Zero(DatId.Orders).With(10, "targeting", 3);

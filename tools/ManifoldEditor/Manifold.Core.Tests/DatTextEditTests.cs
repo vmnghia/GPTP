@@ -47,6 +47,50 @@ public sealed class DatTextEditTests : IDisposable
     }
 
     [Fact]
+    public void UndoAndRedoCrossADatEditAnOverridesEditAndAPaste()
+    {
+        var state = State(out var doc);
+        var four = NameOverrides.Empty.With(4, false, "Four");
+        Assert.True(state.EditDat(DatId.Weapons, 2, "damage_amount", 9));
+        Assert.True(state.EditOverrides(DatId.Units, four, 4));
+        Assert.Null(state.PasteEntry(DatId.Units, 7, "Unit(0):\n\tarmor 3\n"));
+
+        void Is(ulong damage, bool named, ulong armor)
+        {
+            Assert.Equal(damage, doc.Dat(DatId.Weapons)!.Get(2, "damage_amount"));
+            Assert.Equal(named, doc.Overrides(DatId.Units).SameAs(four));
+            Assert.Equal(armor, doc.Dat(DatId.Units)!.Get(7, "armor"));
+        }
+
+        Is(9, true, 3);
+        Assert.True(state.Undo());   // the paste
+        Is(9, true, 0);
+        Assert.Equal(new DatPlace(DatId.Units, 7, null), state.LastDatPlace);
+        Assert.Equal("Edit name overrides", doc.UndoLabel);
+        Assert.True(state.Undo());   // the overrides
+        Is(9, false, 0);
+        Assert.Equal(new DatPlace(DatId.Units, 4, null), state.LastDatPlace);
+        Assert.Equal("Edit damage_amount", doc.UndoLabel);
+        Assert.True(state.Undo());   // the .dat edit
+        Is(0, false, 0);
+        Assert.Equal(new DatPlace(DatId.Weapons, 2, "damage_amount"), state.LastDatPlace);
+        Assert.False(doc.CanUndo);
+        Assert.False(doc.IsDirty);
+
+        Assert.True(state.Redo());
+        Is(9, false, 0);
+        Assert.Equal(new DatPlace(DatId.Weapons, 2, "damage_amount"), state.LastDatPlace);
+        Assert.True(state.Redo());
+        Is(9, true, 0);
+        Assert.Equal(new DatPlace(DatId.Units, 4, null), state.LastDatPlace);
+        Assert.True(state.Redo());
+        Is(9, true, 3);
+        Assert.Equal(new DatPlace(DatId.Units, 7, null), state.LastDatPlace);
+        Assert.Equal("Paste entry", doc.UndoLabel);
+        Assert.False(doc.CanRedo);
+    }
+
+    [Fact]
     public void PasteLabelIsPasteEntry()
     {
         var state = State(out var doc);

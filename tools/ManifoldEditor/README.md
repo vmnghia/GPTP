@@ -212,8 +212,8 @@ one asks to confirm. The plugin's extension is on `origin/feat/dat-extender`, no
 - **Name overrides.** PyDAT's **Name Overrides** dialog, from the list's right-click menu
   (**Override Name**, Ctrl+Shift+N, the selected entry filled in). A line is `id:name` (replace) or
   `id+:name` (append a space and the text). **Open...** and **Save As...** read and write a PyDAT
-  `.txt`. OK is one undo step. Overrides show wherever a name shows: the list, dropdowns, "Used by"
-  rows and check lines. They are kept in the exe's MPQ, one file per .dat, as
+  `.txt`. OK is one undo step. Overrides show wherever a name shows: the list, dropdowns and "Used by"
+  rows. They are kept in the exe's MPQ, one file per .dat, as
   `Manifold\names\units.txt`, `Manifold\names\weapons.txt` and so on. Save writes only the
   files whose overrides changed (one emptied is written empty), and a tab's ● also shows for
   unsaved overrides. Repack files never touches them, as with `buttonsets.bin`. A line of an

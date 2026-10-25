@@ -178,11 +178,11 @@ public static class DatText
     public static IReadOnlyList<DatTextKey> Keys(DatId id) => keys[(int)id];
 
     /// <summary>
-    /// PyMS's text for the entries, as AbstractDAT.export_entries writes it: a header, a tab and
-    /// "name value" line for each value the entry has (a property the vanilla layout does not
-    /// cover on it is left out), and a blank line between entries (PyMS joins every entry's
-    /// lines, each entry ending in an empty one, with newlines: the text ends after the last value's newline). <paramref name="properties"/> are format
-    /// property names (a sub-tab's list); null or empty means all.
+    /// PyMS's text for the entries (AbstractDAT.export_entries). Each entry is a header line
+    /// "Unit(0):", then a line "\tkey value" for each value it has (a property the entry doesn't
+    /// cover is left out); a blank line separates entries, and the text ends with the last
+    /// value's line feed. <paramref name="properties"/> are format property names (a sub-tab's
+    /// list); null or empty means all.
     /// </summary>
     public static string Export(DatFile file, IEnumerable<int> entries, IReadOnlyCollection<string>? properties = null)
     {
@@ -260,6 +260,9 @@ public static class DatText
     static readonly Regex valuePattern = new(@"^\s*(\w+)(?:\.(\w+))?\s+([0-9]+|True|False)\s*$", RegexOptions.Compiled);
     static readonly Regex flagPattern = new(@"^flag_0x([0-9a-fA-F]+)$", RegexOptions.Compiled);
 
+    /// <summary>The text's lines, as Python's universal newlines split them: \r\n, a lone \r and \n each end one.</summary>
+    static string[] Lines(string text) => text.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
+
     /// <summary>
     /// Whether the text has a header line "Name(id):" at all (after the BOM and comments are dropped),
     /// as <see cref="Parse"/> reads them: false for prose and for lines with no header above them.
@@ -267,7 +270,7 @@ public static class DatText
     public static bool HasHeader(string text)
     {
         if (text.StartsWith('\uFEFF')) text = text[1..];
-        foreach (string raw in text.Split(["\r\n", "\n"], StringSplitOptions.None))
+        foreach (string raw in Lines(text))
         {
             int hash = raw.IndexOf('#');
             if (headerPattern.IsMatch(hash >= 0 ? raw[..hash].TrimEnd() : raw.TrimEnd())) return true;
@@ -277,7 +280,7 @@ public static class DatText
 
     /// <summary>
     /// PyMS's parse_text: a header "Name(id):" and a "key value" or "key.sub value" line for each
-    /// value, a value a number, True or False. A BOM, CRLF line ends, comments after # and
+    /// value, a value a number, True or False. A BOM, CRLF or CR line ends, comments after # and
     /// trailing whitespace are dropped. Refuses as PyMS does, with the line it found.
     /// </summary>
     public static IReadOnlyList<TextEntry> Parse(string text)
@@ -298,7 +301,7 @@ public static class DatText
             entries.Add(new TextEntry(type!, id, headerLine, values));
         }
 
-        var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None);
+        var lines = Lines(text);
         for (int i = 0; i < lines.Length; i++)
         {
             int number = i + 1;
@@ -516,10 +519,16 @@ public static class DatText
             throw new DatTextException($"Value {value} is too big for {written} (at most {max})", line);
     }
 
+    /// <summary>
+    /// A flag's name, or flag_0x and the hex of one bit below the coder's count: a bit at or
+    /// above it can't come from the text (the entry keeps those), and several bits or none are no flag.
+    /// </summary>
     static void CheckFlagName(DatCoder coder, string name, int line)
     {
         if (coder.FlagNames is { } names && names.Values.Contains(name)) return;
-        if (flagPattern.IsMatch(name) && ulong.TryParse(name[7..], NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out _)) return;
+        if (flagPattern.IsMatch(name)
+            && ulong.TryParse(name[7..], NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out ulong flag)
+            && flag != 0 && (flag & (flag - 1)) == 0 && (coder.Bits >= 64 || flag < (1UL << coder.Bits))) return;
         throw new DatTextException($"Invalid flag name {name}", line);
     }
 

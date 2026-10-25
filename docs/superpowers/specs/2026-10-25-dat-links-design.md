@@ -141,7 +141,7 @@ Kept in the exe's MPQ, one file per .dat, in PyDAT's format: `Manifold\names\uni
 - **Effect:** PyMS's rule in every Names mode: a replace override is the name; an append
   override adds `' ' + text` to the name the mode gives. Units 228-250 of an expanded
   units.dat stay "Reserved Unit #N". Overrides show everywhere a name shows: the list,
-  dropdowns, "Used by" rows, check lines.
+  dropdowns, "Used by" rows.
 - **Editing:** PyDAT's **Name Overrides** dialog for the current file, from the list's
   right-click menu ("Override Name", Ctrl+Shift+N, the selected entry filled in): the
   overrides list, ID, Name, Append, Update, Remove, Open... and Save As... (a PyDAT `.txt`;
@@ -157,6 +157,8 @@ Kept in the exe's MPQ, one file per .dat, in PyDAT's format: `Manifold\names\uni
 - Paste and import apply wholly or not at all, with PyMS's message and the line.
 - Export writes a temporary file first; a failure leaves an old `.txt` whole.
 - An overrides file that doesn't parse: a status note; the parsed lines load.
+- An overrides file the exe can't read: a status note naming it; the exe opens without those
+  overrides. An empty file is no overrides.
 - A Jump to an id past the target's end: the button is disabled.
 
 ## 8. Testing
@@ -185,8 +187,8 @@ Kept in the exe's MPQ, one file per .dat, in PyDAT's format: `Manifold\names\uni
 7. An import with a mistake: the message names the line and nothing changes.
 8. Remove every override of a file, Save, reopen: none show and nothing breaks (the exe
    holds an empty overrides file).
-9. With the Name Overrides dialog open, Ctrl+Z and Ctrl+Y: note whether they undo document
-   steps behind the dialog. This is a check, not a requirement.
+9. With the Name Overrides dialog open, Ctrl+Z and Ctrl+Y: they act on the dialog's text
+   boxes only, not on the document behind it.
 
 ## 9. Out of this part
 
