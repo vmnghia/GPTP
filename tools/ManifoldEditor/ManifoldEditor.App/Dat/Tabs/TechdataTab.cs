@@ -6,7 +6,7 @@ namespace ManifoldEditor.App.Dat.Tabs;
 
 /// <summary>
 /// techdata.dat (PyDAT's TechnologyTab): the icon and label, the cost with the research time also in
-/// seconds, and the properties. The icon preview and picker and the "Used by" lists are left out for now.
+/// seconds, and the properties. The page's "Used by" list covers the tab. The icon preview and picker are left out for now.
 /// </summary>
 sealed class TechdataTab : DatTabBase
 {

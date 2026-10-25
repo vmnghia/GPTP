@@ -8,8 +8,9 @@ namespace ManifoldEditor.App.Dat.Tabs;
 /// <summary>
 /// orders.dat (PyDAT's OrdersTab): the weapon, technology and order the order uses, its label, iscript
 /// animation, highlight icon (a cmdicons frame, 65535 none) and requirements, and the twelve flags (PyDAT's
-/// "Unused" ones included). The Jump buttons, the icon preview and picker and the "Used by" list are left
-/// out for now. The weapon is the format's <c>targeting</c> (PyDAT's weapon_targeting).
+/// "Unused" ones included). The weapon, technology and obscured order have Jump buttons, and the page's
+/// "Used by" list covers the tab. The icon preview and picker are left out for now.
+/// The weapon is the format's <c>targeting</c> (PyDAT's weapon_targeting).
 /// </summary>
 sealed class OrdersTab : DatTabBase
 {

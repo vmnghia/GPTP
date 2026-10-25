@@ -6,8 +6,8 @@ namespace ManifoldEditor.App.Dat.Tabs;
 
 /// <summary>
 /// upgrades.dat (PyDAT's UpgradesTab): the icon (a cmdicons frame) and label (a stat_txt.tbl string), the
-/// base and per-level costs with the times also in seconds, and the misc. properties. The icon preview
-/// and picker and the "Used by" lists are left out for now.
+/// base and per-level costs with the times also in seconds, and the misc. properties. The page's "Used by"
+/// list covers the tab. The icon preview and picker are left out for now.
 /// </summary>
 sealed class UpgradesTab : DatTabBase
 {

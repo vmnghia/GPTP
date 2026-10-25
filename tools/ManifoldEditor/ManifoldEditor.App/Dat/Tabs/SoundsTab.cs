@@ -6,7 +6,7 @@ namespace ManifoldEditor.App.Dat.Tabs;
 
 /// <summary>
 /// sfxdata.dat (PyDAT's SoundsTab): the sound file (a sfxdata.tbl string, "None" at 0), the general
-/// properties and the four flags. The play button and the "Used by" lists are left out for now (sound
+/// properties and the four flags. The page's "Used by" list covers the tab. The play button is left out for now (sound
 /// playback is part 3).
 /// </summary>
 sealed class SoundsTab : DatTabBase

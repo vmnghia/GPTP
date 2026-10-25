@@ -191,8 +191,8 @@ one asks to confirm. The plugin's extension is on `origin/feat/dat-extender`, no
   shows the target file's tab and selects the entry. It is disabled when the field holds
   its None or an id past the target's end. It is not an edit, so nothing goes on the undo
   history. The Sprites tab's selection circle jumps to image 561 + its value.
-- **Used by.** A collapsible **Used By (N):** list under every tab (the Units sub-tabs share
-  one) shows each entry of each file whose field points at the shown entry, in PyDAT's
+- **Used by.** A collapsible **Used By (N):** list under every tab that other files point into (all
+  but Campaign; the Units sub-tabs share one) shows each entry of each file whose field points at the shown entry, in PyDAT's
   words: `units.dat, Ground Weapon field (Basic sub-tab), entry 0: Terran Marine`. Double-click
   or Enter shows that file, sub-tab and entry. Sound ranges count both ends. Whether the
   list is open is remembered. On the Images tab the **Check** buttons beside GRP File and
