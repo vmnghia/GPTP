@@ -47,6 +47,22 @@ public class DatTextImportTests
         Assert.Equal(expected.Save(), file.Save());
         Assert.Equal(golden, DatText.Export(file, Enumerable.Range(0, file.Count)));
         Assert.NotEmpty(changed);
+
+        // onto the fixture's own file nothing changes, high flag bits included: byte for byte
+        var (same, none) = DatText.Apply(DatFile.Parse(format, bytes), DatText.Parse(golden));
+        Assert.Equal(bytes, same.Save());
+        Assert.Empty(none);
+    }
+
+    [Fact]
+    public void FlagsKeepTheEntrysBitsAboveTheCoder()
+    {
+        var format = DatFormats.Of(DatId.Sfxdata);
+        var target = Zero(format, format.VanillaSize).With(2, "flags", 0xC5);   // bits 6-7 are above the 6-bit coder
+        var (file, changed) = DatText.Apply(target, DatText.Parse(
+            "Sound(2):\n\tflags.preload False\n\tflags.unit_speech True\n\tflags.flag_0x04 True\n\tflags.never_preempt True\n"));
+        Assert.Equal(0xC0UL | 0x02 | 0x04 | 0x20, file.Get(2, "flags"));
+        Assert.Equal([2], changed);
     }
 
     [SkippableFact]

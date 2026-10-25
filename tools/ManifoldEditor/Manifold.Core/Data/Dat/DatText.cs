@@ -325,8 +325,8 @@ public static class DatText
 
     /// <summary>
     /// PyMS's import_data: puts the parsed entries on the file. Only the properties the text lists
-    /// change (a flags or compound key must list all its parts; a flags key sets the whole value
-    /// from the flags listed). <paramref name="onto"/> takes the text's one entry for that entry,
+    /// change (a compound key must list all its parts; a flags key sets the bits below its coder's count
+    /// from the flags listed, the rest cleared, and keeps the entry's bits above the count). <paramref name="onto"/> takes the text's one entry for that entry,
     /// ignoring the header's id. Returns the new file and the entries whose values changed, in
     /// ascending order; the given file is never touched, and a refusal applies nothing.
     /// </summary>
@@ -427,6 +427,9 @@ public static class DatText
                     value = 0;
                     foreach (var (name, (enabled, _)) in group.Parts)
                         if (enabled != 0) value |= FlagOf(key.Coder, name);
+                    // The text lists only the bits below the coder's count: the entry keeps the ones above.
+                    ulong listed = key.Coder.Bits >= 64 ? ulong.MaxValue : (1UL << key.Coder.Bits) - 1;
+                    value = (value & listed) | (file.Get(entry, key.Property)!.Value & ~listed);
                     CheckMax(value, max, key.Key, group.Line);
                     break;
                 case DatCoderKind.HitPoints:
