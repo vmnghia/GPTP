@@ -138,6 +138,8 @@ public sealed class ButtonSetDocument
     public bool DiffersFromVanilla(int setId) => !sets[setId].SameAs(Vanilla[setId]);
     public bool CanUndo => done > 0;
     public bool CanRedo => done < history.Count;
+    /// <summary>The label of the step Undo would take back; null when there is none.</summary>
+    public string? UndoLabel => CanUndo ? history[done - 1].Label : null;
 
     void Record(Change change)
     {
@@ -215,6 +217,18 @@ public sealed class ButtonSetDocument
         var after = edit(before);
         if (after.SameAs(before)) return false;
         Record(new Change([], null, null, null, label, new DatEdit(file, before, after, entry, property)));
+        return true;
+    }
+
+    /// <summary>
+    /// A whole .dat file replaced as one step (a paste or an import of text), shown at
+    /// <paramref name="firstEntry"/> after an undo, with no property. False when the file is
+    /// missing or <paramref name="after"/> is the file as it is.
+    /// </summary>
+    public bool ApplyDatFile(DatId file, DatFile after, int firstEntry, string label)
+    {
+        if (!dats.TryGetValue(file, out var before) || after.SameAs(before)) return false;
+        Record(new Change([], null, null, null, label, new DatEdit(file, before, after, firstEntry, null)));
         return true;
     }
 

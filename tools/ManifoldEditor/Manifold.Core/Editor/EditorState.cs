@@ -216,6 +216,72 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
     public bool EditOverrides(DatId file, NameOverrides overrides, int? entry = null) =>
         Document.ApplyOverrides(file, overrides, entry);
 
+    // .dat text: copy, paste and import (links spec §3).
+
+    const string NoEntryOnClipboard = "The clipboard holds no PyDAT entry";
+
+    /// <summary>
+    /// PyMS's text for one entry: the properties of <paramref name="subTab"/> when it is a tab
+    /// of this file (the Units sub-tabs), else all of them. Empty without the file.
+    /// </summary>
+    public string CopyEntryText(DatId file, int entry, DatTabId? subTab)
+    {
+        if (Document.Dat(file) is not DatFile dat || entry < 0 || entry >= dat.Count) return "";
+        var tab = subTab is DatTabId id ? DatTabs.Of(id) : null;
+        return DatText.Export(dat, [entry], tab is not null && tab.File == file ? tab.Properties : null);
+    }
+
+    /// <summary>
+    /// The clipboard's one entry put on <paramref name="entry"/> (the text's id is ignored), as
+    /// one step "Paste entry". Null on success, including when the text equals the entry
+    /// (nothing recorded); else the reason it was refused.
+    /// </summary>
+    public string? PasteEntry(DatId file, int entry, string? clipboard)
+    {
+        if (string.IsNullOrWhiteSpace(clipboard)) return NoEntryOnClipboard;
+        if (Document.Dat(file) is not DatFile dat) return $"There is no {DatFormats.Of(file).FileName} to paste onto";
+        try
+        {
+            var (after, changed) = DatText.Apply(dat, DatText.Parse(clipboard), entry);
+            if (changed.Count > 0) Document.ApplyDatFile(file, after, entry, "Paste entry");
+            return null;
+        }
+        catch (DatTextException e) when (e.Message == "No entries found" && e.Line is null)
+        {
+            return NoEntryOnClipboard;
+        }
+        catch (DatTextException e)
+        {
+            return Refusal(e);
+        }
+    }
+
+    /// <summary>
+    /// PyMS's text imported onto the file, every entry in it, as one step named after the file.
+    /// Null on success (also when nothing changes: nothing recorded); else the refusal, with
+    /// its line when it has one, and nothing applied.
+    /// </summary>
+    public string? ImportText(DatId file, string text, string fileName)
+    {
+        if (Document.Dat(file) is not DatFile dat) return $"There is no {DatFormats.Of(file).FileName} to import onto";
+        try
+        {
+            var (after, changed) = DatText.Apply(dat, DatText.Parse(text));
+            if (changed.Count > 0)
+            {
+                int n = changed.Count;
+                Document.ApplyDatFile(file, after, changed[0], $"Import {fileName} ({n} entr{(n == 1 ? "y" : "ies")})");
+            }
+            return null;
+        }
+        catch (DatTextException e)
+        {
+            return Refusal(e);
+        }
+    }
+
+    static string Refusal(DatTextException e) => e.Line is int line ? $"line {line}: {e.Message}" : e.Message;
+
     // Strings (spec §5, §6).
 
     public StringTable? Strings => Document.Strings;

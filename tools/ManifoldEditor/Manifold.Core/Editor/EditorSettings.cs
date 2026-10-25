@@ -41,6 +41,9 @@ public sealed record EditorSettings
     /// <summary>A <see cref="DatId"/> name to how that file's entry names are shown.</summary>
     public Dictionary<string, DatNameSetting>? DatNames { get; init; }
 
+    /// <summary>Whether the Data page lists the entries that use the one shown (PyDAT's Used by); on by default.</summary>
+    public bool UsedByOpen { get; init; } = true;
+
     static string Key(string exePath) => Path.GetFullPath(exePath).ToLowerInvariant();
     static string ExeFolder(string exePath) => Path.GetDirectoryName(Path.GetFullPath(exePath)) ?? "";
 
