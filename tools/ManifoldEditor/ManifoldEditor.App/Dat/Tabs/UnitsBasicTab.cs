@@ -8,7 +8,7 @@ namespace ManifoldEditor.App.Dat.Tabs;
 /// <summary>
 /// units.dat, Basic (PyDAT's BasicUnitsTab): vital statistics, build cost, weapons, supply,
 /// space, score and the rest. The group flags show only the race bits here (the others are
-/// on the StarEdit tab). Jump buttons are left out for now.
+/// on the StarEdit tab). The armor upgrade and the two weapons have Jump buttons.
 /// </summary>
 sealed class UnitsBasicTab : DatTabBase
 {

@@ -543,9 +543,12 @@ starfield handled (§5). Features 1 and 2 below are done.
    tested on Windows 2026-10-25]`: all 11 files, every field of PyDAT's 16 tabs, undo, revert to opened
    and to vanilla, Save into the exe and `to-repack\arr\`; spec
    `docs/superpowers/specs/2026-10-24-dat-editor-design.md`, test round in its §10. All of §10
-   passed on Windows. Remaining parts of the .dat port
-   `[PROPOSED]`, each with its own spec: 2 links (Jump, Used by, copy and paste, name
-   overrides, TXT import and export), 3 previews (GRP, icons, sound playback), 4 entry counts
+   passed on Windows. Part 2 of the .dat port, the links (Jump buttons, Used by, copy and
+   paste, PyDAT's TXT import and export, name overrides kept in the exe as
+   `Manifold\names\*.txt`) `[BUILT 2026-10-25; not yet run on Windows]`: the rules are tested
+   on Linux and the window compiles; spec `docs/superpowers/specs/2026-10-25-dat-links-design.md`,
+   test round in its §8. Remaining parts of the .dat port
+   `[PROPOSED]`, each with its own spec: 3 previews (GRP, icons, sound playback), 4 entry counts
    (Add entry and Set count for images, sprites and flingy; needs `feat/dat-extender` on
    master), 5 improvements.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the

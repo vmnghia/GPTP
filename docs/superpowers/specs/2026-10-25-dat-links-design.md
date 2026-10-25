@@ -1,6 +1,7 @@
 # Manifold Editor: the .dat files, part 2 (PyDAT's links)
 
-Status: design 2026-10-25. Part 2 of the PyDAT port planned in
+Status: Built 2026-10-25 (plan `docs/superpowers/plans/2026-10-25-dat-links.md`): the
+rules are tested on Linux, the window compiles; not yet run on Windows. Design 2026-10-25. Part 2 of the PyDAT port planned in
 `2026-10-24-dat-editor-design.md` (part 1, the fields, passed on Windows 2026-10-25):
 Jump buttons, "Used by", copy and paste of an entry or a sub-tab, name overrides, and
 PyDAT's TXT import and export. The user's answers: name overrides are kept in the exe;
@@ -182,6 +183,10 @@ Kept in the exe's MPQ, one file per .dat, in PyDAT's format: `Manifold\names\uni
 5. Images: Check beside GRP File and IScript ID.
 6. Add an override (replace and append), Save, reopen: it shows in the list and dropdowns.
 7. An import with a mistake: the message names the line and nothing changes.
+8. Remove every override of a file, Save, reopen: none show and nothing breaks (the exe
+   holds an empty overrides file).
+9. With the Name Overrides dialog open, Ctrl+Z and Ctrl+Y: note whether they undo document
+   steps behind the dialog. This is a check, not a requirement.
 
 ## 9. Out of this part
 

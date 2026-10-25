@@ -10,7 +10,7 @@ namespace ManifoldEditor.App.Dat.Tabs;
 /// <summary>
 /// units.dat, AI Actions (PyDAT's AIActionsUnitsTab): the five AI orders, the right-click
 /// action, the AI internal flags and the AI force values (derived from the unit's weapons,
-/// hit points and shields). Jump buttons and the links in the force values are left out for now.
+/// hit points and shields). The five orders have Jump buttons; the links in the force values are left out for now.
 /// </summary>
 sealed class UnitsAiActionsTab : DatTabBase
 {

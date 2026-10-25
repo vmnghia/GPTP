@@ -8,7 +8,7 @@ namespace ManifoldEditor.App.Dat.Tabs;
 /// <summary>
 /// units.dat, Advanced (PyDAT's AdvancedUnitsTab): the special ability flags in PyDAT's three
 /// columns, then infestation, the two subunits, the requirements index and the unknown flags.
-/// Jump buttons are left out for now.
+/// Infestation and the two subunits have Jump buttons.
 /// </summary>
 sealed class UnitsAdvancedTab : DatTabBase
 {

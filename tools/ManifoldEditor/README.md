@@ -185,9 +185,53 @@ one asks to confirm. The plugin's extension is on `origin/feat/dat-extender`, no
 **`Data\pydat\` must ship beside the exe.** It holds PyMS's name lists and `Hints.txt`
 (MIT; `LICENSE.md` is in it). The build copies it from `fixtures\pydat\`.
 
-**Not yet** (the later parts of the port, in the spec's header): Jump buttons, Used by, copy
-and paste, TXT import and export; previews (GRP frames, icons, sound playback); Add entry and
-Set count for images, sprites and flingy; improvements. Two differences from PyDAT: its
-seconds boxes are editable, here they are read-only text; and a box is limited to its
-property's type, not to PyDAT's tighter ranges. Built 2026-10-25; the rules are tested on
-Linux and the window compiles, but it has not been run on Windows.
+**Links** (part 2 of the port, spec `docs/superpowers/specs/2026-10-25-dat-links-design.md`).
+
+- **Jump buttons.** PyDAT's 29 "Jump ->" buttons sit beside the same reference fields. One
+  shows the target file's tab and selects the entry. It is disabled when the field holds
+  its None or an id past the target's end. It is not an edit, so nothing goes on the undo
+  history. The Sprites tab's selection circle jumps to image 561 + its value.
+- **Used by.** A collapsible **Used By (N):** list under every tab (the Units sub-tabs share
+  one) shows each entry of each file whose field points at the shown entry, in PyDAT's
+  words: `units.dat, Ground Weapon field (Basic sub-tab), entry 0: Terran Marine`. Double-click
+  or Enter shows that file, sub-tab and entry. Sound ranges count both ends. Whether the
+  list is open is remembered. On the Images tab the **Check** buttons beside GRP File and
+  Iscript ID fill it with the other images that share the shown one's value.
+- **Copy and paste.** The entry list's right-click menu has **Copy Entry to Clipboard**
+  (Ctrl+Shift+C), **Copy Sub-Tab to Clipboard** (Ctrl+Shift+Y) and **Paste from Clipboard**
+  (Ctrl+Shift+P). The clipboard holds PyDAT's text for the entry, so a unit copied here pastes
+  into PyDAT and the reverse. Copy Sub-Tab copies only the shown Units sub-tab's fields (on
+  the other tabs it copies the entry). Paste needs exactly one entry of the file's type and puts
+  it on the selected entry, changing only the properties the text lists; it is one undo step.
+  Text that is not an entry says "The clipboard holds no PyDAT entry".
+- **TXT.** The **TXT** menu above the tabs has **Export to TXT...** (Ctrl+E), the whole current
+  file as PyDAT's text, and **Import from TXT...** (Ctrl+I), which replaces the entries the file
+  lists as one undo step. A mistake in the file refuses all of it, with the message and the line.
+  Ids past the end of the file are refused (adding entries is a later part). An export is
+  written to a temporary file first, so a failure leaves an old `.txt` whole.
+- **Name overrides.** PyDAT's **Name Overrides** dialog, from the list's right-click menu
+  (**Override Name**, Ctrl+Shift+N, the selected entry filled in). A line is `id:name` (replace) or
+  `id+:name` (append a space and the text). **Open...** and **Save As...** read and write a PyDAT
+  `.txt`. OK is one undo step. Overrides show wherever a name shows: the list, dropdowns, "Used by"
+  rows and check lines. They are kept in the exe's MPQ, one file per .dat, as
+  `Manifold\names\units.txt`, `Manifold\names\weapons.txt` and so on. Save writes only the
+  files whose overrides changed (one emptied is written empty), and a tab's ● also shows for
+  unsaved overrides. Repack files never touches them, as with `buttonsets.bin`. A line of an
+  overrides file that does not parse is a status note; the other lines load.
+
+The copy, paste, TXT and override keys work only while the Data page shows. Ctrl+Shift+Y
+replaces PyDAT's Ctrl+Y because Ctrl+Y is Redo here.
+
+Differences from PyDAT, each on purpose:
+
+- The Jump gate lets the last entry be jumped to; PyDAT's stops one short.
+- A "Used by" sound range written backwards (start above end) matches nothing.
+- Text that a flags line cannot carry (bits above the coder's count) is kept on import: the
+  entry's own bits there stay.
+
+**Not yet** (the later parts of the port, in the spec's header): previews (GRP frames, icons,
+sound playback); Add entry and Set count for images, sprites and flingy; improvements. Two
+more differences from PyDAT: its seconds boxes are editable, here they are read-only text; and a
+box is limited to its property's type, not to PyDAT's tighter ranges. Part 1 (the fields) passed on Windows 2026-10-25. Part 2 (the links) was built
+2026-10-25; the rules are tested on Linux and the window compiles, but it has not been run on
+Windows.

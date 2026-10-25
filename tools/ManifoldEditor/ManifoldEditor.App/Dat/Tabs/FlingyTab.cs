@@ -6,7 +6,7 @@ namespace ManifoldEditor.App.Dat.Tabs;
 
 /// <summary>
 /// flingy.dat (PyDAT's FlingyTab): the sprite, top speed and halt distance (each also shown in
-/// pixels), acceleration, turn radius, move control and the iscript mask. Jump buttons are left out for now.
+/// pixels), acceleration, turn radius, move control and the iscript mask. The sprite has PyDAT's Jump button.
 /// </summary>
 sealed class FlingyTab : DatTabBase
 {
