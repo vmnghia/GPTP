@@ -37,10 +37,6 @@ void issueOrder(CUnit* unit, u32 orderId, Bool32 queued);	//4754F0
 //ends), so it changes too - a first build changed mainOrderId only, and the
 //flight could not be interrupted and kept stopping (in game, 2026-10-25).
 void switchOrder(CUnit* unit, u8 orderId, u8 state, Point16 pt) {
-	VDBG("Viking: switch 0x%X/%d -> 0x%X/%d at %d,%d; status 0x%X, queue head 0x%X tail 0x%X, timers %d/%d",
-		unit->mainOrderId, unit->mainOrderState, orderId, state, pt.x, pt.y, unit->status,
-		unit->orderQueueHead ? unit->orderQueueHead->orderId : 0, unit->orderQueueTail ? unit->orderQueueTail->orderId : 0,
-		unit->orderQueueTimer, unit->recentOrderTimer);
 	COrder* head = unit->orderQueueHead;
 	if (head != NULL && head->orderId == unit->mainOrderId) {
 		head->orderId = orderId;
@@ -62,8 +58,6 @@ void switchOrder(CUnit* unit, u8 orderId, u8 state, Point16 pt) {
 	//the main switch runs the new order on the next tick, as performNextOrder
 	//(0x4750EE) arranges for an order it starts
 	unit->orderQueueTimer = 0;
-	VDBG("Viking: switched; status 0x%X, move state %d, move flags 0x%X, path %s", unit->status, unit->movementState,
-		unit->movementFlags, unit->path ? "yes" : "no");
 }
 
 void restoreFacing(CUnit* unit, u8 direction) {
@@ -282,19 +276,10 @@ bool orderFly(CUnit* unit) {
 	//Runs every 8 ticks, from the main order switch (viking_transform_inject.cpp).
 	//0: set off for the spot (orderTarget.pt); 1: on the way
 	if (unit->mainOrderState == 0) {
-		const bool set = setMoveTarget(unit, unit->orderTarget.pt.x, unit->orderTarget.pt.y);
+		setMoveTarget(unit, unit->orderTarget.pt.x, unit->orderTarget.pt.y);
 		unit->mainOrderState = 1;
-		VDBG("Viking: fly set %d: move target %d,%d, waypoint %d,%d, movable %d, move state %d, move flags 0x%X, path %s",
-			set ? 1 : 0, unit->moveTarget.pt.x, unit->moveTarget.pt.y, unit->nextMovementWaypoint.x, unit->nextMovementWaypoint.y,
-			unit->getMovableState(), unit->movementState, unit->movementFlags, unit->path ? "yes" : "no");
 		return true;
 	}
-	static u32 calls = 0;
-	if ((++calls & 1) == 0)
-		VDBG("Viking: fly at %d,%d -> %d,%d wp %d,%d, movable %d, move state %d, flags 0x%X, speed %d, path %s, order 0x%X/%d",
-			unit->position.x, unit->position.y, unit->moveTarget.pt.x, unit->moveTarget.pt.y, unit->nextMovementWaypoint.x,
-			unit->nextMovementWaypoint.y, unit->getMovableState(), unit->movementState, unit->movementFlags, unit->current_speed1,
-			unit->path ? "yes" : "no", unit->mainOrderId, unit->mainOrderState);
 	//arrived: within FLY_ARRIVED of the spot, or the engine says the move ended
 	//(8 ticks after the target was set, so not the stale "reached" of the tick
 	//right after). A target the engine dropped or changed is set again.
@@ -304,7 +289,7 @@ bool orderFly(CUnit* unit) {
 			setMoveTarget(unit, unit->orderTarget.pt.x, unit->orderTarget.pt.y);
 		return true;
 	}
-	VDBG("Viking: arrived at %d,%d to land (movable %d)", unit->position.x, unit->position.y, unit->getMovableState());
+	VDBG("Viking: arrived at %d,%d to land", unit->position.x, unit->position.y);
 	//straight to the landing step: STATE_STOP would brake it (holdPosition)
 	//short of the spot; STATE_START waits until it has stopped
 	switchOrder(unit, ORDER_VIKING_TRANSFORM, STATE_START, unit->orderTarget.pt);
