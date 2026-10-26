@@ -229,4 +229,33 @@ public class DatPreviewTests
         }
         finally { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
     }
+
+    [Fact]
+    public void HeadersOutsidePyMsBoundsAreDamaged()
+    {
+        // PyMS's CacheGRP.load_file: 1-2400 frames, width and height 1-256.
+        byte[] hostile = [0x01, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x01, 0x01, 0x0E, 0x00, 0x00, 0x00, 0x00, 0x00];
+        var wide = Make.Grp(3, 2, new byte[6]);
+        BitConverter.GetBytes((ushort)300).CopyTo(wide, 2);
+        var tall = Make.Grp(3, 2, new byte[6]);
+        BitConverter.GetBytes((ushort)257).CopyTo(tall, 4);
+        var many = Make.Grp(3, 2, new byte[6]);
+        BitConverter.GetBytes((ushort)2401).CopyTo(many, 0);
+        foreach (var bytes in new[] { hostile, wide, tall, many })
+        {
+            var (preview, _) = With(new() { [Drone] = bytes });
+            Assert.Equal("unit\\zerg\\drone.grp is damaged", preview.Image(Images((3, 1, 0, 0)), Tbl("zerg\\drone.grp"), 3).Reason);
+        }
+    }
+
+    [Fact]
+    public void AnArchiveThatCantBeReadIsAReason()
+    {
+        foreach (Exception failure in new Exception[] { new IOException("locked"), new System.ComponentModel.Win32Exception(5, "denied") })
+        {
+            var preview = new DatPreview(_ => throw failure, Palettes);
+            Assert.Equal($"unit\\zerg\\drone.grp can't be read ({failure.Message})",
+                preview.Image(Images((3, 1, 0, 0)), Tbl("zerg\\drone.grp"), 3).Reason);
+        }
+    }
 }

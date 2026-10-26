@@ -32,9 +32,13 @@ sealed class SoundsTab : DatTabBase
         {
             failure.Text = "";
             if (wav is null) return;
-            // The player is made on the first play, not when the page is built.
-            if (!listening) { Context.Sounds.Failed += reason => failure.Text = $"Can't play {path}: {reason}"; listening = true; }
-            try { await Context.Sounds.Play(wav); }
+            try
+            {
+                // The player is made on the first play, not when the page is built; inside the try, as
+                // Windows without its media features can't make one.
+                if (!listening) { Context.Sounds.Failed += reason => failure.Text = $"Can't play {path}: {reason}"; listening = true; }
+                await Context.Sounds.Play(wav);
+            }
             catch (Exception e) { failure.Text = $"Can't play {path}: {e.Message}"; }
         };
         AddLoader(entry =>

@@ -138,7 +138,13 @@ public sealed class DatPreview(Func<string, byte[]?> read, PreviewPalettes palet
     {
         var (palette, paletteName) = palettes.Of(paletteIndex);
         if (palette is null) return (null, $"{paletteName} not found");
-        if (read(path) is not { } bytes) return (null, $"{path} not found");
+        byte[]? bytes;
+        try { bytes = read(path); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            return (null, $"{path} can't be read ({e.Message})");
+        }
+        if (bytes is null) return (null, $"{path} not found");
         byte[] indexes;
         int width, height;
         try
@@ -148,6 +154,8 @@ public sealed class DatPreview(Func<string, byte[]?> read, PreviewPalettes palet
             if (grp.FrameCount == 0) return (null, $"{path} has no frames");
             if (bytes.Length < 6 + 8 * grp.FrameCount) return (null, $"{path} is damaged");
             if (grp.Width == 0 || grp.Height == 0) return (null, $"{path} has an empty frame");
+            // PyMS's CacheGRP.load_file refuses a GRP outside these: and a huge size would allocate gigabytes.
+            if (grp.FrameCount > 2400 || grp.Width > 256 || grp.Height > 256) return (null, $"{path} is damaged");
             indexes = grp.DecodeFrame(0);
             (width, height) = (grp.Width, grp.Height);
         }
@@ -241,13 +249,12 @@ public sealed class DatPreview(Func<string, byte[]?> read, PreviewPalettes palet
         return scene.Build();
     }
 
-    /// <summary>Units Graphics: the add-on's parent, the unit, then the yellow, red and green boxes that are on.</summary>
+    /// <summary>Units Graphics: the add-on's parent and its yellow box, the unit, then the red and green boxes that are on.</summary>
     public PreviewScene UnitGraphicsScene(Func<DatId, DatFile?> dat, StringTable? imagesTbl, int unit, UnitPreviewOptions options)
     {
         var scene = new SceneBuilder();
         if (scene.Entry(dat, DatId.Units, "unit", unit) is not { } units) return scene.Build();
         var (width, height) = Size2(units, unit);
-        BoxLayer? addonBox = null;
         if (options.Addon && units.Covers(unit, "addon_position"))
         {
             ulong position = units.Get(unit, "addon_position")!.Value;
@@ -257,11 +264,11 @@ public sealed class DatPreview(Func<string, byte[]?> read, PreviewPalettes palet
                 var (parentWidth, parentHeight) = Size2(units, options.AddonParent);
                 var (box, x, y) = AddonBox(width, height, horizontal, vertical, parentWidth, parentHeight);
                 if (scene.UnitPicture(this, dat, imagesTbl, options.AddonParent) is { } parent) scene.Add(new PictureLayer(parent, x, y));
-                addonBox = box;
+                // PyDAT lifts the yellow box in draw_addon_preview, then makes the unit's image: the unit goes over it.
+                scene.Add(box);
             }
         }
         if (scene.UnitPicture(this, dat, imagesTbl, unit) is { } picture) scene.Add(new PictureLayer(picture, Centre, Centre));
-        if (addonBox is not null) scene.Add(addonBox);
         if (options.Placement) scene.Add(PlacementBox(width, height));
         if (options.Dimensions)
         {

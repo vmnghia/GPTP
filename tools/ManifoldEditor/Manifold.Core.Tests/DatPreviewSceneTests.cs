@@ -164,9 +164,10 @@ public class DatPreviewSceneTests
         Assert.Equal(5, all.Layers.Count);
         IsPicture(all.Layers[0], 65, 145);
         Assert.Equal(4, ((PictureLayer)all.Layers[0]).Picture.Width);   // the parent's
-        IsPicture(all.Layers[1], 130, 130);
-        Assert.Equal(3, ((PictureLayer)all.Layers[1]).Picture.Width);
-        IsBox(all.Layers[2], 1, 97, 129, 193, Yellow);
+        // PyDAT lifts the yellow box before it makes the unit's image: the unit is drawn over it.
+        IsBox(all.Layers[1], 1, 97, 129, 193, Yellow);
+        IsPicture(all.Layers[2], 130, 130);
+        Assert.Equal(3, ((PictureLayer)all.Layers[2]).Picture.Width);
         IsBox(all.Layers[3], 98, 98, 161, 161, Red);
         IsBox(all.Layers[4], 122, 121, 140, 141, Green);
 
