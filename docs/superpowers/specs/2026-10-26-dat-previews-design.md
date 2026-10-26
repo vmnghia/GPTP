@@ -45,6 +45,8 @@ including Python 2's integer division (rounding down).
 
 - **Placement box** (red, unit placement size w×h): from
   `130-floor(w/2), 130-floor(h/2)` to `129+ceil(w/2), 129+ceil(h/2)`.
+- **StarEdit's placement box** is the same red box, but PyDAT's StarEdit tab divides the
+  integers, so both halves round down: `130-w/2, 130-h/2` to `129+w/2, 129+h/2`.
 - **Dimensions** (green, the unit's extents): from `130-left, 130-up` to
   `130+right, 130+down`.
 - **Add-on placement** (yellow):
@@ -108,8 +110,8 @@ extents. Nothing is drawn while its Show box is off.
   frame of size 0.
 - An id past the end of its target file is drawn as missing:
   "image 1200 is past images.dat's end".
-- A sound that fails to play (missing file, a format Windows can't play): the status line
-  says why. The editor goes on.
+- A sound that fails to play (missing file, a format Windows can't play): a line beside the
+  Play button says why (the Data page has no status line). The editor goes on.
 - A missing palette in `Data\`: every preview that needs it says so; the rest work.
 
 ## 5. Units
