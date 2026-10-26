@@ -93,6 +93,7 @@ sealed class DatContext
     DatPreview? preview;
     OpenedExe? iconsFor;
     IconCache? icons;
+    SoundPlayer? sounds;
     readonly Dictionary<DatId, (NamesKey Key, IReadOnlyList<string> Names)> names = new();
 
     /// <summary>
@@ -148,6 +149,9 @@ sealed class DatContext
             return icons;
         }
     }
+
+    /// <summary>The Sound Effects tab's player, made on first use (one for the page).</summary>
+    public SoundPlayer Sounds => sounds ??= new SoundPlayer();
 
     /// <summary>images.tbl, which the previews find GRPs through; null when nothing is open or it wasn't found.</summary>
     public StringTable? ImagesTbl => Opened()?.Resources.ImagesTbl;

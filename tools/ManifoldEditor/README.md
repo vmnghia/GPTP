@@ -219,6 +219,26 @@ one asks to confirm. The plugin's extension is on `origin/feat/dat-extender`, no
   unsaved overrides. Repack files never touches them, as with `buttonsets.bin`. A line of an
   overrides file that does not parse is a status note; the other lines load.
 
+**Previews** (part 3 of the port, spec `docs/superpowers/specs/2026-10-26-dat-previews-design.md`).
+
+- **Pictures.** PyDAT's 257×257 preview, each behind its **Show Preview** box: Units Graphics
+  (the unit's picture through graphics → flingy → sprite → image, with **Show StarEdit
+  Placement Box (Red)**, **Show Dimensions Box (Green)** and **Show Addon Placement (Yellow)**
+  on a parent building, 106 by default, for units that have an add-on position), Units
+  StarEdit (the picture and its placement box), Sprites (the image over its selection circle
+  and health bar, where the file has them) and Images (the image with its drawing function
+  and remapping). Pictures are frame 0, drawn with PyMS's palettes (`Data\*.pal`: Units,
+  Terrain for `thingy\tileset\`, and the fire remappings). Every box is off until ticked,
+  and each is remembered. A preview follows its fields as they are edited and undone. What
+  can't be drawn (a GRP not found or damaged, an id past a file's end) leaves the square
+  black with the reason under it.
+- **Icons.** Weapons, Upgrades, Techdata and Orders draw the icon beside its field, and
+  **Select...** opens the button page's icon picker (search, and Unused: no button set uses it).
+  A pick is one undo step.
+- **Sound.** ▶ beside Sound File plays `sound\<the sfxdata.tbl string>` from the exe's MPQ,
+  then vanilla; a new play stops the last. It is disabled for "No sound" and for a file that
+  isn't found (its tooltip says which); a sound Windows can't play says why beside it.
+
 The copy, paste, TXT and override keys work only while the Data page shows. Ctrl+Shift+Y
 replaces PyDAT's Ctrl+Y because Ctrl+Y is Redo here.
 
@@ -228,10 +248,12 @@ Differences from PyDAT, each on purpose:
 - A "Used by" sound range written backwards (start above end) matches nothing.
 - Text that a flags line cannot carry (bits above the coder's count) is kept on import: the
   entry's own bits there stay.
+- The icon picker is the editor's own, and the order's highlight icon is drawn plain, as
+  PyDAT's Orders tab draws it.
 
-**Not yet** (the later parts of the port, in the spec's header): previews (GRP frames, icons,
-sound playback); Add entry and Set count for images, sprites and flingy; improvements. Two
+**Not yet** (the later parts of the port, in the spec's header): Add entry and Set count for images, sprites and flingy; improvements. Two
 more differences from PyDAT: its seconds boxes are editable, here they are read-only text; and a
 box is limited to its property's type, not to PyDAT's tighter ranges. Part 1 (the fields) passed on Windows 2026-10-25. Part 2 (the links) was built
 2026-10-25; the rules are tested on Linux and the window compiles, but it has not been run on
-Windows.
+Windows. Part 3 (the previews) was built 2026-10-26; the drawing is tested on Linux and the
+window compiles, but it has not been run on Windows.

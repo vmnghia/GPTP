@@ -1,6 +1,7 @@
 # Manifold Editor: the .dat files, part 3 (PyDAT's previews)
 
-Status: Design 2026-10-26. Not built. Part 3 of the PyDAT port planned in
+Status: Built 2026-10-26 (plan `docs/superpowers/plans/2026-10-26-dat-previews.md`): the drawing is
+tested on Linux, the window compiles; not yet run on Windows. Design 2026-10-26. Part 3 of the PyDAT port planned in
 `2026-10-24-dat-editor-design.md` (part 1, the fields, passed on Windows 2026-10-25; part 2,
 the links, `2026-10-25-dat-links-design.md`, built and not yet run on Windows): the
 pictures on the Units Graphics and StarEdit sub-tabs, Sprites and Images, the icons of
