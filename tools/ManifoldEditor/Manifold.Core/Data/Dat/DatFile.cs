@@ -82,6 +82,46 @@ public sealed class DatFile
     public bool Covers(int entry, string property) =>
         entry >= 0 && entry < Count && Format[property].Covers(entry, IsExpanded);
 
+    /// <summary>
+    /// The entry count growing to <paramref name="wanted"/> gives, by PyMS's <c>expanded_count</c>: a file not
+    /// yet expanded goes up to the format's minimum, then the count rounds up to its step. Null when
+    /// that is past the format's maximum, the format has no expanded layout, or <paramref name="wanted"/> is below 1.
+    /// </summary>
+    public int? ExpandedCount(long wanted)
+    {
+        if (Format.ExpandedMax is not { } max || wanted < 1 || wanted > max) return null;
+        long count = wanted;
+        if (!IsExpanded && Format.ExpandedMin is { } min && count < min) count = min;
+        if (Format.ExpandedMultiple is { } step) count = (count + step - 1) / step * step;
+        return count <= max ? (int)count : null;
+    }
+
+    /// <summary>Whether one more entry fits (PyMS's <c>can_expand</c>).</summary>
+    public bool CanGrow => ExpandedCount(Count + 1L) is not null;
+
+    /// <summary>
+    /// The file grown to <see cref="ExpandedCount"/>(<paramref name="count"/>) entries, in the expanded layout
+    /// (PyMS's <c>expand_entries</c>): every property covers every entry, a value it didn't cover is 0,
+    /// and the new entries are all 0. The same count is this file. Throws for fewer entries, or past the maximum.
+    /// </summary>
+    public DatFile WithCount(long count)
+    {
+        if (count == Count) return this;
+        if (count < Count)
+            throw new ArgumentOutOfRangeException(nameof(count), count, $"{Format.FileName} has {Count} entries: it can't have fewer");
+        if (ExpandedCount(count) is not { } result)
+            throw new ArgumentOutOfRangeException(nameof(count), count, Format.ExpandedMax is { } max
+                ? $"{Format.FileName} has at most {max} entries"
+                : $"{Format.FileName} can't have more entries");
+        var grown = new ulong[values.Length][];
+        for (int i = 0; i < values.Length; i++)
+        {
+            grown[i] = new ulong[result];
+            values[i].CopyTo(grown[i], offsets[i]);
+        }
+        return new DatFile(Format, result, true, grown, new int[values.Length]);
+    }
+
     /// <summary>A copy with the property's value on the entry replaced.</summary>
     public DatFile With(int entry, string property, ulong value)
     {

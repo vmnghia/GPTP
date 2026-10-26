@@ -28,7 +28,8 @@ passes, including a game that loads a grown images.dat and draws a new entry.
 **`DatFormat.ExpandedCount(DatFile file, int wanted)`**, PyMS's `expanded_count`:
 
 - a file not yet expanded goes up to the format's minimum (units.dat: 250);
-- the count rounds up to the format's step (units.dat: 12);
+- the count rounds up to the format's step (units.dat: 12), so units.dat's first growth
+  gives 252;
 - a result above the format's maximum is refused.
 
 Maximums (the formats' `ExpandedMax`): units 912, weapons 255, techdata 255, orders 255,
@@ -112,7 +113,7 @@ the plugin's extension (it stays at images, sprites and flingy); part 5's improv
 ## 6. Testing
 
 **Core (Linux):**
-- `ExpandedCount`: units 228 + 1 → 250, 251 → 252, past 912 refused; weapons 130 + 1 → 131,
+- `ExpandedCount`: units 228 + 1 → 252 (250 rounded to 12), 251 → 252, past 912 refused; weapons 130 + 1 → 131,
   256 refused; images 999 + 1 → 1000, 65537 refused; mapdata can't grow.
 - `WithCount` on each format's vanilla file: the expanded layout; old values kept (units'
   graphics included); uncovered values 0 (sprites' health bar on 5, units' infestation on 0);
@@ -123,7 +124,7 @@ the plugin's extension (it stays at images, sprites and flingy); part 5's improv
   bytes; redo grows again; the file is dirty until Save.
 - `EntryChangedSinceSave`: an edited entry, an untouched one, a new one past the saved count;
   none after Save; none after an undo back to the saved values.
-- Names: a grown units.dat names 228-249 "Reserved Unit #N"; new ids "Expanded <Type> #N".
+- Names: a grown units.dat names 228-250 "Reserved Unit #N"; new ids "Expanded <Type> #N".
 
 **Windows (the user):**
 1. images.dat: Add Entry, confirm; entry 999 selected and coloured. Set Entry Count 1200: the

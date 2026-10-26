@@ -117,4 +117,21 @@ public class DatVanillaTests
         for (int image = 561; image <= 570; image++)
             Assert.NotNull(preview.Image(files[DatId.Images], tbl, image).Picture);
     }
+
+    /// <summary>Every vanilla file that can grow grows by one, keeps every value, and parses back (counts spec §6).</summary>
+    [SkippableFact]
+    public void EveryVanillaFileThatCanGrowRoundTrips()
+    {
+        Skip.If(ArrDir is null, "MANIFOLD_ARR_DIR is not set");
+        foreach (var format in DatFormats.All.Where(f => f.ExpandedMax is not null))
+        {
+            var vanilla = Load(format.Id);
+            var grown = vanilla.WithCount(vanilla.Count + 1);
+            Assert.True(grown.Count > vanilla.Count, format.FileName);
+            for (int e = 0; e < vanilla.Count; e++)
+                foreach (var p in format.Properties)
+                    if (vanilla.Covers(e, p.Name)) Assert.Equal(vanilla.Get(e, p.Name), grown.Get(e, p.Name));
+            Assert.True(DatFile.Parse(format, grown.Save()).SameAs(grown), format.FileName);
+        }
+    }
 }
