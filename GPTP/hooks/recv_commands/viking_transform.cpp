@@ -15,7 +15,7 @@
 #define VIKING_DEBUG 1
 #if VIKING_DEBUG
 #include <cstdio>
-#define VDBG(...) do { char vdbg[96]; sprintf_s(vdbg, __VA_ARGS__); scbw::printText(vdbg); } while (0)
+#define VDBG(...) do { char vdbg[240]; _snprintf_s(vdbg, sizeof vdbg, _TRUNCATE, __VA_ARGS__); scbw::printText(vdbg); } while (0)
 #else
 #define VDBG(...) do {} while (0)
 #endif
@@ -59,6 +59,9 @@ void switchOrder(CUnit* unit, u8 orderId, u8 state, Point16 pt) {
 		unit->status |= UnitStatus::CanNotReceiveOrders;
 	unit->orderTarget.pt = pt;
 	unit->orderTarget.unit = NULL;
+	//the main switch runs the new order on the next tick, as performNextOrder
+	//(0x4750EE) arranges for an order it starts
+	unit->orderQueueTimer = 0;
 	VDBG("Viking: switched; status 0x%X, move state %d, move flags 0x%X, path %s", unit->status, unit->movementState,
 		unit->movementFlags, unit->path ? "yes" : "no");
 }
@@ -276,7 +279,8 @@ bool orderFly(CUnit* unit) {
 		orderReturnToIdle(unit);
 		return true;
 	}
-	//0: set off for the spot (orderTarget.pt, from orderTo); 1: on the way
+	//Runs every 8 ticks, from the main order switch (viking_transform_inject.cpp).
+	//0: set off for the spot (orderTarget.pt); 1: on the way
 	if (unit->mainOrderState == 0) {
 		const bool set = setMoveTarget(unit, unit->orderTarget.pt.x, unit->orderTarget.pt.y);
 		unit->mainOrderState = 1;
@@ -285,26 +289,22 @@ bool orderFly(CUnit* unit) {
 			unit->getMovableState(), unit->movementState, unit->movementFlags, unit->path ? "yes" : "no");
 		return true;
 	}
-	static u32 tick = 0;
-	if ((++tick & 15) == 0)
+	static u32 calls = 0;
+	if ((++calls & 1) == 0)
 		VDBG("Viking: fly at %d,%d -> %d,%d wp %d,%d, movable %d, move state %d, flags 0x%X, speed %d, path %s, order 0x%X/%d",
 			unit->position.x, unit->position.y, unit->moveTarget.pt.x, unit->moveTarget.pt.y, unit->nextMovementWaypoint.x,
 			unit->nextMovementWaypoint.y, unit->getMovableState(), unit->movementState, unit->movementFlags, unit->current_speed1,
 			unit->path ? "yes" : "no", unit->mainOrderId, unit->mainOrderState);
-	//arrived by distance: the movable state still reads "reached" on the tick
-	//after a new move target (in game, 2026-10-25). The target is set once; it
-	//is set again only if the engine dropped or changed it - re-setting it
-	//whenever the state read "reached" restarted the acceleration every other
-	//tick, and the fighter crawled
+	//arrived: within FLY_ARRIVED of the spot, or the engine says the move ended
+	//(8 ticks after the target was set, so not the stale "reached" of the tick
+	//right after). A target the engine dropped or changed is set again.
 	const s32 dx = unit->orderTarget.pt.x - unit->position.x, dy = unit->orderTarget.pt.y - unit->position.y;
-	if (dx * dx + dy * dy > FLY_ARRIVED * FLY_ARRIVED) {
+	if (dx * dx + dy * dy > FLY_ARRIVED * FLY_ARRIVED && unit->getMovableState() == MovableState::NotReachedDestination) {
 		if (unit->moveTarget.pt.x != unit->orderTarget.pt.x || unit->moveTarget.pt.y != unit->orderTarget.pt.y)
 			setMoveTarget(unit, unit->orderTarget.pt.x, unit->orderTarget.pt.y);
 		return true;
 	}
-	VDBG("Viking: arrived at %d,%d to land", unit->position.x, unit->position.y);
-	//back to the transform by hand, as it came here: orderTo from inside an
-	//order's handler never took (in game, 2026-10-25: "arrived" every tick)
+	VDBG("Viking: arrived at %d,%d to land (movable %d)", unit->position.x, unit->position.y, unit->getMovableState());
 	//straight to the landing step: STATE_STOP would brake it (holdPosition)
 	//short of the spot; STATE_START waits until it has stopped
 	switchOrder(unit, ORDER_VIKING_TRANSFORM, STATE_START, unit->orderTarget.pt);
