@@ -154,8 +154,10 @@ public sealed class DatPreview(Func<string, byte[]?> read, PreviewPalettes palet
             if (grp.FrameCount == 0) return (null, $"{path} has no frames");
             if (bytes.Length < 6 + 8 * grp.FrameCount) return (null, $"{path} is damaged");
             if (grp.Width == 0 || grp.Height == 0) return (null, $"{path} has an empty frame");
-            // PyMS's CacheGRP.load_file refuses a GRP outside these: and a huge size would allocate gigabytes.
-            if (grp.FrameCount > 2400 || grp.Width > 256 || grp.Height > 256) return (null, $"{path} is damaged");
+            // PyMS's CacheGRP.load_file refuses a frame over 256 wide or high, and a huge size would
+            // allocate gigabytes. Its 2400-frame cap is not kept: the frame headers are checked against
+            // the file's length above, and the game draws GRPs with more (the Viking's assault mode).
+            if (grp.Width > 256 || grp.Height > 256) return (null, $"{path} is damaged");
             indexes = grp.DecodeFrame(0);
             (width, height) = (grp.Width, grp.Height);
         }

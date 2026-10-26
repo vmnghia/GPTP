@@ -233,19 +233,30 @@ public class DatPreviewTests
     [Fact]
     public void HeadersOutsidePyMsBoundsAreDamaged()
     {
-        // PyMS's CacheGRP.load_file: 1-2400 frames, width and height 1-256.
+        // PyMS's CacheGRP.load_file: width and height 1-256. (Its 1-2400 frames is not kept: see below.)
         byte[] hostile = [0x01, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x01, 0x01, 0x0E, 0x00, 0x00, 0x00, 0x00, 0x00];
         var wide = Make.Grp(3, 2, new byte[6]);
         BitConverter.GetBytes((ushort)300).CopyTo(wide, 2);
         var tall = Make.Grp(3, 2, new byte[6]);
         BitConverter.GetBytes((ushort)257).CopyTo(tall, 4);
-        var many = Make.Grp(3, 2, new byte[6]);
+        var many = Make.Grp(3, 2, new byte[6]);   // 2401 frames claimed, one frame's header in the file
         BitConverter.GetBytes((ushort)2401).CopyTo(many, 0);
         foreach (var bytes in new[] { hostile, wide, tall, many })
         {
             var (preview, _) = With(new() { [Drone] = bytes });
             Assert.Equal("unit\\zerg\\drone.grp is damaged", preview.Image(Images((3, 1, 0, 0)), Tbl("zerg\\drone.grp"), 3).Reason);
         }
+    }
+
+    [Fact]
+    public void AGrpWithMoreFramesThanPyMsAllowsDraws()
+    {
+        // The Viking's assault-mode GRP has more than PyMS's 2400 frames, and the game draws it.
+        var frames = Enumerable.Range(0, 2401).Select(i => new byte[] { (byte)(1 + i % 200) }).ToArray();
+        var (preview, _) = With(new() { [Drone] = Make.Grp(1, 1, frames) });
+        var (picture, reason) = preview.Image(Images((3, 1, 0, 0)), Tbl("zerg\\drone.grp"), 3);
+        Assert.Null(reason);
+        Assert.Equal(Palettes.Units![1], picture!.Pixels[0]);
     }
 
     [Fact]
