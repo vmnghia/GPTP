@@ -87,6 +87,10 @@ sealed class DatContext
     readonly Action changed;
     readonly Action<DatId, int> jump;
     readonly Action<IReadOnlyList<DatRefMatch>> showUsedBy;
+    readonly Func<EditorSettings> settings;
+    readonly Action<EditorSettings> setSettings;
+    OpenedExe? previewFor;
+    DatPreview? preview;
     readonly Dictionary<DatId, (NamesKey Key, IReadOnlyList<string> Names)> names = new();
 
     /// <summary>
@@ -102,9 +106,14 @@ sealed class DatContext
     /// <param name="changed">Called after an edit: the window redraws.</param>
     /// <param name="jump">Shows a file's tab at an entry (the Jump buttons): no edit.</param>
     /// <param name="showUsedBy">Fills the "Used by" list with these lines (the Check buttons) and opens it.</param>
+    /// <param name="settings">The window's settings now (the preview checkboxes).</param>
+    /// <param name="setSettings">Replaces the window's settings.</param>
     public DatContext(Func<OpenedExe?> opened, Func<DatId, DatNameSetting> nameSetting, Action changed,
-        Action<DatId, int> jump, Action<IReadOnlyList<DatRefMatch>> showUsedBy)
+        Action<DatId, int> jump, Action<IReadOnlyList<DatRefMatch>> showUsedBy,
+        Func<EditorSettings> settings, Action<EditorSettings> setSettings)
     {
+        this.settings = settings;
+        this.setSettings = setSettings;
         Opened = opened;
         this.nameSetting = nameSetting;
         this.changed = changed;
@@ -113,6 +122,34 @@ sealed class DatContext
     }
 
     public Func<OpenedExe?> Opened { get; }
+
+    /// <summary>The window's settings now.</summary>
+    public EditorSettings Settings => settings();
+
+    /// <summary>Replaces the window's settings (kept in memory; the window writes them to disk).</summary>
+    public void SetSettings(EditorSettings changed) => setSettings(changed);
+
+    /// <summary>images.tbl, which the previews find GRPs through; null when nothing is open or it wasn't found.</summary>
+    public StringTable? ImagesTbl => Opened()?.Resources.ImagesTbl;
+
+    /// <summary>
+    /// The previews' drawing (previews spec §2), reading GRPs from the open exe, then vanilla. One
+    /// per open exe, so its frames are cached until another exe is opened; null when nothing is open.
+    /// </summary>
+    public DatPreview? Preview
+    {
+        get
+        {
+            if (Opened() is not { } exe) return null;
+            if (!ReferenceEquals(exe, previewFor))
+            {
+                var resources = exe.Resources;
+                preview = new DatPreview(path => resources.Resolver?.Find(path)?.Data, resources.Palettes);
+                previewFor = exe;
+            }
+            return preview;
+        }
+    }
 
     /// <summary>
     /// Shows <paramref name="file"/>'s tab and selects its <paramref name="entry"/> (PyDAT's Jump -&gt; button).

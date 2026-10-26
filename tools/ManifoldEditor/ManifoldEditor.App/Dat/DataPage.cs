@@ -141,7 +141,7 @@ sealed class DataPage
         this.windowHandle = windowHandle;
         this.settings = settings;
         this.setSettings = setSettings;
-        context = new DatContext(opened, NameSetting, changed, (id, entry) => JumpTo(id, entry, null), ShowChecked);
+        context = new DatContext(opened, NameSetting, changed, (id, entry) => JumpTo(id, entry, null), ShowChecked, settings, setSettings);
         foreach (var format in DatFormats.All) fileTabs[format.Id] = DatTabs.For(format.Id);
 
         Root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(340) });

@@ -206,4 +206,27 @@ public class DatPreviewTests
         Assert.Same(resolver, r.Resolver);
         Assert.DoesNotContain(EditorResources.Load(resolver, null).Notes, n => n.Contains(".pal: not found; previews"));
     }
+
+    [Fact]
+    public void PreviewSettingsRoundTripAndDefault()
+    {
+        var fresh = new EditorSettings().Previews;
+        Assert.False(fresh.Unit || fresh.UnitPlacement || fresh.UnitDimensions || fresh.UnitAddon || fresh.StarEdit || fresh.Sprite || fresh.Image);
+        Assert.Equal(106, fresh.AddonParent);
+
+        string folder = Path.Combine(Path.GetTempPath(), "manifold-settings-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(folder, "settings.json");
+        try
+        {
+            new EditorSettings { Previews = new() { Unit = true, AddonParent = 107 } }.Save(path);
+            var loaded = EditorSettings.Load(path).Previews;
+            Assert.True(loaded.Unit);
+            Assert.Equal(107, loaded.AddonParent);
+            Assert.False(loaded.Sprite);
+
+            File.WriteAllText(path, """{ "LastExe": "C:\\x.exe" }""");   // written before part 3
+            Assert.Equal(new DatPreviewSettings(), EditorSettings.Load(path).Previews);
+        }
+        finally { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
+    }
 }

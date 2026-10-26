@@ -7,8 +7,8 @@ namespace ManifoldEditor.App.Dat.Tabs;
 
 /// <summary>
 /// units.dat, StarEdit (PyDAT's StarEditUnitsTab): the availability and group flags, the
-/// rank/sublabel (a stat_txt string) and map string, and the placement box. The preview is
-/// left out for now. The group flags here leave the race bits (Basic's) alone.
+/// rank/sublabel (a stat_txt string) and map string, the placement box, and PyDAT's preview:
+/// the unit's picture with its placement box. The group flags here leave the race bits (Basic's) alone.
 /// </summary>
 sealed class UnitsStarEditTab : DatTabBase
 {
@@ -54,9 +54,18 @@ sealed class UnitsStarEditTab : DatTabBase
         Panel.Children.Add(Group("String Properties",
             ReferenceField(this, File, P("sublabel"), "Rank/Sublabel", "UnitRank", Sublabels, null, 300),
             NumberField(this, File, P("unit_map_string"), "Map String", "UnitMapString", 64)));
-        Panel.Children.Add(Group("Placement Box (Pixels)",
-            Titled(this, PartField(this, File, placement, 0, "Width", null), "Placement Width", "UnitSEPlaceWidth"),
-            Titled(this, PartField(this, File, placement, 1, "Height", null), "Placement Height", "UnitSEPlaceHeight")));
+        var preview = new PreviewBox();
+        void Redraw() => preview.Show(Context.Settings.Previews.StarEdit && Entry >= 0
+            ? Context.Preview?.UnitStarEditScene(Context.File, Context.ImagesTbl, Entry)
+            : null);
+        Panel.Children.Add(Row(
+            Group("Placement Box (Pixels)",
+                Titled(this, PartField(this, File, placement, 0, "Width", null), "Placement Width", "UnitSEPlaceWidth"),
+                Titled(this, PartField(this, File, placement, 1, "Height", null), "Placement Height", "UnitSEPlaceHeight")),
+            Group("Preview",
+                preview.Root,
+                PreviewBox.Toggle(this, "Show Preview", s => s.StarEdit, (s, on) => s with { StarEdit = on }, Redraw))));
+        AddLoader(_ => Redraw());
     }
 
     /// <summary>

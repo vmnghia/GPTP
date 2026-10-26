@@ -8,6 +8,24 @@ namespace Manifold.Core.Editor;
 public sealed record DatNameSetting(NamesMode Mode, bool Simple);
 
 /// <summary>
+/// The Data page's preview checkboxes (PyDAT's, all off by default) and the add-on preview's
+/// parent building (previews spec §3).
+/// </summary>
+public sealed record DatPreviewSettings
+{
+    /// <summary>Units Graphics: Show Preview, and its three boxes.</summary>
+    public bool Unit { get; init; }
+    public bool UnitPlacement { get; init; }
+    public bool UnitDimensions { get; init; }
+    public bool UnitAddon { get; init; }
+    /// <summary>The unit the add-on preview attaches to; PyDAT's default, the Command Center.</summary>
+    public int AddonParent { get; init; } = 106;
+    public bool StarEdit { get; init; }
+    public bool Sprite { get; init; }
+    public bool Image { get; init; }
+}
+
+/// <summary>
 /// The editor's settings: the StarCraft folder, the last exe opened, and per exe where its
 /// strings are also written (the to-repack copy, spec §7) and where Repack takes the plugin
 /// and the to-repack folder from (Repack spec §5).
@@ -43,6 +61,9 @@ public sealed record EditorSettings
 
     /// <summary>Whether the Data page lists the entries that use the one shown (PyDAT's Used by); on by default.</summary>
     public bool UsedByOpen { get; init; } = true;
+
+    /// <summary>The Data page's preview checkboxes and the add-on parent.</summary>
+    public DatPreviewSettings Previews { get; init; } = new();
 
     static string Key(string exePath) => Path.GetFullPath(exePath).ToLowerInvariant();
     static string ExeFolder(string exePath) => Path.GetDirectoryName(Path.GetFullPath(exePath)) ?? "";

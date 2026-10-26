@@ -8,7 +8,8 @@ namespace ManifoldEditor.App.Dat.Tabs;
 /// sprites.dat (PyDAT's SpritesTab): the image, the two flags, the selection circle (stored
 /// as the image's number minus 561, so the list is PyDAT's sizes), the health bar and the circle's
 /// vertical position. The health bar and the circle are disabled for the first 130 sprites of a
-/// vanilla file, which have none. The preview is left out for now.
+/// vanilla file, which have none. PyDAT's preview shows the sprite's image over its selection
+/// circle and health bar (where the file has them).
 /// </summary>
 sealed class SpritesTab : DatTabBase
 {
@@ -26,6 +27,15 @@ sealed class SpritesTab : DatTabBase
                 DerivedText(this, e => Boxes(ValueOf(Context, File, e, P("health_bar"))))),
             Titled(this, NumberField(this, File, P("selection_circle_offset"), "Vert. Position", null, 64),
                 "Vertical Position", "SpriteCircleOff")));
+
+        var preview = new PreviewBox();
+        void Redraw() => preview.Show(Context.Settings.Previews.Sprite && Entry >= 0
+            ? Context.Preview?.SpriteScene(Context.File, Context.ImagesTbl, Entry)
+            : null);
+        Panel.Children.Add(Group("Preview",
+            preview.Root,
+            PreviewBox.Toggle(this, "Show Preview", s => s.Sprite, (s, on) => s with { Sprite = on }, Redraw)));
+        AddLoader(_ => Redraw());
     }
 
     /// <summary>PyDAT's boxes next to the health bar: (length - 1) / 3 rounded down, at least 1 ("= 4 boxes").</summary>

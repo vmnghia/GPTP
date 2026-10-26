@@ -9,7 +9,7 @@ namespace ManifoldEditor.App.Dat.Tabs;
 /// images.dat (PyDAT's ImagesTab): the GRP (an images.tbl string, "None" at 0) and the iscript id (the
 /// ids iscript.bin defines), the general and drawing properties, and the extra overlay placements (images.tbl
 /// strings too) with the shield size. The "Check" buttons beside GRP File and Iscript ID list the other images
-/// with the same value in "Used by". The preview is left out for now.
+/// with the same value in "Used by". PyDAT's preview shows the image's frame 0 with its drawing function and remapping.
 /// </summary>
 sealed class ImagesTab : DatTabBase
 {
@@ -67,9 +67,18 @@ sealed class ImagesTab : DatTabBase
             Titled(this, MappedChoiceField(this, File, P("shield_overlay"), "", null, () => Context.Lists["ShieldSize"], ShieldOverlays, 120),
                 "Shield Overlay", "ImgShield"));
 
+        var preview = new PreviewBox();
+        void Redraw() => preview.Show(Context.Settings.Previews.Image && Entry >= 0
+            ? Context.Preview?.ImageScene(Context.File, Context.ImagesTbl, Entry)
+            : null);
+        var previewGroup = Group("Preview",
+            preview.Root,
+            PreviewBox.Toggle(this, "Show Preview", s => s.Image, (s, on) => s with { Image = on }, Redraw));
+        AddLoader(_ => Redraw());
+
         Panel.Children.Add(image);
         Panel.Children.Add(Row(general, drawing));
-        Panel.Children.Add(overlays);
+        Panel.Children.Add(Row(overlays, previewGroup));
     }
 
     /// <summary>
