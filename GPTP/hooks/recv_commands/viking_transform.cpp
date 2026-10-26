@@ -118,29 +118,6 @@ bool nearestGround(CUnit* unit, const Point16& at, Point16* out) {
 	return false;
 }
 
-//The lift-off's rise, each tick: LIFTOFF_RISE px over the lift-off's sets, by
-//the set the hull shows now (frameSet is the playfram base, set * 17), so it
-//keeps step with the art. setUnitPosition then the refresh (unit finder,
-//visibility); no prepareUnitMove, which would clear every reference to the unit
-//- enemies' targeting - each tick. setUnitPosition only clamps to the map
-//(0x401FA0), whatever its comment says about walkability.
-void riseWithArt(CUnit* unit) {
-	using namespace vikingtransform;
-	s32 t = (s32)(unit->sprite->mainGraphic->frameSet / 17) - LIFTOFF_FIRST_SET;
-	if (t < 0)
-		t = 0;
-	if (t > LIFTOFF_SETS - 1)
-		t = LIFTOFF_SETS - 1;
-	const s32 up = (LIFTOFF_RISE * t + (LIFTOFF_SETS - 1) / 2) / (LIFTOFF_SETS - 1);
-	s32 y = unit->orderTarget.pt.y - up;
-	if (y < 0)
-		y = 0;
-	if (unit->position.y == y)
-		return;
-	scbw::setUnitPosition(unit, unit->position.x, (u16)y);
-	scbw::refreshUnitAfterMove(unit);
-}
-
 Landing settleLanding(CUnit* unit, Point16* away) {
 	const Point16 at = unit->sprite->position;
 	Point16 spot = at;
@@ -267,11 +244,7 @@ void orderTransform(CUnit* unit) {
 			unit->mainOrderState = STATE_LANDING;
 		}
 		else {
-			//lift-off: stays the ground form until the art has risen; the unit
-			//rises with it (riseWithArt), from here (kept in orderTarget, which
-			//the transform doesn't otherwise use)
-			unit->orderTarget.pt = unit->position;
-			unit->orderTarget.unit = NULL;
+			//lift-off: stays the ground form until the art has risen
 			unit->orderSignal &= ~1;
 			unit->sprite->mainGraphic->playIscriptAnim(IscriptAnimation::Unused2);
 			unit->mainOrderState = STATE_LIFTING;
@@ -279,8 +252,6 @@ void orderTransform(CUnit* unit) {
 		return;
 	}
 
-	if (unit->mainOrderState == STATE_LIFTING)
-		riseWithArt(unit);
 	if (!(unit->orderSignal & 1))
 		return;
 	unit->orderSignal &= ~1;

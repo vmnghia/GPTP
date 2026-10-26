@@ -44,14 +44,6 @@ const s32 MAX_LANDING_NUDGE = 16;
 //fighter farther from land than that can't land (the user, 2026-10-26: in the
 //middle of a lake it should say so). 256 reached too far.
 const s16 LANDING_SEARCH = 128;
-//The lift-off rises the unit this far (pixels), over its art - header 419's
-//Unused2, the morph's sets LIFTOFF_FIRST_SET.. one a tick, LIFTOFF_SETS of them -
-//so it ends where the fighter's hull is drawn over the shadow (header 423's
-//`imgul 1001 0 42`); the shadow's own slide down (42 px) keeps it on the
-//ground meanwhile (the user, 2026-10-26).
-const s32 LIFTOFF_RISE = 42;
-const u16 LIFTOFF_FIRST_SET = 169;
-const s32 LIFTOFF_SETS = 36;
 
 //The order's states (mainOrderState).
 //STATE_FLYING: a fighter on its way to the nearest spot it can land on
