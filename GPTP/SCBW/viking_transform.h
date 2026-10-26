@@ -40,9 +40,10 @@ const u32 ACTVAR_TO_FIGHTER = 0xF05B;
 //How far the landing may nudge the Viking off other units (pixels); farther,
 //it flies to the spot first, then lands.
 const s32 MAX_LANDING_NUDGE = 16;
-//How far the landing searches for a spot (pixels either side): the search's own
-//default, 128, missed walkable ground past a cliff or water (2026-10-25)
-const s16 LANDING_SEARCH = 256;
+//How far the landing searches for a spot (pixels either side), 4 tiles: a
+//fighter farther from land than that can't land (the user, 2026-10-26: in the
+//middle of a lake it should say so). 256 reached too far.
+const s16 LANDING_SEARCH = 128;
 
 //The order's states (mainOrderState).
 //STATE_FLYING: a fighter on its way to the nearest spot it can land on
