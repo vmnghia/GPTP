@@ -37,6 +37,10 @@ void issueOrder(CUnit* unit, u32 orderId, Bool32 queued);	//4754F0
 //ends), so it changes too - a first build changed mainOrderId only, and the
 //flight could not be interrupted and kept stopping (in game, 2026-10-25).
 void switchOrder(CUnit* unit, u8 orderId, u8 state, Point16 pt) {
+	VDBG("Viking: switch 0x%X/%d -> 0x%X/%d at %d,%d; status 0x%X, queue head 0x%X tail 0x%X, timers %d/%d",
+		unit->mainOrderId, unit->mainOrderState, orderId, state, pt.x, pt.y, unit->status,
+		unit->orderQueueHead ? unit->orderQueueHead->orderId : 0, unit->orderQueueTail ? unit->orderQueueTail->orderId : 0,
+		unit->orderQueueTimer, unit->recentOrderTimer);
 	COrder* head = unit->orderQueueHead;
 	if (head != NULL && head->orderId == unit->mainOrderId) {
 		head->orderId = orderId;
@@ -55,6 +59,8 @@ void switchOrder(CUnit* unit, u8 orderId, u8 state, Point16 pt) {
 		unit->status |= UnitStatus::CanNotReceiveOrders;
 	unit->orderTarget.pt = pt;
 	unit->orderTarget.unit = NULL;
+	VDBG("Viking: switched; status 0x%X, move state %d, move flags 0x%X, path %s", unit->status, unit->movementState,
+		unit->movementFlags, unit->path ? "yes" : "no");
 }
 
 void restoreFacing(CUnit* unit, u8 direction) {
@@ -272,10 +278,19 @@ bool orderFly(CUnit* unit) {
 	}
 	//0: set off for the spot (orderTarget.pt, from orderTo); 1: on the way
 	if (unit->mainOrderState == 0) {
-		setMoveTarget(unit, unit->orderTarget.pt.x, unit->orderTarget.pt.y);
+		const bool set = setMoveTarget(unit, unit->orderTarget.pt.x, unit->orderTarget.pt.y);
 		unit->mainOrderState = 1;
+		VDBG("Viking: fly set %d: move target %d,%d, waypoint %d,%d, movable %d, move state %d, move flags 0x%X, path %s",
+			set ? 1 : 0, unit->moveTarget.pt.x, unit->moveTarget.pt.y, unit->nextMovementWaypoint.x, unit->nextMovementWaypoint.y,
+			unit->getMovableState(), unit->movementState, unit->movementFlags, unit->path ? "yes" : "no");
 		return true;
 	}
+	static u32 tick = 0;
+	if ((++tick & 15) == 0)
+		VDBG("Viking: fly at %d,%d -> %d,%d wp %d,%d, movable %d, move state %d, flags 0x%X, speed %d, path %s, order 0x%X/%d",
+			unit->position.x, unit->position.y, unit->moveTarget.pt.x, unit->moveTarget.pt.y, unit->nextMovementWaypoint.x,
+			unit->nextMovementWaypoint.y, unit->getMovableState(), unit->movementState, unit->movementFlags, unit->current_speed1,
+			unit->path ? "yes" : "no", unit->mainOrderId, unit->mainOrderState);
 	//arrived by distance: the movable state still reads "reached" on the tick
 	//after a new move target (in game, 2026-10-25). The target is set once; it
 	//is set again only if the engine dropped or changed it - re-setting it
