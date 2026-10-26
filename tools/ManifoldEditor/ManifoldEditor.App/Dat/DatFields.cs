@@ -143,6 +143,48 @@ static class DatFields
         return Line(tab, label, hintKey, idBox, EqualsSign(), entryBox.Root);
     }
 
+    /// <summary>
+    /// An icon field (PyDAT's weapon, upgrade, technology and order icons; previews spec §3): the
+    /// <see cref="ReferenceField"/> over PyMS's icon names, then the icon in a 38x38 black square
+    /// (empty for None or a frame the GRP doesn't have), then "Select..." opening the editor's
+    /// icon picker, whose Unused filter is the icons no button set uses. A pick is one undo step.
+    /// </summary>
+    public static StackPanel IconField(DatTabBase tab, DatId file, string property, string label, string? hintKey, string? noneName = null)
+    {
+        var line = (StackPanel)ReferenceField(tab, file, property, label, hintKey, () => tab.Context.Lists["Icons"], noneName, 300);
+        const double square = 38;
+        var icon = new Border
+        {
+            Width = square, Height = square, VerticalAlignment = VerticalAlignment.Center,
+            Background = new SolidColorBrush(Colors.Black),
+        };
+        var select = new Microsoft.UI.Xaml.Controls.Button { Content = "Select...", VerticalAlignment = VerticalAlignment.Center };
+        int shown = -1;
+        select.Click += (_, _) =>
+        {
+            if (tab.Context.Icons is not { } icons || tab.Context.Opened() is not { } exe) return;
+            var picker = new IconPicker(icons, tab.Context.Lists["Icons"]) { Used = () => IconSearch.Used(exe.State.Document.Sets) };
+            int entry = shown;
+            picker.Picked += frame =>
+            {
+                if (Current(tab, file, entry, property) is { } dat && dat.Get(entry, property) != (ulong)frame)
+                    tab.Context.Edit(file, entry, property, (ulong)frame);
+            };
+            picker.Flyout.ShowAt(select);
+        };
+        tab.AddLoader(entry =>
+        {
+            shown = entry;
+            var value = ValueOf(tab.Context, file, entry, property);
+            var icons = tab.Context.Icons;
+            icon.Child = value is { } v && v < int.MaxValue && icons is not null ? icons.View((int)v, square) : null;
+            select.IsEnabled = icons is not null && value is not null;
+        });
+        line.Children.Add(icon);
+        line.Children.Add(select);
+        return line;
+    }
+
     /// <summary>A fixed list (PyDAT's DropDown of a PyMS list): a ComboBox of the list named (DatLists, e.g. "DamTypes"), plus the id box.</summary>
     /// <param name="list">The list's name in <see cref="DatLists.Names"/>, without ".txt".</param>
     /// <param name="jump">A "Jump ->" button after the dropdown, as on <see cref="ReferenceField"/>.</param>

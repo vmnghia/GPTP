@@ -91,6 +91,8 @@ sealed class DatContext
     readonly Action<EditorSettings> setSettings;
     OpenedExe? previewFor;
     DatPreview? preview;
+    OpenedExe? iconsFor;
+    IconCache? icons;
     readonly Dictionary<DatId, (NamesKey Key, IReadOnlyList<string> Names)> names = new();
 
     /// <summary>
@@ -128,6 +130,24 @@ sealed class DatContext
 
     /// <summary>Replaces the window's settings (kept in memory; the window writes them to disk).</summary>
     public void SetSettings(EditorSettings changed) => setSettings(changed);
+
+    /// <summary>
+    /// The open exe's cmdicons.grp frames as bitmaps (the button page's cache, a fresh one per open
+    /// exe); null when nothing is open.
+    /// </summary>
+    public IconCache? Icons
+    {
+        get
+        {
+            if (Opened() is not { } exe) return null;
+            if (!ReferenceEquals(exe, iconsFor))
+            {
+                icons = new IconCache(exe.Resources);
+                iconsFor = exe;
+            }
+            return icons;
+        }
+    }
 
     /// <summary>images.tbl, which the previews find GRPs through; null when nothing is open or it wasn't found.</summary>
     public StringTable? ImagesTbl => Opened()?.Resources.ImagesTbl;

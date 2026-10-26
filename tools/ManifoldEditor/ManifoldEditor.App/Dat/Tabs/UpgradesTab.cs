@@ -7,7 +7,7 @@ namespace ManifoldEditor.App.Dat.Tabs;
 /// <summary>
 /// upgrades.dat (PyDAT's UpgradesTab): the icon (a cmdicons frame) and label (a stat_txt.tbl string), the
 /// base and per-level costs with the times also in seconds, and the misc. properties. The page's "Used by"
-/// list covers the tab. The icon preview and picker are left out for now.
+/// list covers the tab. The icon is drawn beside its field, with Select... for the editor's icon picker.
 /// </summary>
 sealed class UpgradesTab : DatTabBase
 {
@@ -18,7 +18,7 @@ sealed class UpgradesTab : DatTabBase
         statTxt = new TblChoices(() => Context.Opened()?.State.Strings);
 
         Panel.Children.Add(Group("Upgrade Display",
-            Titled(this, ReferenceField(this, File, P("icon"), "Icon", null, () => Context.Lists["Icons"], null, 300),
+            Titled(this, IconField(this, File, P("icon"), "Icon", null),
                 "Upgrade Icon", "UpgIcon"),
             Titled(this, ReferenceField(this, File, P("label"), "Label", null, statTxt.WithNone, null, 300),
                 "Upgrade Label", "UpgLabel")));

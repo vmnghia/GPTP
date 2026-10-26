@@ -8,7 +8,7 @@ namespace ManifoldEditor.App.Dat.Tabs;
 /// <summary>
 /// weapons.dat (PyDAT's WeaponsTab): damage properties, the two "Weapon Display" groups (PyDAT
 /// titles both so), range, splash radii and the target flags. The cooldown also shows in
-/// seconds. The graphics and the damage upgrade have Jump buttons. The icon preview and the icon picker are left out for now.
+/// seconds. The graphics and the damage upgrade have Jump buttons. The icon is drawn beside its field, with Select... for the editor's icon picker.
 /// </summary>
 sealed class WeaponsTab : DatTabBase
 {
@@ -44,7 +44,7 @@ sealed class WeaponsTab : DatTabBase
             ChoiceField(this, File, P("weapon_behavior"), "Behaviour", "WeapBehaviour", "Behaviours", 240),
             NumberField(this, File, P("remove_after"), "Remove After", "WeapRemoveAfter", 64),
             ReferenceField(this, File, P("graphics"), "Graphics", "WeapGraphics", () => Context.Names(DatId.Flingy), null, 300, jump: DatId.Flingy),
-            ReferenceField(this, File, P("icon"), "Icon", "WeapIcon", () => Context.Lists["Icons"], null, 300),
+            IconField(this, File, P("icon"), "Icon", "WeapIcon"),
             Row(
                 new StackPanel
                 {

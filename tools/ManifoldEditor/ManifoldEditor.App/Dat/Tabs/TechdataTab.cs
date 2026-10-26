@@ -6,7 +6,7 @@ namespace ManifoldEditor.App.Dat.Tabs;
 
 /// <summary>
 /// techdata.dat (PyDAT's TechnologyTab): the icon and label, the cost with the research time also in
-/// seconds, and the properties. The page's "Used by" list covers the tab. The icon preview and picker are left out for now.
+/// seconds, and the properties. The page's "Used by" list covers the tab. The icon is drawn beside its field, with Select... for the editor's icon picker.
 /// </summary>
 sealed class TechdataTab : DatTabBase
 {
@@ -17,7 +17,7 @@ sealed class TechdataTab : DatTabBase
         statTxt = new TblChoices(() => Context.Opened()?.State.Strings);
 
         Panel.Children.Add(Group("Technology Display",
-            Titled(this, ReferenceField(this, File, P("icon"), "Icon", null, () => Context.Lists["Icons"], null, 300),
+            Titled(this, IconField(this, File, P("icon"), "Icon", null),
                 "Technology Icon", "TechIcon"),
             Titled(this, ReferenceField(this, File, P("label"), "Label", null, statTxt.WithNone, null, 300),
                 "Technology Label", "TechLabel")));

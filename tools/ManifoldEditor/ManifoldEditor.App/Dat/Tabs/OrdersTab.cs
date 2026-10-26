@@ -9,7 +9,7 @@ namespace ManifoldEditor.App.Dat.Tabs;
 /// orders.dat (PyDAT's OrdersTab): the weapon, technology and order the order uses, its label, iscript
 /// animation, highlight icon (a cmdicons frame, 65535 none) and requirements, and the twelve flags (PyDAT's
 /// "Unused" ones included). The weapon, technology and obscured order have Jump buttons, and the page's
-/// "Used by" list covers the tab. The icon preview and picker are left out for now.
+/// "Used by" list covers the tab. The highlight icon is drawn beside its field (plain, as PyDAT draws it), with Select... for the editor's icon picker.
 /// The weapon is the format's <c>targeting</c> (PyDAT's weapon_targeting).
 /// </summary>
 sealed class OrdersTab : DatTabBase
@@ -26,7 +26,7 @@ sealed class OrdersTab : DatTabBase
             ReferenceField(this, File, P("obscured_order"), "Obscured", "OrdObscured", () => Context.Names(DatId.Orders), "None", 300, jump: DatId.Orders),
             ReferenceField(this, File, P("label"), "Label", "OrdLabel", statTxt.WithNone, null, 300),
             ChoiceField(this, File, P("iscript_animation"), "Animation", "OrdAnimation", "Animations", 300),
-            ReferenceField(this, File, P("highlight_icon"), "Highlight", "OrdHighlight", () => Context.Lists["Icons"], "None", 300),
+            IconField(this, File, P("highlight_icon"), "Highlight", "OrdHighlight", "None"),
             NumberField(this, File, P("requirements"), "ReqIndex", "OrdReq", 64)));
 
         Panel.Children.Add(Group("Flags",
