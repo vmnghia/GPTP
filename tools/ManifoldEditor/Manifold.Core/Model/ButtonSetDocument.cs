@@ -127,6 +127,17 @@ public sealed class ButtonSetDocument
         dats.TryGetValue(file, out var current) && vanillaDats.TryGetValue(file, out var vanilla) &&
         entry >= 0 && entry < vanilla.Count && entry < current.Count && !current.EntrySameAs(entry, vanilla);
 
+    /// <summary>
+    /// Whether the entry differs from the file last saved, which the next Save writes (the list's
+    /// coloured rows, counts spec §2): its values differ, or the saved file lacks it (an entry past
+    /// the saved count, or a file the exe didn't hold). False past the current count.
+    /// </summary>
+    public bool EntryChangedSinceSave(DatId file, int entry)
+    {
+        if (!dats.TryGetValue(file, out var current) || entry < 0 || entry >= current.Count) return false;
+        return !savedDats.TryGetValue(file, out var saved) || !current.EntrySameAs(entry, saved);
+    }
+
     public IReadOnlyList<ButtonSet> Sets => sets;
     public ButtonSet this[int setId] => sets[setId];
 

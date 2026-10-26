@@ -96,6 +96,14 @@ public sealed class DatFile
         return count <= max ? (int)count : null;
     }
 
+    /// <summary>Why <see cref="WithCount"/> refuses the count, or null when it doesn't: fewer entries than now, or past the maximum.</summary>
+    public string? CountRefusal(long count)
+    {
+        if (count < Count) return $"{Format.FileName} has {Count} entries: it can't have fewer";
+        if (count == Count || ExpandedCount(count) is not null) return null;
+        return Format.ExpandedMax is { } max ? $"{Format.FileName} has at most {max} entries" : $"{Format.FileName} can't have more entries";
+    }
+
     /// <summary>Whether one more entry fits (PyMS's <c>can_expand</c>).</summary>
     public bool CanGrow => ExpandedCount(Count + 1L) is not null;
 
@@ -107,12 +115,8 @@ public sealed class DatFile
     public DatFile WithCount(long count)
     {
         if (count == Count) return this;
-        if (count < Count)
-            throw new ArgumentOutOfRangeException(nameof(count), count, $"{Format.FileName} has {Count} entries: it can't have fewer");
-        if (ExpandedCount(count) is not { } result)
-            throw new ArgumentOutOfRangeException(nameof(count), count, Format.ExpandedMax is { } max
-                ? $"{Format.FileName} has at most {max} entries"
-                : $"{Format.FileName} can't have more entries");
+        if (CountRefusal(count) is { } refusal) throw new ArgumentOutOfRangeException(nameof(count), count, refusal);
+        int result = ExpandedCount(count)!.Value;
         var grown = new ulong[values.Length][];
         for (int i = 0; i < values.Length; i++)
         {

@@ -96,4 +96,134 @@ public class DatCountTests
         var many = Assert.Throws<ArgumentOutOfRangeException>(() => images.WithCount(70000));
         Assert.Contains("images.dat has at most 65536 entries", many.Message);
     }
+
+    // -------- The undo steps and the unsaved mark (Task 2) --------
+
+    static DatSet Vanilla() =>
+        new(DatFormats.All.ToDictionary(f => f.Id, f => Zeros(f.Id)), DatFormats.All.ToDictionary(f => f.Id, f => Zeros(f.Id)));
+
+    static (ButtonSetDocument Doc, EditorState State) Open()
+    {
+        var doc = new ButtonSetDocument(Make.EmptySets(), Make.EmptySets(), dats: Vanilla());
+        return (doc, new EditorState(doc, "test.exe", Fixtures.Conditions(), Fixtures.Actions()));
+    }
+
+    [Fact]
+    public void AddEntryIsOneStep()
+    {
+        var (doc, state) = Open();
+        byte[] vanilla = doc.Dat(DatId.Images)!.Save();
+        Assert.True(state.AddEntry(DatId.Images, 4));
+        Assert.Equal(1000, doc.Dat(DatId.Images)!.Count);
+        Assert.Equal("Add entry to images.dat", doc.UndoLabel);
+        Assert.True(doc.DatDirty(DatId.Images));
+        state.Undo();
+        Assert.Equal(vanilla, doc.Dat(DatId.Images)!.Save());
+        Assert.False(doc.DatDirty(DatId.Images));
+        state.Redo();
+        Assert.Equal(1000, doc.Dat(DatId.Images)!.Count);
+    }
+
+    [Fact]
+    public void SetEntryCountRoundsAndLabels()
+    {
+        var (doc, state) = Open();
+        Assert.Null(state.SetEntryCount(DatId.Units, 251, 0));
+        Assert.Equal(252, doc.Dat(DatId.Units)!.Count);
+        Assert.Equal("Set units.dat to 252 entries", doc.UndoLabel);
+        Assert.Contains("can't have fewer", state.SetEntryCount(DatId.Units, 100, 0));
+        Assert.Equal("Set units.dat to 252 entries", doc.UndoLabel);   // nothing recorded
+        Assert.Equal("weapons.dat has at most 255 entries", state.SetEntryCount(DatId.Weapons, 300, 0));
+    }
+
+    [Fact]
+    public void ASameCountRecordsNothing()
+    {
+        var (doc, state) = Open();
+        Assert.Null(state.SetEntryCount(DatId.Images, 999, 0));
+        Assert.False(doc.CanUndo);
+        Assert.Null(state.SetEntryCount(DatId.Units, 251, 0));
+        Assert.Null(state.SetEntryCount(DatId.Units, 252, 0));
+        Assert.Equal("Set units.dat to 252 entries", doc.UndoLabel);
+        state.Undo();
+        Assert.False(doc.CanUndo);   // only the one step
+    }
+
+    [Fact]
+    public void AddEntryRefusesWhatCantGrow()
+    {
+        var (doc, state) = Open();
+        Assert.False(state.AddEntry(DatId.Mapdata, 0));
+        Assert.False(doc.CanUndo);
+    }
+
+    [Fact]
+    public void EntryChangedSinceSave()
+    {
+        var (doc, state) = Open();
+        Assert.True(state.EditDat(DatId.Units, 3, "armor", 2));
+        Assert.True(doc.EntryChangedSinceSave(DatId.Units, 3));
+        Assert.False(doc.EntryChangedSinceSave(DatId.Units, 4));
+        Assert.True(state.AddEntry(DatId.Images, 0));
+        Assert.True(doc.EntryChangedSinceSave(DatId.Images, 999));
+        Assert.False(doc.EntryChangedSinceSave(DatId.Images, 998));
+        Assert.False(doc.EntryChangedSinceSave(DatId.Images, 5000));   // past the current count
+        doc.MarkSaved();
+        Assert.False(doc.EntryChangedSinceSave(DatId.Units, 3));
+        Assert.False(doc.EntryChangedSinceSave(DatId.Images, 999));
+        Assert.True(state.EditDat(DatId.Units, 3, "armor", 5));
+        state.Undo();
+        Assert.False(doc.EntryChangedSinceSave(DatId.Units, 3));
+    }
+
+    [Fact]
+    public void TheLayoutChangeAloneMarksNoOldEntry()
+    {
+        var (doc, state) = Open();
+        Assert.True(state.AddEntry(DatId.Sprites, 0));
+        for (int e = 0; e < 517; e++) Assert.False(doc.EntryChangedSinceSave(DatId.Sprites, e), $"sprite {e}");
+        Assert.True(doc.EntryChangedSinceSave(DatId.Sprites, 517));
+    }
+
+    [Fact]
+    public void UndoAGrowthPastTheSaveIsDirtyWithNoRowMarked()
+    {
+        var (doc, state) = Open();
+        Assert.True(state.AddEntry(DatId.Images, 0));
+        doc.MarkSaved();
+        state.Undo();
+        Assert.True(doc.DatDirty(DatId.Images));
+        for (int e = 0; e < 999; e++) Assert.False(doc.EntryChangedSinceSave(DatId.Images, e));
+        state.Redo();
+        Assert.False(doc.DatDirty(DatId.Images));
+    }
+
+    [Fact]
+    public void NewEntriesAreUsableEverywhere()
+    {
+        var (doc, state) = Open();
+        Assert.Null(state.SetEntryCount(DatId.Images, 1001, 0));
+        Assert.True(state.EditDat(DatId.Images, 1000, "iscript_id", 5));
+        string text = state.CopyEntryText(DatId.Images, 0, null);
+        Assert.Null(state.PasteEntry(DatId.Images, 1000, text));
+        Assert.Null(state.ImportText(DatId.Images, text.Replace("Image(0):", "Image(1000):"), "x.txt"));
+        var palette = Enumerable.Repeat(0xFF000000u, 256).ToArray();
+        var preview = new DatPreview(_ => null, new PreviewPalettes(palette, palette, palette, palette, palette));
+        Assert.Equal("image 1000 has no GRP file", preview.Image(doc.Dat(DatId.Images)!, null, 1000).Reason);
+    }
+
+    [Fact]
+    public void GrownNames()
+    {
+        var units = Zeros(DatId.Units).WithCount(251);
+        var images = Zeros(DatId.Images).WithCount(1000);
+        var lists = DatLists.From(new Dictionary<string, string[]> { ["Units"] = [], ["Images"] = [] }, new Dictionary<string, string>());
+        DatFile? Dat(DatId id) => id == DatId.Units ? units : id == DatId.Images ? images : null;
+        var sources = new DatNameSources(Dat, null, null, null, null, null, null, lists);
+        var unitNames = DatNames.Build(DatId.Units, sources, NamesMode.Basic, false);
+        Assert.Equal(252, unitNames.Count);
+        for (int id = 228; id <= 250; id++) Assert.Equal($"Reserved Unit #{id}", unitNames[id]);
+        Assert.Equal("Expanded Unit #251", unitNames[251]);
+        Assert.Equal("Expanded Image #999", DatNames.Build(DatId.Images, sources, NamesMode.Basic, false)[999]);
+    }
 }

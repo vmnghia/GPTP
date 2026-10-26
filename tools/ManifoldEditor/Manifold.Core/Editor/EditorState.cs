@@ -281,6 +281,30 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
         }
     }
 
+    /// <summary>
+    /// PyDAT's Add Entry: one more entry (PyMS's rounding: units.dat's first growth is 252), as one
+    /// undo step shown at <paramref name="shown"/> after an undo. False when the file is missing or
+    /// can't grow (counts spec §2).
+    /// </summary>
+    public bool AddEntry(DatId file, int shown)
+    {
+        if (Document.Dat(file) is not DatFile dat || !dat.CanGrow) return false;
+        return Document.ApplyDatFile(file, dat.WithCount(dat.Count + 1L), shown, $"Add entry to {dat.Format.FileName}");
+    }
+
+    /// <summary>
+    /// PyDAT's Set Entry Count, as one undo step shown at <paramref name="shown"/> after an undo: null when
+    /// applied or when it changes nothing, else why it is refused (fewer entries, past the maximum).
+    /// </summary>
+    public string? SetEntryCount(DatId file, long count, int shown)
+    {
+        if (Document.Dat(file) is not DatFile dat) return $"There is no {DatFormats.Of(file).FileName}";
+        if (dat.CountRefusal(count) is { } refusal) return refusal;
+        var after = dat.WithCount(count);
+        Document.ApplyDatFile(file, after, shown, $"Set {dat.Format.FileName} to {after.Count} entries");
+        return null;
+    }
+
     static string Refusal(DatTextException e) => e.Line is int line ? $"line {line}: {e.Message}" : e.Message;
 
     // Strings (spec §5, §6).
