@@ -549,9 +549,12 @@ starfield handled (§5). Features 1 and 2 below are done.
    test round in its §8. Part 3, the previews (PyDAT's pictures on Units Graphics and StarEdit,
    Sprites and Images, the icons with the editor's picker, the sound play button)
    `[BUILT 2026-10-26; tested on Windows 2026-10-26]`: all of its §7 passed; spec
-   `docs/superpowers/specs/2026-10-26-dat-previews-design.md`. After that run, PyMS's 2400-frame cap was dropped so a GRP with more frames (the Viking's assault mode) draws; checked on Windows 2026-10-26. Remaining parts of the .dat port `[PROPOSED]`, each with its own spec: 4 entry counts
-   (Add entry and Set count for images, sprites and flingy; the plugin's extension,
-   `GPTP/DatExtend/`, is on master since 2026-10-26), 5 improvements.
+   `docs/superpowers/specs/2026-10-26-dat-previews-design.md`. After that run, PyMS's 2400-frame cap was dropped so a GRP with more frames (the Viking's assault mode) draws; checked on Windows 2026-10-26. Part 4, entry counts (PyDAT's Add Entry and Set Entry Count on every file
+   with an expanded layout, the plugin's `GPTP/DatExtend/` loading images, sprites and flingy)
+   and list rows coloured when changed since the last save `[BUILT 2026-10-26; not yet run on
+   Windows]`: the rules are tested on Linux and the window compiles; spec
+   `docs/superpowers/specs/2026-10-26-dat-counts-design.md`, test round in its §6. Remaining
+   part of the .dat port `[PROPOSED]`: 5 improvements.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
    first game frame; every client applies it in the same frame; replays record it. This
    needs the view size switchable at game start. The buffers would be allocated for the

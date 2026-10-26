@@ -104,6 +104,9 @@ sealed class DataPage
     ObservableCollection<string> rows = new();
     IReadOnlyList<string> rowNames = [];
     bool[] rowDots = [];
+    /// <summary>Per row, whether the entry changed since the last save: drawn in the accent colour (counts spec §3).</summary>
+    bool[] rowChanged = [];
+    Brush? accent;
     DatId? rowsFile;
     int rowsPad;
 
@@ -190,6 +193,10 @@ sealed class DataPage
         left.Children.Add(new StackPanel { Spacing = 6, Children = { findRow, jumpRow, findNote } });
 
         list.ItemsSource = rows;
+        list.ContainerContentChanging += (_, args) =>
+        {
+            if (!args.InRecycleQueue) Paint(args.ItemContainer, args.ItemIndex);
+        };
         list.SelectionChanged += (_, _) =>
         {
             // The page's own selection (while it fills the list, or a row replaced) is not the user's.
@@ -891,6 +898,7 @@ sealed class DataPage
             list.ItemsSource = rows;
             rowNames = [];
             rowDots = [];
+            rowChanged = [];
             rowsFile = null;
             return true;
         }
@@ -899,6 +907,8 @@ sealed class DataPage
         int pad = Math.Min(4, (count - 1).ToString(CultureInfo.InvariantCulture).Length);
         var dots = new bool[count];
         for (int i = 0; i < count; i++) dots[i] = doc.EntryDiffersFromVanilla(file, i);
+        var unsaved = new bool[count];
+        for (int i = 0; i < count; i++) unsaved[i] = doc.EntryChangedSinceSave(file, i);
 
         bool rebuild = rowsFile != file || rows.Count != count || rowsPad != pad;
         List<int>? changedRows = null;
@@ -910,8 +920,15 @@ sealed class DataPage
                     changedRows.Add(i);
             rebuild = changedRows.Count > MaxRowUpdates;
         }
+        // A row whose text stays but whose colour changes: its shown container is painted here (the
+        // others are painted as the list shows them).
+        var repaint = new List<int>();
+        if (!rebuild)
+            for (int i = 0; i < count; i++)
+                if (unsaved[i] != rowChanged[i]) repaint.Add(i);
         rowNames = names;
         rowDots = dots;
+        rowChanged = unsaved;
         rowsFile = file;
         rowsPad = pad;
         if (rebuild)
@@ -923,8 +940,23 @@ sealed class DataPage
             return true;
         }
         foreach (int i in changedRows!) rows[i] = Row(i);
+        // A replaced row is painted as the list shows it again; painting it here too costs nothing.
+        foreach (int i in repaint.Concat(changedRows)) Paint(list.ContainerFromIndex(i) as ListViewItem, i);
         return false;
     }
+
+    /// <summary>A row's container in the accent colour when its entry changed since the last save, else the list's own.</summary>
+    void Paint(Control? container, int row)
+    {
+        if (container is null) return;
+        if (row >= 0 && row < rowChanged.Length && rowChanged[row]) container.Foreground = Accent();
+        else container.ClearValue(Control.ForegroundProperty);
+    }
+
+    Brush Accent() => accent ??=
+        Application.Current.Resources.TryGetValue("AccentTextFillColorPrimaryBrush", out var brush) && brush is Brush b
+            ? b
+            : new SolidColorBrush(Colors.DodgerBlue);
 
     string Row(int id) =>
         $" {id.ToString(CultureInfo.InvariantCulture).PadLeft(rowsPad)}  {rowNames[id]}" + (rowDots[id] ? " •" : "");

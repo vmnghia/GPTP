@@ -158,8 +158,9 @@ layout (more entries than vanilla) open and save too.
 
 The exe is the document, as on the other pages: there is no Open or New. Edits share the one
 undo history with the button sets and strings, and Undo and Redo show the page, tab and entry
-they changed. A tab with unsaved edits shows ●, and an entry that differs from vanilla shows
-• in the list. A number box commits when it loses focus or on Enter; a value outside the
+they changed. A tab with unsaved edits shows ●, an entry that differs from vanilla shows
+• in the list, and an entry changed since the last save is drawn in the accent colour (a row
+can have both; Save clears the colour). A number box commits when it loses focus or on Enter; a value outside the
 field's type is refused (the box goes red, its tooltip has the range). A field that does not
 cover the entry (units.dat has some for entries 106-201 only) is disabled.
 
@@ -251,7 +252,20 @@ Differences from PyDAT, each on purpose:
 - The icon picker is the editor's own, and the order's highlight icon is drawn plain, as
   PyDAT's Orders tab draws it.
 
-**Not yet** (the later parts of the port, in the spec's header): Add entry and Set count for images, sprites and flingy; improvements. Two
+**Entry counts** (part 4 of the port, spec `docs/superpowers/specs/2026-10-26-dat-counts-design.md`).
+The entry list's right-click menu has PyDAT's **Add Entry (DatExtend)** (Ctrl+Shift+A) and
+**Set Entry Count (DatExtend)...** (Ctrl+Shift+S), for every file whose format has an expanded
+layout (all but mapdata.dat). Counts follow PyMS: units.dat's first growth goes to 252 (its
+minimum, 250, rounded to a multiple of 12), and every file stops at its maximum. The first growth
+rewrites the file in the expanded layout and asks first: for images, sprites and flingy, that the
+plugin's DatExtend is needed; for any other file, that the plugin can't load it and the game will
+refuse it. Set Entry Count is PyDAT's dialog, with the format's constraints and the count the
+rounding gives; fewer entries than now are refused. Each is one undo step, and the new last
+entry is shown. Counts only grow: undo is the way back. A grown file the plugin refuses keeps
+its check line, and Save asks to confirm it.
+
+**Not yet** (the last part of the port, in the spec's header): improvements. Two
 more differences from PyDAT: its seconds boxes are editable, here they are read-only text; and a
 box is limited to its property's type, not to PyDAT's tighter ranges. Part 1 (the fields) passed on Windows 2026-10-25. Parts 2 (the links) and 3 (the
-previews) passed on Windows 2026-10-26. After that run, PyMS's 2400-frame cap was dropped so a GRP with more frames (the Viking's assault mode) draws; checked on Windows 2026-10-26.
+previews) passed on Windows 2026-10-26. After that run, PyMS's 2400-frame cap was dropped so a GRP with more frames (the Viking's assault mode) draws; checked on Windows 2026-10-26. Part 4 (entry counts and the coloured rows) was built
+2026-10-26; the rules are tested on Linux and the window compiles, but it has not been run on Windows.
