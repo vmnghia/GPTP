@@ -140,6 +140,12 @@ installed there, not only in `injectHudHooks`.
   and the WinUI window compiles with `dotnet msbuild -restore -t:Compile
   -p:WindowsAppSDKSelfContained=false` in `ManifoldEditor.App/` (it has no `.xaml`, so
   keep it that way). Running it needs Windows; see its README.
+- **.dat extension** (`GPTP/DatExtend/`, `hooks/DatExtend/`; from saintofidiocy/GPTP@DatExtender,
+  notes in `docs/superpowers/specs/2026-10-24-dat-editor-design.md` §2): images.dat,
+  sprites.dat and flingy.dat may have more entries than vanilla, in PyMS's expanded layout;
+  the loader moves those tables and re-points the engine at them. An expanded file of any
+  other table is refused. The moved arrays in `scbwdata.h` are references read on each use.
+  Its loader hook is the first in the enabled list.
 - **Smart-build** (in `hooks/selection_ext/`, spec
   `docs/superpowers/specs/2026-10-03-smart-build-design.md`) and **smart-casting**
   (`hooks/recv_commands/smart_cast.cpp`, `docs/selection.md` §6).

@@ -180,7 +180,7 @@ status line; the exe keeps the edit. Save as writes no to-repack copies. When an
 and a to-repack `.dat` differs from the exe's, the opening dialog lists it with the strings
 copy and asks which to edit. An expanded file of a table the plugin cannot extend (the plugin
 reads images, sprites and flingy only) is flagged on opening, and the first Save that writes
-one asks to confirm. The plugin's extension is on `origin/feat/dat-extender`, not on master.
+one asks to confirm. The plugin's extension (`GPTP/DatExtend/`) is on master since 2026-10-26.
 
 **`Data\pydat\` must ship beside the exe.** It holds PyMS's name lists and `Hints.txt`
 (MIT; `LICENSE.md` is in it). The build copies it from `fixtures\pydat\`.
