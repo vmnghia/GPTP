@@ -45,6 +45,14 @@ void switchOrder(CUnit* unit, u8 orderId, u8 state, Point16 pt) {
 	}
 	unit->mainOrderId = orderId;
 	unit->mainOrderState = state;
+	//what the engine does as an order begins (0x4750CD, and 0x49F289 after a
+	//type change): the unit can't receive orders while an uninterruptable one
+	//runs. Left set by the transform, the flight queued every command behind
+	//it (in game, 2026-10-26)
+	if (orders_dat::CanBeInterrupted[orderId])
+		unit->status &= ~UnitStatus::CanNotReceiveOrders;
+	else
+		unit->status |= UnitStatus::CanNotReceiveOrders;
 	unit->orderTarget.pt = pt;
 	unit->orderTarget.unit = NULL;
 }
