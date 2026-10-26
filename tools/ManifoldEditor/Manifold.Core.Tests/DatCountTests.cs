@@ -226,4 +226,32 @@ public class DatCountTests
         Assert.Equal("Expanded Unit #251", unitNames[251]);
         Assert.Equal("Expanded Image #999", DatNames.Build(DatId.Images, sources, NamesMode.Basic, false)[999]);
     }
+
+    // -------- Final review: values the first growth made available --------
+
+    [Fact]
+    public void AnEditOnANewlyCoveredValueIsMarked()
+    {
+        // The saved file is vanilla's layout: sprite 5 has no health bar there, 0 after the growth.
+        var (doc2, state2) = Open();
+        Assert.True(state2.AddEntry(DatId.Sprites, 0));
+        Assert.True(state2.EditDat(DatId.Sprites, 5, "health_bar", 7));
+        Assert.True(doc2.EntryChangedSinceSave(DatId.Sprites, 5));
+        Assert.True(state2.EditDat(DatId.Sprites, 5, "health_bar", 0));
+        Assert.False(doc2.EntryChangedSinceSave(DatId.Sprites, 5));
+
+        Assert.True(state2.AddEntry(DatId.Units, 0));
+        Assert.True(state2.EditDat(DatId.Units, 0, "infestation", 3));
+        Assert.True(doc2.EntryChangedSinceSave(DatId.Units, 0));
+    }
+
+    [Fact]
+    public void RevertEntryPutsBackANewlyCoveredValue()
+    {
+        var (doc, state) = Open();
+        Assert.True(state.AddEntry(DatId.Sprites, 0));
+        Assert.True(state.EditDat(DatId.Sprites, 5, "health_bar", 7));
+        Assert.True(state.RevertEntry(DatId.Sprites, 5, toVanilla: false));
+        Assert.Equal(0UL, doc.Dat(DatId.Sprites)!.Get(5, "health_bar"));
+    }
 }

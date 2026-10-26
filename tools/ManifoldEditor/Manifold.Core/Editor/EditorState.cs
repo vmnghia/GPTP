@@ -205,7 +205,7 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
     {
         var source = toVanilla ? Document.VanillaDat(file) : Document.OpenedDat(file);
         if (source is null || entry < 0 || entry >= source.Count) return false;
-        return Document.ApplyDat(file, d => d.WithEntryFrom(entry, source), entry, null,
+        return Document.ApplyDat(file, d => d.WithEntryFrom(entry, source, uncoveredIsZero: !toVanilla), entry, null,
             toVanilla ? "Revert entry to vanilla" : "Revert entry");
     }
 

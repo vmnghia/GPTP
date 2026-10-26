@@ -949,9 +949,37 @@ sealed class DataPage
     void Paint(Control? container, int row)
     {
         if (container is null) return;
-        if (row >= 0 && row < rowChanged.Length && rowChanged[row]) container.Foreground = Accent();
+        bool on = row >= 0 && row < rowChanged.Length && rowChanged[row];
+        if (on) container.Foreground = Accent();
         else container.ClearValue(Control.ForegroundProperty);
+        // The item's template draws a selected or hovered row in its own colours, not the item's
+        // Foreground: the row just edited or added is usually the selected one (final review).
+        if (VisualTreeHelper.GetChildrenCount(container) > 0 && VisualTreeHelper.GetChild(container, 0) is ListViewItemPresenter presenter)
+        {
+            if (on)
+            {
+                presenter.SelectedForeground = Accent();
+                presenter.PointerOverForeground = Accent();
+            }
+            else
+            {
+                presenter.ClearValue(ListViewItemPresenter.SelectedForegroundProperty);
+                presenter.ClearValue(ListViewItemPresenter.PointerOverForegroundProperty);
+            }
+        }
+        else if (container is ListViewItem item && waitingForTemplate.Add(item))
+        {
+            // Not templated yet (a fresh container): paint it again once it is.
+            item.Loaded += (_, _) =>
+            {
+                waitingForTemplate.Remove(item);
+                Paint(item, list.IndexFromContainer(item));
+            };
+        }
     }
+
+    /// <summary>Containers whose template wasn't applied when painted: each repainted once on Loaded.</summary>
+    readonly HashSet<ListViewItem> waitingForTemplate = new();
 
     Brush Accent() => accent ??=
         Application.Current.Resources.TryGetValue("AccentTextFillColorPrimaryBrush", out var brush) && brush is Brush b

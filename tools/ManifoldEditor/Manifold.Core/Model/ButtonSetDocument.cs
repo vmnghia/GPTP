@@ -135,7 +135,7 @@ public sealed class ButtonSetDocument
     public bool EntryChangedSinceSave(DatId file, int entry)
     {
         if (!dats.TryGetValue(file, out var current) || entry < 0 || entry >= current.Count) return false;
-        return !savedDats.TryGetValue(file, out var saved) || !current.EntrySameAs(entry, saved);
+        return !savedDats.TryGetValue(file, out var saved) || !current.EntrySameAs(entry, saved, uncoveredIsZero: true);
     }
 
     public IReadOnlyList<ButtonSet> Sets => sets;

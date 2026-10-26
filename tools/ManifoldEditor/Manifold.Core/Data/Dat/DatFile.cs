@@ -147,7 +147,11 @@ public sealed class DatFile
     /// A copy with every property of the entry taken from the same entry of another file of
     /// the same format; a property one of the two does not cover on it is left alone.
     /// </summary>
-    public DatFile WithEntryFrom(int entry, DatFile source)
+    /// <param name="uncoveredIsZero">
+    /// A property this file covers on the entry and <paramref name="source"/> doesn't is set to 0, what
+    /// a growth gives it (counts spec, final review): Revert entry to a file opened in the vanilla layout.
+    /// </param>
+    public DatFile WithEntryFrom(int entry, DatFile source, bool uncoveredIsZero = false)
     {
         if (source.Format.Id != Format.Id)
             throw new ArgumentException($"{source.Format.FileName} is not {Format.FileName}", nameof(source));
@@ -156,8 +160,8 @@ public sealed class DatFile
         var result = this;
         foreach (var p in Format.Properties)
         {
-            if (!Covers(entry, p.Name) || !source.Covers(entry, p.Name)) continue;
-            ulong value = source.Get(entry, p.Name)!.Value;
+            if (!Covers(entry, p.Name) || (!source.Covers(entry, p.Name) && !uncoveredIsZero)) continue;
+            ulong value = source.Covers(entry, p.Name) ? source.Get(entry, p.Name)!.Value : 0;
             if (value != result.Get(entry, p.Name)) result = result.With(entry, p.Name, value);
         }
         return result;
@@ -180,7 +184,11 @@ public sealed class DatFile
     /// (an expanded file's sprites 0-129 have a health bar, vanilla's do not). An entry the
     /// other file lacks differs.
     /// </summary>
-    public bool EntrySameAs(int entry, DatFile other)
+    /// <param name="uncoveredIsZero">
+    /// A value only this file covers counts as different unless it is 0, what a growth puts there
+    /// (the unsaved mark against a file saved in the vanilla layout; counts spec, final review).
+    /// </param>
+    public bool EntrySameAs(int entry, DatFile other, bool uncoveredIsZero = false)
     {
         if (other.Format.Id != Format.Id) return false;
         CheckEntry(entry);
@@ -190,6 +198,7 @@ public sealed class DatFile
             int a = entry - offsets[i], b = entry - other.offsets[i];
             bool hasA = a >= 0 && a < values[i].Length, hasB = b >= 0 && b < other.values[i].Length;
             if (hasA && hasB && values[i][a] != other.values[i][b]) return false;
+            if (uncoveredIsZero && hasA && !hasB && values[i][a] != 0) return false;
         }
         return true;
     }
