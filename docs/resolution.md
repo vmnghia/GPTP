@@ -549,7 +549,7 @@ starfield handled (§5). Features 1 and 2 below are done.
    test round in its §8. Part 3, the previews (PyDAT's pictures on Units Graphics and StarEdit,
    Sprites and Images, the icons with the editor's picker, the sound play button)
    `[BUILT 2026-10-26; tested on Windows 2026-10-26]`: all of its §7 passed; spec
-   `docs/superpowers/specs/2026-10-26-dat-previews-design.md`. After that run, PyMS's 2400-frame cap was dropped so a GRP with more frames (the Viking's assault mode) draws; that is not yet checked on Windows. Remaining parts of the .dat port `[PROPOSED]`, each with its own spec: 4 entry counts
+   `docs/superpowers/specs/2026-10-26-dat-previews-design.md`. After that run, PyMS's 2400-frame cap was dropped so a GRP with more frames (the Viking's assault mode) draws; checked on Windows 2026-10-26. Remaining parts of the .dat port `[PROPOSED]`, each with its own spec: 4 entry counts
    (Add entry and Set count for images, sprites and flingy; needs `feat/dat-extender` on
    master), 5 improvements.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
