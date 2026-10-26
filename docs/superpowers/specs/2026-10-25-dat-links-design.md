@@ -1,7 +1,7 @@
 # Manifold Editor: the .dat files, part 2 (PyDAT's links)
 
 Status: Built 2026-10-25 (plan `docs/superpowers/plans/2026-10-25-dat-links.md`): the
-rules are tested on Linux, the window compiles; not yet run on Windows. Design 2026-10-25. Part 2 of the PyDAT port planned in
+rules are tested on Linux, the window compiles; all of §8 passed on Windows 2026-10-26. Design 2026-10-25. Part 2 of the PyDAT port planned in
 `2026-10-24-dat-editor-design.md` (part 1, the fields, passed on Windows 2026-10-25):
 Jump buttons, "Used by", copy and paste of an entry or a sub-tab, name overrides, and
 PyDAT's TXT import and export. The user's answers: name overrides are kept in the exe;

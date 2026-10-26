@@ -253,7 +253,5 @@ Differences from PyDAT, each on purpose:
 
 **Not yet** (the later parts of the port, in the spec's header): Add entry and Set count for images, sprites and flingy; improvements. Two
 more differences from PyDAT: its seconds boxes are editable, here they are read-only text; and a
-box is limited to its property's type, not to PyDAT's tighter ranges. Part 1 (the fields) passed on Windows 2026-10-25. Part 2 (the links) was built
-2026-10-25; the rules are tested on Linux and the window compiles, but it has not been run on
-Windows. Part 3 (the previews) was built 2026-10-26; the drawing is tested on Linux and the
-window compiles, but it has not been run on Windows.
+box is limited to its property's type, not to PyDAT's tighter ranges. Part 1 (the fields) passed on Windows 2026-10-25. Parts 2 (the links) and 3 (the
+previews) passed on Windows 2026-10-26. Known limit: a GRP with more than 2400 frames (PyMS's limit; the Viking's assault-mode GRP) shows "damaged" though the game draws it.

@@ -545,13 +545,11 @@ starfield handled (§5). Features 1 and 2 below are done.
    `docs/superpowers/specs/2026-10-24-dat-editor-design.md`, test round in its §10. All of §10
    passed on Windows. Part 2 of the .dat port, the links (Jump buttons, Used by, copy and
    paste, PyDAT's TXT import and export, name overrides kept in the exe as
-   `Manifold\names\*.txt`) `[BUILT 2026-10-25; not yet run on Windows]`: the rules are tested
-   on Linux and the window compiles; spec `docs/superpowers/specs/2026-10-25-dat-links-design.md`,
+   `Manifold\names\*.txt`) `[BUILT 2026-10-25; tested on Windows 2026-10-26]`: all of its §8 passed; spec `docs/superpowers/specs/2026-10-25-dat-links-design.md`,
    test round in its §8. Part 3, the previews (PyDAT's pictures on Units Graphics and StarEdit,
    Sprites and Images, the icons with the editor's picker, the sound play button)
-   `[BUILT 2026-10-26; not yet run on Windows]`: the drawing is tested on Linux and the window
-   compiles; spec `docs/superpowers/specs/2026-10-26-dat-previews-design.md`, test round in its
-   §7. Remaining parts of the .dat port `[PROPOSED]`, each with its own spec: 4 entry counts
+   `[BUILT 2026-10-26; tested on Windows 2026-10-26]`: all of its §7 passed; spec
+   `docs/superpowers/specs/2026-10-26-dat-previews-design.md`. Known limit: a GRP with more than 2400 frames (PyMS's limit; the Viking's assault-mode GRP) shows "damaged" though the game draws it. Remaining parts of the .dat port `[PROPOSED]`, each with its own spec: 4 entry counts
    (Add entry and Set count for images, sprites and flingy; needs `feat/dat-extender` on
    master), 5 improvements.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
