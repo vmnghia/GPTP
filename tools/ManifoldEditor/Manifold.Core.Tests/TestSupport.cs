@@ -16,6 +16,43 @@ static class Fixtures
 
 static class Make
 {
+    /// <summary>
+    /// A GRP of <paramref name="width"/> x <paramref name="height"/> frames, each framed at
+    /// (0,0,width,height) and given as width*height palette indexes; rows are coded as copies
+    /// of at most 63 bytes.
+    /// </summary>
+    public static byte[] Grp(int width, int height, params byte[][] frames)
+    {
+        var bytes = new List<byte>();
+        bytes.AddRange(BitConverter.GetBytes((ushort)frames.Length));
+        bytes.AddRange(BitConverter.GetBytes((ushort)width));
+        bytes.AddRange(BitConverter.GetBytes((ushort)height));
+        int headerAt = bytes.Count;
+        bytes.AddRange(new byte[8 * frames.Length]);
+        for (int f = 0; f < frames.Length; f++)
+        {
+            int offset = bytes.Count;
+            bytes[headerAt + 8 * f + 2] = (byte)width;
+            bytes[headerAt + 8 * f + 3] = (byte)height;
+            for (int i = 0; i < 4; i++) bytes[headerAt + 8 * f + 4 + i] = BitConverter.GetBytes(offset)[i];
+            int rowTable = bytes.Count;
+            bytes.AddRange(new byte[2 * height]);
+            for (int row = 0; row < height; row++)
+            {
+                int rel = bytes.Count - offset;
+                bytes[rowTable + 2 * row] = (byte)rel;
+                bytes[rowTable + 2 * row + 1] = (byte)(rel >> 8);
+                for (int col = 0; col < width; col += 63)
+                {
+                    int n = Math.Min(63, width - col);
+                    bytes.Add((byte)n);
+                    for (int i = 0; i < n; i++) bytes.Add(frames[f][row * width + col + i]);
+                }
+            }
+        }
+        return bytes.ToArray();
+    }
+
     public static Button Button(ushort position, ushort icon = 1, uint condition = 0x4282D0, uint action = 0x424440,
         ushort enabledString = 0) =>
         new(position, icon, condition, action, 0, 0, enabledString, 0);

@@ -103,7 +103,8 @@ public static class Workspace
         string palettePath = Path.Combine(AppContext.BaseDirectory, "Data", "Icons.pal");
         uint[]? iconPalette = File.Exists(palettePath) ? RawPalette.Read(File.ReadAllBytes(palettePath)) : null;
         var resources = Step("Reading stat_txt.tbl, cmdicons.grp, the .tbl files and iscript.bin",
-            () => EditorResources.Load(new ResourceResolver(archives), iconPalette));
+            () => EditorResources.Load(new ResourceResolver(archives), iconPalette,
+                PreviewPalettes.Load(Path.Combine(AppContext.BaseDirectory, "Data"))));
         // Each .dat file from the exe first; vanilla's copies from the MPQs alone (Revert to vanilla, the • marks).
         var datSources = new List<string>();
         var datNotes = new List<string>();

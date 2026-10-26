@@ -39,10 +39,15 @@ public sealed class EditorResources
     public List<string> Sources { get; } = new();
     /// <summary>What is missing or could not be read.</summary>
     public List<string> Notes { get; } = new();
+    /// <summary>Where the resources were looked up (the exe, then vanilla): the previews read GRPs and sounds through it.</summary>
+    public ResourceResolver? Resolver { get; private set; }
+    /// <summary>The palettes the Data page's previews draw with (previews spec §2).</summary>
+    public PreviewPalettes Palettes { get; private set; } = PreviewPalettes.None;
 
-    public static EditorResources Load(ResourceResolver resolver, uint[]? iconPalette)
+    public static EditorResources Load(ResourceResolver resolver, uint[]? iconPalette, PreviewPalettes? palettes = null)
     {
-        var r = new EditorResources { IconPalette = iconPalette };
+        var r = new EditorResources { IconPalette = iconPalette, Resolver = resolver, Palettes = palettes ?? PreviewPalettes.None };
+        foreach (string missing in palettes?.Missing ?? []) r.Notes.Add($"{missing}: not found; previews that need it show why");
         if (iconPalette is null) r.Notes.Add("Icons.pal: not found; icon numbers are shown instead of icons");
         r.Strings = r.Get(resolver, StatTxtPath, StatTxt.Parse, "string ids are shown instead of text");
         r.Icons = r.Get(resolver, IconsPath, bytes => new Grp(bytes), "icon numbers are shown instead of icons");
