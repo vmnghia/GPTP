@@ -118,8 +118,27 @@ bool nearestGround(CUnit* unit, const Point16& at, Point16* out) {
 	return false;
 }
 
+//The ground point under a fighter at @p from: where its shadow is, the
+//search's start (clamped to the map's last row).
+Point16 groundUnder(Point16 from) {
+	const s32 last = mapTileSize->height * 32 - 1;
+	const s32 y = from.y + vikingtransform::VIKING_AIR_HEIGHT;
+	Point16 at = { from.x, (u16)(y > last ? last : y) };
+	return at;
+}
+
+//@p away is a ground point; the fighter's place over it, 42 px up.
+Point16 airOver(Point16 ground) {
+	const s32 y = ground.y - vikingtransform::VIKING_AIR_HEIGHT;
+	Point16 pt = { ground.x, (u16)(y < 0 ? 0 : y) };
+	return pt;
+}
+
 Landing settleLanding(CUnit* unit, Point16* away) {
-	const Point16 at = unit->sprite->position;
+	//searched at the ground under the fighter (its shadow), as it lands there;
+	//put back where it was, over that ground, if it doesn't land
+	const Point16 from = unit->sprite->position;
+	const Point16 at = groundUnder(from);
 	Point16 spot = at;
 	scbw::prepareUnitMove(unit, true);
 	scbw::setUnitPosition(unit, at.x, at.y);
@@ -138,7 +157,7 @@ Landing settleLanding(CUnit* unit, Point16* away) {
 	if (found == LAND_AWAY)
 		*away = spot;
 	if (found != LAND_HERE)
-		spot = at;
+		spot = from;
 	scbw::setUnitPosition(unit, spot.x, spot.y);
 	scbw::refreshUnitAfterMove(unit);
 	if (found == LAND_HERE)
@@ -223,7 +242,7 @@ void orderTransform(CUnit* unit) {
 				replaceUnitWithType(unit, VIKING_FIGHTER);
 				restoreFacing(unit, facing);
 				VDBG("Viking: flying to land at %d,%d (from %d,%d)", away.x, away.y, unit->position.x, unit->position.y);
-				switchOrder(unit, ORDER_VIKING_FLY, 0, away);
+				switchOrder(unit, ORDER_VIKING_FLY, 0, airOver(away));
 				return;
 			}
 			if (found == LAND_NONE) {
@@ -260,6 +279,11 @@ void orderTransform(CUnit* unit) {
 		const u8 facing = unit->currentDirection1;
 		replaceUnitWithType(unit, VIKING_FIGHTER);
 		restoreFacing(unit, facing);
+		//up to where the risen art is, the shadow staying on the ground
+		scbw::prepareUnitMove(unit, true);
+		const s32 y = unit->position.y - VIKING_AIR_HEIGHT;
+		scbw::setUnitPosition(unit, unit->position.x, (u16)(y < 0 ? 0 : y));
+		scbw::refreshUnitAfterMove(unit);
 	}
 	orderReturnToIdle(unit);
 	VDBG("Viking: done; now unit %d, status 0x%X, move state %d, order 0x%X",

@@ -44,6 +44,12 @@ const s32 MAX_LANDING_NUDGE = 16;
 //fighter farther from land than that can't land (the user, 2026-10-26: in the
 //middle of a lake it should say so). 256 reached too far.
 const s16 LANDING_SEARCH = 128;
+//How far above its ground point the fighter is: its shadow's offset (header
+//423's `imgul 1001 0 42`, as vanilla flyers). The form changes move the unit by
+//this, as a Terran building's lift-off does, so the art rises and sinks over a
+//shadow that stays (the user, 2026-10-26): lift-off ends 42 px up, landing
+//starts 42 px down, at the ground under the shadow.
+const s32 VIKING_AIR_HEIGHT = 42;
 
 //The order's states (mainOrderState).
 //STATE_FLYING: a fighter on its way to the nearest spot it can land on
