@@ -33,12 +33,17 @@ into the exe caller's frame. Only the offsets listed in its `ALLOWED` table are 
 
 **Deploying.** A post-build step copies `GPTP.qdp` next to `SCManifold.exe`
 (`..\..\SCManifold\` from the solution) when that folder exists. The plugin must then be
-repacked into `SCManifold.exe` before testing: the user adds files from
-`SCManifold\to-repack\` into the exe's MPQ by hand with PyMPQ, so any **new `rez\` file must
-be added by hand too**. Adding replaces files in place; it doesn't rebuild the MPQ, so files
-already in it (such as the Manifold Editor's `Manifold\buttonsets.bin`) stay. A missing `rez\statdata.bin`
-once made the selection panel silently fall back to vanilla's 12 wireframes.
-`docs/resolution.md` §6 "Working tips" has the paths and helper scripts.
+repacked into `SCManifold.exe` before testing. The user does it with the Manifold Editor's
+**Repack plugin...** and **Repack files...** (spec
+`docs/superpowers/specs/2026-10-14-repack-design.md`, tested in game 2026-10-24; split in
+two by `docs/superpowers/specs/2026-10-24-editor-qol-design.md`): the first packs
+`GPTP.qdp`, the second adds files in a subfolder of `SCManifold\to-repack\` to the exe's
+MPQ, so a **new `rez\` file must be in `to-repack\`** to reach the game. Launch (F5) offers
+both when the plugin or a to-repack file is newer than the exe's. Adding replaces files in place; it doesn't rebuild the MPQ, so files
+already in it (such as the editor's `Manifold\buttonsets.bin`) stay. FireGraft (the plugin)
+and PyMPQ (files added by hand, from its own list) remain the fallback. A missing
+`rez\statdata.bin` once made the selection panel silently fall back to vanilla's 12
+wireframes. `docs/resolution.md` §6 "Working tips" has the paths and helper scripts.
 
 The `reshade/` folder is not in the MPQ: its files sit next to `StarCraft.exe`. A changed
 `ManifoldUIMask.fx` is copied into the game folder's `reshade-shaders\Shaders\` by hand and
@@ -123,7 +128,10 @@ installed there, not only in `injectHudHooks`.
   replacement: part 1 button sets, saved as `Manifold\buttonsets.bin` in the mod exe's MPQ
   and applied at game start by `hooks/interface/buttonsets_loader.cpp`; part 2 the strings
   of `rez\stat_txt.tbl` (spec `docs/superpowers/specs/2026-10-08-string-editor-design.md`),
-  which follows PyMS's PyTBL. Unlike the plugin,
+  which follows PyMS's PyTBL; part 4 the 11 `arr\*.dat` files on a Data page, a port of
+  PyMS's PyDAT (spec `docs/superpowers/specs/2026-10-24-dat-editor-design.md`; its parts 2-5,
+  links, previews, entry counts and improvements, are not built; `MANIFOLD_ARR_DIR` runs the
+  tests on the real files). Unlike the plugin,
   most of it **can** be checked in the Linux session: `dotnet test
   tools/ManifoldEditor/Manifold.Core.Tests` (after `apt-get install -y dotnet-sdk-8.0`),
   and the WinUI window compiles with `dotnet msbuild -restore -t:Compile

@@ -5,11 +5,13 @@ A FireGraft replacement for the Manifold mod. Part 1: button sets on the 5x3 com
 `docs/superpowers/plans/2026-10-05-button-set-editor.md`). Part 2: the strings of
 `rez\stat_txt.tbl`, written as PyMS's PyTBL writes them (spec
 `docs/superpowers/specs/2026-10-08-string-editor-design.md`, plan
-`docs/superpowers/plans/2026-10-08-string-editor.md`).
+`docs/superpowers/plans/2026-10-08-string-editor.md`). Part 4: the `.dat` files, a C# port of
+PyMS's PyDAT (spec `docs/superpowers/specs/2026-10-24-dat-editor-design.md`, plan
+`docs/superpowers/plans/2026-10-24-dat-editor.md`).
 
 | Project | What | Builds on |
 |---|---|---|
-| `Manifold.Core` | Data (the `MBTS` file, the `.fgp` import, vanilla sets from `StarCraft.exe`, `stat_txt.tbl`, GRP icons, `units.dat`) and the model (edits, undo, checks, open/save), plus the window's logic (`Editor/`: set list, card cells, commands, settings, resources) | anywhere (.NET 8) |
+| `Manifold.Core` | Data (the `MBTS` file, the `.fgp` import, vanilla sets from `StarCraft.exe`, `stat_txt.tbl`, GRP icons, the 11 `.dat` files in `Data/Dat/`) and the model (edits, undo, checks, open/save), plus the window's logic (`Editor/`: set list, card cells, commands, settings, resources) | anywhere (.NET 8) |
 | `Manifold.Core.Tests` | xunit tests of all of it | anywhere |
 | `Manifold.Storm` | `IWritableArchive` over PyMS's 32-bit `StormLib.dll` | compiles anywhere, runs on Windows |
 | `ManifoldEditor.App` | the WinUI 3 window, built in C# (no `.xaml` files) | compiles anywhere, builds and runs on Windows |
@@ -33,6 +35,9 @@ $env:MANIFOLD_STAT_TXT = "D:\SC Modding\SCManifold\to-repack\rez\stat_txt.tbl"
 $env:MANIFOLD_SC_DIR = "D:\Games\Starcraft 1.16.1"
 dotnet test tools/ManifoldEditor/Manifold.Core.Tests --filter StatTxtReport
 ```
+`MANIFOLD_ARR_DIR=<a folder of vanilla's arr\*.dat>` runs the tests that read the real `.dat`
+files (every file reads and saves byte for byte, and some values are spot-checked); they are
+skipped when it is unset. PyMS's own copies of the vanilla files do.
 Don't run `dotnet test` on the whole `.sln` outside Windows: the app's packaging steps need
 Windows tools.
 
@@ -72,6 +77,25 @@ slot swaps; **Alt** stacks onto it, **Ctrl** copies the button, **Shift** moves 
 slot (**Ctrl+Shift** copies it). The panel's **Slot** box puts the selected button in an
 exact slot.
 
+**The toolbar** (QoL spec `docs/superpowers/specs/2026-10-24-editor-qol-design.md`): Open
+exe..., Save, Save as..., Undo, Redo, Repack plugin..., Repack files..., Launch (F5), and
+**More** (StarCraft folder..., Re-import FireGraft's sets...). Save shows ● with unsaved
+edits; Repack plugin shows ● when `GPTP.qdp` differs from the exe's plugin (its tooltip says
+how); Repack files shows how many to-repack files are new or changed. They look again on
+opening, after a save or repack, and when the window comes back into focus. **Launch**
+starts the exe from its folder, after asking to save unsaved edits and to repack a newer
+plugin or pending files. **Save as...** saves the edits into a copy of the exe at a new path
+and goes on editing that one (undo history kept); the original stays as it was, and the new
+exe asks again where to write its strings. A click on the status bar lists every status
+line, with Copy. The window opens where it was left, on the page and set left.
+
+**Adding and editing buttons.** Right-click a slot: **Add new button...** picks Blank (icon
+0, Always, Move) or any button of the exe's sets or vanilla's, searched by tooltip, action,
+condition or icon; it lands in the slot, sharing it when taken. Condition and Action filter
+as you type (a name or an address); Enter or a click picks, Esc keeps the old one. The icon
+picker searches by name or number, and **Unused** shows only icons no button uses. Icons are
+centred on their drawn pixels.
+
 **Shortcuts** (on the button sets page, outside text fields): Ctrl+C / Ctrl+V copy the
 selected button and paste it into the selected slot (sharing the slot if it is taken),
 Delete removes it; Ctrl+Shift+C / Ctrl+Shift+V copy and paste the whole set; Ctrl+S,
@@ -104,3 +128,66 @@ or neither). The first such save asks whether to also write it to
 `<exe folder>\to-repack\rez\stat_txt.tbl` (kept as `.bak`), so a later PyMPQ add of the
 to-repack copy doesn't bring the old strings back; the answer is kept per exe. When an exe
 opens and its to-repack copy differs (edited in PyTBL, say), the editor asks which to edit.
+
+**Repack** (spec `docs/superpowers/specs/2026-10-14-repack-design.md`), in place of FireGraft
+and PyMPQ, in two commands. **Repack plugin...** packs the plugin (`<exe folder>\GPTP.qdp`,
+where the GPTP build copies it) into FireGraft's exe; **Repack files...** adds files in a
+subfolder of the to-repack folder (`<exe folder>\to-repack\`; files at its top and `*.bak`
+are left out) to the MPQ, imploded, with a filter by path and **Select all** (which leaves
+the two warned files below to be ticked one at a time).
+Both paths have **Change...** and **Default**, kept per exe; a changed folder also moves the
+strings' to-repack copy for an exe not yet asked. The dialog lists each file as new, changed or
+the same as the exe's; `rez\stat_txt.tbl` and `Manifold\buttonsets.bin` start unticked, with a
+warning, when they differ from the exe's, since they would replace the editor's work. Unsaved
+edits are saved first. The repack works on `<exe>.repacking`, checks that the plugin, every
+added file and the editor's files read back, and swaps it in keeping `<exe>.bak`; any failure
+leaves the exe as it was. The status line compares the exe's plugin with `GPTP.qdp`. Only
+FireGraft's one-plugin layout is known; any other is refused. Tested in game 2026-10-24
+(all of the spec's §8), including a plugin of another size.
+
+## The Data page
+
+The **Data** page (after Button sets and Strings) edits the 11 `.dat` files of the exe's
+`arr\` folder, as PyMS's PyDAT does: units, weapons, flingy, sprites, images, upgrades,
+techdata, sfxdata, portdata, mapdata and orders. It follows PyDAT's layout: a tab per file,
+the units' sub-tabs (Basic, Advanced, Sounds, Graphics, StarEdit, AI Actions), PyDAT's groups,
+labels and tooltips (its `Hints.txt`). Every field is there: numbers, references (a dropdown
+and an id box), fixed lists, flags, and the derived displays (hit points' fraction, supply's
+half, times in seconds at Fastest, flingy's speed in pixels per frame). Files in the expanded
+layout (more entries than vanilla) open and save too.
+
+The exe is the document, as on the other pages: there is no Open or New. Edits share the one
+undo history with the button sets and strings, and Undo and Redo show the page, tab and entry
+they changed. A tab with unsaved edits shows ●, and an entry that differs from vanilla shows
+• in the list. A number box commits when it loses focus or on Enter; a value outside the
+field's type is refused (the box goes red, its tooltip has the range). A field that does not
+cover the entry (units.dat has some for entries 106-201 only) is disabled.
+
+**The entry list.** Find (Ctrl+F) searches the names and goes to the next match; Jump to ID
+(Ctrl+G) takes decimal or hex with `0x`. The **Names** box under the list is PyDAT's: Basic
+(PyMS's lists), TBL Based (from `stat_txt.tbl`, `unitnames.tbl`, `images.tbl`, `sfxdata.tbl`,
+`portdata.tbl` or `mapdata.tbl`, so a string renamed on the Strings page shows here) or
+Combined, with **Simple TBL Names**; both are kept per file. The list's right-click menu has
+**Revert entry** (to the file as opened, Ctrl+Shift+R) and **Revert entry to vanilla**, each
+one undo step. Check lines under the tabs list a reference past the end of its table, a
+sprite's selection circle image that names no image, and an expanded file the plugin refuses;
+each is a link to the entry.
+
+**Save and the to-repack copies.** Save writes every edited `.dat` file into the exe's MPQ
+with the button sets and strings, then writes `<to-repack>\arr\<name>.dat` (kept as `.bak`),
+so a later Repack files doesn't bring the old file back. A copy that fails to write is a
+status line; the exe keeps the edit. Save as writes no to-repack copies. When an exe opens
+and a to-repack `.dat` differs from the exe's, the opening dialog lists it with the strings
+copy and asks which to edit. An expanded file of a table the plugin cannot extend (the plugin
+reads images, sprites and flingy only) is flagged on opening, and the first Save that writes
+one asks to confirm. The plugin's extension is on `origin/feat/dat-extender`, not on master.
+
+**`Data\pydat\` must ship beside the exe.** It holds PyMS's name lists and `Hints.txt`
+(MIT; `LICENSE.md` is in it). The build copies it from `fixtures\pydat\`.
+
+**Not yet** (the later parts of the port, in the spec's header): Jump buttons, Used by, copy
+and paste, TXT import and export; previews (GRP frames, icons, sound playback); Add entry and
+Set count for images, sprites and flingy; improvements. Two differences from PyDAT: its
+seconds boxes are editable, here they are read-only text; and a box is limited to its
+property's type, not to PyDAT's tighter ranges. Built 2026-10-25; the rules are tested on
+Linux and the window compiles, but it has not been run on Windows.

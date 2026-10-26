@@ -22,10 +22,13 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
     ButtonSet? clipboardSet;
 
     public ButtonSetDocument Document { get; } = document;
-    public string ExeName { get; } = exeName;
+    /// <summary>The exe edited; Save as moves it to the new exe.</summary>
+    public string ExeName { get; set; } = exeName;
     public int SelectedSetId { get; set; }
     /// <summary>The string the last undo or redo changed, for the window to show; null for a set-only step.</summary>
     public int? LastStringId { get; private set; }
+    /// <summary>The .dat entry the last undo or redo changed, for the window to show; null for a step elsewhere.</summary>
+    public DatPlace? LastDatPlace { get; private set; }
     public ButtonSet SelectedSet => Document[SelectedSetId];
     public bool HasButtonClipboard => clipboardButton is not null;
     public bool HasSetClipboard => clipboardSet is not null;
@@ -119,6 +122,10 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
         clipboardButton is Button button && IsPosition(position) &&
         Apply(s => CardEdits.Paste(s, button, position), "Paste");
 
+    /// <summary>Add new button: the button at the slot, after the buttons there (as Paste), one undo step.</summary>
+    public bool AddButton(ushort position, Button button) =>
+        IsPosition(position) && Apply(s => CardEdits.Paste(s, button with { Position = position }, position), "Add button");
+
     public bool DeleteButton(int index) => IsIndex(index) && Apply(s => CardEdits.Delete(s, index), "Delete");
 
     public bool EditButton(int index, Button button) =>
@@ -166,7 +173,40 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
         if (place is not Place p) return false;
         if (p.SetId is int id) SelectedSetId = id;
         LastStringId = p.StringId;
+        LastDatPlace = p.Dat;
         return true;
+    }
+
+    // .dat files (spec 2026-10-24-dat-editor).
+
+    /// <summary>
+    /// One property of one entry set to a value, as one step. False when it changes nothing
+    /// or is refused: the file is missing, the entry is out of range or doesn't have the
+    /// property, or the value doesn't fit its type.
+    /// </summary>
+    public bool EditDat(DatId file, int entry, string property, ulong value)
+    {
+        try
+        {
+            return Document.ApplyDat(file, d => d.With(entry, property, value), entry, property, $"Edit {property}");
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// An entry back to the file as opened (or last saved), or to StarCraft's own, as one
+    /// step. False when it already matches, there is no such file, or the entry is past the
+    /// end of it (an entry added since, or one vanilla never had).
+    /// </summary>
+    public bool RevertEntry(DatId file, int entry, bool toVanilla)
+    {
+        var source = toVanilla ? Document.VanillaDat(file) : Document.OpenedDat(file);
+        if (source is null || entry < 0 || entry >= source.Count) return false;
+        return Document.ApplyDat(file, d => d.WithEntryFrom(entry, source), entry, null,
+            toVanilla ? "Revert entry to vanilla" : "Revert entry");
     }
 
     // Strings (spec §5, §6).

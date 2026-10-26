@@ -7,9 +7,12 @@ namespace Manifold.Core.Model;
 /// </summary>
 public static class StringMirror
 {
-    /// <summary>&lt;exe folder&gt;\to-repack\rez\stat_txt.tbl, the folder the user repacks from.</summary>
+    /// <summary>&lt;exe folder&gt;\to-repack\rez\stat_txt.tbl, in the default folder the user repacks from.</summary>
     public static string DefaultPath(string exePath) =>
-        Path.Combine(Path.GetDirectoryName(Path.GetFullPath(exePath)) ?? "", "to-repack", "rez", "stat_txt.tbl");
+        PathIn(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(exePath)) ?? "", "to-repack"));
+
+    /// <summary>&lt;folder&gt;\rez\stat_txt.tbl: the copy in a to-repack folder.</summary>
+    public static string PathIn(string repackFolder) => Path.Combine(repackFolder, "rez", "stat_txt.tbl");
 
     /// <summary>
     /// Replaces the file, keeping the previous one as &lt;name&gt;.bak. The new bytes go to a

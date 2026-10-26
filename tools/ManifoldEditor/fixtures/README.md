@@ -11,6 +11,7 @@ Inputs the editor's tests read, copied here so a session without the user's
 | `FireGraftConFunc.txt`, `FireGraftActFunc.txt` | From the old FireGraftEx skeleton: `name<TAB>address[<TAB>var]`, one line per FireGraft index from 0. 67 conditions, 60 actions. |
 | `Icons.txt` | PyMS `PyMS/Data/Icons.txt`: one name per `cmdicons.grp` frame. |
 | `Icons.pal` | PyMS `Palettes/Icons.pal` (768 bytes, raw RGB): the palette PyMS draws `cmdicons.grp` with. PyMS is MIT-licensed, (c) Zach Zahos (poiuyqwert). |
+| `pydat/*.txt` | PyMS `PyMS/Data/*.txt` at bfc5d3a: PyDAT's name lists and `Hints.txt`. MIT, (c) Zach Zahos (poiuyqwert); `pydat/LICENSE.md`. |
 
 Not here, because they can't be shared: `StarCraft.exe` and the vanilla MPQs. Tests that
 need them skip when `MANIFOLD_SC_DIR` is unset.

@@ -2,27 +2,34 @@ using Manifold.Core.Data;
 
 namespace Manifold.Core.Model;
 
-/// <summary>Where a step was made: the set it changed, the string it changed, or both.</summary>
-public readonly record struct Place(int? SetId, int? StringId);
+/// <summary>Where in a .dat file a step was made: the entry, and the property (null for a whole entry).</summary>
+public readonly record struct DatPlace(DatId File, int Entry, string? Property);
+
+/// <summary>Where a step was made: the set it changed, the string it changed, the .dat entry it changed, or several.</summary>
+public readonly record struct Place(int? SetId, int? StringId, DatPlace? Dat = null);
 
 /// <summary>One set before and after a step.</summary>
 public sealed record SetEdit(int SetId, ButtonSet Before, ButtonSet After);
 
+/// <summary>One .dat file before and after a step, made at an entry (and a property, or null for the whole entry).</summary>
+public sealed record DatEdit(DatId File, DatFile Before, DatFile After, int Entry, string? Property);
+
 /// <summary>
 /// One step of the history: sets before and after (usually one; several for Copy set to
 /// units and Re-import), the string table before and after, or both (a button given a copy
-/// of its string is one step).
+/// of its string is one step), or one .dat file before and after.
 /// </summary>
 public sealed record Change(IReadOnlyList<SetEdit> Sets,
-    StringTable? StringsBefore, StringTable? StringsAfter, int? StringId, string Label)
+    StringTable? StringsBefore, StringTable? StringsAfter, int? StringId, string Label, DatEdit? Dat = null)
 {
-    /// <summary>Where the step shows: its first set (the one being edited), and its string.</summary>
-    public Place Place => new(Sets.Count > 0 ? Sets[0].SetId : null, StringId);
+    /// <summary>Where the step shows: its first set (the one being edited), its string, and its .dat entry.</summary>
+    public Place Place => new(Sets.Count > 0 ? Sets[0].SetId : null, StringId,
+        Dat is { } d ? new DatPlace(d.File, d.Entry, d.Property) : null);
 }
 
 /// <summary>
-/// The 250 sets and the string table being edited, the versions they are compared with,
-/// and the undo history. Every edit is one step across all sets and strings; saving does
+/// The 250 sets, the string table and the .dat files being edited, the versions they are
+/// compared with, and the undo history. Every edit is one step across all sets and strings; saving does
 /// not clear the history.
 /// </summary>
 public sealed class ButtonSetDocument
@@ -32,6 +39,10 @@ public sealed class ButtonSetDocument
     int done;        // history[..done] is applied
     int savedAt;     // the value of done when last opened or saved
     StringTable? savedStrings;
+    readonly Dictionary<DatId, DatFile> dats;       // being edited
+    readonly Dictionary<DatId, DatFile> openedDats; // as opened (Revert entry); the saved ones after a save
+    readonly Dictionary<DatId, DatFile> savedDats;  // what the exe holds
+    readonly Dictionary<DatId, DatFile> vanillaDats;
 
     /// <summary>The sets as opened from the exe (Revert set, to the opened version).</summary>
     public IReadOnlyList<ButtonSet> Opened { get; private set; }
@@ -47,8 +58,9 @@ public sealed class ButtonSetDocument
     /// The table the exe holds, when it differs from <paramref name="strings"/> (the user
     /// chose to-repack's copy on opening); the strings then count as unsaved.
     /// </param>
+    /// <param name="dats">The .dat files opened and StarCraft's own; none without it.</param>
     public ButtonSetDocument(IReadOnlyList<ButtonSet> opened, IReadOnlyList<ButtonSet> vanilla,
-        StringTable? strings = null, StringTable? savedStrings = null)
+        StringTable? strings = null, StringTable? savedStrings = null, DatSet? dats = null)
     {
         if (opened.Count != Card.SetCount || vanilla.Count != Card.SetCount)
             throw new ArgumentException($"expected {Card.SetCount} sets");
@@ -57,6 +69,10 @@ public sealed class ButtonSetDocument
         Vanilla = vanilla.ToArray();
         Strings = OpenedStrings = strings;
         this.savedStrings = savedStrings ?? strings;
+        this.dats = dats is null ? new() : new(dats.Opened);
+        openedDats = new(this.dats);
+        savedDats = new(this.dats);
+        vanillaDats = dats is null ? new() : new(dats.Vanilla);
     }
 
     /// <summary>
@@ -70,11 +86,39 @@ public sealed class ButtonSetDocument
         Strings = OpenedStrings = strings;
     }
 
+    /// <summary>
+    /// On opening, before any edit: edit <paramref name="copy"/> of a .dat file instead (the
+    /// user chose the to-repack copy over the exe's). The exe's file stays the saved one, so
+    /// the file counts as unsaved.
+    /// </summary>
+    public void UseOpenedDat(DatId file, DatFile copy)
+    {
+        if (history.Count > 0) throw new InvalidOperationException("only before any edit");
+        if (copy.Format.Id != file) throw new ArgumentException($"{copy.Format.FileName} is not {DatFormats.Of(file).FileName}", nameof(copy));
+        dats[file] = openedDats[file] = copy;
+    }
+
+    /// <summary>The .dat file being edited; null when none was found.</summary>
+    public DatFile? Dat(DatId file) => dats.GetValueOrDefault(file);
+    /// <summary>The file as opened or last saved (Revert entry); null when none was found.</summary>
+    public DatFile? OpenedDat(DatId file) => openedDats.GetValueOrDefault(file);
+    /// <summary>StarCraft's own file (Revert entry to vanilla, the modified dot); null when none was found.</summary>
+    public DatFile? VanillaDat(DatId file) => vanillaDats.GetValueOrDefault(file);
+
+    /// <summary>The file's values differ from the file last saved: the save writes it.</summary>
+    public bool DatDirty(DatId file) =>
+        dats.TryGetValue(file, out var current) && (!savedDats.TryGetValue(file, out var saved) || !current.SameAs(saved));
+
+    /// <summary>Whether the entry differs from vanilla's; false past vanilla's last entry or without a vanilla file.</summary>
+    public bool EntryDiffersFromVanilla(DatId file, int entry) =>
+        dats.TryGetValue(file, out var current) && vanillaDats.TryGetValue(file, out var vanilla) &&
+        entry >= 0 && entry < vanilla.Count && entry < current.Count && !current.EntrySameAs(entry, vanilla);
+
     public IReadOnlyList<ButtonSet> Sets => sets;
     public ButtonSet this[int setId] => sets[setId];
 
     /// <summary>Unsaved changes (the title bar's mark).</summary>
-    public bool IsDirty => done != savedAt || StringsDirty;
+    public bool IsDirty => done != savedAt || StringsDirty || dats.Keys.Any(DatDirty);
     /// <summary>The strings differ from the table last saved: the save writes stat_txt.tbl.</summary>
     public bool StringsDirty => !ReferenceEquals(Strings, savedStrings);
     /// <summary>The set list's dot: the set differs from vanilla.</summary>
@@ -95,6 +139,7 @@ public sealed class ButtonSetDocument
     {
         foreach (var edit in change.Sets) sets[edit.SetId] = after ? edit.After : edit.Before;
         if (change.StringsBefore is not null) Strings = after ? change.StringsAfter : change.StringsBefore;
+        if (change.Dat is { } d) dats[d.File] = after ? d.After : d.Before;
     }
 
     /// <summary>
@@ -145,6 +190,20 @@ public sealed class ButtonSetDocument
         return true;
     }
 
+    /// <summary>
+    /// An edit of one .dat file as one step, made at <paramref name="entry"/> (and
+    /// <paramref name="property"/>, null for the whole entry). False when the file is
+    /// missing or the edit changes nothing.
+    /// </summary>
+    public bool ApplyDat(DatId file, Func<DatFile, DatFile> edit, int entry, string? property, string label)
+    {
+        if (!dats.TryGetValue(file, out var before)) return false;
+        var after = edit(before);
+        if (after.SameAs(before)) return false;
+        Record(new Change([], null, null, null, label, new DatEdit(file, before, after, entry, property)));
+        return true;
+    }
+
     public bool RevertToOpened(int setId) => Apply(setId, _ => Opened[setId], "Revert set");
     public bool RevertToVanilla(int setId) => Apply(setId, _ => Vanilla[setId], "Revert set to vanilla");
 
@@ -176,5 +235,6 @@ public sealed class ButtonSetDocument
         savedAt = done;
         Opened = sets.ToArray();
         savedStrings = Strings;
+        foreach (var (file, current) in dats) openedDats[file] = savedDats[file] = current;
     }
 }

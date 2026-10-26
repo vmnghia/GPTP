@@ -33,10 +33,20 @@ public sealed class UnitsDat
     {
         if (bytes.Length != FileSize)
             throw new InvalidDataException($"units.dat is {bytes.Length} bytes, not {FileSize}");
-        var groups = bytes[GroupFlagsOffset..(GroupFlagsOffset + UnitCount)];
+        return Of(DatFile.Parse(DatFormats.Of(DatId.Units), bytes));
+    }
+
+    /// <summary>The view of a parsed units.dat (vanilla or expanded): the first 228 units' race and kind.</summary>
+    public static UnitsDat Of(DatFile units)
+    {
+        if (units.Format.Id != DatId.Units) throw new ArgumentException($"{units.Format.FileName} is not units.dat", nameof(units));
+        var groups = new byte[UnitCount];
         var properties = new uint[UnitCount];
-        for (int i = 0; i < UnitCount; i++)
-            properties[i] = BitConverter.ToUInt32(bytes, BasePropertyOffset + i * 4);
+        for (int i = 0; i < Math.Min(UnitCount, units.Count); i++)
+        {
+            groups[i] = (byte)(units.Get(i, "staredit_group_flags") ?? 0);
+            properties[i] = (uint)(units.Get(i, "special_ability_flags") ?? 0);
+        }
         return new UnitsDat(groups, properties);
     }
 

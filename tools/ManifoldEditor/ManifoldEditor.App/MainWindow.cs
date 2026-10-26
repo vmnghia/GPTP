@@ -1,7 +1,9 @@
+using ManifoldEditor.App.Dat;
 using ManifoldEditor.App.Services;
 using Manifold.Core.Data;
 using Manifold.Core.Editor;
 using Manifold.Core.Model;
+using Manifold.Storm;
 using Microsoft.UI;
 using Microsoft.UI.Text;
 using Microsoft.UI.Windowing;
@@ -28,6 +30,19 @@ public sealed class MainWindow : Window
     const double CellSize = 64;
 
     EditorSettings settings;
+    /// <summary>The toolbar, its buttons off while a repack runs.</summary>
+    readonly StackPanel toolbar = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
+    /// <summary>A repack is running in the background: no save may swap the exe under it.</summary>
+    bool repacking;
+    /// <summary>The toolbar buttons whose text shows a marker (QoL spec §7).</summary>
+    Button saveButton = null!, repackPluginButton = null!, repackFilesButton = null!;
+    /// <summary>What waits to be repacked, from the last check that worked; null before one.</summary>
+    RepackPending? pending;
+    /// <summary>The check running now, which a second caller waits for instead of starting another.</summary>
+    Task? check;
+    bool launching;
+    /// <summary>The window's bounds while not maximized or minimized, kept for the settings.</summary>
+    WindowRect? restoredBounds;
     OpenedExe? opened;
     IconCache? icons;
     IReadOnlyList<string> iconNames = Array.Empty<string>();
@@ -55,6 +70,8 @@ public sealed class MainWindow : Window
     readonly TextBlock buttonListTitle = new() { FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 4) };
     readonly TextBlock checks = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0) };
     readonly TextBlock status = new() { TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis };
+    /// <summary>The status line's frame: a click anywhere on it opens the details.</summary>
+    readonly Border statusBar = new() { Background = new SolidColorBrush(Colors.Transparent) };
     readonly Button pasteSetButton = new() { Content = "Paste set" };
     readonly Button renameButton = new() { Content = "Rename..." };
 
@@ -62,9 +79,8 @@ public sealed class MainWindow : Window
     readonly StackPanel panel = new() { Spacing = 8 };
     readonly TextBlock panelTitle = new() { FontWeight = FontWeights.SemiBold };
     readonly Button iconButton = new() { MinWidth = 120, HorizontalContentAlignment = HorizontalAlignment.Left };
-    readonly GridView iconGrid = new() { IsItemClickEnabled = true, SelectionMode = ListViewSelectionMode.None, Width = 560, Height = 420 };
-    readonly ComboBox conditionBox = new() { Header = "Condition", HorizontalAlignment = HorizontalAlignment.Stretch };
-    readonly ComboBox actionBox = new() { Header = "Action", HorizontalAlignment = HorizontalAlignment.Stretch };
+    readonly FunctionBox conditionBox = new("Condition");
+    readonly FunctionBox actionBox = new("Action");
     readonly NumberBox slotBox = Number("Slot (1-15)");
     readonly TextBlock slotNote = Small();
     readonly NumberBox conditionVar = Number("Condition var");
@@ -75,32 +91,118 @@ public sealed class MainWindow : Window
     readonly StringEditorView disabledEditor = new(offerCopy: true);
     readonly Button enabledNew = new() { Content = "New string" };
     readonly Button disabledNew = new() { Content = "New string" };
+    /// <summary>Add new button's picker, and the slot it adds to.</summary>
+    readonly ButtonPicker buttonPicker = new();
+    ushort addPosition;
     /// <summary>Shared strings the user chose to edit for every button using them (Edit for all).</summary>
     readonly HashSet<int> unlockedStrings = new();
 
-    // The pages: button sets, strings (spec §6).
+    // The pages: button sets, strings (spec §6), the .dat files (.dat spec §6).
     readonly SelectorBar pages = new();
     readonly SelectorBarItem setsPageItem = new() { Text = "Button sets", IsSelected = true };
     readonly SelectorBarItem stringsPageItem = new() { Text = "Strings" };
+    readonly SelectorBarItem dataPageItem = new() { Text = "Data" };
     Grid setsPage = null!;
     StringsPage stringsPage = null!;
+    DataPage dataPage = null!;
+    /// <summary>What the set catalog was built from: the names (strings) and the race and kind (units.dat).</summary>
     StringTable? catalogStrings;
+    DatFile? catalogUnits;
+    /// <summary>The exes whose extended .dat files the user chose to save anyway (asked once per exe while the editor runs).</summary>
+    readonly HashSet<string> extendedConfirmed = new(StringComparer.OrdinalIgnoreCase);
 
     public MainWindow()
     {
         settings = Workspace.LoadSettings();
         Title = "Manifold Editor";
         Content = BuildLayout();
-        AppWindow.Resize(new Windows.Graphics.SizeInt32(1400, 860));
+        PlaceWindow();
         AppWindow.Closing += OnClosing;
+        // Back from building the plugin: the markers look again (QoL spec §7).
+        Activated += (_, e) => { if (e.WindowActivationState != WindowActivationState.Deactivated) _ = CheckPending(); };
         iconNames = Workspace.IconNames();
         ShowNothingOpen();
         // Reopen the last exe once the window is up, so a dialog has somewhere to show.
         ((FrameworkElement)Content).Loaded += async (_, _) =>
         {
-            if (opened is null && settings.LastExe is { } last && File.Exists(last))
-                await OpenExe(last);
+            if (opened is not null || settings.LastExe is not { } last || !File.Exists(last)) return;
+            int? lastSet = settings.LastSetId;
+            string? lastPage = settings.LastPage;
+            await OpenExe(last);
+            if (opened is null) return;
+            if (lastSet is int id && id >= 0 && id < Card.SetCount)
+            {
+                opened.State.SelectedSetId = id;
+                SelectSet(id);
+                Refresh();
+            }
+            if (lastPage == "strings") pages.SelectedItem = stringsPageItem;
+            else if (lastPage == "data") pages.SelectedItem = dataPageItem;
         };
+    }
+
+    // -------- The window's place (QoL spec §10) --------
+
+    /// <summary>Where the window was left, when that is still on a display; else the default size.</summary>
+    void PlaceWindow()
+    {
+        var areas = new List<WindowRect>();
+        // Indexed: enumerating FindAll's list throws in some Windows App SDK versions.
+        var displays = DisplayArea.FindAll();
+        for (int i = 0; i < displays.Count; i++)
+        {
+            var work = displays[i].WorkArea;
+            areas.Add(new WindowRect(work.X, work.Y, work.Width, work.Height));
+        }
+        if (WindowPlacement.Restore(settings.Window, areas) is { } saved)
+            AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(saved.X, saved.Y, saved.Width, saved.Height));
+        else
+            AppWindow.Resize(new Windows.Graphics.SizeInt32(1400, 860));
+        restoredBounds = CurrentBounds();
+        if (settings.WindowMaximized && AppWindow.Presenter is OverlappedPresenter presenter) presenter.Maximize();
+        AppWindow.Changed += (_, e) =>
+        {
+            if ((e.DidPositionChange || e.DidSizeChange) &&
+                AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Restored })
+                restoredBounds = CurrentBounds();
+        };
+    }
+
+    WindowRect CurrentBounds() =>
+        new(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
+
+    /// <summary>The window, the page and the set, into the settings (on closing).</summary>
+    void SavePlacement()
+    {
+        settings = settings with
+        {
+            Window = restoredBounds ?? settings.Window,
+            WindowMaximized = AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Maximized },
+            LastPage = pages.SelectedItem == stringsPageItem ? "strings" : pages.SelectedItem == dataPageItem ? "data" : null,
+            LastSetId = opened?.State.SelectedSetId ?? settings.LastSetId,
+        };
+        try { settings.Save(Workspace.SettingsPath); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+    }
+
+    /// <summary>The status bar's lines in full, selectable, with Copy (QoL spec §10).</summary>
+    void ShowStatusDetails()
+    {
+        string text = string.Join("\r\n", opened is null ? [status.Text] : opened.StatusLines);
+        var box = new TextBox
+        {
+            // AcceptsReturn before Text: a single-line TextBox cuts the text at its first line break.
+            AcceptsReturn = true, Text = text, IsReadOnly = true, TextWrapping = TextWrapping.Wrap,
+            FontFamily = new FontFamily("Consolas"), FontSize = 12, MaxHeight = 360, MinWidth = 400, MaxWidth = 760,
+        };
+        var copy = new Button { Content = "Copy" };
+        copy.Click += (_, _) =>
+        {
+            var data = new DataPackage();
+            data.SetText(text);
+            Clipboard.SetContent(data);
+        };
+        new Flyout { Content = new StackPanel { Spacing = 6, Children = { box, copy } } }.ShowAt(statusBar);
     }
 
     // -------- Layout --------
@@ -128,17 +230,28 @@ public sealed class MainWindow : Window
         root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-        var toolbar = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
+        // QoL spec §7: the file commands, the repack and launch commands, then More.
         toolbar.Children.Add(ToolButton("Open exe...", async (_, _) => await PickExe()));
-        toolbar.Children.Add(ToolButton("Save (Ctrl+S)", async (_, _) => await Save()));
+        saveButton = ToolButton("Save (Ctrl+S)", async (_, _) => await Save());
+        toolbar.Children.Add(saveButton);
+        toolbar.Children.Add(ToolButton("Save as...", async (_, _) => await SaveAs()));
         toolbar.Children.Add(ToolButton("Undo (Ctrl+Z)", (_, _) => Undo()));
         toolbar.Children.Add(ToolButton("Redo (Ctrl+Y)", (_, _) => Redo()));
-        toolbar.Children.Add(ToolButton("StarCraft folder...", async (_, _) => await PickStarCraftDir()));
-        toolbar.Children.Add(ToolButton("Re-import FireGraft's sets...", async (_, _) => await ReimportFireGraft()));
+        repackPluginButton = ToolButton("Repack plugin...", async (_, _) => await RepackExe(RepackKind.Plugin));
+        repackPluginButton.Margin = new Thickness(12, 0, 6, 0);
+        toolbar.Children.Add(repackPluginButton);
+        repackFilesButton = ToolButton("Repack files...", async (_, _) => await RepackExe(RepackKind.Files));
+        toolbar.Children.Add(repackFilesButton);
+        toolbar.Children.Add(ToolButton("Launch (F5)", async (_, _) => await Launch()));
+        var more = new MenuFlyout();
+        more.Items.Add(Item("StarCraft folder...", async () => await PickStarCraftDir()));
+        more.Items.Add(Item("Re-import FireGraft's sets...", async () => await ReimportFireGraft()));
+        toolbar.Children.Add(new DropDownButton { Content = "More", Flyout = more, Margin = new Thickness(12, 0, 6, 0) });
         root.Children.Add(toolbar);
 
         pages.Items.Add(setsPageItem);
         pages.Items.Add(stringsPageItem);
+        pages.Items.Add(dataPageItem);
         pages.SelectionChanged += (_, _) => ShowPage();
         pages.Margin = new Thickness(0, 0, 0, 8);
         Grid.SetRow(pages, 1);
@@ -148,6 +261,13 @@ public sealed class MainWindow : Window
         Grid.SetRow(stringsPage.Root, 2);
         stringsPage.Root.Visibility = Visibility.Collapsed;
         root.Children.Add(stringsPage.Root);
+
+        // The page keeps its file, sub-tab, entries and names in the settings in memory; they
+        // are written with the rest (on closing, and whenever the window saves the settings).
+        dataPage = new DataPage(() => opened, Refresh, () => settings, changed => settings = changed);
+        Grid.SetRow(dataPage.Root, 2);
+        dataPage.Root.Visibility = Visibility.Collapsed;
+        root.Children.Add(dataPage.Root);
 
         var body = new Grid { ColumnSpacing = 16 };
         setsPage = body;
@@ -214,9 +334,7 @@ public sealed class MainWindow : Window
 
         // Button panel.
         panel.Children.Add(panelTitle);
-        iconGrid.ItemClick += OnIconPicked;
-        iconButton.Flyout = new Flyout { Content = iconGrid };
-        iconButton.Flyout.Opening += (_, _) => FillIconGrid();
+        buttonPicker.Picked += AddButton;
         panel.Children.Add(new TextBlock { Text = "Icon" });
         panel.Children.Add(iconButton);
         slotBox.Maximum = Card.MaxPosition;
@@ -233,10 +351,10 @@ public sealed class MainWindow : Window
         };
         panel.Children.Add(slotBox);
         panel.Children.Add(slotNote);
-        conditionBox.SelectionChanged += (_, _) => EditSelected(b => b with { Condition = Pick(conditionBox, opened!.State.Conditions, b.Condition) });
-        actionBox.SelectionChanged += (_, _) => EditSelected(b => b with { Action = Pick(actionBox, opened!.State.Actions, b.Action) });
-        panel.Children.Add(conditionBox);
-        panel.Children.Add(actionBox);
+        conditionBox.Picked += address => EditSelected(b => b with { Condition = address });
+        actionBox.Picked += address => EditSelected(b => b with { Action = address });
+        panel.Children.Add(conditionBox.Root);
+        panel.Children.Add(actionBox.Root);
         conditionVar.ValueChanged += (_, _) => EditSelected(b => b with { ConditionVar = Value(conditionVar) });
         actionVar.ValueChanged += (_, _) => EditSelected(b => b with { ActionVar = Value(actionVar) });
         enabledString.ValueChanged += (_, _) => EditSelected(b => b with { EnabledString = Value(enabledString) });
@@ -249,13 +367,17 @@ public sealed class MainWindow : Window
         Grid.SetColumn(right, 2);
         body.Children.Add(right);
 
-        Grid.SetRow(status, 3);
-        status.Margin = new Thickness(0, 10, 0, 0);
-        root.Children.Add(status);
+        statusBar.Child = status;
+        Grid.SetRow(statusBar, 3);
+        statusBar.Margin = new Thickness(0, 10, 0, 0);
+        statusBar.Tapped += (_, _) => ShowStatusDetails();
+        ToolTipService.SetToolTip(statusBar, "Click for details");
+        root.Children.Add(statusBar);
 
         // The toolbar already names the shortcuts; no floating accelerator tooltips.
         root.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.S, async () => await Save()));
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.F5, () => { _ = Launch(); return true; }, VirtualKeyModifiers.None));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Z, Undo));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Y, Redo));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.C, CopyButtonKey));
@@ -272,6 +394,25 @@ public sealed class MainWindow : Window
         {
             if (!CardKeysApply()) return false;
             Run(s => s.PasteSet());
+            return true;
+        }, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
+        // The Data page's keys (spec §6, §7): Find, ID Jump, Revert entry.
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.F, () =>
+        {
+            if (!DataPageShows) return false;
+            dataPage.FocusFind();
+            return true;
+        }));
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.G, () =>
+        {
+            if (!DataPageShows) return false;
+            dataPage.FocusJump();
+            return true;
+        }));
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.R, () =>
+        {
+            if (!DataPageShows) return false;
+            dataPage.RevertEntry(toVanilla: false);
             return true;
         }, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
         return root;
@@ -348,13 +489,19 @@ public sealed class MainWindow : Window
 
     void ShowPage()
     {
-        if (setsPage is null || stringsPage is null) return;   // a selection event while the layout is built
+        if (setsPage is null || stringsPage is null || dataPage is null) return;   // a selection event while the layout is built
         bool strings = pages.SelectedItem == stringsPageItem;
-        setsPage.Visibility = strings ? Visibility.Collapsed : Visibility.Visible;
+        bool data = pages.SelectedItem == dataPageItem;
+        // What the page being left holds in its boxes is kept (its boxes commit on losing focus, which comes later).
+        if (!data) dataPage.CommitPending();
+        setsPage.Visibility = strings || data ? Visibility.Collapsed : Visibility.Visible;
         stringsPage.Root.Visibility = strings ? Visibility.Visible : Visibility.Collapsed;
+        dataPage.Root.Visibility = data ? Visibility.Visible : Visibility.Collapsed;
         if (strings) stringsPage.Refresh();
         else Refresh();
     }
+
+    bool DataPageShows => opened is not null && dataPage.Root.Visibility == Visibility.Visible;
 
     /// <summary>Copy set to units: pick the sets that take a copy of this one (one undo step).</summary>
     async Task CopySetToUnits()
@@ -545,12 +692,6 @@ public sealed class MainWindow : Window
     static ushort Value(NumberBox box) =>
         double.IsNaN(box.Value) ? (ushort)0 : (ushort)Math.Clamp(Math.Round(box.Value), 0, ushort.MaxValue);
 
-    /// <summary>The address picked in a function box; an unknown one (the last item) stays.</summary>
-    static uint Pick(ComboBox box, FunctionTable table, uint current) =>
-        box.SelectedIndex >= 0 && box.SelectedIndex < table.Functions.Count
-            ? table.Functions[box.SelectedIndex].Address
-            : current;
-
     // -------- Opening and saving --------
 
     void ShowNothingOpen()
@@ -587,7 +728,8 @@ public sealed class MainWindow : Window
     {
         try
         {
-            opened = Workspace.Open(path, Workspace.StarCraftDir(settings));
+            opened = Workspace.Open(path, Workspace.StarCraftDir(settings), settings.PluginPathFor(path));
+            pending = null;   // the last exe's: the check after opening fills it
         }
         catch (Exception e)
         {
@@ -595,32 +737,46 @@ public sealed class MainWindow : Window
             return;
         }
         icons = new IconCache(opened.Resources);
+        // The exe's icons differ from the last one's: a new picker.
+        var picker = new IconPicker(icons, iconNames) { Used = () => IconSearch.Used(opened!.State.Document.Sets) };
+        picker.Picked += frame => EditSelected(b => b with { Icon = (ushort)frame });
+        iconButton.Flyout = picker.Flyout;
         settings = settings with { LastExe = path };
         settings.Save(Workspace.SettingsPath);
         unlockedStrings.Clear();
         catalogStrings = opened.State.Strings;
-        await OfferRepackStrings(path);
+        catalogUnits = opened.State.Document.Dat(DatId.Units);
+        await OfferRepackCopies(path);
         selectedPosition = 0;
         selectedButton = -1;
         panel.Visibility = Visibility.Visible;
         FillSetList();
         SelectSet(opened.State.SelectedSetId);
         Refresh();
+        _ = CheckPending();
     }
 
     async Task<bool> Save()
     {
         if (opened is null) return false;
+        if (repacking)
+        {
+            await Message("Not saved", "Repack is running. Save once it has finished.");
+            return false;
+        }
         if (!CommitFields())
         {
             await Message("Not saved", "A string field holds text that doesn't compile: its error shows under it. Fix it, then save.");
             return false;
         }
+        if (!await ConfirmExtended()) return false;
+        await WaitForCheck();
         string? error;
         byte[]? strings = null;
+        IReadOnlyList<(DatId File, byte[] Bytes)> dats = [];
         try
         {
-            error = EditorSession.Save(opened.Archive, opened.State.Document, out strings);
+            error = EditorSession.Save(opened.Archive, opened.State.Document, out strings, out dats);
         }
         catch (Exception e)
         {
@@ -632,7 +788,340 @@ public sealed class MainWindow : Window
             return false;
         }
         if (strings is not null) await WriteRepackStrings(strings);
+        WriteRepackDats(dats);
         Refresh();
+        _ = CheckPending();
+        return true;
+    }
+
+    /// <summary>
+    /// Before a save that writes an extended .dat file the plugin refuses (.dat spec §4): Save
+    /// anyway or Cancel, asked once per exe while the editor runs. True to go on.
+    /// </summary>
+    async Task<bool> ConfirmExtended()
+    {
+        if (opened is null || extendedConfirmed.Contains(opened.ExePath)) return true;
+        var refused = EditorSession.RefusedExtended(opened.State.Document);
+        if (refused.Count == 0) return true;
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Content.XamlRoot,
+            Title = "Extended .dat file",
+            Content = new TextBlock
+            {
+                TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true,
+                Text = string.Join("\n\n", refused.Select(id =>
+                {
+                    string name = DatFormats.Of(id).FileName;
+                    return $"{name} is extended: the plugin refuses an extended {name} and the game will show its invalid-file warning.";
+                })),
+            },
+            PrimaryButtonText = "Save anyway", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Close,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return false;
+        extendedConfirmed.Add(opened.ExePath);
+        return true;
+    }
+
+    /// <summary>
+    /// After a save: each .dat file written into the exe also to &lt;to-repack&gt;\arr\ (.dat spec
+    /// §5), so a later Repack files doesn't put old values back. A copy that can't be written is
+    /// a status line; the exe keeps the edit.
+    /// </summary>
+    void WriteRepackDats(IReadOnlyList<(DatId File, byte[] Bytes)> dats)
+    {
+        if (opened is null || dats.Count == 0) return;
+        string folder = settings.RepackFolderFor(opened.ExePath);
+        var failures = new List<string>();
+        foreach (var (file, bytes) in dats)
+        {
+            try
+            {
+                DatMirror.Write(folder, file, bytes);
+            }
+            catch (Exception e)
+            {
+                // Any failure (an odd to-repack path throws ArgumentException or NotSupportedException
+                // too): the exe is saved already, so a status line, as WriteRepackStrings does.
+                failures.Add($"to-repack\\arr\\{DatFormats.Of(file).FileName} not written: {e.Message}");
+            }
+        }
+        if (failures.Count > 0) opened = opened with { Status = [.. opened.Status, .. failures] };
+    }
+
+    /// <summary>
+    /// Save as (QoL spec §9): the edits into a copy of the open exe at a new path, then the
+    /// editor works on that one. The original is left as it was.
+    /// </summary>
+    async Task SaveAs()
+    {
+        if (opened is null) return;
+        if (repacking)
+        {
+            await Message("Not saved", "Repack is running. Save once it has finished.");
+            return;
+        }
+        if (!CommitFields())
+        {
+            await Message("Not saved", "A string field holds text that doesn't compile: its error shows under it. Fix it, then save.");
+            return;
+        }
+        string source = opened.ExePath;
+        var picker = new FileSavePicker { SuggestedFileName = Path.GetFileNameWithoutExtension(source) + "-copy" };
+        picker.FileTypeChoices.Add("Executable", [".exe"]);
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(this));
+        if (await picker.PickSaveFileAsync() is not { } file) return;
+        string target = file.Path;
+        if (EditorSession.SaveAsProblem(source, target) is string refused)
+        {
+            await Message("Not saved", refused);
+            return;
+        }
+        if (!await ConfirmExtended()) return;
+        await WaitForCheck();
+        string? error;
+        // On the UI thread, as Save is: nothing can edit the document, save or repack meanwhile.
+        try
+        {
+            error = EditorSession.SaveAs(source, target, opened.State.Document, new StormRepackHost(), out _);
+        }
+        catch (Exception e)
+        {
+            error = e.ToString();
+        }
+        if (error is not null)
+        {
+            await Message("Not saved", error);
+            return;
+        }
+        // The same document carries on in the new exe: undo history and the saved mark with it.
+        opened = opened with
+        {
+            ExePath = target, Archive = new StormArchive(target),
+            Status = StatusLines.Renamed(opened.Status, Path.GetFileName(source), Path.GetFileName(target)),
+        };
+        opened.State.ExeName = Path.GetFileName(target);
+        settings = settings with { LastExe = target };
+        settings.Save(Workspace.SettingsPath);
+        // The to-repack copies (strings and .dat files) are not written here (spec §9): for a
+        // test copy beside the mod, their default would be the mod's own to-repack folder.
+        Refresh();
+        _ = CheckPending();
+    }
+
+    // -------- Markers and Launch (QoL spec §7-8) --------
+
+    /// <summary>Looks at the exe, the plugin and the to-repack folder, off the UI thread; one check at a time.</summary>
+    Task CheckPending()
+    {
+        if (opened is null || repacking) return Task.CompletedTask;
+        return check ??= RunCheck();
+    }
+
+    async Task RunCheck()
+    {
+        string exe = opened!.ExePath;
+        var s = settings;
+        try
+        {
+            var result = await Task.Run(() => Repack.Pending(File.ReadAllBytes(exe), exe, s.PluginPathFor(exe),
+                s.RepackFolderFor(exe), new StormArchive(exe)));
+            if (opened?.ExePath == exe)
+            {
+                pending = result;
+                opened = opened with { PluginLine = result.PluginLine };
+                status.Text = string.Join("   |   ", opened.StatusLines);
+            }
+        }
+        catch (Exception)
+        {
+            // The exe busy (the game running), the folder unreadable: the markers stay as they were.
+        }
+        finally
+        {
+            check = null;
+        }
+        UpdateMarkers();
+        // Another exe was opened while it ran: look at that one.
+        if (opened is not null && opened.ExePath != exe) _ = CheckPending();
+    }
+
+    /// <summary>Before writing the exe: a running check holds it open for reading.</summary>
+    async Task WaitForCheck()
+    {
+        if (check is { } running) await running;
+    }
+
+    /// <summary>Save's dot, Repack plugin's dot and Repack files' count.</summary>
+    void UpdateMarkers()
+    {
+        bool dirty = opened?.State.Document.IsDirty == true;
+        saveButton.Content = dirty ? "Save (Ctrl+S) ●" : "Save (Ctrl+S)";
+        bool plugin = pending?.PluginDiffers == true;
+        repackPluginButton.Content = plugin ? "Repack plugin... ●" : "Repack plugin...";
+        ToolTipService.SetToolTip(repackPluginButton, opened?.PluginLine);
+        int files = pending?.Files ?? 0;
+        repackFilesButton.Content = files > 0 ? $"Repack files... ({files})" : "Repack files...";
+    }
+
+    /// <summary>
+    /// Launch (F5): asks to save unsaved edits, then to repack a newer plugin or pending
+    /// files, then starts the exe through the shell from its folder.
+    /// </summary>
+    async Task Launch()
+    {
+        // F5 twice, or a double click: one launch, and never two dialogs at once.
+        if (launching) return;
+        launching = true;
+        try { await LaunchOnce(); }
+        finally { launching = false; }
+    }
+
+    async Task LaunchOnce()
+    {
+        if (opened is null || repacking) return;
+        CommitFields();
+        string exe = opened.ExePath, name = Path.GetFileName(exe);
+        await CheckPending();
+        var questions = LaunchCheck.Questions(opened.State.Document.IsDirty, pending, Path.GetFileName(settings.PluginPathFor(exe)));
+        if (questions.AskSave)
+        {
+            var ask = new ContentDialog
+            {
+                XamlRoot = Content.XamlRoot,
+                Title = "Unsaved changes",
+                Content = $"Save the changes to {name} before launching?",
+                PrimaryButtonText = "Save", SecondaryButtonText = "Launch anyway", CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Primary,
+            };
+            switch (await ask.ShowAsync())
+            {
+                case ContentDialogResult.Primary:
+                    if (!await Save()) return;
+                    break;
+                case ContentDialogResult.Secondary:
+                    break;
+                default:
+                    return;
+            }
+        }
+        if (questions.RepackText is string text && pending is { } waiting)
+        {
+            var ask = new ContentDialog
+            {
+                XamlRoot = Content.XamlRoot,
+                Title = "Newer than the exe",
+                Content = new TextBlock
+                {
+                    TextWrapping = TextWrapping.Wrap,
+                    Text = text + "\n\nRepack first opens " +
+                           (waiting.PluginNewer && waiting.Files > 0 ? "Repack plugin..., then Repack files..."
+                            : waiting.PluginNewer ? "Repack plugin..." : "Repack files...") + ", then starts the game.",
+                },
+                PrimaryButtonText = "Repack first", SecondaryButtonText = "Launch anyway", CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Primary,
+            };
+            switch (await ask.ShowAsync())
+            {
+                case ContentDialogResult.Primary:
+                    // A failure stops; a cancelled dialog goes on.
+                    if (waiting.PluginNewer && await RepackExe(RepackKind.Plugin) == false) return;
+                    if (waiting.Files > 0 && await RepackExe(RepackKind.Files) == false) return;
+                    break;
+                case ContentDialogResult.Secondary:
+                    break;
+                default:
+                    return;
+            }
+        }
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe)
+            {
+                UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(exe)!,
+            });
+        }
+        catch (System.ComponentModel.Win32Exception e) when (e.NativeErrorCode == 1223)
+        {
+            // The admin prompt was refused: nothing to say.
+        }
+        catch (Exception e)
+        {
+            await Message("Can't launch", $"{name}: {e.Message}", e.ToString());
+        }
+    }
+
+    // -------- Repack (Repack spec §6) --------
+
+    /// <summary>
+    /// The plugin, or the to-repack files, into the exe, in place of FireGraft and PyMPQ: on
+    /// the saved exe, so unsaved edits are saved first. The exe is reopened afterwards. True
+    /// when it repacked, false when it failed (its message shown), null when cancelled.
+    /// </summary>
+    async Task<bool?> RepackExe(RepackKind kind)
+    {
+        if (opened is null || repacking) return null;
+        CommitFields();
+        string exePath = opened.ExePath, name = Path.GetFileName(exePath);
+        if (opened.State.Document.IsDirty)
+        {
+            var ask = new ContentDialog
+            {
+                XamlRoot = Content.XamlRoot,
+                Title = "Unsaved changes",
+                Content = $"Repack works on the saved exe. Save the changes to {name} first?",
+                PrimaryButtonText = "Save and repack",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Primary,
+            };
+            if (await ask.ShowAsync() != ContentDialogResult.Primary) return null;
+            if (!await Save()) return false;
+        }
+
+        RepackChoice? choice;
+        try
+        {
+            choice = await new RepackDialog(Content.XamlRoot, WinRT.Interop.WindowNative.GetWindowHandle(this), exePath,
+                opened.Archive, kind, () => settings, changed => { settings = changed; settings.Save(Workspace.SettingsPath); }).ShowAsync();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            await Message("Can't repack", $"{name} can't be read: {e.Message}", e.ToString());
+            return false;
+        }
+        if (choice is null) return null;
+
+        string? error;
+        await WaitForCheck();
+        repacking = true;
+        foreach (var button in toolbar.Children.OfType<Control>()) button.IsEnabled = false;
+        status.Text = $"Repacking {name}...";
+        try
+        {
+            error = await Task.Run(() => Repack.Run(exePath, choice.Files, choice.Plugin, new StormRepackHost()));
+        }
+        catch (Exception e)
+        {
+            error = $"Repack failed unexpectedly: {e.Message}";
+        }
+        finally
+        {
+            repacking = false;
+            foreach (var button in toolbar.Children.OfType<Control>()) button.IsEnabled = true;
+        }
+        if (error is not null)
+        {
+            Refresh();
+            await Message("Not repacked", error);
+            return false;
+        }
+        await OpenExe(exePath);
+        string what = string.Join(" and ", new[]
+        {
+            choice.Plugin is null ? null : $"the plugin ({choice.Plugin.Length:N0} bytes)",
+            choice.Files.Count == 0 ? null : $"{choice.Files.Count} file{(choice.Files.Count == 1 ? "" : "s")}",
+        }.OfType<string>());
+        await Message("Repacked", $"{name} now holds {what}. The previous exe is {name}.bak.");
         return true;
     }
 
@@ -666,7 +1155,7 @@ public sealed class MainWindow : Window
     /// <summary>Where to also write the strings: a path, "" for nowhere, null to ask next time.</summary>
     async Task<string?> AskRepackPath(string exePath)
     {
-        string suggested = StringMirror.DefaultPath(exePath);
+        string suggested = StringMirror.PathIn(settings.RepackFolderFor(exePath));
         var dialog = new ContentDialog
         {
             XamlRoot = Content.XamlRoot,
@@ -699,58 +1188,108 @@ public sealed class MainWindow : Window
     }
 
     /// <summary>
-    /// On opening: when the exe's to-repack copy differs from the table in the exe (edited
-    /// in PyTBL, say), the user picks which one to edit.
+    /// On opening: when the exe's to-repack copies differ from what the editor opened (the
+    /// strings edited in PyTBL, a .dat file in PyDAT, say), one dialog lists them all, with
+    /// which side was changed more recently, and the user picks the exe's or to-repack's for
+    /// all of them (.dat spec §5).
     /// </summary>
-    async Task OfferRepackStrings(string exePath)
+    async Task OfferRepackCopies(string exePath)
     {
         var state = opened!.State;
-        if (state.Strings is null) return;
-        string? mirror = settings.MirrorFor(exePath);
-        if (mirror is null)
+        var lines = new List<string>();
+
+        // stat_txt.tbl, as before: its copy may be set elsewhere for this exe.
+        string? mirror = null;
+        if (state.Strings is not null)
         {
-            string suggested = StringMirror.DefaultPath(exePath);
-            mirror = File.Exists(suggested) ? suggested : "";
+            mirror = settings.MirrorFor(exePath);
+            if (mirror is null)
+            {
+                string suggested = StringMirror.PathIn(settings.RepackFolderFor(exePath));
+                mirror = File.Exists(suggested) ? suggested : "";
+            }
+            try
+            {
+                if (mirror.Length > 0)
+                {
+                    byte[]? exeTable = opened.Archive.TryRead(StringTable.ArchivePath);
+                    if (StringMirror.Compare(exeTable, mirror) == StringMirror.State.Differs)
+                        lines.Add($"{mirror}: {Newer(mirror)} was changed more recently" +
+                                  (exeTable is null ? " (the exe has no stat_txt.tbl; the editor read vanilla's)." : "."));
+                    else mirror = null;
+                }
+                else mirror = null;
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+            {
+                mirror = null;
+            }
         }
-        if (mirror.Length == 0) return;
-        byte[]? exeTable;
+
+        // The .dat files.
+        var notes = new List<string>();
+        IReadOnlyList<MirrorDiff> dats;
         try
         {
-            exeTable = opened.Archive.TryRead(StringTable.ArchivePath);
-            if (StringMirror.Compare(exeTable, mirror) != StringMirror.State.Differs) return;
+            dats = DatMirror.Differing(state.Document, settings.RepackFolderFor(exePath), exePath, notes);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return;
+            dats = [];
+            notes.Add($"to-repack\\arr: {e.Message}");
         }
-        string newer = StringMirror.IsNewerThan(mirror, exePath) ? "The to-repack copy" : "The exe";
+        if (notes.Count > 0) opened = opened with { Status = [.. opened.Status, .. notes] };
+        foreach (var diff in dats)
+            lines.Add($"{diff.Path}: {(diff.Newer ? "The to-repack copy" : "The exe")} was changed more recently.");
+        if (lines.Count == 0) return;
+
         var dialog = new ContentDialog
         {
             XamlRoot = Content.XamlRoot,
-            Title = "Two different stat_txt.tbl",
-            Content = new TextBlock
+            Title = "The to-repack copies differ",
+            Content = new ScrollViewer
             {
-                TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true,
-                Text = $"{mirror}\ndiffers from the stat_txt.tbl in {state.ExeName}" +
-                       (exeTable is null ? " (the exe has none; the editor read vanilla's)" : "") +
-                       $". {newer} was changed more recently.\n\nWhich one do you want to edit? Choosing to-repack's " +
-                       "puts it into the exe at the next save.",
+                MaxHeight = 420,
+                Content = new TextBlock
+                {
+                    TextWrapping = TextWrapping.Wrap, IsTextSelectionEnabled = true,
+                    Text = $"These to-repack copies differ from the files in {state.ExeName}:\n\n" + string.Join("\n", lines) +
+                           "\n\nWhich ones do you want to edit? Choosing to-repack's takes every copy listed, and puts them " +
+                           "into the exe at the next save.",
+                },
             },
             PrimaryButtonText = "The exe's",
             SecondaryButtonText = "to-repack's",
             DefaultButton = ContentDialogButton.Primary,
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Secondary) return;
-        try
+
+        var status = new List<string>();
+        foreach (var diff in dats)
         {
-            state.Document.UseOpenedStrings(StringTable.Parse(File.ReadAllBytes(mirror)));
-            catalogStrings = null;
-            opened = opened with { Status = opened.Status.Append($"Strings from {mirror} (not yet saved into the exe)").ToArray() };
+            state.Document.UseOpenedDat(diff.File, diff.Copy);
+            status.Add($"{DatFormats.Of(diff.File).ArchivePath} from {diff.Path} (not yet saved into the exe)");
         }
-        catch (Exception e) when (e is InvalidDataException or IOException or UnauthorizedAccessException)
+        // The catalog's race and kind come from units.dat: built again on the next redraw.
+        catalogUnits = null;
+        string? unreadable = null;
+        if (mirror is not null)
         {
-            await Message("Can't read the to-repack copy", $"{mirror}: {e.Message}. Editing the exe's strings.");
+            try
+            {
+                state.Document.UseOpenedStrings(StringTable.Parse(File.ReadAllBytes(mirror)));
+                catalogStrings = null;
+                status.Add($"Strings from {mirror} (not yet saved into the exe)");
+            }
+            catch (Exception e) when (e is InvalidDataException or IOException or UnauthorizedAccessException)
+            {
+                unreadable = $"{mirror}: {e.Message}. Editing the exe's strings.";
+            }
         }
+        opened = opened with { Status = [.. opened.Status, .. status] };
+        if (unreadable is not null) await Message("Can't read the to-repack copy", unreadable);
+
+        string Newer(string path) => StringMirror.IsNewerThan(path, exePath) ? "The to-repack copy" : "The exe";
     }
 
     /// <summary>With unsaved changes: Save, Don't save or Cancel. True to go on.</summary>
@@ -779,6 +1318,7 @@ public sealed class MainWindow : Window
 
     async void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
+        SavePlacement();
         if (closeConfirmed || opened is null) return;
         CommitFields();
         if (!opened.State.Document.IsDirty) return;
@@ -798,7 +1338,8 @@ public sealed class MainWindow : Window
         if (details is not null)
             body.Children.Add(new TextBox
             {
-                Text = details, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, AcceptsReturn = true,
+                // AcceptsReturn before Text: a single-line TextBox cuts the text at its first line break.
+                AcceptsReturn = true, Text = details, IsReadOnly = true, TextWrapping = TextWrapping.Wrap,
                 FontFamily = new FontFamily("Consolas"), FontSize = 11, MaxHeight = 320,
             });
         var dialog = new ContentDialog
@@ -843,6 +1384,8 @@ public sealed class MainWindow : Window
         bool enabled = enabledEditor.CommitPending();
         bool disabled = disabledEditor.CommitPending();
         bool strings = stringsPage.CommitPending();
+        // A .dat box holding a value out of its range stays red and records nothing: no reason to stop.
+        dataPage.CommitPending();
         return enabled && disabled && strings;
     }
 
@@ -851,6 +1394,12 @@ public sealed class MainWindow : Window
         if (!changed) return false;
         SelectSet(opened!.State.SelectedSetId);
         if (opened.State.LastStringId is int id && stringsPage.Root.Visibility == Visibility.Visible) stringsPage.Select(id);
+        // A .dat step: the Data page, the file's tab (the sub-tab with the property) and the entry.
+        if (opened.State.LastDatPlace is DatPlace place)
+        {
+            pages.SelectedItem = dataPageItem;
+            dataPage.Show(place);
+        }
         return true;
     }
 
@@ -860,15 +1409,6 @@ public sealed class MainWindow : Window
         var state = opened.State;
         if (selectedButton < 0 || selectedButton >= state.SelectedSet.Buttons.Count) return;
         Run(s => s.EditButton(selectedButton, edit(s.SelectedSet.Buttons[selectedButton])));
-    }
-
-    void OnIconPicked(object sender, ItemClickEventArgs e)
-    {
-        if (e.ClickedItem is FrameworkElement { Tag: int frame })
-        {
-            EditSelected(b => b with { Icon = (ushort)frame });
-            iconButton.Flyout.Hide();
-        }
     }
 
     // -------- Set list --------
@@ -899,6 +1439,15 @@ public sealed class MainWindow : Window
         }
         if (setItems.TryGetValue(opened.State.SelectedSetId, out var selected)) setList.SelectedItem = selected;
         updating = false;
+    }
+
+    /// <summary>Whether every set keeps its group, race and kind (names are redrawn by UpdateSetItem anyway).</summary>
+    static bool SameGroups(SetCatalog a, SetCatalog b)
+    {
+        for (int i = 0; i < a.Entries.Count; i++)
+            if (a.Entries[i].Group != b.Entries[i].Group || a.Entries[i].Race != b.Entries[i].Race || a.Entries[i].Kind != b.Entries[i].Kind)
+                return false;
+        return true;
     }
 
     void UpdateSetItem(int id)
@@ -936,13 +1485,19 @@ public sealed class MainWindow : Window
         if (opened is null) return;
         var state = opened.State;
         Title = state.Title;
-        if (!ReferenceEquals(catalogStrings, state.Strings))
+        var units = state.Document.Dat(DatId.Units);
+        if (!ReferenceEquals(catalogStrings, state.Strings) || !ReferenceEquals(catalogUnits, units))
         {
-            // Unit names are strings: rename the sets when they change.
+            // Unit names are strings: rename the sets when they change. Race and kind are
+            // units.dat's (StarEdit race, hero, building, add-on and subunit flags): regroup.
             catalogStrings = state.Strings;
-            opened = opened with { Catalog = SetCatalog.Build(state.UnitName, opened.Resources.Units) };
+            catalogUnits = units;
+            var before = opened.Catalog;
+            opened = opened with { Catalog = Workspace.Catalog(state) };
+            if (!SameGroups(before, opened.Catalog)) FillSetList();
         }
         if (stringsPage.Root.Visibility == Visibility.Visible) stringsPage.Refresh();
+        if (dataPage.Root.Visibility == Visibility.Visible) dataPage.Refresh();
         foreach (var id in setItems.Keys) UpdateSetItem(id);
         var entry = opened.Catalog.Entries[state.SelectedSetId];
         setTitle.Text = $"{state.SelectedSetId}  {entry.Name}";
@@ -956,8 +1511,8 @@ public sealed class MainWindow : Window
         FillButtonList();
         FillPanel();
         checks.Text = string.Join("\n", state.CheckLines());
-        status.Text = string.Join("   |   ", opened.Status);
-        ToolTipService.SetToolTip(status, string.Join("\n", opened.Status));
+        status.Text = string.Join("   |   ", opened.StatusLines);
+        UpdateMarkers();
     }
 
     void DrawCard()
@@ -982,8 +1537,8 @@ public sealed class MainWindow : Window
         foreach (var slot in CardLayout.StackIcons(cell, CellSize).Reverse())
         {
             ushort frame = state.SelectedSet.Buttons[slot.ButtonIndex].Icon;
-            FrameworkElement view = icons?.Get(frame) is { } bitmap
-                ? new Image { Source = bitmap, Stretch = Stretch.Uniform }
+            FrameworkElement view = icons?.View(frame, slot.Size) is { } icon
+                ? icon
                 : new TextBlock { Text = $"#{frame}", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             var frameBorder = new Border
             {
@@ -1076,6 +1631,8 @@ public sealed class MainWindow : Window
         };
 
         var menu = new MenuFlyout();
+        menu.Items.Add(Item("Add new button...", () => ShowButtonPicker(border, cell.Position)));
+        menu.Items.Add(new MenuFlyoutSeparator());
         // The menu acts on the button pressed (the selected one, when it is in this cell).
         int MenuButton() => cell.ButtonIndexes.Contains(selectedButton) ? selectedButton : pressed;
         var copyItem = Item("Copy (Ctrl+C)", () => { if (MenuButton() >= 0) { state.CopyButton(MenuButton()); Refresh(); } });
@@ -1089,6 +1646,29 @@ public sealed class MainWindow : Window
         menu.Items.Add(deleteItem);
         border.ContextFlyout = menu;
         return border;
+    }
+
+    /// <summary>Add new button (QoL spec §3): the templates, at the slot right-clicked.</summary>
+    void ShowButtonPicker(FrameworkElement at, ushort position)
+    {
+        if (opened is null) return;
+        var state = opened.State;
+        addPosition = position;
+        var templates = ButtonTemplates.Build(state.Document.Sets, state.Document.Vanilla, state.Text);
+        buttonPicker.Fill(templates,
+            query => ButtonTemplates.Filter(templates, query, state.Conditions, state.Actions, iconNames),
+            address => state.Actions.ByAddress(address)?.Name ?? $"0x{address:X8}", icons);
+        buttonPicker.Flyout.ShowAt(at);
+    }
+
+    void AddButton(Manifold.Core.Data.Button template)
+    {
+        if (opened is null) return;
+        CommitFields();
+        if (!opened.State.AddButton(addPosition, template)) return;
+        selectedPosition = addPosition;
+        selectedButton = opened.State.SelectedSet.Buttons.Count - 1;
+        Refresh();
     }
 
     static Windows.UI.Color Color(byte a, byte r, byte g, byte b) => Windows.UI.Color.FromArgb(a, r, g, b);
@@ -1138,8 +1718,8 @@ public sealed class MainWindow : Window
             // Empty, not the last button's values greyed out.
             panelTitle.Text = "Select a button";
             iconButton.Content = null;
-            conditionBox.ItemsSource = null;
-            actionBox.ItemsSource = null;
+            conditionBox.Clear();
+            actionBox.Clear();
             foreach (var box in new[] { slotBox, conditionVar, actionVar, enabledString, disabledString })
                 box.Value = double.NaN;
             slotNote.Text = "";
@@ -1151,15 +1731,15 @@ public sealed class MainWindow : Window
         var b = state.SelectedSet.Buttons[selectedButton];
         panelTitle.Text = $"{state.NameOf(selectedButton)} (position {b.Position})";
         var iconRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        if (icons?.Get(b.Icon) is { } bitmap) iconRow.Children.Add(new Image { Source = bitmap, Width = 36, Height = 34 });
+        if (icons?.View(b.Icon, 36) is { } icon) iconRow.Children.Add(icon);
         iconRow.Children.Add(new TextBlock
         {
             Text = b.Icon < iconNames.Count ? $"{b.Icon}: {iconNames[b.Icon]}" : $"{b.Icon}",
             VerticalAlignment = VerticalAlignment.Center,
         });
         iconButton.Content = iconRow;
-        FillFunctions(conditionBox, state.Conditions, b.Condition, state.ConditionLabel);
-        FillFunctions(actionBox, state.Actions, b.Action, state.ActionLabel);
+        conditionBox.Show(state.Conditions, b.Condition, state.ConditionLabel);
+        actionBox.Show(state.Actions, b.Action, state.ActionLabel);
         slotBox.Value = b.Position;
         slotNote.Text = state.SlotNote(selectedButton, b.Position);
         conditionVar.Value = b.ConditionVar;
@@ -1187,38 +1767,6 @@ public sealed class MainWindow : Window
         editor.Show(field == StringField.Enabled ? $"Tooltip, string {id}" : $"Disabled text, string {id}",
             table.Segment(id), field == StringField.Enabled, shared, shared.Length > 0 && !unlockedStrings.Contains(id),
             opened.Resources.TextColours);
-    }
-
-    /// <summary>The table's functions as "name (address)"; an address not in it is added last.</summary>
-    static void FillFunctions(ComboBox box, FunctionTable table, uint address, Func<uint, string> label)
-    {
-        var items = table.Functions.Select(f => label(f.Address)).ToList();
-        int index = table.Functions.ToList().FindIndex(f => f.Address == address);
-        if (index < 0)
-        {
-            items.Add(label(address));
-            index = items.Count - 1;
-        }
-        box.ItemsSource = items;
-        box.SelectedIndex = index;
-    }
-
-    void FillIconGrid()
-    {
-        if (iconGrid.Items.Count > 0 || icons is null) return;
-        int count = Math.Max(icons.Count, iconNames.Count);
-        for (int frame = 0; frame < count; frame++)
-        {
-            var tile = new StackPanel { Width = 64, Tag = frame };
-            if (icons.Get(frame) is { } bitmap) tile.Children.Add(new Image { Source = bitmap, Width = 36, Height = 34 });
-            tile.Children.Add(new TextBlock
-            {
-                Text = frame < iconNames.Count ? $"{frame} {iconNames[frame]}" : frame.ToString(),
-                FontSize = 10, TextTrimming = TextTrimming.CharacterEllipsis,
-            });
-            ToolTipService.SetToolTip(tile, frame < iconNames.Count ? iconNames[frame] : frame.ToString());
-            iconGrid.Items.Add(tile);
-        }
     }
 }
 
