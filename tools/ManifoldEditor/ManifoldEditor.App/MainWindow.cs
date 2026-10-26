@@ -428,6 +428,9 @@ public sealed class MainWindow : Window
         root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.N, dataPage.OverrideName, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
         root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.E, dataPage.ExportText, VirtualKeyModifiers.Control));
         root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.I, dataPage.ImportText, VirtualKeyModifiers.Control));
+        // Add Entry and Set Entry Count, PyDAT's keys (counts spec §3).
+        root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.A, dataPage.AddEntry, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
+        root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.S, dataPage.SetEntryCount, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
         return root;
     }
 

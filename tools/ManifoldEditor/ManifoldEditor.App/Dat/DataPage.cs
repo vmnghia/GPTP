@@ -58,6 +58,9 @@ sealed class DataPage
     readonly MenuFlyoutItem revertItem = new() { Text = "Revert entry", KeyboardAcceleratorTextOverride = "Ctrl+Shift+R" };
     readonly MenuFlyoutItem revertVanillaItem = new() { Text = "Revert entry to vanilla" };
     readonly MenuFlyoutItem overrideItem = new() { Text = "Override Name", KeyboardAcceleratorTextOverride = "Ctrl+Shift+N" };
+    // PyDAT's entry counts (counts spec §3).
+    readonly MenuFlyoutItem addEntryItem = new() { Text = "Add Entry (DatExtend)", KeyboardAcceleratorTextOverride = "Ctrl+Shift+A" };
+    readonly MenuFlyoutItem setCountItem = new() { Text = "Set Entry Count (DatExtend)...", KeyboardAcceleratorTextOverride = "Ctrl+Shift+S" };
     // The TXT menu above the tabs.
     readonly DropDownButton txtButton = new() { Content = "TXT", VerticalAlignment = VerticalAlignment.Center };
     readonly MenuFlyoutItem exportItem = new() { Text = "Export to TXT...", KeyboardAcceleratorTextOverride = "Ctrl+E" };
@@ -200,6 +203,8 @@ sealed class DataPage
         revertItem.Click += (_, _) => RevertEntry(toVanilla: false);
         revertVanillaItem.Click += (_, _) => RevertEntry(toVanilla: true);
         overrideItem.Click += async (_, _) => await OverrideName();
+        addEntryItem.Click += async (_, _) => await AddEntry();
+        setCountItem.Click += async (_, _) => await SetEntryCount();
         menu.Items.Add(copyEntryItem);
         menu.Items.Add(copySubTabItem);
         menu.Items.Add(pasteItem);
@@ -208,6 +213,9 @@ sealed class DataPage
         menu.Items.Add(revertVanillaItem);
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(overrideItem);
+        menu.Items.Add(new MenuFlyoutSeparator());
+        menu.Items.Add(addEntryItem);
+        menu.Items.Add(setCountItem);
         menu.Opening += (_, _) => UpdateMenu();
         // Not ContextFlyout: a right click doesn't select the row, and the menu acts on the
         // selected entry. The row under the pointer (or the focused row, from the keyboard) is
@@ -512,6 +520,8 @@ sealed class DataPage
         revertItem.IsEnabled = doc?.OpenedDat(file) is { } o && entry < o.Count && doc.Dat(file) is not null;
         revertVanillaItem.IsEnabled = doc?.VanillaDat(file) is { } v && entry < v.Count && doc.Dat(file) is not null;
         overrideItem.IsEnabled = hasEntry;
+        addEntryItem.IsEnabled = doc?.Dat(file)?.CanGrow == true;
+        setCountItem.IsEnabled = doc?.Dat(file) is { Format.ExpandedMax: not null };
         exportItem.IsEnabled = doc?.Dat(file) is not null;
         importItem.IsEnabled = doc?.Dat(file) is not null;
     }
@@ -690,6 +700,77 @@ sealed class DataPage
             return;
         }
         if (state.EditOverrides(at, after, entry)) changed();
+    }
+
+    // -------- Entry counts (counts spec §3) --------
+
+    /// <summary>Add Entry (DatExtend): one more entry, after PyDAT's question on a file's first growth; the new last entry is shown.</summary>
+    public Task AddEntry() => Guard("Entry not added", () => Grow(count: null));
+
+    /// <summary>Set Entry Count (DatExtend): PyDAT's question on a first growth, then its count dialog; the new last entry is shown.</summary>
+    public Task SetEntryCount() => Guard("Count not changed", () => Grow(count: true));
+
+    /// <param name="count">Null: Add Entry; otherwise ask for the count.</param>
+    async Task Grow(bool? count)
+    {
+        if (busy || DialogOpen() || Root.XamlRoot is not { } xamlRoot) return;
+        CommitPending();
+        if (opened() is not { } exe || exe.State.Document.Dat(file) is not { } dat) return;
+        if (count is null ? !dat.CanGrow : dat.Format.ExpandedMax is null) return;
+        var state = exe.State;
+        var at = file;
+        int shown = Entry;
+        long? wanted = null;
+        busy = true;
+        try
+        {
+            if (!await ConfirmGrowth(xamlRoot, dat)) return;
+            if (count is not null && (wanted = await new EntryCountDialog(xamlRoot, dat).ShowAsync()) is null) return;
+        }
+        finally
+        {
+            busy = false;
+        }
+        // The document moved on while a dialog showed (another exe, an undo): its question no longer applies.
+        if (!ReferenceEquals(opened()?.State, state) || !ReferenceEquals(state.Document.Dat(at), dat)) return;
+        if (wanted is null)
+        {
+            if (!state.AddEntry(at, shown)) return;
+        }
+        else if (state.SetEntryCount(at, wanted.Value, shown) is { } refused)
+        {
+            await Tell("Count not changed", refused);
+            return;
+        }
+        if (state.Document.Dat(at) is not { } grown || ReferenceEquals(grown, dat)) return;
+        entries[at] = grown.Count - 1;
+        Remember();
+        changed();
+    }
+
+    /// <summary>
+    /// PyDAT's question before a file's first growth, with the plugin's limit: true at once for a
+    /// file already expanded; Cancel is the default for a file the plugin refuses.
+    /// </summary>
+    static async Task<bool> ConfirmGrowth(XamlRoot root, DatFile dat)
+    {
+        if (dat.IsExpanded) return true;
+        string name = dat.Format.FileName;
+        bool loads = DatFormats.PluginExtends(dat.Format.Id);
+        var dialog = new ContentDialog
+        {
+            XamlRoot = root, Title = $"Expand {name}?",
+            Content = new TextBlock
+            {
+                TextWrapping = TextWrapping.Wrap,
+                Text = loads
+                    ? $"Expanded .dat files need the plugin's DatExtend. Expand {name}?"
+                    : $"The plugin can't load an expanded {name}: the game will refuse it. Expand it anyway?",
+            },
+            PrimaryButtonText = "Expand", CloseButtonText = "Cancel",
+            DefaultButton = loads ? ContentDialogButton.Primary : ContentDialogButton.Close,
+        };
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 
     /// <summary>
