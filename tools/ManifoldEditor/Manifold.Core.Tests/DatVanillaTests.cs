@@ -79,4 +79,42 @@ public class DatVanillaTests
 
         Assert.Equal(1UL, Load(DatId.Images).Get(0, "grp_file"));
     }
+
+    /// <summary>
+    /// Every vanilla unit, sprite and image through the previews, the GRPs from PyMS's MPQ
+    /// folder (only the selection circles and cmdicons are there): each builds and renders,
+    /// and a scene with no picture says why (previews spec §7).
+    /// </summary>
+    [SkippableFact]
+    public void EveryVanillaPreviewDrawsOrGivesAReason()
+    {
+        Skip.If(ArrDir is null, "MANIFOLD_ARR_DIR is not set");
+        string mpq = Path.Combine(ArrDir!, "..");
+        byte[]? Read(string path)
+        {
+            string file = Path.Combine(mpq, path.Replace('\\', '/'));
+            return File.Exists(file) ? File.ReadAllBytes(file) : null;
+        }
+        var palettes = PreviewPalettes.Load(Fixtures.PathOf("palettes"));
+        var preview = new DatPreview(Read, palettes);
+        var files = DatFormats.All.ToDictionary(f => f.Id, f => Load(f.Id));
+        DatFile? Dat(DatId id) => files[id];
+        var tbl = StringTable.Parse(File.ReadAllBytes(Path.Combine(ArrDir!, "images.tbl")));
+
+        void Check(PreviewScene scene, string what)
+        {
+            Assert.Equal(DatPreview.Size * DatPreview.Size, scene.Render().Length);
+            if (!scene.Layers.Any(l => l is PictureLayer)) Assert.True(scene.Reasons.Count > 0, what);
+        }
+        var all = new UnitPreviewOptions(true, true, true, 106);
+        for (int unit = 0; unit < files[DatId.Units].Count; unit++)
+        {
+            Check(preview.UnitGraphicsScene(Dat, tbl, unit, all), $"unit {unit}");
+            Check(preview.UnitStarEditScene(Dat, tbl, unit), $"unit {unit} (StarEdit)");
+        }
+        for (int sprite = 0; sprite < files[DatId.Sprites].Count; sprite++) Check(preview.SpriteScene(Dat, tbl, sprite), $"sprite {sprite}");
+        for (int image = 0; image < files[DatId.Images].Count; image++) Check(preview.ImageScene(Dat, tbl, image), $"image {image}");
+        for (int image = 561; image <= 570; image++)
+            Assert.NotNull(preview.Image(files[DatId.Images], tbl, image).Picture);
+    }
 }
