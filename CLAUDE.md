@@ -135,8 +135,8 @@ installed there, not only in `injectHudHooks`.
   passed on Windows 2026-10-26; part 3, the previews (GRP pictures, icons, sound
   playback; spec `docs/superpowers/specs/2026-10-26-dat-previews-design.md`), passed on
   Windows 2026-10-26; part 4, entry counts (Add Entry, Set Entry Count; spec
-  `docs/superpowers/specs/2026-10-26-dat-counts-design.md`) and rows coloured when unsaved, is
-  built and not yet run on Windows; part 5, improvements, is not built; `MANIFOLD_ARR_DIR` runs the tests on the real files). Unlike the plugin,
+  `docs/superpowers/specs/2026-10-26-dat-counts-design.md`) and rows coloured when unsaved, passed
+  on Windows 2026-10-27; part 5, improvements, is not built; `MANIFOLD_ARR_DIR` runs the tests on the real files). Unlike the plugin,
   most of it **can** be checked in the Linux session: `dotnet test
   tools/ManifoldEditor/Manifold.Core.Tests` (after `apt-get install -y dotnet-sdk-8.0`),
   and the WinUI window compiles with `dotnet msbuild -restore -t:Compile
@@ -147,7 +147,8 @@ installed there, not only in `injectHudHooks`.
   sprites.dat and flingy.dat may have more entries than vanilla, in PyMS's expanded layout;
   the loader moves those tables and re-points the engine at them. An expanded file of any
   other table is refused. The moved arrays in `scbwdata.h` are references read on each use.
-  Its loader hook is the first in the enabled list.
+  Its loader hook is the first in the enabled list. First run in game 2026-10-27, loading an
+  images.dat grown by the editor.
 - **Smart-build** (in `hooks/selection_ext/`, spec
   `docs/superpowers/specs/2026-10-03-smart-build-design.md`) and **smart-casting**
   (`hooks/recv_commands/smart_cast.cpp`, `docs/selection.md` §6).

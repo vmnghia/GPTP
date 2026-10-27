@@ -551,9 +551,10 @@ starfield handled (§5). Features 1 and 2 below are done.
    `[BUILT 2026-10-26; tested on Windows 2026-10-26]`: all of its §7 passed; spec
    `docs/superpowers/specs/2026-10-26-dat-previews-design.md`. After that run, PyMS's 2400-frame cap was dropped so a GRP with more frames (the Viking's assault mode) draws; checked on Windows 2026-10-26. Part 4, entry counts (PyDAT's Add Entry and Set Entry Count on every file
    with an expanded layout, the plugin's `GPTP/DatExtend/` loading images, sprites and flingy)
-   and list rows coloured when changed since the last save `[BUILT 2026-10-26; not yet run on
-   Windows]`: the rules are tested on Linux and the window compiles; spec
-   `docs/superpowers/specs/2026-10-26-dat-counts-design.md`, test round in its §6. Remaining
+   and list rows coloured when changed since the last save `[BUILT 2026-10-26; tested on Windows
+   and in game 2026-10-27]`: all of its §6 passed, the game loading a grown images.dat (the
+   plugin's extension's first in-game run); spec
+   `docs/superpowers/specs/2026-10-26-dat-counts-design.md`. Remaining
    part of the .dat port `[PROPOSED]`: 5 improvements.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
    first game frame; every client applies it in the same frame; replays record it. This

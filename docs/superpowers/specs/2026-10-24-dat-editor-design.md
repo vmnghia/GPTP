@@ -39,8 +39,8 @@ as for the button sets and strings. Reload entry (PyDAT's Ctrl+R) becomes Revert
 ## 2. The plugin's .dat extension
 
 The extension is on master since 2026-10-26 (91553df, from `origin/feat/dat-extender`'s 327a021,
-ported from saintofidiocy/GPTP@DatExtender), built with `tests/verify.ps1`; no in-game run of it
-is recorded. It accepts
+ported from saintofidiocy/GPTP@DatExtender), built with `tests/verify.ps1`; first run in game 2026-10-27,
+loading an images.dat grown by the editor and drawing a new entry (counts spec §6). It accepts
 PyMS's expanded layout (§3) for **images.dat, sprites.dat and flingy.dat** only: a file of
 vanilla's size loads as vanilla, an expanded file of those three moves the table, and an
 expanded file of any other table is refused with the game's invalid-file warning. Its

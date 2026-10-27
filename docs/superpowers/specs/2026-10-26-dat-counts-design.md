@@ -1,7 +1,8 @@
 # Manifold Editor: the .dat files, part 4 (entry counts, and the unsaved rows)
 
 Status: Built 2026-10-26 (plan `docs/superpowers/plans/2026-10-26-dat-counts.md`): the rules
-are tested on Linux, the window compiles; not yet run on Windows. Design 2026-10-26. Part 4 of the PyDAT port planned in
+are tested on Linux, the window compiles; all of §6 passed on Windows 2026-10-27, including the game
+loading a grown images.dat and drawing a new entry. Design 2026-10-26. Part 4 of the PyDAT port planned in
 `2026-10-24-dat-editor-design.md` (parts 1-3, the fields, links and previews, passed on
 Windows 2026-10-25 and 2026-10-26): PyDAT's **Add Entry** and **Set Entry Count**, and a mark
 the user asked to fold in: entries changed since the last save are drawn in an accent

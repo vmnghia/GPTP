@@ -267,5 +267,5 @@ its check line, and Save asks to confirm it.
 **Not yet** (the last part of the port, in the spec's header): improvements. Two
 more differences from PyDAT: its seconds boxes are editable, here they are read-only text; and a
 box is limited to its property's type, not to PyDAT's tighter ranges. Part 1 (the fields) passed on Windows 2026-10-25. Parts 2 (the links) and 3 (the
-previews) passed on Windows 2026-10-26. After that run, PyMS's 2400-frame cap was dropped so a GRP with more frames (the Viking's assault mode) draws; checked on Windows 2026-10-26. Part 4 (entry counts and the coloured rows) was built
-2026-10-26; the rules are tested on Linux and the window compiles, but it has not been run on Windows.
+previews) passed on Windows 2026-10-26. After that run, PyMS's 2400-frame cap was dropped so a GRP with more frames (the Viking's assault mode) draws; checked on Windows 2026-10-26. Part 4 (entry counts and the coloured rows) passed
+on Windows 2026-10-27, with the game loading a grown images.dat.
