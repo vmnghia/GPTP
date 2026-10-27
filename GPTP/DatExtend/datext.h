@@ -1,8 +1,8 @@
 #pragma once
 #include <SCBW/api.h>
 
-//The .dat extender: images.dat, sprites.dat and flingy.dat with more entries
-//than vanilla's 999 / 517 / 209. Ported from saintofidiocy/GPTP@DatExtender
+//The .dat extender: images.dat, sprites.dat, flingy.dat and sfxdata.dat with
+//more entries than vanilla's 999 / 517 / 209 / 1144 (sfxdata: 2026-10-27). Ported from saintofidiocy/GPTP@DatExtender
 //(0a4516b, 2022-08-28), cut to those three tables (the Mecha Viking's
 //images, 2026-10-18; plan in sc2grp docs/2026-10-18-dat-extension-plan.md).
 //
@@ -37,7 +37,7 @@ namespace DatExt {
 	};
 
 	//How many entries each table has now (vanilla's until an extended file loads).
-	extern u32 imageCount, spriteCount, flingyCount;
+	extern u32 imageCount, spriteCount, flingyCount, sfxCount;
 
 	//Writes a `size`-byte value of `val*factor+add` to each address of the
 	//zero-terminated list in `ptr` (constReplace's lists).
@@ -61,5 +61,6 @@ namespace DatExt {
 	void flingy_dat_doPatch(u32 newCount);
 	void sprites_dat_doPatch(u32 newCount);
 	void images_dat_doPatch(u32 newCount);
+	void sfxdata_dat_doPatch(u32 newCount);
 
 }
