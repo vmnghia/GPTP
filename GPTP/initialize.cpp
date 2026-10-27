@@ -19,6 +19,7 @@ using namespace dll;
 #include "hooks/rally_point.h"
 #include "hooks/rally/smart_rally_hooks.h"
 #include "hooks/recv_commands/smart_morph.h"
+#include "hooks/recv_commands/viking_transform.h"
 #include "hooks/recharge_shields.h"
 #include "hooks/stim_packs.h"
 #include "hooks/tech_target_check.h"
@@ -249,6 +250,8 @@ BOOL WINAPI Plugin::InitializePlugin(IMPQDraftServer *lpMPQDraftServer) {
 	hooks::injectSmartRallyHooks();
 	//Smart larva morphing and the morph table (hooks/recv_commands/smart_morph, SCBW/unit_morphs.h).
 	hooks::injectSmartMorphHooks();
+	//The Mecha Viking's transform, ground (unit 10) <-> air (unit 91): command 0x40, order 0x68 (hooks/recv_commands/viking_transform.h).
+	hooks::injectVikingTransformHooks();
 	//Debugging aid: names an image drawn with a frame past its GRP's (hooks/interface/frame_check.h).
 	hooks::injectFrameCheckHooks();
 

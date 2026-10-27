@@ -4,6 +4,7 @@
 #include "smart_rally.h"
 #include "smart_larva.h"
 #include "unit_morphs.h"
+#include "viking_transform.h"
 #include <algorithm>
 #include <cstring>
 
@@ -117,6 +118,8 @@ u32 variableCommandLength(const u8* cmd) {
 		return smartrally::WORKER_RALLY_BYTES;
 	if (id == smartlarva::CMD_MORPH_ONE)
 		return smartlarva::MORPH_ONE_BYTES;
+	if (id == vikingtransform::CMD_VIKING_TRANSFORM)
+		return vikingtransform::VIKING_TRANSFORM_BYTES;
 	if (id >= 0x09 && id <= 0x0B)
 		return 2 + 2 * cmd[1];
 	return 0;
