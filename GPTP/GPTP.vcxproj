@@ -428,6 +428,7 @@
     <ClCompile Include="DatExtend\flingy_dat.cpp" />
     <ClCompile Include="DatExtend\images_dat.cpp" />
     <ClCompile Include="DatExtend\sprites_dat.cpp" />
+    <ClCompile Include="DatExtend\sfxdata_dat.cpp" />
     <ClCompile Include="hooks\DatExtend\dat_load.cpp" />
     <ClCompile Include="hooks\DatExtend\dat_load_inject.cpp" />
     <ClCompile Include="SCBW\structures\CImage.cpp" />

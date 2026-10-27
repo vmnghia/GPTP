@@ -4,7 +4,7 @@
 
 namespace DatExt {
 
-u32 imageCount = 999, spriteCount = 517, flingyCount = 209;
+u32 imageCount = 999, spriteCount = 517, flingyCount = 209, sfxCount = 1144;
 
 namespace {
 
@@ -29,7 +29,7 @@ DatFile datFiles[] = {
 	{ "upgrades.dat", LoadTable::Upgrades_Dat,  1281, 21, false, false },
 	{ "techdata.dat", LoadTable::Techdata_Dat,   836, 19, false, false },
 	{ "orders.dat",   LoadTable::Orders_Dat,    4158, 22, false, false },
-	{ "sfxdata.dat",  LoadTable::Sfxdata_Dat,  10296,  9, false, false },
+	{ "sfxdata.dat",  LoadTable::Sfxdata_Dat,  10296,  9, true,  false },
 	{ "portdata.dat", LoadTable::Portdata_Dat,  1320, 12, false, false },
 	{ "mapdata.dat",  LoadTable::Mapdata_Dat,    260,  4, false, false },
 };
@@ -71,7 +71,8 @@ bool setDatSize(DatLoad* datTablePtr, u32 size) {
 
 	//Point the engine's references at them.
 	switch (datTablePtr == (DatLoad*)LoadTable::Images_Dat ? 0 :
-	        datTablePtr == (DatLoad*)LoadTable::Sprites_Dat ? 1 : 2) {
+	        datTablePtr == (DatLoad*)LoadTable::Sprites_Dat ? 1 :
+	        datTablePtr == (DatLoad*)LoadTable::Sfxdata_Dat ? 3 : 2) {
 	case 0:
 		images_dat_doPatch(newCount);
 		imageCount = newCount;
@@ -79,6 +80,10 @@ bool setDatSize(DatLoad* datTablePtr, u32 size) {
 	case 1:
 		sprites_dat_doPatch(newCount);
 		spriteCount = newCount;
+		break;
+	case 3:
+		sfxdata_dat_doPatch(newCount);
+		sfxCount = newCount;
 		break;
 	default:
 		flingy_dat_doPatch(newCount);
