@@ -169,6 +169,13 @@ installed there, not only in `injectHudHooks`.
   it. Synced. Upstream's `injectUnitMorphHooks()` and `injectCMDRECV_MorphHooks()` stay
   off.
 
+- **FireGraft requirements** (`hooks/interface/requirements_loader.cpp`, parser
+  `SCBW/fg_requirements*`, spec `docs/superpowers/specs/2026-10-29-fg-requirements-design.md`):
+  FireGraft's own runtime never applies anything in Manifold (upstream's campaign fix at
+  0x4100C4 bypasses its storm hook), so the plugin reads the five Dat Requirements tables
+  from the `.fgp` in the exe and points the exe's 39 references at its own copies, at the
+  first game start. FireGraft's Exe Edits still don't apply.
+
 Selection, smart-build, smart-casting, those two command changes, smart rally and smart
 larva are
 **synced game state**: they travel as network commands and are recorded in replays. See "Sync safety"

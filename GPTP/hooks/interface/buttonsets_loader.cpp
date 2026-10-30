@@ -1,4 +1,5 @@
 #include "buttonsets_loader.h"
+#include "mpq_read.h"
 #include <SCBW/buttonsets_file.h>
 #include <SCBW/api.h>
 #include <SCBW/scbwdata.h>
@@ -7,16 +8,6 @@
 #include <vector>
 
 namespace {
-
-//storm.dll's file API, by ordinal as BWAPI's storm.h has it (checked in game 2026-10-07).
-typedef BOOL (__stdcall* SFileOpenFileExFn)(HANDLE mpq, const char* name, DWORD scope, HANDLE* file);
-typedef DWORD (__stdcall* SFileGetFileSizeFn)(HANDLE file, DWORD* high);
-typedef BOOL (__stdcall* SFileReadFileFn)(HANDLE file, void* buffer, DWORD toRead, DWORD* read, LPOVERLAPPED overlapped);
-typedef BOOL (__stdcall* SFileCloseFileFn)(HANDLE file);
-const WORD ORDINAL_CLOSE_FILE = 253;
-const WORD ORDINAL_GET_FILE_SIZE = 265;
-const WORD ORDINAL_OPEN_FILE_EX = 268;
-const WORD ORDINAL_READ_FILE = 269;
 
 const char* const FILE_NAME = "Manifold\\buttonsets.bin";
 
@@ -35,33 +26,12 @@ void report(const char* reason) {
 
 //Fills out with the file. False when it isn't there (no report) or can't be read.
 bool readFile(std::vector<u8>& out) {
-	const HMODULE storm = GetModuleHandleA("storm.dll");
-	const SFileOpenFileExFn openFileEx = storm == NULL ? NULL :
-		(SFileOpenFileExFn)GetProcAddress(storm, MAKEINTRESOURCEA(ORDINAL_OPEN_FILE_EX));
-	const SFileGetFileSizeFn getFileSize = storm == NULL ? NULL :
-		(SFileGetFileSizeFn)GetProcAddress(storm, MAKEINTRESOURCEA(ORDINAL_GET_FILE_SIZE));
-	const SFileReadFileFn readBytes = storm == NULL ? NULL :
-		(SFileReadFileFn)GetProcAddress(storm, MAKEINTRESOURCEA(ORDINAL_READ_FILE));
-	const SFileCloseFileFn closeFile = storm == NULL ? NULL :
-		(SFileCloseFileFn)GetProcAddress(storm, MAKEINTRESOURCEA(ORDINAL_CLOSE_FILE));
-	if (openFileEx == NULL || getFileSize == NULL || readBytes == NULL || closeFile == NULL) {
+	const mpqread::Result result = mpqread::read(FILE_NAME, out);
+	if (result == mpqread::NO_STORM)
 		report("storm.dll's file functions were not found");
-		return false;
-	}
-	HANDLE file = NULL;
-	if (!openFileEx(NULL, FILE_NAME, 0, &file))
-		return false;
-	const DWORD size = getFileSize(file, NULL);
-	bool ok = size != 0xFFFFFFFF;
-	if (ok) {
-		out.resize(size);
-		DWORD read = 0;
-		ok = size == 0 || (readBytes(file, out.data(), size, &read, NULL) && read == size);
-	}
-	closeFile(file);
-	if (!ok)
+	else if (result == mpqread::FAILED)
 		report("could not be read");
-	return ok;
+	return result == mpqread::OK;
 }
 
 //StarCraft.exe's first code section, from its PE headers in memory.
