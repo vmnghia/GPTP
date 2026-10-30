@@ -23,7 +23,13 @@ const u8* findSection(const u8* fgp, u32 size, const char* tag, u32* length, con
 //The game's table from one section: word 0, then each used record's id and
 //words, then 0xFFFF (as FireGraft builds it, 0x10008910 in its runtime).
 //NULL, or the reason the section is bad (then the table is left empty).
-const char* buildTable(const u8* section, u32 length, std::vector<u16>& table);
+//
+//FireGraft's editor sometimes leaves a removed item as 0xFF00 instead of
+//deleting it (seen 2026-10-30 in Use Tech). No opcode or parameter is 0xFF00:
+//the game would read it as a unit type and count units far past its table
+//(0x46DA2E), so such words are left out and counted in *blanks.
+const u16 BLANK = 0xFF00;
+const char* buildTable(const u8* section, u32 length, std::vector<u16>& table, u32* blanks);
 
 //The .fgp named in Firegraft\datalist.txt (one MPQ path per line), or "".
 std::string fgpName(const char* text, u32 size);

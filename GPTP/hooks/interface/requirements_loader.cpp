@@ -89,6 +89,7 @@ void applyOnce() {
 	//Everything is built and checked before the exe is touched.
 	std::vector<u16> built[fgreq::TABLE_COUNT];
 	bool present[fgreq::TABLE_COUNT];
+	u32 blanks[fgreq::TABLE_COUNT] = {};
 	for (u32 t = 0; t < fgreq::TABLE_COUNT; t++) {
 		u32 length = 0;
 		const char* error = NULL;
@@ -100,7 +101,7 @@ void applyOnce() {
 		present[t] = section != NULL;
 		if (!present[t])
 			continue;
-		error = fgreq::buildTable(section, length, built[t]);
+		error = fgreq::buildTable(section, length, built[t], &blanks[t]);
 		if (error != NULL) {
 			char reason[80];
 			sprintf_s(reason, sizeof(reason), "section %s %s", fgreq::SECTION_TAGS[t], error);
@@ -138,6 +139,14 @@ void applyOnce() {
 	char line[160];
 	sprintf_s(line, sizeof(line), "FireGraft requirements: %u tables from %s", count, name.c_str());
 	scbw::printText(line);
+	//Blank items (fgreq::BLANK) were left out; name where, so they can be
+	//cleaned up in FireGraft.
+	for (u32 t = 0; t < fgreq::TABLE_COUNT; t++)
+		if (blanks[t] != 0) {
+			char reason[80];
+			sprintf_s(reason, sizeof(reason), "%u blank item(s) in %s left out", blanks[t], fgreq::SECTION_TAGS[t]);
+			report("", reason);
+		}
 }
 
 } //reqloader

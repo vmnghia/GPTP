@@ -86,7 +86,8 @@ void testTable() {
 	putRecord(s, 0, { 0xFF02, 0x007A, 0xFF1F, 0xFFFF, 0xFF20, 0x0074, 0xFFFF }, 1);
 	putRecord(s, 91, { 0xFF02, 0x0072, 0xFF08, 0xFF05, 0xFFFF }, 1);
 	std::vector<u16> table;
-	CHECK(buildTable(s.data(), (u32)s.size(), table) == NULL);
+	u32 blanks = 99;
+	CHECK(buildTable(s.data(), (u32)s.size(), table, &blanks) == NULL && blanks == 0);
 	const u16 expected[] = { 0,
 		8, 0xFF02, 0x0072, 0xFF08, 0xFF05, 0xFFFF,
 		0, 0xFF02, 0x007A, 0xFF1F, 0xFFFF, 0xFF20, 0x0074, 0xFFFF,
@@ -96,16 +97,26 @@ void testTable() {
 
 	std::vector<u8> extra(s);
 	extra.push_back(0);
-	CHECK(buildTable(extra.data(), (u32)extra.size(), table) != NULL && table.empty());
+	CHECK(buildTable(extra.data(), (u32)extra.size(), table, &blanks) != NULL && table.empty());
 	std::vector<u8> cut(s.begin(), s.end() - 1);
-	CHECK(buildTable(cut.data(), (u32)cut.size(), table) != NULL);
+	CHECK(buildTable(cut.data(), (u32)cut.size(), table, &blanks) != NULL);
 	std::vector<u8> open;
 	put16(open, 1);
 	putRecord(open, 8, { 0xFF02, 0x0072 }, 1);
-	CHECK(buildTable(open.data(), (u32)open.size(), table) != NULL);
+	CHECK(buildTable(open.data(), (u32)open.size(), table, &blanks) != NULL);
 	std::vector<u8> empty;
 	put16(empty, 0);
-	CHECK(buildTable(empty.data(), (u32)empty.size(), table) == NULL && table.size() == 2 && table[0] == 0 && table[1] == 0xFFFF);
+	CHECK(buildTable(empty.data(), (u32)empty.size(), table, &blanks) == NULL && table.size() == 2 && table[0] == 0 && table[1] == 0xFFFF);
+
+	//Healing as FireGraft saved it after three removes (2026-10-30): the
+	//blanks go, a blank in an unused record isn't counted.
+	std::vector<u8> healing;
+	put16(healing, 2);
+	putRecord(healing, 34, { 0xFF02, 0x0022, 0xFF00, 0xFF00, 0xFF00, 0xFFFF }, 1);
+	putRecord(healing, 35, { 0xFF00, 0xFFFF }, 0);
+	CHECK(buildTable(healing.data(), (u32)healing.size(), table, &blanks) == NULL && blanks == 3);
+	const u16 healed[] = { 0, 34, 0xFF02, 0x0022, 0xFFFF, 0xFFFF };
+	CHECK(table.size() == sizeof(healed) / 2 && memcmp(table.data(), healed, sizeof(healed)) == 0);
 }
 
 void testDatalist() {

@@ -51,8 +51,9 @@ const u8* findSection(const u8* fgp, u32 size, const char* tag, u32* length, con
 	return NULL;
 }
 
-const char* buildTable(const u8* section, u32 length, std::vector<u16>& table) {
+const char* buildTable(const u8* section, u32 length, std::vector<u16>& table, u32* blanks) {
 	table.clear();
+	*blanks = 0;
 	if (length < 2)
 		return "cut short";
 	const u32 count = read16(section);
@@ -72,8 +73,13 @@ const char* buildTable(const u8* section, u32 length, std::vector<u16>& table) {
 		const bool used = section[at + n * 2] != 0;
 		if (used) {
 			built.push_back((u16)id);
-			for (u32 i = 0; i < n; i++)
-				built.push_back((u16)read16(section + at + i * 2));
+			for (u32 i = 0; i < n; i++) {
+				const u16 word = (u16)read16(section + at + i * 2);
+				if (word == BLANK)
+					(*blanks)++;
+				else
+					built.push_back(word);
+			}
 		}
 		at += n * 2 + 1;
 	}
