@@ -3,6 +3,8 @@
 Status: [BUILT] 2026-10-29, host-tested, tested in game 2026-10-30 (round 2, all passed: the
 load message, Build Viking from a Starport, a changed Marine requirement taking effect,
 untouched units, upgrades and research, the Manifold Editor's buttons, a second game).
+FireGraft's "None" items (0xFF00) left out, tested in game 2026-10-30 (round 3, all passed:
+the blank-items line, Medic healing, Build Viking).
 
 ## Why
 
@@ -43,6 +45,11 @@ table vanilla. Any problem prints one yellow line and leaves every table vanilla
 prints "FireGraft requirements: N tables from <file>".
 
 Synced data, but every client runs the same exe, so every client builds the same tables.
+
+FireGraft's "None" (saved as 0xFF00, what the user sets an item to when FireGraft's Remove
+Item fails) is no opcode or parameter: the game would read it as a unit type and count units
+far past its table (0x46DA2E). `fgreq::buildTable` leaves such words out, and the loader
+prints a yellow line naming the table.
 
 ## Not done
 
