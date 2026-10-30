@@ -1,6 +1,9 @@
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Manifold.Core.Editor;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace ManifoldEditor.App.Services;
@@ -9,6 +12,7 @@ namespace ManifoldEditor.App.Services;
 public sealed class IconCache(EditorResources resources)
 {
     readonly Dictionary<int, WriteableBitmap?> bitmaps = new();
+    readonly Dictionary<int, IconBox?> bounds = new();
 
     public int Count => resources.Icons?.FrameCount ?? 0;
 
@@ -29,5 +33,27 @@ public sealed class IconCache(EditorResources resources)
         }
         bitmaps[frame] = bitmap;
         return bitmap;
+    }
+
+    /// <summary>
+    /// The icon in a square, its drawn pixels in the middle (QoL spec §2), or null when it
+    /// can't be drawn.
+    /// </summary>
+    public FrameworkElement? View(int frame, double square)
+    {
+        if (Get(frame) is not { } bitmap || resources.Icons is not { } grp) return null;
+        if (!bounds.TryGetValue(frame, out var box))
+            bounds[frame] = box = resources.IconPixels(frame) is { } argb ? CardLayout.IconBounds(argb, grp.Width, grp.Height) : null;
+        var (left, top, scale) = CardLayout.IconOffset(box, grp.Width, grp.Height, square);
+        var image = new Image { Source = bitmap, Stretch = Stretch.Fill, Width = grp.Width * scale, Height = grp.Height * scale };
+        Canvas.SetLeft(image, left);
+        Canvas.SetTop(image, top);
+        // Clipped to its square: moving the drawn pixels to the middle can push the frame's
+        // transparent edge out of it, where it would take clicks meant for a neighbour.
+        return new Canvas
+        {
+            Width = square, Height = square, Children = { image },
+            Clip = new RectangleGeometry { Rect = new Windows.Foundation.Rect(0, 0, square, square) },
+        };
     }
 }

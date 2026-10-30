@@ -1,0 +1,879 @@
+Portraits(0):
+	idle.portrait_file 2104410419
+	idle.smk_change 184
+	idle.unknown 88
+	talking.portrait_file 4088542385
+	talking.smk_change 119
+	talking.unknown 119
+
+Portraits(1):
+	idle.portrait_file 2087132435
+	idle.smk_change 171
+	idle.unknown 42
+	talking.portrait_file 3145537009
+	talking.smk_change 254
+	talking.unknown 33
+
+Portraits(2):
+	idle.portrait_file 3927979609
+	idle.smk_change 55
+	idle.unknown 246
+	talking.portrait_file 3280159409
+	talking.smk_change 41
+	talking.unknown 76
+
+Portraits(3):
+	idle.portrait_file 791520670
+	idle.smk_change 133
+	idle.unknown 183
+	talking.portrait_file 879219697
+	talking.smk_change 89
+	talking.unknown 0
+
+Portraits(4):
+	idle.portrait_file 166251430
+	idle.smk_change 34
+	idle.unknown 233
+	talking.portrait_file 469003105
+	talking.smk_change 135
+	talking.unknown 107
+
+Portraits(5):
+	idle.portrait_file 3673306826
+	idle.smk_change 12
+	idle.unknown 244
+	talking.portrait_file 644672894
+	talking.smk_change 2
+	talking.unknown 152
+
+Portraits(6):
+	idle.portrait_file 1554526016
+	idle.smk_change 219
+	idle.unknown 189
+	talking.portrait_file 3954834930
+	talking.smk_change 37
+	talking.unknown 11
+
+Portraits(7):
+	idle.portrait_file 2627709070
+	idle.smk_change 155
+	idle.unknown 250
+	talking.portrait_file 968410261
+	talking.smk_change 244
+	talking.unknown 1
+
+Portraits(8):
+	idle.portrait_file 720032991
+	idle.smk_change 249
+	idle.unknown 124
+	talking.portrait_file 1459233150
+	talking.smk_change 86
+	talking.unknown 165
+
+Portraits(9):
+	idle.portrait_file 1140002254
+	idle.smk_change 69
+	idle.unknown 19
+	talking.portrait_file 53207525
+	talking.smk_change 112
+	talking.unknown 198
+
+Portraits(10):
+	idle.portrait_file 346783264
+	idle.smk_change 91
+	idle.unknown 68
+	talking.portrait_file 1507410607
+	talking.smk_change 82
+	talking.unknown 74
+
+Portraits(11):
+	idle.portrait_file 1901953930
+	idle.smk_change 7
+	idle.unknown 80
+	talking.portrait_file 4157058522
+	talking.smk_change 30
+	talking.unknown 160
+
+Portraits(12):
+	idle.portrait_file 140285818
+	idle.smk_change 213
+	idle.unknown 2
+	talking.portrait_file 899167970
+	talking.smk_change 185
+	talking.unknown 216
+
+Portraits(13):
+	idle.portrait_file 3574858552
+	idle.smk_change 117
+	idle.unknown 250
+	talking.portrait_file 777068094
+	talking.smk_change 109
+	talking.unknown 95
+
+Portraits(14):
+	idle.portrait_file 4225654860
+	idle.smk_change 99
+	idle.unknown 151
+	talking.portrait_file 2251710219
+	talking.smk_change 240
+	talking.unknown 192
+
+Portraits(15):
+	idle.portrait_file 1984213606
+	idle.smk_change 202
+	idle.unknown 246
+	talking.portrait_file 4060827469
+	talking.smk_change 45
+	talking.unknown 165
+
+Portraits(16):
+	idle.portrait_file 2487079209
+	idle.smk_change 86
+	idle.unknown 63
+	talking.portrait_file 1347698090
+	talking.smk_change 82
+	talking.unknown 242
+
+Portraits(17):
+	idle.portrait_file 212212762
+	idle.smk_change 223
+	idle.unknown 236
+	talking.portrait_file 2647152546
+	talking.smk_change 157
+	talking.unknown 16
+
+Portraits(18):
+	idle.portrait_file 3407975121
+	idle.smk_change 164
+	idle.unknown 244
+	talking.portrait_file 2912298686
+	talking.smk_change 93
+	talking.unknown 107
+
+Portraits(19):
+	idle.portrait_file 1272211552
+	idle.smk_change 103
+	idle.unknown 76
+	talking.portrait_file 872251250
+	talking.smk_change 105
+	talking.unknown 215
+
+Portraits(20):
+	idle.portrait_file 3173463230
+	idle.smk_change 115
+	idle.unknown 118
+	talking.portrait_file 4112039285
+	talking.smk_change 34
+	talking.unknown 210
+
+Portraits(21):
+	idle.portrait_file 4027005600
+	idle.smk_change 3
+	idle.unknown 30
+	talking.portrait_file 3786191096
+	talking.smk_change 37
+	talking.unknown 171
+
+Portraits(22):
+	idle.portrait_file 2669076411
+	idle.smk_change 73
+	idle.unknown 46
+	talking.portrait_file 323662328
+	talking.smk_change 41
+	talking.unknown 132
+
+Portraits(23):
+	idle.portrait_file 2681048215
+	idle.smk_change 237
+	idle.unknown 185
+	talking.portrait_file 2387640745
+	talking.smk_change 30
+	talking.unknown 113
+
+Portraits(24):
+	idle.portrait_file 4103400682
+	idle.smk_change 216
+	idle.unknown 119
+	talking.portrait_file 968751696
+	talking.smk_change 247
+	talking.unknown 83
+
+Portraits(25):
+	idle.portrait_file 1747385227
+	idle.smk_change 7
+	idle.unknown 95
+	talking.portrait_file 825288123
+	talking.smk_change 51
+	talking.unknown 56
+
+Portraits(26):
+	idle.portrait_file 220210806
+	idle.smk_change 205
+	idle.unknown 208
+	talking.portrait_file 1371845358
+	talking.smk_change 120
+	talking.unknown 239
+
+Portraits(27):
+	idle.portrait_file 3253047095
+	idle.smk_change 64
+	idle.unknown 72
+	talking.portrait_file 1899784088
+	talking.smk_change 123
+	talking.unknown 52
+
+Portraits(28):
+	idle.portrait_file 1744245674
+	idle.smk_change 45
+	idle.unknown 199
+	talking.portrait_file 4055267608
+	talking.smk_change 12
+	talking.unknown 154
+
+Portraits(29):
+	idle.portrait_file 1289780381
+	idle.smk_change 33
+	idle.unknown 156
+	talking.portrait_file 3777428723
+	talking.smk_change 11
+	talking.unknown 196
+
+Portraits(30):
+	idle.portrait_file 1357454469
+	idle.smk_change 254
+	idle.unknown 105
+	talking.portrait_file 4156510592
+	talking.smk_change 229
+	talking.unknown 218
+
+Portraits(31):
+	idle.portrait_file 2060284012
+	idle.smk_change 192
+	idle.unknown 134
+	talking.portrait_file 4063230326
+	talking.smk_change 220
+	talking.unknown 181
+
+Portraits(32):
+	idle.portrait_file 1854897068
+	idle.smk_change 235
+	idle.unknown 120
+	talking.portrait_file 3688054399
+	talking.smk_change 117
+	talking.unknown 238
+
+Portraits(33):
+	idle.portrait_file 717359227
+	idle.smk_change 166
+	idle.unknown 37
+	talking.portrait_file 3648766867
+	talking.smk_change 224
+	talking.unknown 97
+
+Portraits(34):
+	idle.portrait_file 3554559724
+	idle.smk_change 116
+	idle.unknown 7
+	talking.portrait_file 306392750
+	talking.smk_change 66
+	talking.unknown 190
+
+Portraits(35):
+	idle.portrait_file 3392833829
+	idle.smk_change 88
+	idle.unknown 228
+	talking.portrait_file 732784116
+	talking.smk_change 82
+	talking.unknown 53
+
+Portraits(36):
+	idle.portrait_file 2557332130
+	idle.smk_change 75
+	idle.unknown 202
+	talking.portrait_file 3000732422
+	talking.smk_change 212
+	talking.unknown 3
+
+Portraits(37):
+	idle.portrait_file 4177664450
+	idle.smk_change 148
+	idle.unknown 115
+	talking.portrait_file 2481206721
+	talking.smk_change 206
+	talking.unknown 121
+
+Portraits(38):
+	idle.portrait_file 1234692617
+	idle.smk_change 67
+	idle.unknown 188
+	talking.portrait_file 393020054
+	talking.smk_change 13
+	talking.unknown 70
+
+Portraits(39):
+	idle.portrait_file 4118472658
+	idle.smk_change 239
+	idle.unknown 219
+	talking.portrait_file 3933932170
+	talking.smk_change 25
+	talking.unknown 139
+
+Portraits(40):
+	idle.portrait_file 2566162055
+	idle.smk_change 251
+	idle.unknown 123
+	talking.portrait_file 1130775081
+	talking.smk_change 241
+	talking.unknown 89
+
+Portraits(41):
+	idle.portrait_file 2871870211
+	idle.smk_change 163
+	idle.unknown 250
+	talking.portrait_file 2264417717
+	talking.smk_change 3
+	talking.unknown 178
+
+Portraits(42):
+	idle.portrait_file 1915840052
+	idle.smk_change 41
+	idle.unknown 45
+	talking.portrait_file 838304695
+	talking.smk_change 169
+	talking.unknown 43
+
+Portraits(43):
+	idle.portrait_file 4050131552
+	idle.smk_change 238
+	idle.unknown 15
+	talking.portrait_file 543850942
+	talking.smk_change 98
+	talking.unknown 87
+
+Portraits(44):
+	idle.portrait_file 3244605376
+	idle.smk_change 158
+	idle.unknown 149
+	talking.portrait_file 100068361
+	talking.smk_change 55
+	talking.unknown 213
+
+Portraits(45):
+	idle.portrait_file 753769454
+	idle.smk_change 185
+	idle.unknown 28
+	talking.portrait_file 575694233
+	talking.smk_change 104
+	talking.unknown 38
+
+Portraits(46):
+	idle.portrait_file 3735567136
+	idle.smk_change 94
+	idle.unknown 88
+	talking.portrait_file 1151887189
+	talking.smk_change 122
+	talking.unknown 119
+
+Portraits(47):
+	idle.portrait_file 2116012185
+	idle.smk_change 103
+	idle.unknown 144
+	talking.portrait_file 2449991230
+	talking.smk_change 67
+	talking.unknown 93
+
+Portraits(48):
+	idle.portrait_file 4128163302
+	idle.smk_change 194
+	idle.unknown 152
+	talking.portrait_file 2964101285
+	talking.smk_change 226
+	talking.unknown 71
+
+Portraits(49):
+	idle.portrait_file 1497061346
+	idle.smk_change 248
+	idle.unknown 35
+	talking.portrait_file 1907475507
+	talking.smk_change 24
+	talking.unknown 141
+
+Portraits(50):
+	idle.portrait_file 1623469597
+	idle.smk_change 71
+	idle.unknown 206
+	talking.portrait_file 3884527420
+	talking.smk_change 181
+	talking.unknown 83
+
+Portraits(51):
+	idle.portrait_file 952383636
+	idle.smk_change 6
+	idle.unknown 115
+	talking.portrait_file 3447873999
+	talking.smk_change 141
+	talking.unknown 242
+
+Portraits(52):
+	idle.portrait_file 1565816512
+	idle.smk_change 171
+	idle.unknown 166
+	talking.portrait_file 2297723052
+	talking.smk_change 14
+	talking.unknown 116
+
+Portraits(53):
+	idle.portrait_file 3577853443
+	idle.smk_change 183
+	idle.unknown 29
+	talking.portrait_file 268106398
+	talking.smk_change 190
+	talking.unknown 173
+
+Portraits(54):
+	idle.portrait_file 3679670816
+	idle.smk_change 196
+	idle.unknown 116
+	talking.portrait_file 1850509012
+	talking.smk_change 96
+	talking.unknown 241
+
+Portraits(55):
+	idle.portrait_file 1239618975
+	idle.smk_change 238
+	idle.unknown 142
+	talking.portrait_file 3540829140
+	talking.smk_change 225
+	talking.unknown 78
+
+Portraits(56):
+	idle.portrait_file 1668154653
+	idle.smk_change 248
+	idle.unknown 250
+	talking.portrait_file 2533174829
+	talking.smk_change 227
+	talking.unknown 55
+
+Portraits(57):
+	idle.portrait_file 2028561453
+	idle.smk_change 208
+	idle.unknown 25
+	talking.portrait_file 1507570847
+	talking.smk_change 103
+	talking.unknown 84
+
+Portraits(58):
+	idle.portrait_file 3151339078
+	idle.smk_change 136
+	idle.unknown 121
+	talking.portrait_file 3508746013
+	talking.smk_change 3
+	talking.unknown 158
+
+Portraits(59):
+	idle.portrait_file 1327446693
+	idle.smk_change 229
+	idle.unknown 223
+	talking.portrait_file 3283137377
+	talking.smk_change 78
+	talking.unknown 95
+
+Portraits(60):
+	idle.portrait_file 2043093999
+	idle.smk_change 179
+	idle.unknown 91
+	talking.portrait_file 2106184632
+	talking.smk_change 186
+	talking.unknown 65
+
+Portraits(61):
+	idle.portrait_file 276605352
+	idle.smk_change 133
+	idle.unknown 106
+	talking.portrait_file 1502232228
+	talking.smk_change 225
+	talking.unknown 228
+
+Portraits(62):
+	idle.portrait_file 3954252770
+	idle.smk_change 57
+	idle.unknown 236
+	talking.portrait_file 1941109084
+	talking.smk_change 120
+	talking.unknown 109
+
+Portraits(63):
+	idle.portrait_file 537595213
+	idle.smk_change 45
+	idle.unknown 52
+	talking.portrait_file 2110429601
+	talking.smk_change 0
+	talking.unknown 246
+
+Portraits(64):
+	idle.portrait_file 758722813
+	idle.smk_change 167
+	idle.unknown 93
+	talking.portrait_file 1568268192
+	talking.smk_change 123
+	talking.unknown 127
+
+Portraits(65):
+	idle.portrait_file 1837878611
+	idle.smk_change 16
+	idle.unknown 24
+	talking.portrait_file 388590621
+	talking.smk_change 5
+	talking.unknown 152
+
+Portraits(66):
+	idle.portrait_file 3940232078
+	idle.smk_change 100
+	idle.unknown 69
+	talking.portrait_file 1650517549
+	talking.smk_change 41
+	talking.unknown 110
+
+Portraits(67):
+	idle.portrait_file 965631518
+	idle.smk_change 109
+	idle.unknown 231
+	talking.portrait_file 48828189
+	talking.smk_change 212
+	talking.unknown 1
+
+Portraits(68):
+	idle.portrait_file 21281092
+	idle.smk_change 68
+	idle.unknown 22
+	talking.portrait_file 498330
+	talking.smk_change 35
+	talking.unknown 210
+
+Portraits(69):
+	idle.portrait_file 3175317071
+	idle.smk_change 121
+	idle.unknown 33
+	talking.portrait_file 3765875256
+	talking.smk_change 237
+	talking.unknown 61
+
+Portraits(70):
+	idle.portrait_file 3667116693
+	idle.smk_change 231
+	idle.unknown 33
+	talking.portrait_file 2112269975
+	talking.smk_change 221
+	talking.unknown 44
+
+Portraits(71):
+	idle.portrait_file 3768725470
+	idle.smk_change 2
+	idle.unknown 160
+	talking.portrait_file 108643887
+	talking.smk_change 148
+	talking.unknown 219
+
+Portraits(72):
+	idle.portrait_file 2495024574
+	idle.smk_change 182
+	idle.unknown 208
+	talking.portrait_file 509511229
+	talking.smk_change 165
+	talking.unknown 8
+
+Portraits(73):
+	idle.portrait_file 2503490460
+	idle.smk_change 244
+	idle.unknown 65
+	talking.portrait_file 226945596
+	talking.smk_change 106
+	talking.unknown 235
+
+Portraits(74):
+	idle.portrait_file 2999398790
+	idle.smk_change 162
+	idle.unknown 70
+	talking.portrait_file 429885929
+	talking.smk_change 22
+	talking.unknown 240
+
+Portraits(75):
+	idle.portrait_file 1861804098
+	idle.smk_change 23
+	idle.unknown 238
+	talking.portrait_file 1882257486
+	talking.smk_change 155
+	talking.unknown 71
+
+Portraits(76):
+	idle.portrait_file 1874272779
+	idle.smk_change 84
+	idle.unknown 88
+	talking.portrait_file 2227951959
+	talking.smk_change 80
+	talking.unknown 217
+
+Portraits(77):
+	idle.portrait_file 2475546742
+	idle.smk_change 76
+	idle.unknown 127
+	talking.portrait_file 373972907
+	talking.smk_change 37
+	talking.unknown 197
+
+Portraits(78):
+	idle.portrait_file 3606650347
+	idle.smk_change 8
+	idle.unknown 58
+	talking.portrait_file 2536524284
+	talking.smk_change 9
+	talking.unknown 248
+
+Portraits(79):
+	idle.portrait_file 2338879287
+	idle.smk_change 131
+	idle.unknown 67
+	talking.portrait_file 675647142
+	talking.smk_change 214
+	talking.unknown 51
+
+Portraits(80):
+	idle.portrait_file 3149578295
+	idle.smk_change 16
+	idle.unknown 247
+	talking.portrait_file 3156351883
+	talking.smk_change 192
+	talking.unknown 108
+
+Portraits(81):
+	idle.portrait_file 1712746567
+	idle.smk_change 48
+	idle.unknown 155
+	talking.portrait_file 75678369
+	talking.smk_change 227
+	talking.unknown 155
+
+Portraits(82):
+	idle.portrait_file 2475280870
+	idle.smk_change 82
+	idle.unknown 5
+	talking.portrait_file 2693488433
+	talking.smk_change 4
+	talking.unknown 93
+
+Portraits(83):
+	idle.portrait_file 3033164685
+	idle.smk_change 189
+	idle.unknown 45
+	talking.portrait_file 7965199
+	talking.smk_change 195
+	talking.unknown 192
+
+Portraits(84):
+	idle.portrait_file 1286260134
+	idle.smk_change 106
+	idle.unknown 10
+	talking.portrait_file 2369673038
+	talking.smk_change 11
+	talking.unknown 36
+
+Portraits(85):
+	idle.portrait_file 3195213070
+	idle.smk_change 24
+	idle.unknown 72
+	talking.portrait_file 1729244582
+	talking.smk_change 171
+	talking.unknown 182
+
+Portraits(86):
+	idle.portrait_file 2436635865
+	idle.smk_change 225
+	idle.unknown 186
+	talking.portrait_file 1287231488
+	talking.smk_change 144
+	talking.unknown 248
+
+Portraits(87):
+	idle.portrait_file 511124711
+	idle.smk_change 140
+	idle.unknown 220
+	talking.portrait_file 1908722162
+	talking.smk_change 10
+	talking.unknown 42
+
+Portraits(88):
+	idle.portrait_file 1655496223
+	idle.smk_change 69
+	idle.unknown 24
+	talking.portrait_file 1016014415
+	talking.smk_change 104
+	talking.unknown 114
+
+Portraits(89):
+	idle.portrait_file 3284387082
+	idle.smk_change 199
+	idle.unknown 188
+	talking.portrait_file 2922962376
+	talking.smk_change 216
+	talking.unknown 193
+
+Portraits(90):
+	idle.portrait_file 633294059
+	idle.smk_change 51
+	idle.unknown 84
+	talking.portrait_file 890959349
+	talking.smk_change 6
+	talking.unknown 185
+
+Portraits(91):
+	idle.portrait_file 124749716
+	idle.smk_change 119
+	idle.unknown 220
+	talking.portrait_file 270059938
+	talking.smk_change 156
+	talking.unknown 109
+
+Portraits(92):
+	idle.portrait_file 3788890718
+	idle.smk_change 44
+	idle.unknown 113
+	talking.portrait_file 1097566580
+	talking.smk_change 16
+	talking.unknown 206
+
+Portraits(93):
+	idle.portrait_file 122483742
+	idle.smk_change 108
+	idle.unknown 55
+	talking.portrait_file 1879614948
+	talking.smk_change 43
+	talking.unknown 87
+
+Portraits(94):
+	idle.portrait_file 869001115
+	idle.smk_change 189
+	idle.unknown 71
+	talking.portrait_file 2299682698
+	talking.smk_change 201
+	talking.unknown 170
+
+Portraits(95):
+	idle.portrait_file 17930972
+	idle.smk_change 189
+	idle.unknown 96
+	talking.portrait_file 3681411367
+	talking.smk_change 136
+	talking.unknown 32
+
+Portraits(96):
+	idle.portrait_file 2410216220
+	idle.smk_change 205
+	idle.unknown 13
+	talking.portrait_file 3408025794
+	talking.smk_change 176
+	talking.unknown 217
+
+Portraits(97):
+	idle.portrait_file 1088955460
+	idle.smk_change 122
+	idle.unknown 58
+	talking.portrait_file 1977981070
+	talking.smk_change 161
+	talking.unknown 163
+
+Portraits(98):
+	idle.portrait_file 2986587444
+	idle.smk_change 148
+	idle.unknown 133
+	talking.portrait_file 1524723907
+	talking.smk_change 36
+	talking.unknown 18
+
+Portraits(99):
+	idle.portrait_file 3899459419
+	idle.smk_change 76
+	idle.unknown 179
+	talking.portrait_file 4004226460
+	talking.smk_change 188
+	talking.unknown 187
+
+Portraits(100):
+	idle.portrait_file 95717650
+	idle.smk_change 225
+	idle.unknown 113
+	talking.portrait_file 651953045
+	talking.smk_change 179
+	talking.unknown 92
+
+Portraits(101):
+	idle.portrait_file 31323239
+	idle.smk_change 228
+	idle.unknown 159
+	talking.portrait_file 1177803582
+	talking.smk_change 127
+	talking.unknown 216
+
+Portraits(102):
+	idle.portrait_file 27357157
+	idle.smk_change 161
+	idle.unknown 237
+	talking.portrait_file 1779681157
+	talking.smk_change 107
+	talking.unknown 110
+
+Portraits(103):
+	idle.portrait_file 937321605
+	idle.smk_change 250
+	idle.unknown 165
+	talking.portrait_file 723074106
+	talking.smk_change 202
+	talking.unknown 137
+
+Portraits(104):
+	idle.portrait_file 123083745
+	idle.smk_change 250
+	idle.unknown 17
+	talking.portrait_file 1465390333
+	talking.smk_change 79
+	talking.unknown 54
+
+Portraits(105):
+	idle.portrait_file 2932731220
+	idle.smk_change 199
+	idle.unknown 40
+	talking.portrait_file 878771257
+	talking.smk_change 176
+	talking.unknown 124
+
+Portraits(106):
+	idle.portrait_file 4071182843
+	idle.smk_change 88
+	idle.unknown 88
+	talking.portrait_file 1353846778
+	talking.smk_change 77
+	talking.unknown 115
+
+Portraits(107):
+	idle.portrait_file 1852518357
+	idle.smk_change 45
+	idle.unknown 63
+	talking.portrait_file 2671149118
+	talking.smk_change 227
+	talking.unknown 37
+
+Portraits(108):
+	idle.portrait_file 3088173156
+	idle.smk_change 175
+	idle.unknown 12
+	talking.portrait_file 1518047131
+	talking.smk_change 38
+	talking.unknown 113
+
+Portraits(109):
+	idle.portrait_file 629578155
+	idle.smk_change 89
+	idle.unknown 39
+	talking.portrait_file 2510015910
+	talking.smk_change 250
+	talking.unknown 1

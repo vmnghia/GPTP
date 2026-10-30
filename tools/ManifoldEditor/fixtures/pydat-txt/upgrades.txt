@@ -1,0 +1,853 @@
+Upgrade(0):
+	mineral_cost_base 17188
+	mineral_cost_factor 18807
+	vespene_cost_base 34476
+	vespene_cost_factor 48738
+	research_time_base 47965
+	research_time_factor 6693
+	requirements 3490
+	icon 4869
+	label 47108
+	staredit_race 228
+	max_repeats 240
+	broodwar_only False
+
+Upgrade(1):
+	mineral_cost_base 16051
+	mineral_cost_factor 52332
+	vespene_cost_base 39557
+	vespene_cost_factor 35835
+	research_time_base 55083
+	research_time_factor 48257
+	requirements 1302
+	icon 57914
+	label 48318
+	staredit_race 122
+	max_repeats 110
+	broodwar_only True
+
+Upgrade(2):
+	mineral_cost_base 62429
+	mineral_cost_factor 4981
+	vespene_cost_base 56494
+	vespene_cost_factor 21212
+	research_time_base 63307
+	research_time_factor 61203
+	requirements 14546
+	icon 26423
+	label 24162
+	staredit_race 166
+	max_repeats 164
+	broodwar_only 164
+
+Upgrade(3):
+	mineral_cost_base 45943
+	mineral_cost_factor 35591
+	vespene_cost_base 25816
+	vespene_cost_factor 55397
+	research_time_base 22733
+	research_time_factor 52397
+	requirements 63713
+	icon 6440
+	label 50521
+	staredit_race 190
+	max_repeats 81
+	broodwar_only False
+
+Upgrade(4):
+	mineral_cost_base 45966
+	mineral_cost_factor 59125
+	vespene_cost_base 26118
+	vespene_cost_factor 32215
+	research_time_base 16196
+	research_time_factor 46066
+	requirements 63893
+	icon 7033
+	label 4377
+	staredit_race 117
+	max_repeats 82
+	broodwar_only True
+
+Upgrade(5):
+	mineral_cost_base 53551
+	mineral_cost_factor 19338
+	vespene_cost_base 26595
+	vespene_cost_factor 12466
+	research_time_base 65110
+	research_time_factor 8454
+	requirements 59386
+	icon 37923
+	label 9479
+	staredit_race 234
+	max_repeats 3
+	broodwar_only 22
+
+Upgrade(6):
+	mineral_cost_base 6411
+	mineral_cost_factor 51281
+	vespene_cost_base 51656
+	vespene_cost_factor 40864
+	research_time_base 16340
+	research_time_factor 61057
+	requirements 21185
+	icon 47644
+	label 4724
+	staredit_race 97
+	max_repeats 153
+	broodwar_only False
+
+Upgrade(7):
+	mineral_cost_base 10438
+	mineral_cost_factor 11899
+	vespene_cost_base 13197
+	vespene_cost_factor 60028
+	research_time_base 10966
+	research_time_factor 59777
+	requirements 47484
+	icon 50133
+	label 59833
+	staredit_race 233
+	max_repeats 8
+	broodwar_only True
+
+Upgrade(8):
+	mineral_cost_base 58105
+	mineral_cost_factor 15605
+	vespene_cost_base 27887
+	vespene_cost_factor 14104
+	research_time_base 15993
+	research_time_factor 9196
+	requirements 57800
+	icon 65416
+	label 15030
+	staredit_race 154
+	max_repeats 155
+	broodwar_only 59
+
+Upgrade(9):
+	mineral_cost_base 45028
+	mineral_cost_factor 27646
+	vespene_cost_base 53677
+	vespene_cost_factor 1769
+	research_time_base 9823
+	research_time_factor 65425
+	requirements 31202
+	icon 31222
+	label 60785
+	staredit_race 160
+	max_repeats 86
+	broodwar_only False
+
+Upgrade(10):
+	mineral_cost_base 47725
+	mineral_cost_factor 33207
+	vespene_cost_base 6315
+	vespene_cost_factor 487
+	research_time_base 41726
+	research_time_factor 59686
+	requirements 45963
+	icon 36395
+	label 60677
+	staredit_race 113
+	max_repeats 161
+	broodwar_only True
+
+Upgrade(11):
+	mineral_cost_base 54375
+	mineral_cost_factor 352
+	vespene_cost_base 13520
+	vespene_cost_factor 17275
+	research_time_base 45879
+	research_time_factor 47594
+	requirements 49594
+	icon 23989
+	label 13423
+	staredit_race 55
+	max_repeats 91
+	broodwar_only 13
+
+Upgrade(12):
+	mineral_cost_base 7634
+	mineral_cost_factor 44252
+	vespene_cost_base 31950
+	vespene_cost_factor 41600
+	research_time_base 12968
+	research_time_factor 36834
+	requirements 43983
+	icon 19672
+	label 46422
+	staredit_race 46
+	max_repeats 186
+	broodwar_only False
+
+Upgrade(13):
+	mineral_cost_base 10106
+	mineral_cost_factor 38777
+	vespene_cost_base 51688
+	vespene_cost_factor 57177
+	research_time_base 45344
+	research_time_factor 10162
+	requirements 29599
+	icon 29362
+	label 12807
+	staredit_race 66
+	max_repeats 19
+	broodwar_only True
+
+Upgrade(14):
+	mineral_cost_base 52936
+	mineral_cost_factor 28816
+	vespene_cost_base 8101
+	vespene_cost_factor 5821
+	research_time_base 26211
+	research_time_factor 40452
+	requirements 19095
+	icon 11385
+	label 60360
+	staredit_race 4
+	max_repeats 115
+	broodwar_only 135
+
+Upgrade(15):
+	mineral_cost_base 18408
+	mineral_cost_factor 1989
+	vespene_cost_base 36307
+	vespene_cost_factor 64461
+	research_time_base 55620
+	research_time_factor 16278
+	requirements 64675
+	icon 54245
+	label 34518
+	staredit_race 215
+	max_repeats 145
+	broodwar_only False
+
+Upgrade(16):
+	mineral_cost_base 16183
+	mineral_cost_factor 769
+	vespene_cost_base 15816
+	vespene_cost_factor 6437
+	research_time_base 61529
+	research_time_factor 33688
+	requirements 53494
+	icon 62632
+	label 51646
+	staredit_race 235
+	max_repeats 234
+	broodwar_only True
+
+Upgrade(17):
+	mineral_cost_base 3339
+	mineral_cost_factor 48526
+	vespene_cost_base 10774
+	vespene_cost_factor 16808
+	research_time_base 57300
+	research_time_factor 12490
+	requirements 57908
+	icon 25838
+	label 1638
+	staredit_race 221
+	max_repeats 0
+	broodwar_only 73
+
+Upgrade(18):
+	mineral_cost_base 3555
+	mineral_cost_factor 2287
+	vespene_cost_base 55531
+	vespene_cost_factor 34817
+	research_time_base 63005
+	research_time_factor 51815
+	requirements 64959
+	icon 6418
+	label 55854
+	staredit_race 219
+	max_repeats 235
+	broodwar_only False
+
+Upgrade(19):
+	mineral_cost_base 51474
+	mineral_cost_factor 61041
+	vespene_cost_base 19531
+	vespene_cost_factor 29961
+	research_time_base 61721
+	research_time_factor 46913
+	requirements 34452
+	icon 57360
+	label 31631
+	staredit_race 167
+	max_repeats 128
+	broodwar_only True
+
+Upgrade(20):
+	mineral_cost_base 50011
+	mineral_cost_factor 13114
+	vespene_cost_base 50251
+	vespene_cost_factor 40330
+	research_time_base 32689
+	research_time_factor 14033
+	requirements 17980
+	icon 17454
+	label 50198
+	staredit_race 211
+	max_repeats 21
+	broodwar_only 84
+
+Upgrade(21):
+	mineral_cost_base 59712
+	mineral_cost_factor 17383
+	vespene_cost_base 29245
+	vespene_cost_factor 13099
+	research_time_base 16741
+	research_time_factor 8840
+	requirements 5614
+	icon 23569
+	label 31678
+	staredit_race 124
+	max_repeats 203
+	broodwar_only False
+
+Upgrade(22):
+	mineral_cost_base 32696
+	mineral_cost_factor 33357
+	vespene_cost_base 54091
+	vespene_cost_factor 9873
+	research_time_base 52995
+	research_time_factor 27404
+	requirements 0
+	icon 60886
+	label 47731
+	staredit_race 226
+	max_repeats 34
+	broodwar_only True
+
+Upgrade(23):
+	mineral_cost_base 52081
+	mineral_cost_factor 43372
+	vespene_cost_base 32303
+	vespene_cost_factor 477
+	research_time_base 2807
+	research_time_factor 21254
+	requirements 51402
+	icon 32494
+	label 30905
+	staredit_race 160
+	max_repeats 231
+	broodwar_only 56
+
+Upgrade(24):
+	mineral_cost_base 56819
+	mineral_cost_factor 34762
+	vespene_cost_base 10157
+	vespene_cost_factor 49994
+	research_time_base 12136
+	research_time_factor 40553
+	requirements 48333
+	icon 10532
+	label 49
+	staredit_race 18
+	max_repeats 135
+	broodwar_only False
+
+Upgrade(25):
+	mineral_cost_base 13732
+	mineral_cost_factor 37512
+	vespene_cost_base 60437
+	vespene_cost_factor 60998
+	research_time_base 7772
+	research_time_factor 57579
+	requirements 1380
+	icon 18498
+	label 34375
+	staredit_race 178
+	max_repeats 230
+	broodwar_only True
+
+Upgrade(26):
+	mineral_cost_base 61666
+	mineral_cost_factor 37333
+	vespene_cost_base 56852
+	vespene_cost_factor 61346
+	research_time_base 7177
+	research_time_factor 32861
+	requirements 24965
+	icon 37387
+	label 50786
+	staredit_race 104
+	max_repeats 189
+	broodwar_only 205
+
+Upgrade(27):
+	mineral_cost_base 28759
+	mineral_cost_factor 26851
+	vespene_cost_base 26668
+	vespene_cost_factor 18729
+	research_time_base 1871
+	research_time_factor 49853
+	requirements 4390
+	icon 18586
+	label 33366
+	staredit_race 106
+	max_repeats 57
+	broodwar_only False
+
+Upgrade(28):
+	mineral_cost_base 220
+	mineral_cost_factor 45184
+	vespene_cost_base 41673
+	vespene_cost_factor 55763
+	research_time_base 15532
+	research_time_factor 1398
+	requirements 62178
+	icon 37651
+	label 20894
+	staredit_race 114
+	max_repeats 218
+	broodwar_only True
+
+Upgrade(29):
+	mineral_cost_base 36816
+	mineral_cost_factor 13776
+	vespene_cost_base 33895
+	vespene_cost_factor 42153
+	research_time_base 64113
+	research_time_factor 14280
+	requirements 41985
+	icon 19062
+	label 1967
+	staredit_race 67
+	max_repeats 2
+	broodwar_only 170
+
+Upgrade(30):
+	mineral_cost_base 59730
+	mineral_cost_factor 24966
+	vespene_cost_base 47620
+	vespene_cost_factor 20115
+	research_time_base 57858
+	research_time_factor 32812
+	requirements 46482
+	icon 45228
+	label 13087
+	staredit_race 198
+	max_repeats 87
+	broodwar_only False
+
+Upgrade(31):
+	mineral_cost_base 4867
+	mineral_cost_factor 50495
+	vespene_cost_base 10469
+	vespene_cost_factor 76
+	research_time_base 61740
+	research_time_factor 34621
+	requirements 65391
+	icon 23766
+	label 56473
+	staredit_race 217
+	max_repeats 2
+	broodwar_only True
+
+Upgrade(32):
+	mineral_cost_base 36038
+	mineral_cost_factor 25368
+	vespene_cost_base 39884
+	vespene_cost_factor 55712
+	research_time_base 233
+	research_time_factor 26416
+	requirements 59807
+	icon 901
+	label 6500
+	staredit_race 177
+	max_repeats 174
+	broodwar_only 228
+
+Upgrade(33):
+	mineral_cost_base 49134
+	mineral_cost_factor 24959
+	vespene_cost_base 50651
+	vespene_cost_factor 7850
+	research_time_base 11423
+	research_time_factor 64564
+	requirements 10470
+	icon 48238
+	label 21987
+	staredit_race 50
+	max_repeats 7
+	broodwar_only False
+
+Upgrade(34):
+	mineral_cost_base 10599
+	mineral_cost_factor 61426
+	vespene_cost_base 27802
+	vespene_cost_factor 36018
+	research_time_base 19757
+	research_time_factor 35554
+	requirements 47108
+	icon 48413
+	label 14922
+	staredit_race 68
+	max_repeats 8
+	broodwar_only True
+
+Upgrade(35):
+	mineral_cost_base 36984
+	mineral_cost_factor 46308
+	vespene_cost_base 16498
+	vespene_cost_factor 52931
+	research_time_base 48910
+	research_time_factor 1707
+	requirements 64895
+	icon 47443
+	label 5277
+	staredit_race 227
+	max_repeats 70
+	broodwar_only 47
+
+Upgrade(36):
+	mineral_cost_base 61328
+	mineral_cost_factor 6738
+	vespene_cost_base 56425
+	vespene_cost_factor 12185
+	research_time_base 6588
+	research_time_factor 19153
+	requirements 14201
+	icon 16965
+	label 53082
+	staredit_race 156
+	max_repeats 253
+	broodwar_only False
+
+Upgrade(37):
+	mineral_cost_base 39059
+	mineral_cost_factor 6364
+	vespene_cost_base 2705
+	vespene_cost_factor 58360
+	research_time_base 50922
+	research_time_factor 2501
+	requirements 46610
+	icon 25250
+	label 10954
+	staredit_race 240
+	max_repeats 93
+	broodwar_only True
+
+Upgrade(38):
+	mineral_cost_base 32378
+	mineral_cost_factor 1052
+	vespene_cost_base 35854
+	vespene_cost_factor 21067
+	research_time_base 21556
+	research_time_factor 18568
+	requirements 24391
+	icon 64717
+	label 45768
+	staredit_race 249
+	max_repeats 198
+	broodwar_only 146
+
+Upgrade(39):
+	mineral_cost_base 33581
+	mineral_cost_factor 14283
+	vespene_cost_base 43454
+	vespene_cost_factor 20876
+	research_time_base 47572
+	research_time_factor 31821
+	requirements 15966
+	icon 7074
+	label 42273
+	staredit_race 102
+	max_repeats 222
+	broodwar_only False
+
+Upgrade(40):
+	mineral_cost_base 7638
+	mineral_cost_factor 45646
+	vespene_cost_base 55290
+	vespene_cost_factor 17054
+	research_time_base 38350
+	research_time_factor 56416
+	requirements 39753
+	icon 3744
+	label 39581
+	staredit_race 78
+	max_repeats 240
+	broodwar_only True
+
+Upgrade(41):
+	mineral_cost_base 10370
+	mineral_cost_factor 26048
+	vespene_cost_base 11680
+	vespene_cost_factor 45378
+	research_time_base 6514
+	research_time_factor 56174
+	requirements 13957
+	icon 26574
+	label 28593
+	staredit_race 140
+	max_repeats 19
+	broodwar_only 217
+
+Upgrade(42):
+	mineral_cost_base 49843
+	mineral_cost_factor 64756
+	vespene_cost_base 342
+	vespene_cost_factor 35909
+	research_time_base 23181
+	research_time_factor 40236
+	requirements 59122
+	icon 13426
+	label 6238
+	staredit_race 65
+	max_repeats 199
+	broodwar_only False
+
+Upgrade(43):
+	mineral_cost_base 43724
+	mineral_cost_factor 32384
+	vespene_cost_base 59757
+	vespene_cost_factor 8720
+	research_time_base 12920
+	research_time_factor 47255
+	requirements 26462
+	icon 12390
+	label 18433
+	staredit_race 71
+	max_repeats 25
+	broodwar_only True
+
+Upgrade(44):
+	mineral_cost_base 54991
+	mineral_cost_factor 64803
+	vespene_cost_base 17505
+	vespene_cost_factor 19810
+	research_time_base 41558
+	research_time_factor 41531
+	requirements 24980
+	icon 3350
+	label 59422
+	staredit_race 131
+	max_repeats 127
+	broodwar_only 200
+
+Upgrade(45):
+	mineral_cost_base 14049
+	mineral_cost_factor 38923
+	vespene_cost_base 52768
+	vespene_cost_factor 50018
+	research_time_base 58110
+	research_time_factor 62936
+	requirements 23476
+	icon 19540
+	label 63841
+	staredit_race 23
+	max_repeats 68
+	broodwar_only False
+
+Upgrade(46):
+	mineral_cost_base 38799
+	mineral_cost_factor 12818
+	vespene_cost_base 1430
+	vespene_cost_factor 1309
+	research_time_base 44377
+	research_time_factor 55183
+	requirements 34428
+	icon 26680
+	label 2875
+	staredit_race 254
+	max_repeats 211
+	broodwar_only True
+
+Upgrade(47):
+	mineral_cost_base 6540
+	mineral_cost_factor 37477
+	vespene_cost_base 16631
+	vespene_cost_factor 40694
+	research_time_base 54074
+	research_time_factor 1254
+	requirements 47433
+	icon 24434
+	label 28918
+	staredit_race 131
+	max_repeats 1
+	broodwar_only 34
+
+Upgrade(48):
+	mineral_cost_base 45674
+	mineral_cost_factor 7101
+	vespene_cost_base 14200
+	vespene_cost_factor 65472
+	research_time_base 59476
+	research_time_factor 49649
+	requirements 21197
+	icon 45861
+	label 21212
+	staredit_race 227
+	max_repeats 136
+	broodwar_only False
+
+Upgrade(49):
+	mineral_cost_base 26571
+	mineral_cost_factor 42463
+	vespene_cost_base 45983
+	vespene_cost_factor 47701
+	research_time_base 19197
+	research_time_factor 60127
+	requirements 64677
+	icon 16656
+	label 8022
+	staredit_race 181
+	max_repeats 166
+	broodwar_only True
+
+Upgrade(50):
+	mineral_cost_base 53863
+	mineral_cost_factor 60693
+	vespene_cost_base 20707
+	vespene_cost_factor 8168
+	research_time_base 49564
+	research_time_factor 59326
+	requirements 14718
+	icon 52059
+	label 6414
+	staredit_race 7
+	max_repeats 123
+	broodwar_only 70
+
+Upgrade(51):
+	mineral_cost_base 61681
+	mineral_cost_factor 39897
+	vespene_cost_base 31276
+	vespene_cost_factor 11137
+	research_time_base 28273
+	research_time_factor 6062
+	requirements 31157
+	icon 22948
+	label 13513
+	staredit_race 180
+	max_repeats 192
+	broodwar_only False
+
+Upgrade(52):
+	mineral_cost_base 26477
+	mineral_cost_factor 15471
+	vespene_cost_base 16927
+	vespene_cost_factor 17126
+	research_time_base 62393
+	research_time_factor 16524
+	requirements 3459
+	icon 57797
+	label 27370
+	staredit_race 238
+	max_repeats 99
+	broodwar_only True
+
+Upgrade(53):
+	mineral_cost_base 32420
+	mineral_cost_factor 45777
+	vespene_cost_base 63531
+	vespene_cost_factor 37939
+	research_time_base 53088
+	research_time_factor 49361
+	requirements 64724
+	icon 1917
+	label 65517
+	staredit_race 123
+	max_repeats 117
+	broodwar_only 162
+
+Upgrade(54):
+	mineral_cost_base 26017
+	mineral_cost_factor 25136
+	vespene_cost_base 572
+	vespene_cost_factor 52170
+	research_time_base 36227
+	research_time_factor 38030
+	requirements 60609
+	icon 6199
+	label 5146
+	staredit_race 113
+	max_repeats 166
+	broodwar_only False
+
+Upgrade(55):
+	mineral_cost_base 38078
+	mineral_cost_factor 12325
+	vespene_cost_base 16516
+	vespene_cost_factor 29485
+	research_time_base 11244
+	research_time_factor 7364
+	requirements 62720
+	icon 11117
+	label 61506
+	staredit_race 107
+	max_repeats 25
+	broodwar_only True
+
+Upgrade(56):
+	mineral_cost_base 38795
+	mineral_cost_factor 64391
+	vespene_cost_base 8995
+	vespene_cost_factor 43017
+	research_time_base 34203
+	research_time_factor 13748
+	requirements 21934
+	icon 31166
+	label 32571
+	staredit_race 33
+	max_repeats 111
+	broodwar_only 136
+
+Upgrade(57):
+	mineral_cost_base 61110
+	mineral_cost_factor 14830
+	vespene_cost_base 7177
+	vespene_cost_factor 31459
+	research_time_base 15841
+	research_time_factor 63198
+	requirements 45052
+	icon 10636
+	label 33487
+	staredit_race 225
+	max_repeats 183
+	broodwar_only False
+
+Upgrade(58):
+	mineral_cost_base 46969
+	mineral_cost_factor 62623
+	vespene_cost_base 64676
+	vespene_cost_factor 40795
+	research_time_base 44054
+	research_time_factor 1995
+	requirements 47294
+	icon 58818
+	label 7290
+	staredit_race 129
+	max_repeats 143
+	broodwar_only True
+
+Upgrade(59):
+	mineral_cost_base 21668
+	mineral_cost_factor 32522
+	vespene_cost_base 48094
+	vespene_cost_factor 63427
+	research_time_base 25453
+	research_time_factor 43407
+	requirements 47197
+	icon 51776
+	label 62255
+	staredit_race 188
+	max_repeats 11
+	broodwar_only 13
+
+Upgrade(60):
+	mineral_cost_base 29004
+	mineral_cost_factor 45086
+	vespene_cost_base 47293
+	vespene_cost_factor 49707
+	research_time_base 45830
+	research_time_factor 20644
+	requirements 28099
+	icon 35858
+	label 86
+	staredit_race 182
+	max_repeats 169
+	broodwar_only False

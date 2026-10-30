@@ -533,6 +533,29 @@ starfield handled (§5). Features 1 and 2 below are done.
    **String editor** (part 2, `stat_txt.tbl`, after PyMS's PyTBL) `[BUILT 2026-10-08; tested
    on Windows and in game 2026-10-09]`: spec
    `docs/superpowers/specs/2026-10-08-string-editor-design.md`, round in its §8.
+   **Editor quality-of-life changes** `[BUILT 2026-10-24; tested on Windows 2026-10-24]`: centred icons, Add new
+   button, filtering Condition/Action boxes, icon search, Repack split in two with a
+   filter and Select all, toolbar markers, Launch (F5), Save as, a remembered window; spec
+   `docs/superpowers/specs/2026-10-24-editor-qol-design.md`. Kept in mind, not planned:
+   **Repack without the dialog** (one press packs the newer plugin and every new or
+   changed file), which the user judged too risky for now.
+   **Data page** (part 4 of the editor, the `.dat` files after PyMS's PyDAT; fields) `[BUILT 2026-10-25;
+   tested on Windows 2026-10-25]`: all 11 files, every field of PyDAT's 16 tabs, undo, revert to opened
+   and to vanilla, Save into the exe and `to-repack\arr\`; spec
+   `docs/superpowers/specs/2026-10-24-dat-editor-design.md`, test round in its §10. All of §10
+   passed on Windows. Part 2 of the .dat port, the links (Jump buttons, Used by, copy and
+   paste, PyDAT's TXT import and export, name overrides kept in the exe as
+   `Manifold\names\*.txt`) `[BUILT 2026-10-25; tested on Windows 2026-10-26]`: all of its §8 passed; spec `docs/superpowers/specs/2026-10-25-dat-links-design.md`,
+   test round in its §8. Part 3, the previews (PyDAT's pictures on Units Graphics and StarEdit,
+   Sprites and Images, the icons with the editor's picker, the sound play button)
+   `[BUILT 2026-10-26; tested on Windows 2026-10-26]`: all of its §7 passed; spec
+   `docs/superpowers/specs/2026-10-26-dat-previews-design.md`. After that run, PyMS's 2400-frame cap was dropped so a GRP with more frames (the Viking's assault mode) draws; checked on Windows 2026-10-26. Part 4, entry counts (PyDAT's Add Entry and Set Entry Count on every file
+   with an expanded layout, the plugin's `GPTP/DatExtend/` loading images, sprites and flingy)
+   and list rows coloured when changed since the last save `[BUILT 2026-10-26; tested on Windows
+   and in game 2026-10-27]`: all of its §6 passed, the game loading a grown images.dat (the
+   plugin's extension's first in-game run); spec
+   `docs/superpowers/specs/2026-10-26-dat-counts-design.md`. Remaining
+   part of the .dat port `[PROPOSED]`: 5 improvements.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
    first game frame; every client applies it in the same frame; replays record it. This
    needs the view size switchable at game start. The buffers would be allocated for the
@@ -716,10 +739,17 @@ the orders queued behind a gather (below).
   overlay: no rebuild, no repack. The plugin and the effect must agree on the texture's
   name and meaning (`EffectsTex`, 255 = effects), so a change to either side of that goes
   out as a pair.
-- **A new `rez\` file must be added to the repack by hand**: the repack tool keeps its
-  own list. Check the exe with `D:\SC Modding\resexp-analysis\mpqfind.py SCManifold.exe
+- **A new `rez\` file must be in `to-repack\`**: the editor's Repack adds every file in
+  its subfolders (PyMPQ, the fallback, keeps its own list, so there it is added by hand).
+  Check the exe with `D:\SC Modding\resexp-analysis\mpqfind.py SCManifold.exe
   "rez\statdata.bin"` (lists the file's size in the exe's MPQ, or "missing");
   `mpqget.py <mpq> <name> <out>` extracts a file from the game's MPQs (StormLib).
+- **The Manifold Editor's Repack** `[BUILT 2026-10-15; TESTED in game 2026-10-24]` packs
+  `GPTP.qdp` into FireGraft's exe and adds every file under `to-repack\`'s subfolders, in
+  place of FireGraft and PyMPQ (spec `docs/superpowers/specs/2026-10-14-repack-design.md`).
+  All of its spec's §8 passed: a new plugin and one of another size, changed and added
+  files, the stat_txt.tbl warning, the busy message with the game running, and the real
+  `SCManifold.exe`.
 - **At exactly 640×480 the resolution module is off**, but the console layout hooks
   (`injectConsoleLayoutHooks`) still run; anything that depends on the console's layout
   must be installed there, not only in `injectHudHooks`.

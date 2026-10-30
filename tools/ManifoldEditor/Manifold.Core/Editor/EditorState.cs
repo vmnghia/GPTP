@@ -22,10 +22,13 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
     ButtonSet? clipboardSet;
 
     public ButtonSetDocument Document { get; } = document;
-    public string ExeName { get; } = exeName;
+    /// <summary>The exe edited; Save as moves it to the new exe.</summary>
+    public string ExeName { get; set; } = exeName;
     public int SelectedSetId { get; set; }
     /// <summary>The string the last undo or redo changed, for the window to show; null for a set-only step.</summary>
     public int? LastStringId { get; private set; }
+    /// <summary>The .dat entry the last undo or redo changed, for the window to show; null for a step elsewhere.</summary>
+    public DatPlace? LastDatPlace { get; private set; }
     public ButtonSet SelectedSet => Document[SelectedSetId];
     public bool HasButtonClipboard => clipboardButton is not null;
     public bool HasSetClipboard => clipboardSet is not null;
@@ -119,6 +122,10 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
         clipboardButton is Button button && IsPosition(position) &&
         Apply(s => CardEdits.Paste(s, button, position), "Paste");
 
+    /// <summary>Add new button: the button at the slot, after the buttons there (as Paste), one undo step.</summary>
+    public bool AddButton(ushort position, Button button) =>
+        IsPosition(position) && Apply(s => CardEdits.Paste(s, button with { Position = position }, position), "Add button");
+
     public bool DeleteButton(int index) => IsIndex(index) && Apply(s => CardEdits.Delete(s, index), "Delete");
 
     public bool EditButton(int index, Button button) =>
@@ -166,8 +173,139 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
         if (place is not Place p) return false;
         if (p.SetId is int id) SelectedSetId = id;
         LastStringId = p.StringId;
+        LastDatPlace = p.Dat;
         return true;
     }
+
+    // .dat files (spec 2026-10-24-dat-editor).
+
+    /// <summary>
+    /// One property of one entry set to a value, as one step. False when it changes nothing
+    /// or is refused: the file is missing, the entry is out of range or doesn't have the
+    /// property, or the value doesn't fit its type.
+    /// </summary>
+    public bool EditDat(DatId file, int entry, string property, ulong value)
+    {
+        try
+        {
+            return Document.ApplyDat(file, d => d.With(entry, property, value), entry, property, $"Edit {property}");
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// An entry back to the file as opened (or last saved), or to StarCraft's own, as one
+    /// step. False when it already matches, there is no such file, or the entry is past the
+    /// end of it (an entry added since, or one vanilla never had).
+    /// </summary>
+    public bool RevertEntry(DatId file, int entry, bool toVanilla)
+    {
+        var source = toVanilla ? Document.VanillaDat(file) : Document.OpenedDat(file);
+        if (source is null || entry < 0 || entry >= source.Count) return false;
+        return Document.ApplyDat(file, d => d.WithEntryFrom(entry, source, uncoveredIsZero: !toVanilla), entry, null,
+            toVanilla ? "Revert entry to vanilla" : "Revert entry");
+    }
+
+    /// <summary>
+    /// The file's name overrides replaced, as one step (spec 2026-10-25 §6). False when they
+    /// are the same. An undo shows <paramref name="entry"/> (null: the first).
+    /// </summary>
+    public bool EditOverrides(DatId file, NameOverrides overrides, int? entry = null) =>
+        Document.ApplyOverrides(file, overrides, entry);
+
+    // .dat text: copy, paste and import (links spec §3).
+
+    const string NoEntryOnClipboard = "The clipboard holds no PyDAT entry";
+
+    /// <summary>
+    /// PyMS's text for one entry: the properties of <paramref name="subTab"/> when it is a tab
+    /// of this file (the Units sub-tabs), else all of them. Empty without the file.
+    /// </summary>
+    public string CopyEntryText(DatId file, int entry, DatTabId? subTab)
+    {
+        if (Document.Dat(file) is not DatFile dat || entry < 0 || entry >= dat.Count) return "";
+        // Only the Units sub-tabs narrow the copy; elsewhere the command copies the entry (spec §3).
+        var tab = file == DatId.Units && subTab is DatTabId id ? DatTabs.Of(id) : null;
+        return DatText.Export(dat, [entry], tab is not null && tab.File == file ? tab.Properties : null);
+    }
+
+    /// <summary>
+    /// The clipboard's one entry put on <paramref name="entry"/> (the text's id is ignored), as
+    /// one step "Paste entry". Null on success, including when the text equals the entry
+    /// (nothing recorded); else the reason it was refused.
+    /// </summary>
+    public string? PasteEntry(DatId file, int entry, string? clipboard)
+    {
+        // Text with no header line isn't an entry; text with one keeps its "line N" refusals.
+        if (string.IsNullOrWhiteSpace(clipboard) || !DatText.HasHeader(clipboard)) return NoEntryOnClipboard;
+        if (Document.Dat(file) is not DatFile dat) return $"There is no {DatFormats.Of(file).FileName} to paste onto";
+        try
+        {
+            var (after, changed) = DatText.Apply(dat, DatText.Parse(clipboard), entry);
+            if (changed.Count > 0) Document.ApplyDatFile(file, after, entry, "Paste entry");
+            return null;
+        }
+        catch (DatTextException e)
+        {
+            return Refusal(e);
+        }
+    }
+
+    /// <summary>
+    /// PyMS's text imported onto the file, every entry in it, as one step named after the file
+    /// and the number of entries the text lists.
+    /// Null on success (also when nothing changes: nothing recorded); else the refusal, with
+    /// its line when it has one, and nothing applied.
+    /// </summary>
+    public string? ImportText(DatId file, string text, string fileName)
+    {
+        if (Document.Dat(file) is not DatFile dat) return $"There is no {DatFormats.Of(file).FileName} to import onto";
+        try
+        {
+            var entries = DatText.Parse(text);
+            var (after, changed) = DatText.Apply(dat, entries);
+            if (changed.Count > 0)
+            {
+                // The label counts the entries the text lists, not the ones that differ.
+                int n = entries.Count;
+                Document.ApplyDatFile(file, after, changed[0], $"Import {fileName} ({n} entr{(n == 1 ? "y" : "ies")})");
+            }
+            return null;
+        }
+        catch (DatTextException e)
+        {
+            return Refusal(e);
+        }
+    }
+
+    /// <summary>
+    /// PyDAT's Add Entry: one more entry (PyMS's rounding: units.dat's first growth is 252), as one
+    /// undo step shown at <paramref name="shown"/> after an undo. False when the file is missing or
+    /// can't grow (counts spec §2).
+    /// </summary>
+    public bool AddEntry(DatId file, int shown)
+    {
+        if (Document.Dat(file) is not DatFile dat || !dat.CanGrow) return false;
+        return Document.ApplyDatFile(file, dat.WithCount(dat.Count + 1L), shown, $"Add entry to {dat.Format.FileName}");
+    }
+
+    /// <summary>
+    /// PyDAT's Set Entry Count, as one undo step shown at <paramref name="shown"/> after an undo: null when
+    /// applied or when it changes nothing, else why it is refused (fewer entries, past the maximum).
+    /// </summary>
+    public string? SetEntryCount(DatId file, long count, int shown)
+    {
+        if (Document.Dat(file) is not DatFile dat) return $"There is no {DatFormats.Of(file).FileName}";
+        if (dat.CountRefusal(count) is { } refusal) return refusal;
+        var after = dat.WithCount(count);
+        Document.ApplyDatFile(file, after, shown, $"Set {dat.Format.FileName} to {after.Count} entries");
+        return null;
+    }
+
+    static string Refusal(DatTextException e) => e.Line is int line ? $"line {line}: {e.Message}" : e.Message;
 
     // Strings (spec §5, §6).
 

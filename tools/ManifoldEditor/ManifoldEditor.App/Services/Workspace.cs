@@ -6,9 +6,17 @@ using Microsoft.Win32;
 
 namespace ManifoldEditor.App.Services;
 
-/// <summary>An exe opened in the editor: its archive, its sets, and the resources shown with them.</summary>
+/// <summary>
+/// An exe opened in the editor: its archive, its sets, and the resources shown with them.
+/// The plugin's status line is kept apart, as the markers' recheck replaces it (QoL spec §7).
+/// </summary>
+/// <param name="Lists">PyDAT's name lists and field hints (Data\pydat), for the Data page.</param>
 public sealed record OpenedExe(string ExePath, StormArchive Archive, EditorState State, EditorResources Resources,
-    SetCatalog Catalog, IReadOnlyList<string> Status);
+    SetCatalog Catalog, IReadOnlyList<string> Status, string PluginLine, DatLists Lists)
+{
+    /// <summary>The status bar's lines: the plugin first, then what opening found.</summary>
+    public IReadOnlyList<string> StatusLines => [PluginLine, .. Status];
+}
 
 /// <summary>An exception while opening, with the step it happened in.</summary>
 public sealed class OpenStepException(string step, Exception inner)
@@ -61,6 +69,13 @@ public static class Workspace
     static FunctionTable LoadTable(string name) =>
         FunctionTable.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", name)));
 
+    /// <summary>PyDAT's lists and hints, from Data\pydat beside the editor; what is missing there is empty.</summary>
+    public static DatLists LoadDatLists() => DatLists.Load(Path.Combine(AppContext.BaseDirectory, "Data", "pydat"));
+
+    /// <summary>The set list's units: the document's units.dat (as edited), or none (the list is not grouped).</summary>
+    public static SetCatalog Catalog(EditorState state) =>
+        SetCatalog.Build(state.UnitName, state.Document.Dat(DatId.Units) is { } units ? UnitsDat.Of(units) : null);
+
     public static IReadOnlyList<string> IconNames()
     {
         string path = Path.Combine(AppContext.BaseDirectory, "Data", "Icons.txt");
@@ -73,19 +88,35 @@ public static class Workspace
     /// Opens a mod exe. Throws (with a message for the user) when the exe has no MPQ or
     /// StarCraft.exe can't be read; nothing is loaded then.
     /// </summary>
-    public static OpenedExe Open(string exePath, string starCraftDir)
+    /// <param name="pluginPath">The plugin Repack would pack, compared with the exe's in the status.</param>
+    public static OpenedExe Open(string exePath, string starCraftDir, string pluginPath)
     {
         var exe = new StormArchive(exePath);
-        var archives = new List<IArchive> { exe };
+        var vanillaArchives = new List<IArchive>();
         foreach (var mpq in VanillaMpqs)
         {
             string path = Path.Combine(starCraftDir, mpq);
-            if (File.Exists(path)) archives.Add(new StormArchive(path));
+            if (File.Exists(path)) vanillaArchives.Add(new StormArchive(path));
         }
+        var archives = new List<IArchive> { exe };
+        archives.AddRange(vanillaArchives);
         string palettePath = Path.Combine(AppContext.BaseDirectory, "Data", "Icons.pal");
         uint[]? iconPalette = File.Exists(palettePath) ? RawPalette.Read(File.ReadAllBytes(palettePath)) : null;
-        var resources = Step("Reading stat_txt.tbl, cmdicons.grp and units.dat",
-            () => EditorResources.Load(new ResourceResolver(archives), iconPalette));
+        var resources = Step("Reading stat_txt.tbl, cmdicons.grp, the .tbl files and iscript.bin",
+            () => EditorResources.Load(new ResourceResolver(archives), iconPalette,
+                PreviewPalettes.Load(Path.Combine(AppContext.BaseDirectory, "Data"))));
+        // Each .dat file from the exe first; vanilla's copies from the MPQs alone (Revert to vanilla, the • marks).
+        var datSources = new List<string>();
+        var datNotes = new List<string>();
+        var dats = Step("Reading the .dat files (arr\\*.dat)",
+            () => DatSources.Load(new ResourceResolver(archives), new ResourceResolver(vanillaArchives), datSources, datNotes));
+        // The name overrides are the exe's alone (links spec §6): a line that isn't one is a status note.
+        var overrideNotes = new List<string>();
+        dats = dats with
+        {
+            Overrides = Step("Reading the name overrides (Manifold\\names\\*.txt)", () => DatSources.LoadOverrides(exe, overrideNotes)),
+        };
+        var lists = Step("Reading Data\\pydat", LoadDatLists);
 
         string starCraftExe = Path.Combine(starCraftDir, "StarCraft.exe");
         if (!File.Exists(starCraftExe))
@@ -98,10 +129,13 @@ public static class Workspace
         string fgp = Step("Looking for the FireGraft project (Firegraft\\*.fgp)",
             () => EditorSession.FindFgp(exe, Path.GetFileName(exePath)));
         var opened = Step($"Reading the button sets in {Path.GetFileName(exePath)} ({ButtonSetFile.ArchivePath} or {fgp})",
-            () => EditorSession.Open(exe, fgp, vanilla, conditions, actions, resources.Strings?.Table));
+            () => EditorSession.Open(exe, fgp, vanilla, conditions, actions, resources.Strings?.Table, dats: dats));
 
         var state = new EditorState(opened.Document, Path.GetFileName(exePath), conditions, actions);
-        var status = opened.Status.Concat(resources.Sources).Concat(resources.Notes).ToArray();
-        return new OpenedExe(exePath, exe, state, resources, SetCatalog.Build(state.UnitName, resources.Units), status);
+        string plugin;
+        try { plugin = Repack.PluginStatus(File.ReadAllBytes(exePath), exePath, pluginPath); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { plugin = $"Plugin: {e.Message}"; }
+        var status = opened.Status.Concat(resources.Sources).Concat(datSources).Concat(resources.Notes).Concat(datNotes).Concat(overrideNotes).ToArray();
+        return new OpenedExe(exePath, exe, state, resources, Catalog(state), status, plugin, lists);
     }
 }

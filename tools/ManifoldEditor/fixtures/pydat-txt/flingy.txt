@@ -1,0 +1,1880 @@
+Flingy(0):
+	sprite 54753
+	speed 2582864356
+	acceleration 14020
+	halt_distance 4157359344
+	turn_radius 105
+	iscript_mask 192
+	movement_control 16
+
+Flingy(1):
+	sprite 32246
+	speed 1927374780
+	acceleration 4876
+	halt_distance 332896282
+	turn_radius 106
+	iscript_mask 153
+	movement_control 41
+
+Flingy(2):
+	sprite 3516
+	speed 3184352483
+	acceleration 49650
+	halt_distance 2622916137
+	turn_radius 108
+	iscript_mask 249
+	movement_control 163
+
+Flingy(3):
+	sprite 13639
+	speed 155035769
+	acceleration 57941
+	halt_distance 1632324425
+	turn_radius 208
+	iscript_mask 129
+	movement_control 136
+
+Flingy(4):
+	sprite 18794
+	speed 1914723771
+	acceleration 37732
+	halt_distance 4157390292
+	turn_radius 249
+	iscript_mask 168
+	movement_control 17
+
+Flingy(5):
+	sprite 47233
+	speed 2855647546
+	acceleration 24838
+	halt_distance 2865712952
+	turn_radius 56
+	iscript_mask 32
+	movement_control 183
+
+Flingy(6):
+	sprite 65245
+	speed 3951440224
+	acceleration 34021
+	halt_distance 860300473
+	turn_radius 103
+	iscript_mask 248
+	movement_control 109
+
+Flingy(7):
+	sprite 16959
+	speed 412706817
+	acceleration 34953
+	halt_distance 994787545
+	turn_radius 202
+	iscript_mask 244
+	movement_control 252
+
+Flingy(8):
+	sprite 59151
+	speed 382911397
+	acceleration 32866
+	halt_distance 267623280
+	turn_radius 226
+	iscript_mask 24
+	movement_control 163
+
+Flingy(9):
+	sprite 30308
+	speed 328405989
+	acceleration 2672
+	halt_distance 1787614955
+	turn_radius 139
+	iscript_mask 200
+	movement_control 90
+
+Flingy(10):
+	sprite 64396
+	speed 553613059
+	acceleration 48944
+	halt_distance 3988920658
+	turn_radius 121
+	iscript_mask 69
+	movement_control 224
+
+Flingy(11):
+	sprite 58586
+	speed 3628239716
+	acceleration 65036
+	halt_distance 4241984647
+	turn_radius 11
+	iscript_mask 97
+	movement_control 209
+
+Flingy(12):
+	sprite 5696
+	speed 973028072
+	acceleration 50538
+	halt_distance 156099563
+	turn_radius 73
+	iscript_mask 35
+	movement_control 15
+
+Flingy(13):
+	sprite 53373
+	speed 4120653221
+	acceleration 29687
+	halt_distance 1665728980
+	turn_radius 167
+	iscript_mask 57
+	movement_control 85
+
+Flingy(14):
+	sprite 33575
+	speed 459527305
+	acceleration 49595
+	halt_distance 1331247411
+	turn_radius 99
+	iscript_mask 207
+	movement_control 127
+
+Flingy(15):
+	sprite 28798
+	speed 650740877
+	acceleration 41515
+	halt_distance 3070386521
+	turn_radius 87
+	iscript_mask 55
+	movement_control 108
+
+Flingy(16):
+	sprite 59370
+	speed 3129435037
+	acceleration 3421
+	halt_distance 2042967719
+	turn_radius 27
+	iscript_mask 218
+	movement_control 46
+
+Flingy(17):
+	sprite 15490
+	speed 3124037799
+	acceleration 27317
+	halt_distance 1780025207
+	turn_radius 236
+	iscript_mask 153
+	movement_control 22
+
+Flingy(18):
+	sprite 23550
+	speed 461793056
+	acceleration 46889
+	halt_distance 1133361644
+	turn_radius 167
+	iscript_mask 100
+	movement_control 93
+
+Flingy(19):
+	sprite 8408
+	speed 4209736911
+	acceleration 31698
+	halt_distance 1711020605
+	turn_radius 125
+	iscript_mask 179
+	movement_control 15
+
+Flingy(20):
+	sprite 56077
+	speed 2069073058
+	acceleration 16867
+	halt_distance 3429365927
+	turn_radius 110
+	iscript_mask 47
+	movement_control 34
+
+Flingy(21):
+	sprite 12696
+	speed 1050174801
+	acceleration 52955
+	halt_distance 341095344
+	turn_radius 15
+	iscript_mask 129
+	movement_control 72
+
+Flingy(22):
+	sprite 36858
+	speed 1672926607
+	acceleration 13161
+	halt_distance 3228335395
+	turn_radius 71
+	iscript_mask 246
+	movement_control 219
+
+Flingy(23):
+	sprite 11054
+	speed 2669753710
+	acceleration 18659
+	halt_distance 2887436958
+	turn_radius 210
+	iscript_mask 48
+	movement_control 123
+
+Flingy(24):
+	sprite 15900
+	speed 4002323368
+	acceleration 45776
+	halt_distance 3358575623
+	turn_radius 51
+	iscript_mask 60
+	movement_control 24
+
+Flingy(25):
+	sprite 55515
+	speed 1656163424
+	acceleration 23304
+	halt_distance 750345846
+	turn_radius 36
+	iscript_mask 59
+	movement_control 49
+
+Flingy(26):
+	sprite 41645
+	speed 2231901921
+	acceleration 9032
+	halt_distance 2521958009
+	turn_radius 23
+	iscript_mask 188
+	movement_control 47
+
+Flingy(27):
+	sprite 61097
+	speed 2544688162
+	acceleration 34787
+	halt_distance 3248767469
+	turn_radius 69
+	iscript_mask 11
+	movement_control 241
+
+Flingy(28):
+	sprite 20354
+	speed 1465460622
+	acceleration 20212
+	halt_distance 1282065724
+	turn_radius 207
+	iscript_mask 111
+	movement_control 169
+
+Flingy(29):
+	sprite 27010
+	speed 2167318996
+	acceleration 24553
+	halt_distance 1252099287
+	turn_radius 59
+	iscript_mask 11
+	movement_control 233
+
+Flingy(30):
+	sprite 7327
+	speed 543231677
+	acceleration 31796
+	halt_distance 1601693860
+	turn_radius 158
+	iscript_mask 17
+	movement_control 172
+
+Flingy(31):
+	sprite 44366
+	speed 3518170969
+	acceleration 21866
+	halt_distance 2772923457
+	turn_radius 142
+	iscript_mask 214
+	movement_control 80
+
+Flingy(32):
+	sprite 35332
+	speed 3402722160
+	acceleration 28343
+	halt_distance 2114815798
+	turn_radius 160
+	iscript_mask 87
+	movement_control 73
+
+Flingy(33):
+	sprite 22289
+	speed 1522286738
+	acceleration 53189
+	halt_distance 711113714
+	turn_radius 43
+	iscript_mask 252
+	movement_control 244
+
+Flingy(34):
+	sprite 7534
+	speed 2365402061
+	acceleration 15919
+	halt_distance 3712081463
+	turn_radius 191
+	iscript_mask 196
+	movement_control 97
+
+Flingy(35):
+	sprite 38541
+	speed 1398713679
+	acceleration 29630
+	halt_distance 150098663
+	turn_radius 251
+	iscript_mask 11
+	movement_control 52
+
+Flingy(36):
+	sprite 61614
+	speed 3758310736
+	acceleration 37172
+	halt_distance 3031519282
+	turn_radius 226
+	iscript_mask 107
+	movement_control 73
+
+Flingy(37):
+	sprite 59418
+	speed 3453857924
+	acceleration 22567
+	halt_distance 654878272
+	turn_radius 187
+	iscript_mask 212
+	movement_control 157
+
+Flingy(38):
+	sprite 4581
+	speed 3987145387
+	acceleration 49713
+	halt_distance 2070913803
+	turn_radius 233
+	iscript_mask 24
+	movement_control 157
+
+Flingy(39):
+	sprite 54153
+	speed 3830160905
+	acceleration 10766
+	halt_distance 9989831
+	turn_radius 138
+	iscript_mask 199
+	movement_control 44
+
+Flingy(40):
+	sprite 3140
+	speed 878618167
+	acceleration 52101
+	halt_distance 1526235657
+	turn_radius 46
+	iscript_mask 132
+	movement_control 200
+
+Flingy(41):
+	sprite 36624
+	speed 445379130
+	acceleration 11279
+	halt_distance 57488335
+	turn_radius 216
+	iscript_mask 201
+	movement_control 10
+
+Flingy(42):
+	sprite 58993
+	speed 1684423968
+	acceleration 1558
+	halt_distance 693373932
+	turn_radius 159
+	iscript_mask 10
+	movement_control 109
+
+Flingy(43):
+	sprite 25926
+	speed 2411726289
+	acceleration 28478
+	halt_distance 1048563113
+	turn_radius 47
+	iscript_mask 4
+	movement_control 208
+
+Flingy(44):
+	sprite 28047
+	speed 2284818787
+	acceleration 50500
+	halt_distance 1830530306
+	turn_radius 175
+	iscript_mask 32
+	movement_control 213
+
+Flingy(45):
+	sprite 22699
+	speed 1873142091
+	acceleration 12830
+	halt_distance 2703478216
+	turn_radius 67
+	iscript_mask 176
+	movement_control 31
+
+Flingy(46):
+	sprite 45849
+	speed 2232081233
+	acceleration 16201
+	halt_distance 4027118829
+	turn_radius 137
+	iscript_mask 173
+	movement_control 165
+
+Flingy(47):
+	sprite 59049
+	speed 2126739249
+	acceleration 55342
+	halt_distance 2942545791
+	turn_radius 144
+	iscript_mask 222
+	movement_control 46
+
+Flingy(48):
+	sprite 64381
+	speed 45056209
+	acceleration 7303
+	halt_distance 3082319185
+	turn_radius 218
+	iscript_mask 101
+	movement_control 35
+
+Flingy(49):
+	sprite 19816
+	speed 1320570629
+	acceleration 31408
+	halt_distance 1261883632
+	turn_radius 235
+	iscript_mask 204
+	movement_control 158
+
+Flingy(50):
+	sprite 17530
+	speed 3929392933
+	acceleration 49065
+	halt_distance 1956258873
+	turn_radius 2
+	iscript_mask 148
+	movement_control 90
+
+Flingy(51):
+	sprite 9928
+	speed 462870448
+	acceleration 64072
+	halt_distance 3032396473
+	turn_radius 253
+	iscript_mask 20
+	movement_control 5
+
+Flingy(52):
+	sprite 44946
+	speed 3254201491
+	acceleration 28840
+	halt_distance 733440852
+	turn_radius 5
+	iscript_mask 193
+	movement_control 8
+
+Flingy(53):
+	sprite 28926
+	speed 1071088931
+	acceleration 40901
+	halt_distance 4035401425
+	turn_radius 154
+	iscript_mask 185
+	movement_control 224
+
+Flingy(54):
+	sprite 44283
+	speed 4114614831
+	acceleration 33846
+	halt_distance 2219932635
+	turn_radius 92
+	iscript_mask 157
+	movement_control 9
+
+Flingy(55):
+	sprite 29657
+	speed 1231781768
+	acceleration 14305
+	halt_distance 3238077159
+	turn_radius 198
+	iscript_mask 207
+	movement_control 149
+
+Flingy(56):
+	sprite 23901
+	speed 3127767667
+	acceleration 27807
+	halt_distance 1102359430
+	turn_radius 65
+	iscript_mask 224
+	movement_control 212
+
+Flingy(57):
+	sprite 62243
+	speed 2795883956
+	acceleration 5926
+	halt_distance 1494970604
+	turn_radius 193
+	iscript_mask 11
+	movement_control 159
+
+Flingy(58):
+	sprite 29984
+	speed 3820489568
+	acceleration 38159
+	halt_distance 3527773039
+	turn_radius 36
+	iscript_mask 176
+	movement_control 251
+
+Flingy(59):
+	sprite 37356
+	speed 2020615953
+	acceleration 12085
+	halt_distance 3540337632
+	turn_radius 185
+	iscript_mask 229
+	movement_control 93
+
+Flingy(60):
+	sprite 7660
+	speed 3783496570
+	acceleration 39058
+	halt_distance 3283269274
+	turn_radius 27
+	iscript_mask 168
+	movement_control 152
+
+Flingy(61):
+	sprite 64749
+	speed 654137183
+	acceleration 52165
+	halt_distance 2544304272
+	turn_radius 147
+	iscript_mask 27
+	movement_control 165
+
+Flingy(62):
+	sprite 41031
+	speed 1251522276
+	acceleration 5180
+	halt_distance 529420819
+	turn_radius 195
+	iscript_mask 249
+	movement_control 196
+
+Flingy(63):
+	sprite 14130
+	speed 3971260736
+	acceleration 10345
+	halt_distance 2846767821
+	turn_radius 47
+	iscript_mask 113
+	movement_control 125
+
+Flingy(64):
+	sprite 37692
+	speed 2343237128
+	acceleration 35640
+	halt_distance 1425359011
+	turn_radius 39
+	iscript_mask 173
+	movement_control 184
+
+Flingy(65):
+	sprite 47524
+	speed 3939422633
+	acceleration 18198
+	halt_distance 2882471790
+	turn_radius 58
+	iscript_mask 61
+	movement_control 101
+
+Flingy(66):
+	sprite 43498
+	speed 2348073983
+	acceleration 12573
+	halt_distance 3910515155
+	turn_radius 50
+	iscript_mask 86
+	movement_control 122
+
+Flingy(67):
+	sprite 2338
+	speed 3536275680
+	acceleration 6520
+	halt_distance 1505310573
+	turn_radius 75
+	iscript_mask 204
+	movement_control 234
+
+Flingy(68):
+	sprite 8158
+	speed 4272298365
+	acceleration 8251
+	halt_distance 3845435275
+	turn_radius 192
+	iscript_mask 113
+	movement_control 235
+
+Flingy(69):
+	sprite 696
+	speed 2152636245
+	acceleration 12065
+	halt_distance 1819641191
+	turn_radius 247
+	iscript_mask 32
+	movement_control 16
+
+Flingy(70):
+	sprite 8109
+	speed 788252357
+	acceleration 49369
+	halt_distance 3247825862
+	turn_radius 145
+	iscript_mask 123
+	movement_control 236
+
+Flingy(71):
+	sprite 56068
+	speed 2033338124
+	acceleration 23310
+	halt_distance 3134897578
+	turn_radius 109
+	iscript_mask 40
+	movement_control 226
+
+Flingy(72):
+	sprite 48242
+	speed 541105209
+	acceleration 59101
+	halt_distance 2918032822
+	turn_radius 119
+	iscript_mask 48
+	movement_control 148
+
+Flingy(73):
+	sprite 47938
+	speed 485344627
+	acceleration 9266
+	halt_distance 652441343
+	turn_radius 91
+	iscript_mask 73
+	movement_control 142
+
+Flingy(74):
+	sprite 52043
+	speed 3807525774
+	acceleration 742
+	halt_distance 1869355966
+	turn_radius 189
+	iscript_mask 209
+	movement_control 137
+
+Flingy(75):
+	sprite 54007
+	speed 2838006395
+	acceleration 45592
+	halt_distance 2490472373
+	turn_radius 14
+	iscript_mask 162
+	movement_control 158
+
+Flingy(76):
+	sprite 32670
+	speed 1059155367
+	acceleration 39364
+	halt_distance 1175121061
+	turn_radius 105
+	iscript_mask 69
+	movement_control 7
+
+Flingy(77):
+	sprite 349
+	speed 67081081
+	acceleration 1550
+	halt_distance 2007988147
+	turn_radius 131
+	iscript_mask 91
+	movement_control 64
+
+Flingy(78):
+	sprite 28330
+	speed 123438283
+	acceleration 61461
+	halt_distance 2084269209
+	turn_radius 90
+	iscript_mask 27
+	movement_control 93
+
+Flingy(79):
+	sprite 57016
+	speed 3734466886
+	acceleration 20372
+	halt_distance 939527559
+	turn_radius 13
+	iscript_mask 46
+	movement_control 166
+
+Flingy(80):
+	sprite 47322
+	speed 1546489158
+	acceleration 18635
+	halt_distance 3212463414
+	turn_radius 227
+	iscript_mask 129
+	movement_control 62
+
+Flingy(81):
+	sprite 32765
+	speed 3922169984
+	acceleration 58048
+	halt_distance 1555103570
+	turn_radius 10
+	iscript_mask 73
+	movement_control 121
+
+Flingy(82):
+	sprite 51858
+	speed 791504038
+	acceleration 15045
+	halt_distance 209057973
+	turn_radius 22
+	iscript_mask 78
+	movement_control 238
+
+Flingy(83):
+	sprite 56976
+	speed 1342940458
+	acceleration 14142
+	halt_distance 450349405
+	turn_radius 141
+	iscript_mask 187
+	movement_control 78
+
+Flingy(84):
+	sprite 58844
+	speed 2148975154
+	acceleration 8156
+	halt_distance 396723523
+	turn_radius 16
+	iscript_mask 114
+	movement_control 91
+
+Flingy(85):
+	sprite 39939
+	speed 3569966042
+	acceleration 33824
+	halt_distance 4119429093
+	turn_radius 253
+	iscript_mask 216
+	movement_control 90
+
+Flingy(86):
+	sprite 57905
+	speed 3675608878
+	acceleration 33429
+	halt_distance 135511227
+	turn_radius 154
+	iscript_mask 190
+	movement_control 101
+
+Flingy(87):
+	sprite 8555
+	speed 2263642906
+	acceleration 25010
+	halt_distance 3418912107
+	turn_radius 182
+	iscript_mask 252
+	movement_control 52
+
+Flingy(88):
+	sprite 22472
+	speed 3979070403
+	acceleration 4694
+	halt_distance 1361220859
+	turn_radius 17
+	iscript_mask 170
+	movement_control 202
+
+Flingy(89):
+	sprite 61849
+	speed 2059569910
+	acceleration 51817
+	halt_distance 836338911
+	turn_radius 67
+	iscript_mask 131
+	movement_control 2
+
+Flingy(90):
+	sprite 38141
+	speed 1356200013
+	acceleration 16608
+	halt_distance 158152414
+	turn_radius 165
+	iscript_mask 19
+	movement_control 173
+
+Flingy(91):
+	sprite 9457
+	speed 3912130717
+	acceleration 209
+	halt_distance 3581970912
+	turn_radius 27
+	iscript_mask 230
+	movement_control 71
+
+Flingy(92):
+	sprite 10633
+	speed 469518668
+	acceleration 1429
+	halt_distance 2236081445
+	turn_radius 75
+	iscript_mask 237
+	movement_control 62
+
+Flingy(93):
+	sprite 35598
+	speed 1745220229
+	acceleration 13129
+	halt_distance 97327084
+	turn_radius 190
+	iscript_mask 160
+	movement_control 102
+
+Flingy(94):
+	sprite 1858
+	speed 1340740351
+	acceleration 64601
+	halt_distance 4029744846
+	turn_radius 26
+	iscript_mask 205
+	movement_control 67
+
+Flingy(95):
+	sprite 19651
+	speed 911359157
+	acceleration 8414
+	halt_distance 3900260527
+	turn_radius 138
+	iscript_mask 99
+	movement_control 99
+
+Flingy(96):
+	sprite 62034
+	speed 898719867
+	acceleration 17217
+	halt_distance 492188140
+	turn_radius 248
+	iscript_mask 24
+	movement_control 37
+
+Flingy(97):
+	sprite 38554
+	speed 1264863021
+	acceleration 40013
+	halt_distance 3809392434
+	turn_radius 245
+	iscript_mask 17
+	movement_control 209
+
+Flingy(98):
+	sprite 26582
+	speed 616848228
+	acceleration 50439
+	halt_distance 3661200509
+	turn_radius 107
+	iscript_mask 153
+	movement_control 237
+
+Flingy(99):
+	sprite 46835
+	speed 331956302
+	acceleration 27300
+	halt_distance 3179866093
+	turn_radius 160
+	iscript_mask 210
+	movement_control 248
+
+Flingy(100):
+	sprite 29285
+	speed 3481505622
+	acceleration 56480
+	halt_distance 3645474832
+	turn_radius 26
+	iscript_mask 120
+	movement_control 2
+
+Flingy(101):
+	sprite 33985
+	speed 1809521063
+	acceleration 25132
+	halt_distance 3805091453
+	turn_radius 5
+	iscript_mask 30
+	movement_control 129
+
+Flingy(102):
+	sprite 38191
+	speed 2057792398
+	acceleration 22952
+	halt_distance 1923387755
+	turn_radius 241
+	iscript_mask 102
+	movement_control 223
+
+Flingy(103):
+	sprite 10935
+	speed 3787829011
+	acceleration 13154
+	halt_distance 3926541313
+	turn_radius 93
+	iscript_mask 146
+	movement_control 136
+
+Flingy(104):
+	sprite 26779
+	speed 3984012084
+	acceleration 34696
+	halt_distance 2703943031
+	turn_radius 241
+	iscript_mask 190
+	movement_control 189
+
+Flingy(105):
+	sprite 33997
+	speed 3504383626
+	acceleration 61965
+	halt_distance 2332263038
+	turn_radius 202
+	iscript_mask 198
+	movement_control 108
+
+Flingy(106):
+	sprite 13959
+	speed 2435534312
+	acceleration 63902
+	halt_distance 976711667
+	turn_radius 127
+	iscript_mask 245
+	movement_control 40
+
+Flingy(107):
+	sprite 51790
+	speed 434729813
+	acceleration 45270
+	halt_distance 2646325524
+	turn_radius 14
+	iscript_mask 199
+	movement_control 17
+
+Flingy(108):
+	sprite 30765
+	speed 2264373944
+	acceleration 47896
+	halt_distance 2700857262
+	turn_radius 214
+	iscript_mask 65
+	movement_control 42
+
+Flingy(109):
+	sprite 3514
+	speed 4011214216
+	acceleration 14862
+	halt_distance 3331274369
+	turn_radius 2
+	iscript_mask 207
+	movement_control 185
+
+Flingy(110):
+	sprite 9682
+	speed 1866516702
+	acceleration 16904
+	halt_distance 2400782891
+	turn_radius 72
+	iscript_mask 48
+	movement_control 2
+
+Flingy(111):
+	sprite 27948
+	speed 1940418270
+	acceleration 62315
+	halt_distance 3170598917
+	turn_radius 55
+	iscript_mask 154
+	movement_control 21
+
+Flingy(112):
+	sprite 46033
+	speed 2900968827
+	acceleration 2405
+	halt_distance 4243287498
+	turn_radius 129
+	iscript_mask 104
+	movement_control 56
+
+Flingy(113):
+	sprite 13284
+	speed 3450078233
+	acceleration 15328
+	halt_distance 779369645
+	turn_radius 60
+	iscript_mask 128
+	movement_control 169
+
+Flingy(114):
+	sprite 42934
+	speed 2628419673
+	acceleration 12882
+	halt_distance 208991599
+	turn_radius 39
+	iscript_mask 12
+	movement_control 7
+
+Flingy(115):
+	sprite 26628
+	speed 3169416738
+	acceleration 24532
+	halt_distance 2648365094
+	turn_radius 213
+	iscript_mask 162
+	movement_control 89
+
+Flingy(116):
+	sprite 15593
+	speed 3704823016
+	acceleration 25196
+	halt_distance 470577347
+	turn_radius 4
+	iscript_mask 76
+	movement_control 147
+
+Flingy(117):
+	sprite 47405
+	speed 2004464490
+	acceleration 39041
+	halt_distance 525055031
+	turn_radius 143
+	iscript_mask 88
+	movement_control 12
+
+Flingy(118):
+	sprite 57016
+	speed 1684222529
+	acceleration 1060
+	halt_distance 444427065
+	turn_radius 156
+	iscript_mask 158
+	movement_control 77
+
+Flingy(119):
+	sprite 10123
+	speed 1953824900
+	acceleration 17403
+	halt_distance 4206529422
+	turn_radius 7
+	iscript_mask 47
+	movement_control 238
+
+Flingy(120):
+	sprite 62719
+	speed 2570499330
+	acceleration 45794
+	halt_distance 257310781
+	turn_radius 169
+	iscript_mask 136
+	movement_control 171
+
+Flingy(121):
+	sprite 44991
+	speed 3823557844
+	acceleration 27251
+	halt_distance 738083344
+	turn_radius 65
+	iscript_mask 176
+	movement_control 1
+
+Flingy(122):
+	sprite 1380
+	speed 3692685648
+	acceleration 19795
+	halt_distance 415466799
+	turn_radius 128
+	iscript_mask 1
+	movement_control 253
+
+Flingy(123):
+	sprite 14340
+	speed 2789122399
+	acceleration 20754
+	halt_distance 1153222738
+	turn_radius 155
+	iscript_mask 155
+	movement_control 33
+
+Flingy(124):
+	sprite 13713
+	speed 816945759
+	acceleration 27661
+	halt_distance 1255041440
+	turn_radius 44
+	iscript_mask 119
+	movement_control 61
+
+Flingy(125):
+	sprite 52751
+	speed 3268976828
+	acceleration 29936
+	halt_distance 855018214
+	turn_radius 180
+	iscript_mask 152
+	movement_control 161
+
+Flingy(126):
+	sprite 21690
+	speed 3782547653
+	acceleration 36383
+	halt_distance 1190296659
+	turn_radius 87
+	iscript_mask 207
+	movement_control 174
+
+Flingy(127):
+	sprite 62464
+	speed 4197401622
+	acceleration 62286
+	halt_distance 1404430983
+	turn_radius 215
+	iscript_mask 110
+	movement_control 168
+
+Flingy(128):
+	sprite 60242
+	speed 1909980941
+	acceleration 23965
+	halt_distance 2998518585
+	turn_radius 188
+	iscript_mask 190
+	movement_control 18
+
+Flingy(129):
+	sprite 22915
+	speed 302134651
+	acceleration 27478
+	halt_distance 3980326618
+	turn_radius 79
+	iscript_mask 144
+	movement_control 199
+
+Flingy(130):
+	sprite 1440
+	speed 481157944
+	acceleration 12715
+	halt_distance 4045382188
+	turn_radius 32
+	iscript_mask 185
+	movement_control 125
+
+Flingy(131):
+	sprite 49288
+	speed 3215898724
+	acceleration 33709
+	halt_distance 1481582112
+	turn_radius 18
+	iscript_mask 54
+	movement_control 45
+
+Flingy(132):
+	sprite 54434
+	speed 3913748829
+	acceleration 59212
+	halt_distance 1879272469
+	turn_radius 33
+	iscript_mask 149
+	movement_control 21
+
+Flingy(133):
+	sprite 5380
+	speed 980795934
+	acceleration 24312
+	halt_distance 2219714072
+	turn_radius 31
+	iscript_mask 234
+	movement_control 142
+
+Flingy(134):
+	sprite 25085
+	speed 1194107337
+	acceleration 42433
+	halt_distance 3659174118
+	turn_radius 41
+	iscript_mask 186
+	movement_control 234
+
+Flingy(135):
+	sprite 56568
+	speed 2004184366
+	acceleration 44297
+	halt_distance 361318696
+	turn_radius 18
+	iscript_mask 76
+	movement_control 212
+
+Flingy(136):
+	sprite 38
+	speed 2398651901
+	acceleration 18076
+	halt_distance 2134605384
+	turn_radius 102
+	iscript_mask 150
+	movement_control 228
+
+Flingy(137):
+	sprite 18571
+	speed 989597413
+	acceleration 32302
+	halt_distance 4191354291
+	turn_radius 245
+	iscript_mask 68
+	movement_control 49
+
+Flingy(138):
+	sprite 52294
+	speed 3784332332
+	acceleration 32530
+	halt_distance 2952485319
+	turn_radius 81
+	iscript_mask 254
+	movement_control 201
+
+Flingy(139):
+	sprite 53183
+	speed 3383032792
+	acceleration 51506
+	halt_distance 4266995306
+	turn_radius 200
+	iscript_mask 200
+	movement_control 137
+
+Flingy(140):
+	sprite 7190
+	speed 461339154
+	acceleration 18106
+	halt_distance 650827095
+	turn_radius 136
+	iscript_mask 121
+	movement_control 209
+
+Flingy(141):
+	sprite 38790
+	speed 2050958209
+	acceleration 26322
+	halt_distance 2287115738
+	turn_radius 150
+	iscript_mask 147
+	movement_control 53
+
+Flingy(142):
+	sprite 22151
+	speed 824446727
+	acceleration 19457
+	halt_distance 282383347
+	turn_radius 201
+	iscript_mask 171
+	movement_control 186
+
+Flingy(143):
+	sprite 6311
+	speed 2811408506
+	acceleration 6011
+	halt_distance 1396846810
+	turn_radius 206
+	iscript_mask 97
+	movement_control 12
+
+Flingy(144):
+	sprite 20720
+	speed 2498378879
+	acceleration 41660
+	halt_distance 984278241
+	turn_radius 143
+	iscript_mask 227
+	movement_control 27
+
+Flingy(145):
+	sprite 51919
+	speed 4289720017
+	acceleration 44808
+	halt_distance 3262652074
+	turn_radius 51
+	iscript_mask 28
+	movement_control 99
+
+Flingy(146):
+	sprite 2205
+	speed 200439857
+	acceleration 29210
+	halt_distance 718962600
+	turn_radius 74
+	iscript_mask 55
+	movement_control 16
+
+Flingy(147):
+	sprite 25256
+	speed 462274654
+	acceleration 21752
+	halt_distance 1753703652
+	turn_radius 129
+	iscript_mask 213
+	movement_control 240
+
+Flingy(148):
+	sprite 46209
+	speed 1612626858
+	acceleration 12367
+	halt_distance 2848754094
+	turn_radius 199
+	iscript_mask 199
+	movement_control 23
+
+Flingy(149):
+	sprite 61978
+	speed 1545316022
+	acceleration 13529
+	halt_distance 3860690010
+	turn_radius 231
+	iscript_mask 68
+	movement_control 100
+
+Flingy(150):
+	sprite 38229
+	speed 2384147397
+	acceleration 26210
+	halt_distance 1835435331
+	turn_radius 92
+	iscript_mask 13
+	movement_control 145
+
+Flingy(151):
+	sprite 38719
+	speed 3008671069
+	acceleration 52630
+	halt_distance 4077836351
+	turn_radius 11
+	iscript_mask 131
+	movement_control 208
+
+Flingy(152):
+	sprite 15908
+	speed 3887173644
+	acceleration 22210
+	halt_distance 4077478681
+	turn_radius 70
+	iscript_mask 181
+	movement_control 171
+
+Flingy(153):
+	sprite 64324
+	speed 774823997
+	acceleration 40146
+	halt_distance 2620286965
+	turn_radius 214
+	iscript_mask 237
+	movement_control 175
+
+Flingy(154):
+	sprite 23040
+	speed 1957606643
+	acceleration 26937
+	halt_distance 3392708466
+	turn_radius 124
+	iscript_mask 209
+	movement_control 46
+
+Flingy(155):
+	sprite 12575
+	speed 2744345832
+	acceleration 56988
+	halt_distance 1500025333
+	turn_radius 115
+	iscript_mask 230
+	movement_control 172
+
+Flingy(156):
+	sprite 6010
+	speed 3232807538
+	acceleration 17995
+	halt_distance 4021726020
+	turn_radius 188
+	iscript_mask 190
+	movement_control 213
+
+Flingy(157):
+	sprite 45599
+	speed 576388450
+	acceleration 12916
+	halt_distance 562738621
+	turn_radius 176
+	iscript_mask 46
+	movement_control 36
+
+Flingy(158):
+	sprite 24008
+	speed 1922407558
+	acceleration 12221
+	halt_distance 4290667567
+	turn_radius 148
+	iscript_mask 135
+	movement_control 250
+
+Flingy(159):
+	sprite 13319
+	speed 1233586741
+	acceleration 52865
+	halt_distance 3934603773
+	turn_radius 122
+	iscript_mask 20
+	movement_control 30
+
+Flingy(160):
+	sprite 5380
+	speed 4246116610
+	acceleration 41281
+	halt_distance 853111349
+	turn_radius 95
+	iscript_mask 250
+	movement_control 66
+
+Flingy(161):
+	sprite 45202
+	speed 3062878170
+	acceleration 36356
+	halt_distance 1416921821
+	turn_radius 149
+	iscript_mask 223
+	movement_control 94
+
+Flingy(162):
+	sprite 18597
+	speed 3049733119
+	acceleration 35938
+	halt_distance 529841465
+	turn_radius 195
+	iscript_mask 215
+	movement_control 191
+
+Flingy(163):
+	sprite 21298
+	speed 913884289
+	acceleration 54446
+	halt_distance 369274802
+	turn_radius 16
+	iscript_mask 148
+	movement_control 6
+
+Flingy(164):
+	sprite 27407
+	speed 1912433198
+	acceleration 35404
+	halt_distance 3239926483
+	turn_radius 96
+	iscript_mask 47
+	movement_control 173
+
+Flingy(165):
+	sprite 18651
+	speed 3499770304
+	acceleration 29911
+	halt_distance 913253744
+	turn_radius 122
+	iscript_mask 245
+	movement_control 118
+
+Flingy(166):
+	sprite 33594
+	speed 3963200637
+	acceleration 58540
+	halt_distance 1819964560
+	turn_radius 96
+	iscript_mask 35
+	movement_control 134
+
+Flingy(167):
+	sprite 58059
+	speed 487954880
+	acceleration 20585
+	halt_distance 4139515922
+	turn_radius 21
+	iscript_mask 235
+	movement_control 217
+
+Flingy(168):
+	sprite 31347
+	speed 3537361821
+	acceleration 65079
+	halt_distance 641094044
+	turn_radius 93
+	iscript_mask 195
+	movement_control 128
+
+Flingy(169):
+	sprite 49105
+	speed 3258336091
+	acceleration 31159
+	halt_distance 442848979
+	turn_radius 105
+	iscript_mask 121
+	movement_control 206
+
+Flingy(170):
+	sprite 10556
+	speed 2742597810
+	acceleration 14490
+	halt_distance 2713259511
+	turn_radius 245
+	iscript_mask 51
+	movement_control 11
+
+Flingy(171):
+	sprite 48681
+	speed 3600342983
+	acceleration 35128
+	halt_distance 856248606
+	turn_radius 92
+	iscript_mask 229
+	movement_control 3
+
+Flingy(172):
+	sprite 36309
+	speed 2288042559
+	acceleration 4923
+	halt_distance 524504971
+	turn_radius 10
+	iscript_mask 89
+	movement_control 245
+
+Flingy(173):
+	sprite 13300
+	speed 4210913745
+	acceleration 49555
+	halt_distance 1708693201
+	turn_radius 60
+	iscript_mask 128
+	movement_control 205
+
+Flingy(174):
+	sprite 12599
+	speed 3654026745
+	acceleration 18830
+	halt_distance 1715754820
+	turn_radius 139
+	iscript_mask 251
+	movement_control 82
+
+Flingy(175):
+	sprite 3038
+	speed 3790136053
+	acceleration 23884
+	halt_distance 270428318
+	turn_radius 170
+	iscript_mask 243
+	movement_control 22
+
+Flingy(176):
+	sprite 60183
+	speed 4225650940
+	acceleration 27590
+	halt_distance 3971581001
+	turn_radius 157
+	iscript_mask 198
+	movement_control 8
+
+Flingy(177):
+	sprite 56561
+	speed 3237949787
+	acceleration 23
+	halt_distance 1428841436
+	turn_radius 243
+	iscript_mask 135
+	movement_control 234
+
+Flingy(178):
+	sprite 2561
+	speed 3175917742
+	acceleration 46866
+	halt_distance 4181436455
+	turn_radius 13
+	iscript_mask 1
+	movement_control 229
+
+Flingy(179):
+	sprite 53881
+	speed 1923780281
+	acceleration 42931
+	halt_distance 1162121456
+	turn_radius 79
+	iscript_mask 200
+	movement_control 228
+
+Flingy(180):
+	sprite 55280
+	speed 3338456912
+	acceleration 23290
+	halt_distance 1161307231
+	turn_radius 50
+	iscript_mask 6
+	movement_control 132
+
+Flingy(181):
+	sprite 51994
+	speed 1906791604
+	acceleration 36446
+	halt_distance 1013291169
+	turn_radius 233
+	iscript_mask 233
+	movement_control 23
+
+Flingy(182):
+	sprite 50059
+	speed 1621929165
+	acceleration 59172
+	halt_distance 1206944829
+	turn_radius 15
+	iscript_mask 25
+	movement_control 93
+
+Flingy(183):
+	sprite 11931
+	speed 213548146
+	acceleration 19673
+	halt_distance 4141158422
+	turn_radius 148
+	iscript_mask 227
+	movement_control 139
+
+Flingy(184):
+	sprite 46601
+	speed 826828879
+	acceleration 47883
+	halt_distance 1435486419
+	turn_radius 79
+	iscript_mask 150
+	movement_control 222
+
+Flingy(185):
+	sprite 47169
+	speed 3628618083
+	acceleration 58691
+	halt_distance 2779159233
+	turn_radius 35
+	iscript_mask 253
+	movement_control 228
+
+Flingy(186):
+	sprite 6525
+	speed 2920159257
+	acceleration 22564
+	halt_distance 738974633
+	turn_radius 15
+	iscript_mask 7
+	movement_control 171
+
+Flingy(187):
+	sprite 47412
+	speed 208594608
+	acceleration 54131
+	halt_distance 817398828
+	turn_radius 166
+	iscript_mask 225
+	movement_control 231
+
+Flingy(188):
+	sprite 43743
+	speed 92040577
+	acceleration 49706
+	halt_distance 2330263922
+	turn_radius 118
+	iscript_mask 37
+	movement_control 23
+
+Flingy(189):
+	sprite 5844
+	speed 2928855304
+	acceleration 38940
+	halt_distance 1322412819
+	turn_radius 19
+	iscript_mask 70
+	movement_control 57
+
+Flingy(190):
+	sprite 53891
+	speed 3778150751
+	acceleration 1816
+	halt_distance 3813579845
+	turn_radius 32
+	iscript_mask 91
+	movement_control 254
+
+Flingy(191):
+	sprite 27922
+	speed 2055687199
+	acceleration 4904
+	halt_distance 1665101758
+	turn_radius 169
+	iscript_mask 176
+	movement_control 255
+
+Flingy(192):
+	sprite 23018
+	speed 2470578299
+	acceleration 40142
+	halt_distance 2487762632
+	turn_radius 79
+	iscript_mask 60
+	movement_control 56
+
+Flingy(193):
+	sprite 40918
+	speed 2941526015
+	acceleration 30649
+	halt_distance 1756794896
+	turn_radius 194
+	iscript_mask 47
+	movement_control 160
+
+Flingy(194):
+	sprite 58695
+	speed 4148530266
+	acceleration 36129
+	halt_distance 2679336183
+	turn_radius 172
+	iscript_mask 192
+	movement_control 102
+
+Flingy(195):
+	sprite 15133
+	speed 2615134475
+	acceleration 1484
+	halt_distance 4170861548
+	turn_radius 146
+	iscript_mask 175
+	movement_control 166
+
+Flingy(196):
+	sprite 26756
+	speed 2142919534
+	acceleration 8863
+	halt_distance 3995826173
+	turn_radius 141
+	iscript_mask 145
+	movement_control 205
+
+Flingy(197):
+	sprite 30852
+	speed 2855950059
+	acceleration 20508
+	halt_distance 433844079
+	turn_radius 149
+	iscript_mask 36
+	movement_control 94
+
+Flingy(198):
+	sprite 65487
+	speed 2324525607
+	acceleration 60824
+	halt_distance 2400135294
+	turn_radius 122
+	iscript_mask 109
+	movement_control 172
+
+Flingy(199):
+	sprite 61910
+	speed 4104653221
+	acceleration 64340
+	halt_distance 2144780536
+	turn_radius 107
+	iscript_mask 112
+	movement_control 86
+
+Flingy(200):
+	sprite 51448
+	speed 4022633119
+	acceleration 8870
+	halt_distance 326424760
+	turn_radius 146
+	iscript_mask 158
+	movement_control 52
+
+Flingy(201):
+	sprite 36301
+	speed 2758336114
+	acceleration 45110
+	halt_distance 1261501894
+	turn_radius 247
+	iscript_mask 255
+	movement_control 167
+
+Flingy(202):
+	sprite 38766
+	speed 1194639642
+	acceleration 18859
+	halt_distance 3147774677
+	turn_radius 26
+	iscript_mask 180
+	movement_control 195
+
+Flingy(203):
+	sprite 32786
+	speed 112534846
+	acceleration 43857
+	halt_distance 145634441
+	turn_radius 137
+	iscript_mask 188
+	movement_control 157
+
+Flingy(204):
+	sprite 4195
+	speed 1767798756
+	acceleration 22209
+	halt_distance 527251542
+	turn_radius 126
+	iscript_mask 52
+	movement_control 84
+
+Flingy(205):
+	sprite 11307
+	speed 57252709
+	acceleration 17225
+	halt_distance 927454506
+	turn_radius 112
+	iscript_mask 110
+	movement_control 15
+
+Flingy(206):
+	sprite 53685
+	speed 4274443407
+	acceleration 29064
+	halt_distance 1419916979
+	turn_radius 69
+	iscript_mask 241
+	movement_control 71
+
+Flingy(207):
+	sprite 46755
+	speed 4259496869
+	acceleration 55254
+	halt_distance 3515523286
+	turn_radius 61
+	iscript_mask 18
+	movement_control 168
+
+Flingy(208):
+	sprite 1741
+	speed 2249907160
+	acceleration 13192
+	halt_distance 1548594181
+	turn_radius 149
+	iscript_mask 15
+	movement_control 30

@@ -44,6 +44,9 @@
   <ItemGroup>
     <Content Include="..\fixtures\FireGraftConFunc.txt;..\fixtures\FireGraftActFunc.txt;..\fixtures\Icons.txt;..\fixtures\Icons.pal"
              Link="Data\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- PyMS's palettes for the Data page's previews (Units, Terrain and the fire remappings). -->
+    <Content Include="..\fixtures\palettes\*.pal" Link="Data\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\fixtures\pydat\*" Link="Data\pydat\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

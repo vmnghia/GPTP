@@ -250,12 +250,13 @@ public class EditorTests
         var stardat = new FakeArchive("StarDat.mpq", new()
         {
             [EditorResources.StatTxtPath] = BuildTbl("Terran Marine"),
-            [EditorResources.UnitsDatPath] = new byte[Data.UnitsDat.FileSize],
+            ["arr\\units.dat"] = new byte[Data.UnitsDat.FileSize],
         });
         var resources = EditorResources.Load(new ResourceResolver(new IArchive[] { mod, stardat }),
             RawPalette.Read(Fixtures.Bytes("Icons.pal")));
         Assert.Equal("Terran Marine", resources.Strings!.Get(1));
-        Assert.NotNull(resources.Units);
+        // units.dat is the document's (DatSources), not a resource: not read, not noted.
+        Assert.DoesNotContain(resources.Sources.Concat(resources.Notes), l => l.Contains("units.dat"));
         Assert.Null(resources.Icons);
         Assert.Contains($"{EditorResources.StatTxtPath}: StarDat.mpq", resources.Sources);
         Assert.Contains(resources.Notes, n => n.Contains(EditorResources.IconsPath));

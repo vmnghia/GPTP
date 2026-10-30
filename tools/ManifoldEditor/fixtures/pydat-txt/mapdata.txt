@@ -1,0 +1,194 @@
+Map(0):
+	map_file 342149843
+
+Map(1):
+	map_file 1579982380
+
+Map(2):
+	map_file 706509877
+
+Map(3):
+	map_file 1368288537
+
+Map(4):
+	map_file 2975273547
+
+Map(5):
+	map_file 3758857650
+
+Map(6):
+	map_file 4059741079
+
+Map(7):
+	map_file 3284832800
+
+Map(8):
+	map_file 717106313
+
+Map(9):
+	map_file 1302087690
+
+Map(10):
+	map_file 842099683
+
+Map(11):
+	map_file 1417141821
+
+Map(12):
+	map_file 3331136740
+
+Map(13):
+	map_file 3151000766
+
+Map(14):
+	map_file 3987808262
+
+Map(15):
+	map_file 3638182348
+
+Map(16):
+	map_file 2208728190
+
+Map(17):
+	map_file 1803254618
+
+Map(18):
+	map_file 550385581
+
+Map(19):
+	map_file 1667077897
+
+Map(20):
+	map_file 85585495
+
+Map(21):
+	map_file 4247382697
+
+Map(22):
+	map_file 571011622
+
+Map(23):
+	map_file 1726676739
+
+Map(24):
+	map_file 2686260890
+
+Map(25):
+	map_file 1176368470
+
+Map(26):
+	map_file 2847688610
+
+Map(27):
+	map_file 2338762129
+
+Map(28):
+	map_file 3515186609
+
+Map(29):
+	map_file 2699056211
+
+Map(30):
+	map_file 1875814222
+
+Map(31):
+	map_file 436536988
+
+Map(32):
+	map_file 3439116712
+
+Map(33):
+	map_file 1117564158
+
+Map(34):
+	map_file 735322009
+
+Map(35):
+	map_file 1244447795
+
+Map(36):
+	map_file 2243046129
+
+Map(37):
+	map_file 1949098296
+
+Map(38):
+	map_file 3050881979
+
+Map(39):
+	map_file 266073621
+
+Map(40):
+	map_file 4157664161
+
+Map(41):
+	map_file 2879567737
+
+Map(42):
+	map_file 474953198
+
+Map(43):
+	map_file 2239078324
+
+Map(44):
+	map_file 1296943529
+
+Map(45):
+	map_file 2520926964
+
+Map(46):
+	map_file 2255028610
+
+Map(47):
+	map_file 152177937
+
+Map(48):
+	map_file 2692253419
+
+Map(49):
+	map_file 1458101207
+
+Map(50):
+	map_file 3330937432
+
+Map(51):
+	map_file 1101566345
+
+Map(52):
+	map_file 3143816230
+
+Map(53):
+	map_file 340224832
+
+Map(54):
+	map_file 623254999
+
+Map(55):
+	map_file 2671600448
+
+Map(56):
+	map_file 3696373490
+
+Map(57):
+	map_file 1149828804
+
+Map(58):
+	map_file 3331914733
+
+Map(59):
+	map_file 2093729440
+
+Map(60):
+	map_file 1593103840
+
+Map(61):
+	map_file 3843502409
+
+Map(62):
+	map_file 3438887451
+
+Map(63):
+	map_file 781213873
+
+Map(64):
+	map_file 533802911
