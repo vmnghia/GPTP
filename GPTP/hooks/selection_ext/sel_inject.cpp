@@ -11,6 +11,7 @@
 #include "sel_build.h"
 #include "sel_chain.h"
 #include "../interface/buttonsets_loader.h"
+#include "../interface/requirements_loader.h"
 #include "../rally/smart_rally_hooks.h"
 #include "../recv_commands/smart_morph.h"
 #include "../recv_commands/viking_transform.h"
@@ -201,6 +202,7 @@ void __declspec(naked) gameStartEntryWrapper() {
 	__asm PUSHAD
 	sellocal::gameStartClear();
 	bsloader::applyAtGameStart();
+	reqloader::applyOnce();
 	__asm {
 		POPAD
 		PUSH EDI

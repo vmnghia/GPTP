@@ -158,6 +158,8 @@
     <ClCompile Include="hooks\interface\btns_cond_inject.cpp" />
     <ClCompile Include="hooks\interface\buttonsets.cpp" />
     <ClCompile Include="hooks\interface\buttonsets_loader.cpp" />
+    <ClCompile Include="hooks\interface\mpq_read.cpp" />
+    <ClCompile Include="hooks\interface\requirements_loader.cpp" />
     <ClCompile Include="hooks\interface\buttonsets_inject.cpp" />
     <ClCompile Include="hooks\interface\frame_check.cpp" />
     <ClCompile Include="hooks\interface\resolution.cpp" />
@@ -331,6 +333,7 @@
     <ClCompile Include="SCBW\selection_ext.cpp" />
     <ClCompile Include="SCBW\selection_ext_core.cpp" />
     <ClCompile Include="SCBW\buttonsets_file.cpp" />
+    <ClCompile Include="SCBW\fg_requirements.cpp" />
     <ClCompile Include="SCBW\console_raise.cpp" />
     <ClCompile Include="SCBW\smart_rally.cpp" />
     <ClCompile Include="SCBW\build_progress.cpp" />
@@ -463,6 +466,8 @@
     <ClInclude Include="hooks\interface\btns_cond.h" />
     <ClInclude Include="hooks\interface\buttonsets.h" />
     <ClInclude Include="hooks\interface\buttonsets_loader.h" />
+    <ClInclude Include="hooks\interface\mpq_read.h" />
+    <ClInclude Include="hooks\interface\requirements_loader.h" />
     <ClInclude Include="hooks\interface\frame_check.h" />
     <ClInclude Include="hooks\interface\resolution.h" />
     <ClInclude Include="hooks\interface\reshade_bridge.h" />
@@ -547,6 +552,7 @@
     <ClInclude Include="hooks\recv_commands\smart_cast.h" />
     <ClInclude Include="SCBW\selection_ext.h" />
     <ClInclude Include="SCBW\buttonsets_file.h" />
+    <ClInclude Include="SCBW\fg_requirements.h" />
     <ClInclude Include="SCBW\console_raise.h" />
     <ClInclude Include="SCBW\smart_rally.h" />
     <ClInclude Include="SCBW\build_progress.h" />

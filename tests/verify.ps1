@@ -20,6 +20,8 @@ if ($LASTEXITCODE -ne 0) { Write-Output "player slots test FAILED"; exit 1 }
 if ($LASTEXITCODE -ne 0) { Write-Output "smart rally test FAILED"; exit 1 }
 & "$PSScriptRoot\unit_morphs_test.bat" 2>$null
 if ($LASTEXITCODE -ne 0) { Write-Output "unit morphs test FAILED"; exit 1 }
+& "$PSScriptRoot\fg_requirements_test.bat" 2>$null
+if ($LASTEXITCODE -ne 0) { Write-Output "FireGraft requirements test FAILED"; exit 1 }
 New-Item -ItemType Directory -Force "$PSScriptRoot\out" | Out-Null
 $log = "$PSScriptRoot\out\build-plugin.log"
 # the build stamps (__DATE__ __TIME__ in these two) are fixed when their file
