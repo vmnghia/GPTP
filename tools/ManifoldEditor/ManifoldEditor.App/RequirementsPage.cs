@@ -228,8 +228,8 @@ sealed class RequirementsPage
         var row = SelectedRow;
         add.IsEnabled = insert.IsEnabled = editable;
         change.IsEnabled = up.IsEnabled = down.IsEnabled = editable && row?.At is not null;
-        // A level's header goes only with the last level.
-        remove.IsEnabled = editable && (row?.At is not null || row?.LevelHeader is int level && level == Record!.Levels[^1].Level);
+        // A level's header removes the three levels together (they come as a set).
+        remove.IsEnabled = editable && row is not null;
     }
 
     void Run(Func<EditorState, string, bool> command)
@@ -256,13 +256,12 @@ sealed class RequirementsPage
     async Task AddLine(bool insertBefore)
     {
         if (Record is not { } record) return;
-        int next = record.Levels.Count == 0 ? 1 : record.Levels[^1].Level + 1;
-        int? offerLevel = table == ReqTable.Upgrades && next <= 3 ? next : null;
-        var choice = await new ReqLineDialog(Root.XamlRoot, table, null, offerLevel, names).ShowAsync();
+        bool offerLevels = table == ReqTable.Upgrades && record.Levels.Count == 0;
+        var choice = await new ReqLineDialog(Root.XamlRoot, table, null, offerLevels, names).ShowAsync();
         if (choice is null) return;
-        if (choice.AddLevel)
+        if (choice.AddLevels)
         {
-            Edit(RequirementEdits.AddLevel);
+            Edit(RequirementEdits.AddLevels);
             return;
         }
         int level = SelectedLevel;
@@ -275,7 +274,7 @@ sealed class RequirementsPage
     async Task ChangeLine()
     {
         if (SelectedRow is not { At: { } at, Line: { } line }) return;
-        var choice = await new ReqLineDialog(Root.XamlRoot, table, line, offerLevel: null, names).ShowAsync();
+        var choice = await new ReqLineDialog(Root.XamlRoot, table, line, offerLevels: false, names).ShowAsync();
         if (choice?.Line is not { } replaced) return;
         Edit(r => RequirementEdits.Replace(r, at, replaced), at);
     }
@@ -284,7 +283,7 @@ sealed class RequirementsPage
     {
         if (SelectedRow is not { } row) return;
         if (row.At is { } at) Edit(r => RequirementEdits.Remove(r, at));
-        else Edit(RequirementEdits.RemoveLastLevel);
+        else Edit(RequirementEdits.RemoveLevels);
     }
 
     void MoveSelected(int delta)

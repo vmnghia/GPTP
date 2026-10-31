@@ -17,10 +17,11 @@ public sealed record ReqEdit(Requirements Before, Requirements After, ReqTable T
 
 /// <summary>
 /// The requirements as opened (requirements spec §4): the tables to edit, what the exe holds
-/// (null: no good requirements.bin, so they count as unsaved), StarCraft's own, and why the
+/// (null: no good requirements.bin, so they count as unsaved), StarCraft's own (null when they
+/// couldn't be read: no vanilla marks, no Revert to vanilla), and why the
 /// exe's file was refused (the page is read-only until it is replaced).
 /// </summary>
-public sealed record RequirementSet(Requirements Opened, Requirements? Saved, Requirements Vanilla, string? Problem);
+public sealed record RequirementSet(Requirements Opened, Requirements? Saved, Requirements? Vanilla, string? Problem);
 
 /// <summary>One set before and after a step.</summary>
 public sealed record SetEdit(int SetId, ButtonSet Before, ButtonSet After);

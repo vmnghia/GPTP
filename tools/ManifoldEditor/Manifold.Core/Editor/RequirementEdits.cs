@@ -41,17 +41,19 @@ public static class RequirementEdits
         return WithLines(r, at.Level, lines => { (lines[at.Index], lines[to]) = (lines[to], lines[at.Index]); return lines; });
     }
 
-    /// <summary>The next level block (1, then 2, then 3), empty. Throws past level 3.</summary>
-    public static ReqRecord AddLevel(ReqRecord r)
+    /// <summary>
+    /// Levels 1-3, empty, for a record that has none. Levels come as a set, as every vanilla
+    /// upgrade has them: the game's parser looks for the player's level's marker past FF1F, so
+    /// a missing one would send it into the next record. Throws when the record has levels.
+    /// </summary>
+    public static ReqRecord AddLevels(ReqRecord r)
     {
-        int next = r.Levels.Count == 0 ? 1 : r.Levels[^1].Level + 1;
-        if (next > 3) throw new InvalidOperationException("an upgrade has 3 levels at most");
-        return new ReqRecord(r.Id, r.Used, r.Lines, [.. r.Levels, new ReqLevel(next, [])]);
+        if (r.Levels.Count > 0) throw new InvalidOperationException("the record has its levels");
+        return new ReqRecord(r.Id, r.Used, r.Lines, [new ReqLevel(1, []), new ReqLevel(2, []), new ReqLevel(3, [])]);
     }
 
-    /// <summary>The last level block removed, with its lines.</summary>
-    public static ReqRecord RemoveLastLevel(ReqRecord r) =>
-        r.Levels.Count == 0 ? r : new ReqRecord(r.Id, r.Used, r.Lines, r.Levels.Take(r.Levels.Count - 1).ToArray());
+    /// <summary>The three level blocks removed, with their lines.</summary>
+    public static ReqRecord RemoveLevels(ReqRecord r) => new(r.Id, r.Used, r.Lines, []);
 
     /// <summary>The record's lines, then per level its header and its lines.</summary>
     public static IReadOnlyList<ReqRow> Rows(ReqRecord r)

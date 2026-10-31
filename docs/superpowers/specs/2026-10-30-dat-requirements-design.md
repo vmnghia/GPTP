@@ -118,8 +118,8 @@ a record shows as an unknown line.
 "FgPa", u32 version, a NUL-terminated game version, then sections (`char[4]` tag, u32
 length, data). It holds exactly the five sections, in FireGraft's record format. So the
 plugin's parser (`fgreq::findSection`, `fgreq::buildTable`) reads it unchanged, and records
-that are off round-trip. The version and game version are the imported project's, or
-FireGraft's usual values when there is none.
+that are off round-trip. The header is always version 7 and "1.16.1", the
+project's values (the plugin reads neither).
 
 - Limits of the format: ids up to 255 and up to 255 words per record. The five vanilla
   tables fit (units 228 ids, orders 189). The editor never writes 0xFF00.
@@ -166,8 +166,11 @@ while the requirements are unsaved.
   terminators are never shown.
 - **Add, Insert, Change, Remove, Move up, Move down.** Add, Insert and Change open a dialog:
   the opcode (only those §3 offers for the table), then a searchable unit or tech list when
-  it takes one. For an upgrade, the dialog also offers a level header the record lacks.
-  Moving a line can't cross a level header.
+  it takes one. For an upgrade with no levels, the dialog also offers "Levels 1-3"; Remove on
+  a level header removes all three with their lines. Levels come as a set, as every vanilla
+  upgrade has them: the game's parser looks past FF1F for the player's level's marker, so a
+  missing one would send it into the next record (final review 2026-10-31). Moving a line
+  can't cross a level header.
 - **Add record** (for a "(none)" id), **Delete record**, and **Revert to vanilla** (greyed
   when the record is vanilla, or vanilla isn't known).
 
@@ -177,9 +180,12 @@ entry they change.
 
 ## 7. Errors
 
-- **A bad `requirements.bin` in the exe:** the status line says why. The page shows vanilla,
-  read-only, and Save doesn't write the file until the user chooses "Replace it" on the
-  page (the tables are then the vanilla ones, or the .fgp's import, as on a first open).
+- **A bad `requirements.bin` in the exe:** the status line says why. The page shows, read-only,
+  what an exe without the file opens as (the .fgp's import, else vanilla), which is what
+  Replace it gives; Save doesn't write the file until the user chooses "Replace it" on the
+  page.
+- **StarCraft.exe's tables can't be read:** a status line says so; the exe still opens, with
+  no vanilla marks and no Revert to vanilla, and empty tables where vanilla would fill in.
 - **A bad FireGraft project on import:** the status line says why, and the tables start as
   vanilla.
 - **Save** checks every record against the plugin's rules (ids, word counts, 0xFFFF in

@@ -48,9 +48,10 @@ public static class EditorSession
     /// The requirement tables of the mod exe (requirements spec §4): its
     /// <c>Manifold\requirements.bin</c>; else the FireGraft project's five sections, imported
     /// and unsaved; else vanilla. A damaged file is reported, and the tables shown are what an
-    /// exe without it opens as, read-only until the user replaces the file.
+    /// exe without it opens as, read-only until the user replaces the file. Without
+    /// <paramref name="vanilla"/> (StarCraft.exe's tables unreadable) the fallback is empty tables.
     /// </summary>
-    public static RequirementSet OpenRequirements(IArchive modExe, string fgpPath, Requirements vanilla, List<string> status)
+    public static RequirementSet OpenRequirements(IArchive modExe, string fgpPath, Requirements? vanilla, List<string> status)
     {
         string? problem = null;
         if (modExe.TryRead(RequirementsFile.ArchivePath) is { } file)
@@ -84,7 +85,8 @@ public static class EditorSession
                 status.Add($"{fgpPath}: {e.Message}; vanilla requirements");
             }
         }
-        return new RequirementSet(vanilla, problem is null ? vanilla : null, vanilla, problem);
+        var fallback = vanilla ?? Requirements.Empty();
+        return new RequirementSet(fallback, problem is null ? fallback : null, vanilla, problem);
     }
 
     /// <summary>

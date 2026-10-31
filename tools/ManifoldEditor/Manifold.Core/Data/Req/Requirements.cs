@@ -47,6 +47,9 @@ public sealed class Requirements
 
     public RequirementTable this[ReqTable table] => tables[(int)table];
 
+    /// <summary>Five tables with no records: what the editor starts from when StarCraft.exe's can't be read.</summary>
+    public static Requirements Empty() => new(ReqTables.All.Select(t => new RequirementTable(t, [])).ToArray());
+
     public Requirements With(RequirementTable table)
     {
         var copy = tables.ToArray();

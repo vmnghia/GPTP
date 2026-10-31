@@ -33,7 +33,7 @@ public static class RequirementsFile
     /// The file's tables; a missing section is vanilla's, with a note. Throws
     /// <see cref="InvalidDataException"/> with the reason for a damaged file.
     /// </summary>
-    public static Requirements Read(byte[] bytes, Requirements vanilla, List<string> notes) =>
+    public static Requirements Read(byte[] bytes, Requirements? vanilla, List<string> notes) =>
         RequirementsImport.Tables(FgpProject.Parse(bytes), vanilla, notes, ArchivePath);
 }
 
@@ -41,13 +41,13 @@ public static class RequirementsFile
 public static class RequirementsImport
 {
     /// <summary>
-    /// The project's sections, a missing one vanilla's. Blank items are left out, with a line
+    /// The project's sections, a missing one vanilla's (empty without vanilla). Blank items are left out, with a line
     /// "{tag}: {n} blank item(s) left out". Throws <see cref="InvalidDataException"/> for a damaged section.
     /// </summary>
-    public static Requirements FromProject(FgpProject project, Requirements vanilla, List<string> status) =>
+    public static Requirements FromProject(FgpProject project, Requirements? vanilla, List<string> status) =>
         Tables(project, vanilla, status, null);
 
-    internal static Requirements Tables(FgpProject project, Requirements vanilla, List<string> notes, string? file)
+    internal static Requirements Tables(FgpProject project, Requirements? vanilla, List<string> notes, string? file)
     {
         var tables = new List<RequirementTable>();
         foreach (var table in ReqTables.All)
@@ -55,8 +55,9 @@ public static class RequirementsImport
             string tag = ReqTables.SectionTag(table);
             if (!project.Sections.TryGetValue(tag, out var section))
             {
-                notes.Add(file is null ? $"{tag}: not in the project; vanilla" : $"{file}: no {tag} section; vanilla");
-                tables.Add(vanilla[table]);
+                string instead = vanilla is null ? "empty" : "vanilla";
+                notes.Add(file is null ? $"{tag}: not in the project; {instead}" : $"{file}: no {tag} section; {instead}");
+                tables.Add(vanilla?[table] ?? new RequirementTable(table, []));
                 continue;
             }
             RequirementTable parsed;

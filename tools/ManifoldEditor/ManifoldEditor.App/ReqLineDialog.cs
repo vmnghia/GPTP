@@ -7,13 +7,13 @@ using Microsoft.UI.Xaml.Media;
 
 namespace ManifoldEditor.App;
 
-/// <summary>What the line dialog chose: a line, or (for an upgrade) the next level's header.</summary>
-sealed record ReqLineChoice(ReqLine? Line, bool AddLevel);
+/// <summary>What the line dialog chose: a line, or (for an upgrade without them) the three level headers.</summary>
+sealed record ReqLineChoice(ReqLine? Line, bool AddLevels);
 
 /// <summary>
 /// The requirement line dialog (requirements spec §6): the opcode, from those the table's
-/// parser reads, then the unit or tech it takes, searchable. For an upgrade it can also add
-/// the next level's header.
+/// parser reads, then the unit or tech it takes, searchable. For an upgrade without levels it
+/// can also add the three level headers, which come as a set.
 /// </summary>
 sealed class ReqLineDialog
 {
@@ -23,21 +23,21 @@ sealed class ReqLineDialog
     readonly ListView parameter = new() { SelectionMode = ListViewSelectionMode.Single, Height = 260, FontFamily = new FontFamily("Consolas") };
     readonly IReadOnlyList<ReqOpcode> offered;
     readonly Func<DatId, IReadOnlyList<string>> names;
-    readonly int levelChoice;   // the index of "Level N" in the opcode list; -1 when not offered
+    readonly int levelChoice;   // the index of "Levels 1-3" in the opcode list; -1 when not offered
     ReqParam shownParam = ReqParam.None;
     ReqLineChoice? result;
 
-    /// <param name="offerLevel">The next level an upgrade's record can take (1-3), offered as a header; null for none.</param>
-    public ReqLineDialog(XamlRoot root, ReqTable table, ReqLine? current, int? offerLevel, Func<DatId, IReadOnlyList<string>> names)
+    /// <param name="offerLevels">Offer the three level headers (an upgrade's record that has none).</param>
+    public ReqLineDialog(XamlRoot root, ReqTable table, ReqLine? current, bool offerLevels, Func<DatId, IReadOnlyList<string>> names)
     {
         this.names = names;
         offered = ReqOpcodes.Offered(table);
         foreach (var o in offered) opcode.Items.Add(o.Name);
         levelChoice = -1;
-        if (offerLevel is int level)
+        if (offerLevels)
         {
             levelChoice = opcode.Items.Count;
-            opcode.Items.Add($"Level {level}");
+            opcode.Items.Add("Levels 1-3 (the upgrade's level headers)");
         }
 
         var content = new StackPanel { Spacing = 8, MinWidth = 380 };
@@ -113,7 +113,7 @@ sealed class ReqLineDialog
     /// <summary>The choice as the controls stand; null while a needed parameter isn't picked.</summary>
     ReqLineChoice? Choice()
     {
-        if (opcode.SelectedIndex == levelChoice && levelChoice >= 0) return new ReqLineChoice(null, AddLevel: true);
+        if (opcode.SelectedIndex == levelChoice && levelChoice >= 0) return new ReqLineChoice(null, AddLevels: true);
         if (Selected is not { } o) return null;
         if (o.Param == ReqParam.None) return new ReqLineChoice(new ReqLine(o.Word, null), false);
         if (parameter.SelectedItem is not ListViewItem { Tag: int id }) return null;

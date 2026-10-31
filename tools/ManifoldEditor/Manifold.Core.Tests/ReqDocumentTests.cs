@@ -94,6 +94,11 @@ public class ReqDocumentTests
         Assert.True(doc.RequirementsDirty);
         Assert.False(doc.CanUndo);   // not an undo step
         Assert.True(state.SetRequirementUsed(ReqTable.Units, 0, false, "Marine"));
+        var exe = Exe(file: "FgPa"u8.ToArray());
+        Assert.Null(EditorSession.Save(exe, doc));
+        var written = RequirementsFile.Read(exe.Files[RequirementsFile.ArchivePath], Vanilla(), new List<string>());
+        Assert.False(written[ReqTable.Units].Find(0)!.Used);
+        Assert.False(doc.RequirementsDirty);
     }
 
     static FakeArchive Exe(bool fgp = true, byte[]? file = null)
@@ -150,6 +155,33 @@ public class ReqDocumentTests
     }
 
     [Fact]
+    public void OpenWithoutVanillaStillOpens()
+    {
+        var status = new List<string>();
+        var empty = EditorSession.OpenRequirements(Exe(fgp: false), FgpPath, null, status);
+        Assert.All(ReqTables.All, t => Assert.Empty(empty.Opened[t].Records));
+        Assert.Same(empty.Opened, empty.Saved);
+        Assert.Null(empty.Vanilla);
+        var imported = EditorSession.OpenRequirements(Exe(), FgpPath, null, status);
+        Assert.True(imported.Opened.SameAs(Project()));
+        var doc = new ButtonSetDocument(Make.EmptySets(), Make.EmptySets(), requirements: imported);
+        var state = new EditorState(doc, "test.exe", Fixtures.Conditions(), Fixtures.Actions());
+        Assert.False(doc.RecordDiffersFromVanilla(ReqTable.TechUse, 24));
+        Assert.False(state.RevertRequirementToVanilla(ReqTable.TechUse, 24, "Healing"));
+        Assert.True(state.SetRequirementUsed(ReqTable.Units, 0, false, "Marine"));
+    }
+
+    [Fact]
+    public void OpenCorruptLengthSetsProblem()
+    {
+        // A section whose length runs past the end of a 4-GB file.
+        byte[] file = [.. "FgPa\x07\0\0\01.16.1\0UntR"u8, 0xF0, 0xFF, 0xFF, 0xFF, 0, 0];
+        var status = new List<string>();
+        var set = EditorSession.OpenRequirements(Exe(file: file), FgpPath, Vanilla(), status);
+        Assert.NotNull(set.Problem);
+    }
+
+    [Fact]
     public void OpenBadProjectIsVanilla()
     {
         var exe = Exe(fgp: false);
@@ -193,10 +225,14 @@ public class ReqDocumentTests
         Assert.Equal(3 + 3 + 0 + 1 + 1, rows.Count);
         Assert.Equal([null, null, null, 1, 2, null, 3, null], rows.Select(r => r.LevelHeader));
         Assert.Equal(new ReqLineAt(2, 0), rows[5].At);
-        Assert.Throws<InvalidOperationException>(() => AddLevel(upgrade));
-        var two = RemoveLastLevel(upgrade);
-        Assert.Equal(2, two.Levels.Count);
-        Assert.Equal(3, AddLevel(two).Levels[^1].Level);
+        // Levels come as a set (final review): all three, or none, as every vanilla upgrade has them.
+        Assert.Throws<InvalidOperationException>(() => AddLevels(upgrade));
+        var none = RemoveLevels(upgrade);
+        Assert.Empty(none.Levels);
+        Assert.Equal(3, none.Lines.Count);
+        var three = AddLevels(none);
+        Assert.Equal([1, 2, 3], three.Levels.Select(l => l.Level));
+        Assert.All(three.Levels, l => Assert.Empty(l.Lines));
         // A line moves within its own lines only.
         Assert.True(Move(upgrade, new ReqLineAt(0, 2), +1).SameAs(upgrade));
         Assert.Equal(new ReqLine(0xFF07, null), Move(upgrade, new ReqLineAt(0, 2), -1).Lines[1]);

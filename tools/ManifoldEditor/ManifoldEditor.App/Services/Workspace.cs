@@ -123,13 +123,16 @@ public static class Workspace
             throw new FileNotFoundException($"StarCraft.exe was not found in {starCraftDir}. Set the StarCraft folder first.");
         var starCraft = Step($"Reading {starCraftExe}", () => new PeImage(File.ReadAllBytes(starCraftExe)));
         var vanilla = Step($"Reading the vanilla button sets from {starCraftExe}", () => VanillaSets.Read(starCraft));
-        var vanillaRequirements = Step($"Reading the vanilla requirements from {starCraftExe}", () => VanillaRequirements.Read(starCraft));
+        // Unreadable vanilla tables cost only the vanilla marks and Revert to vanilla (requirements spec §3), not the open.
+        var requirementNotes = new List<string>();
+        Requirements? vanillaRequirements = null;
+        try { vanillaRequirements = VanillaRequirements.Read(starCraft); }
+        catch (InvalidDataException e) { requirementNotes.Add($"StarCraft.exe's requirement tables: {e.Message}; no vanilla marks"); }
 
         var conditions = Step("Reading Data\\FireGraftConFunc.txt", () => LoadTable("FireGraftConFunc.txt"));
         var actions = Step("Reading Data\\FireGraftActFunc.txt", () => LoadTable("FireGraftActFunc.txt"));
         string fgp = Step("Looking for the FireGraft project (Firegraft\\*.fgp)",
             () => EditorSession.FindFgp(exe, Path.GetFileName(exePath)));
-        var requirementNotes = new List<string>();
         var requirements = Step($"Reading the requirements ({RequirementsFile.ArchivePath} or {fgp})",
             () => EditorSession.OpenRequirements(exe, fgp, vanillaRequirements, requirementNotes));
         var opened = Step($"Reading the button sets in {Path.GetFileName(exePath)} ({ButtonSetFile.ArchivePath} or {fgp})",

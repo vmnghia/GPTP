@@ -286,7 +286,8 @@ vanilla • and the unsaved colour as on the Data page. The record's lines read 
 ("Current unit is Terran Barracks", "Must have Terran Academy", "or"); an upgrade's level
 blocks show as "Level 1"-"Level 3" headers. Add, Insert and Change open a dialog of the
 opcodes that table's parser reads, then a searchable unit or tech list; Remove, Move up and
-Move down work on the selected line (a level header can be removed only with the last level).
+Move down work on the selected line. An upgrade's levels come as a set: the dialog offers
+"Levels 1-3" to a record without them, and Remove on a level header removes all three.
 Add record, Delete record and Revert to vanilla act on the whole record. Each change is one
 undo step. A damaged `requirements.bin` makes the page read-only until **Replace it**.
 
