@@ -276,7 +276,8 @@ public sealed class MainWindow : Window
         root.Children.Add(dataPage.Root);
 
         // Named as on the Data page (its names settings and overrides).
-        requirementsPage = new RequirementsPage(() => opened, Refresh, dataPage.Names, (title, text) => Message(title, text));
+        requirementsPage = new RequirementsPage(() => opened, Refresh, dataPage.Names, (title, text) => Message(title, text),
+            () => settings, changed => settings = changed);
         Grid.SetRow(requirementsPage.Root, 2);
         requirementsPage.Root.Visibility = Visibility.Collapsed;
         root.Children.Add(requirementsPage.Root);
@@ -395,10 +396,11 @@ public sealed class MainWindow : Window
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.C, CopyButtonKey));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.V, PasteButtonKey));
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.Delete, DeleteButtonKey, VirtualKeyModifiers.None));
-        // Ctrl+Shift+C: Copy set on the sets page, Copy Entry to Clipboard on the Data page.
+        // Ctrl+Shift+C: Copy set on the sets page, Copy Entry to Clipboard on the Data page, Copy record on the Requirements page.
         root.KeyboardAccelerators.Add(Accelerator(VirtualKey.C, () =>
         {
             if (DataPageShows) return dataPage.CopyEntry(subTab: false);
+            if (RequirementsPageShows) return requirementsPage.CopyRecord();
             if (!CardKeysApply()) return false;
             opened!.State.CopySet();
             Refresh();
@@ -435,7 +437,14 @@ public sealed class MainWindow : Window
             if (!DataPageShows) return false;
             return dataPage.CopyEntry(subTab: true);
         }, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
-        root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.P, dataPage.PasteEntry, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
+        // Ctrl+Shift+P: Paste from Clipboard on the Data page, Paste record on the Requirements page.
+        root.KeyboardAccelerators.Add(Accelerator(VirtualKey.P, () =>
+        {
+            if (RequirementsPageShows) return requirementsPage.PasteRecord();
+            if (!DataPageShows) return false;
+            _ = dataPage.PasteEntry();
+            return true;
+        }, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
         root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.N, dataPage.OverrideName, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift));
         root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.E, dataPage.ExportText, VirtualKeyModifiers.Control));
         root.KeyboardAccelerators.Add(DataAccelerator(VirtualKey.I, dataPage.ImportText, VirtualKeyModifiers.Control));
@@ -531,6 +540,7 @@ public sealed class MainWindow : Window
     }
 
     bool DataPageShows => opened is not null && dataPage.Root.Visibility == Visibility.Visible;
+    bool RequirementsPageShows => opened is not null && requirementsPage.Root.Visibility == Visibility.Visible;
 
     /// <summary>Copy set to units: pick the sets that take a copy of this one (one undo step).</summary>
     async Task CopySetToUnits()

@@ -11,8 +11,10 @@ namespace ManifoldEditor.App.Services;
 /// The plugin's status line is kept apart, as the markers' recheck replaces it (QoL spec §7).
 /// </summary>
 /// <param name="Lists">PyDAT's name lists and field hints (Data\pydat), for the Data page.</param>
+/// <param name="ReqLists">FireGraft's lists (Data\firegraft) by table, for the Requirements page's tree; a table without one is absent.</param>
 public sealed record OpenedExe(string ExePath, StormArchive Archive, EditorState State, EditorResources Resources,
-    SetCatalog Catalog, IReadOnlyList<string> Status, string PluginLine, DatLists Lists)
+    SetCatalog Catalog, IReadOnlyList<string> Status, string PluginLine, DatLists Lists,
+    IReadOnlyDictionary<ReqTable, IReadOnlyDictionary<int, IReadOnlyList<string>>>? ReqLists = null)
 {
     /// <summary>The status bar's lines: the plugin first, then what opening found.</summary>
     public IReadOnlyList<string> StatusLines => [PluginLine, .. Status];
@@ -68,6 +70,30 @@ public static class Workspace
 
     static FunctionTable LoadTable(string name) =>
         FunctionTable.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", name)));
+
+    /// <summary>
+    /// FireGraft's lists (Data\firegraft beside the editor) by table, for the Requirements tree
+    /// (requirements UX spec §2). A missing or unreadable file leaves its table out, with a note.
+    /// </summary>
+    public static IReadOnlyDictionary<ReqTable, IReadOnlyDictionary<int, IReadOnlyList<string>>> LoadFireGraftLists(List<string> notes)
+    {
+        var files = new Dictionary<ReqTable, string>
+        {
+            [ReqTable.Units] = "unitlist.txt", [ReqTable.Upgrades] = "upgradelist.txt",
+            [ReqTable.TechResearch] = "techlist.txt", [ReqTable.TechUse] = "techlist.txt", [ReqTable.Orders] = "orderlist.txt",
+        };
+        var lists = new Dictionary<ReqTable, IReadOnlyDictionary<int, IReadOnlyList<string>>>();
+        foreach (var (table, file) in files)
+        {
+            string path = Path.Combine(AppContext.BaseDirectory, "Data", "firegraft", file);
+            try { lists[table] = FireGraftList.Parse(File.ReadAllText(path)); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                notes.Add($"Data\\firegraft\\{file}: {e.Message}; {ReqTables.Title(table)} shows the ID view");
+            }
+        }
+        return lists;
+    }
 
     /// <summary>PyDAT's lists and hints, from Data\pydat beside the editor; what is missing there is empty.</summary>
     public static DatLists LoadDatLists() => DatLists.Load(Path.Combine(AppContext.BaseDirectory, "Data", "pydat"));
@@ -144,6 +170,8 @@ public static class Workspace
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { plugin = $"Plugin: {e.Message}"; }
         var status = opened.Status.Concat(requirementNotes).Concat(resources.Sources).Concat(datSources).Concat(resources.Notes).Concat(datNotes)
             .Concat(overrideNotes).ToArray();
-        return new OpenedExe(exePath, exe, state, resources, Catalog(state), status, plugin, lists);
+        var reqListNotes = new List<string>();
+        var reqLists = LoadFireGraftLists(reqListNotes);
+        return new OpenedExe(exePath, exe, state, resources, Catalog(state), [.. status, .. reqListNotes], plugin, lists, reqLists);
     }
 }

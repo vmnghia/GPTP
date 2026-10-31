@@ -280,15 +280,27 @@ a tech's research, a tech's use or an order. The editor saves them as
 project only when the exe has none. An exe without the file opens with FireGraft's project
 imported (unsaved until Save), or with StarCraft's own tables when it has no project either.
 
-Pick a table; the list shows every id, named as on the Data page: "(off)" when its record's
-Used is off, greyed "(none)" when it has no record (the game allows either nowhere), the
-vanilla • and the unsaved colour as on the Data page. The record's lines read in words
-("Current unit is Terran Barracks", "Must have Terran Academy", "or"); an upgrade's level
-blocks show as "Level 1"-"Level 3" headers. Add, Insert and Change open a dialog of the
-opcodes that table's parser reads, then a searchable unit or tech list; Remove, Move up and
-Move down work on the selected line. An upgrade's levels come as a set: the dialog offers
-"Levels 1-3" to a record without them, and Remove on a level header removes all three.
-Add record, Delete record and Revert to vanilla act on the whole record. Each change is one
-undo step. A damaged `requirements.bin` makes the page read-only until **Replace it**.
+The five tables are tabs; a tab shows ● while its table has unsaved changes. The left side is
+FireGraft's tree (its own groups, from `Data\firegraft\`: Terran > Ground Units > [0] Marine;
+click a group to open or close it), or with **ID** a flat list by id. Leaves are named as on
+the Data page: "(off)" when the record's Used is off, greyed "(none)" when it has no record
+(the game allows either nowhere), the vanilla • and the unsaved colour. Find filters both
+views (a number finds that id).
 
-Built 2026-10-31: the model is tested on Linux and the window compiles; not yet run on Windows.
+The record shows one row per word, as FireGraft does: an opcode row (an Opcode/Parameter
+switch and the opcodes that table's parser reads), its unit or tech parameter on the row
+under it, a unit on its own ("Must have"), an upgrade's "Level 1"-"Level 3" headers, and
+"==End of List==" rows, whose dropdown appends a line. Every dropdown changes its word in
+place, one undo step each. Switching a row to Parameter makes "Current unit is Barracks"
+"Barracks" (Must have); back to Opcode, "Current unit is Barracks". **Insert** adds an empty
+row above the selection (nothing is written until it gets a value); **Delete**, **Move up** and
+**Move down** take an opcode's parameter along; **Add levels** gives an upgrade its three
+levels, and Delete on a level header removes all three. **Copy record** and **Paste record**
+(Ctrl+Shift+C, Ctrl+Shift+P, or the list's right-click menu) copy a record onto another id,
+into any table whose parser reads its opcodes (levels only into Upgrades). Add record, Delete
+record and Revert to vanilla act on the whole record. A damaged `requirements.bin` makes the
+page read-only until **Replace it**.
+
+Built 2026-10-31 and reworked FireGraft's way the same day (spec
+`docs/superpowers/specs/2026-10-31-requirements-page-ux-design.md`): the model is tested on
+Linux and the window compiles; not yet run on Windows.

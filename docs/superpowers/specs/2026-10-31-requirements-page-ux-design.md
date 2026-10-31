@@ -1,6 +1,10 @@
 # Manifold Editor: the Requirements page, FireGraft's way
 
-Status: [PROPOSED] Design 2026-10-31. Improvements the user asked for after the first
+Status: [BUILT] 2026-10-31 (plan `docs/superpowers/plans/2026-10-31-requirements-page-ux.md`):
+Core tested on Linux, the window compiles; §6's Windows list not yet run. The tree is drawn as
+a list of indented, collapsible group rows (▸/▾) rather than WinUI's TreeView, which can't
+colour a leaf without a XAML template. A numeric Find matches that id only, as the set list's.
+Design 2026-10-31. Improvements the user asked for after the first
 Requirements page (`2026-10-30-dat-requirements-design.md`, merged 2026-10-31, not yet run on
 Windows), to work as FireGraft's Dat Requirements editor does: the tables as tabs, FireGraft's
 tree, one row per word edited in place, and copy and paste of records. The user's answers: the

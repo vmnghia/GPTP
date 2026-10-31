@@ -50,6 +50,9 @@ public sealed record EditorSettings
     /// <summary>The set selected when the window was closed.</summary>
     public int? LastSetId { get; init; }
 
+    /// <summary>The Requirements page shows FireGraft's tree (true) or the flat ID list (requirements UX spec §2).</summary>
+    public bool RequirementsTree { get; init; } = true;
+
     /// <summary>The .dat file shown on the Data page, a <see cref="DatId"/> name.</summary>
     public string? LastDat { get; init; }
     /// <summary>The units.dat tab shown on the Data page, a <see cref="DatTabId"/> name.</summary>
