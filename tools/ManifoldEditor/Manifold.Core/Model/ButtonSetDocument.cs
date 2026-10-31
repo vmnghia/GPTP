@@ -6,8 +6,21 @@ namespace Manifold.Core.Model;
 /// <summary>Where in a .dat file a step was made: the entry, and the property (null for a whole entry).</summary>
 public readonly record struct DatPlace(DatId File, int Entry, string? Property);
 
-/// <summary>Where a step was made: the set it changed, the string it changed, the .dat entry it changed, or several.</summary>
-public readonly record struct Place(int? SetId, int? StringId, DatPlace? Dat = null);
+/// <summary>Where a requirements step was made: the table and the record's id.</summary>
+public readonly record struct ReqPlace(ReqTable Table, int Id);
+
+/// <summary>Where a step was made: the set it changed, the string it changed, the .dat entry it changed, the requirement record, or several.</summary>
+public readonly record struct Place(int? SetId, int? StringId, DatPlace? Dat = null, ReqPlace? Req = null);
+
+/// <summary>The requirements before and after a step, made at one record.</summary>
+public sealed record ReqEdit(Requirements Before, Requirements After, ReqTable Table, int Id);
+
+/// <summary>
+/// The requirements as opened (requirements spec §4): the tables to edit, what the exe holds
+/// (null: no good requirements.bin, so they count as unsaved), StarCraft's own, and why the
+/// exe's file was refused (the page is read-only until it is replaced).
+/// </summary>
+public sealed record RequirementSet(Requirements Opened, Requirements? Saved, Requirements Vanilla, string? Problem);
 
 /// <summary>One set before and after a step.</summary>
 public sealed record SetEdit(int SetId, ButtonSet Before, ButtonSet After);
@@ -21,12 +34,14 @@ public sealed record DatEdit(DatId File, DatFile Before, DatFile After, int Entr
 /// of its string is one step), or one .dat file before and after, or one file's name overrides.
 /// </summary>
 public sealed record Change(IReadOnlyList<SetEdit> Sets,
-    StringTable? StringsBefore, StringTable? StringsAfter, int? StringId, string Label, DatEdit? Dat = null, NamesEdit? Names = null)
+    StringTable? StringsBefore, StringTable? StringsAfter, int? StringId, string Label, DatEdit? Dat = null, NamesEdit? Names = null,
+    ReqEdit? Req = null)
 {
     /// <summary>Where the step shows: its first set (the one being edited), its string, and its .dat entry (an overrides step: the entry it was made at, no property).</summary>
     public Place Place => new(Sets.Count > 0 ? Sets[0].SetId : null, StringId,
         Dat is { } d ? new DatPlace(d.File, d.Entry, d.Property) :
-        Names is { } n ? new DatPlace(n.File, n.Entry, null) : null);
+        Names is { } n ? new DatPlace(n.File, n.Entry, null) : null,
+        Req is { } r ? new ReqPlace(r.Table, r.Id) : null);
 }
 
 /// <summary>
@@ -47,6 +62,7 @@ public sealed class ButtonSetDocument
     readonly Dictionary<DatId, DatFile> vanillaDats;
     readonly Dictionary<DatId, NameOverrides> overrides;       // being edited; a file with none is absent
     readonly Dictionary<DatId, NameOverrides> savedOverrides;  // what the exe holds
+    Requirements? savedRequirements;   // what the exe holds; null when it holds no good file
 
     /// <summary>The sets as opened from the exe (Revert set, to the opened version).</summary>
     public IReadOnlyList<ButtonSet> Opened { get; private set; }
@@ -64,7 +80,7 @@ public sealed class ButtonSetDocument
     /// </param>
     /// <param name="dats">The .dat files opened and StarCraft's own; none without it.</param>
     public ButtonSetDocument(IReadOnlyList<ButtonSet> opened, IReadOnlyList<ButtonSet> vanilla,
-        StringTable? strings = null, StringTable? savedStrings = null, DatSet? dats = null)
+        StringTable? strings = null, StringTable? savedStrings = null, DatSet? dats = null, RequirementSet? requirements = null)
     {
         if (opened.Count != Card.SetCount || vanilla.Count != Card.SetCount)
             throw new ArgumentException($"expected {Card.SetCount} sets");
@@ -79,6 +95,58 @@ public sealed class ButtonSetDocument
         vanillaDats = dats is null ? new() : new(dats.Vanilla);
         overrides = dats?.Overrides is { } o ? new(o) : new();
         savedOverrides = new(overrides);
+        Requirements = requirements?.Opened;
+        savedRequirements = requirements?.Saved;
+        VanillaRequirements = requirements?.Vanilla;
+        RequirementsProblem = requirements?.Problem;
+    }
+
+    // -------- Requirements (spec 2026-10-30-dat-requirements) --------
+
+    /// <summary>The requirement tables being edited; null when none were opened.</summary>
+    public Requirements? Requirements { get; private set; }
+    /// <summary>StarCraft.exe's own tables (Revert to vanilla, the vanilla mark).</summary>
+    public Requirements? VanillaRequirements { get; }
+    /// <summary>Why the exe's requirements.bin was refused; while set, the requirements are read-only and not saved.</summary>
+    public string? RequirementsProblem { get; private set; }
+
+    /// <summary>The requirements differ from what the exe holds (or it holds none): the save writes requirements.bin.</summary>
+    public bool RequirementsDirty =>
+        Requirements is { } current && RequirementsProblem is null && (savedRequirements is null || !current.SameAs(savedRequirements));
+
+    /// <summary>An edit of one table as one step, made at the record <paramref name="id"/>. False without requirements, while a problem stands, or when nothing changes.</summary>
+    public bool ApplyRequirements(ReqTable table, int id, Func<RequirementTable, RequirementTable> edit, string label)
+    {
+        if (Requirements is not { } before || RequirementsProblem is not null) return false;
+        var edited = edit(before[table]);
+        if (edited.SameAs(before[table])) return false;
+        Record(new Change([], null, null, null, label, Req: new ReqEdit(before, before.With(edited), table, id)));
+        return true;
+    }
+
+    static bool SameRecord(ReqRecord? a, ReqRecord? b) => a is null ? b is null : b is not null && a.SameAs(b);
+
+    /// <summary>The record (or its absence) differs from StarCraft's own.</summary>
+    public bool RecordDiffersFromVanilla(ReqTable table, int id) =>
+        Requirements is { } current && VanillaRequirements is { } vanilla && !SameRecord(current[table].Find(id), vanilla[table].Find(id));
+
+    /// <summary>The record differs from what the exe holds, which the next Save writes (the unsaved colour).</summary>
+    public bool RecordChangedSinceSave(ReqTable table, int id)
+    {
+        if (Requirements is not { } current || RequirementsProblem is not null) return false;
+        if (savedRequirements is null) return current[table].Find(id) is not null;
+        return !SameRecord(current[table].Find(id), savedRequirements[table].Find(id));
+    }
+
+    /// <summary>
+    /// The user chose to replace the exe's damaged requirements.bin: the tables shown become
+    /// editable and count as unsaved. Not an undo step.
+    /// </summary>
+    public void ReplaceBadRequirements()
+    {
+        if (RequirementsProblem is null) return;
+        RequirementsProblem = null;
+        savedRequirements = null;
     }
 
     /// <summary>
@@ -142,7 +210,8 @@ public sealed class ButtonSetDocument
     public ButtonSet this[int setId] => sets[setId];
 
     /// <summary>Unsaved changes (the title bar's mark).</summary>
-    public bool IsDirty => done != savedAt || StringsDirty || dats.Keys.Any(DatDirty) || DatFormats.All.Any(f => OverridesDirty(f.Id));
+    public bool IsDirty => done != savedAt || StringsDirty || dats.Keys.Any(DatDirty) || DatFormats.All.Any(f => OverridesDirty(f.Id)) ||
+        RequirementsDirty;
     /// <summary>The strings differ from the table last saved: the save writes stat_txt.tbl.</summary>
     public bool StringsDirty => !ReferenceEquals(Strings, savedStrings);
     /// <summary>The set list's dot: the set differs from vanilla.</summary>
@@ -167,6 +236,7 @@ public sealed class ButtonSetDocument
         if (change.StringsBefore is not null) Strings = after ? change.StringsAfter : change.StringsBefore;
         if (change.Dat is { } d) dats[d.File] = after ? d.After : d.Before;
         if (change.Names is { } n) overrides[n.File] = after ? n.After : n.Before;
+        if (change.Req is { } r) Requirements = after ? r.After : r.Before;
     }
 
     /// <summary>
@@ -289,5 +359,6 @@ public sealed class ButtonSetDocument
         foreach (var (file, current) in dats) openedDats[file] = savedDats[file] = current;
         savedOverrides.Clear();
         foreach (var (file, current) in overrides) savedOverrides[file] = current;
+        if (RequirementsProblem is null) savedRequirements = Requirements;
     }
 }

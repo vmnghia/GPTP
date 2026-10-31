@@ -26,7 +26,8 @@ public static class EditorSession
     /// checks is reported and the sets fall back the same way.
     /// </summary>
     public static Opened Open(IArchive modExe, string fgpPath, IReadOnlyList<ButtonSet> vanilla,
-        FunctionTable conditions, FunctionTable actions, StringTable? strings = null, StringTable? savedStrings = null, DatSet? dats = null)
+        FunctionTable conditions, FunctionTable actions, StringTable? strings = null, StringTable? savedStrings = null, DatSet? dats = null,
+        RequirementSet? requirements = null)
     {
         var status = new List<string>();
         if (modExe.TryRead(ButtonSetFile.ArchivePath) is { } file)
@@ -35,12 +36,55 @@ public static class EditorSession
             if (sets is not null)
             {
                 status.Add($"Button sets from {ButtonSetFile.ArchivePath}");
-                return new Opened(new ButtonSetDocument(sets, vanilla, strings, savedStrings, dats), status);
+                return new Opened(new ButtonSetDocument(sets, vanilla, strings, savedStrings, dats, requirements), status);
             }
             status.Add($"{ButtonSetFile.ArchivePath}: {error}; opened vanilla and FireGraft's sets instead");
         }
         var opened = ImportFireGraft(modExe, fgpPath, vanilla, conditions, actions, status);
-        return new Opened(new ButtonSetDocument(opened, vanilla, strings, savedStrings, dats), status);
+        return new Opened(new ButtonSetDocument(opened, vanilla, strings, savedStrings, dats, requirements), status);
+    }
+
+    /// <summary>
+    /// The requirement tables of the mod exe (requirements spec §4): its
+    /// <c>Manifold\requirements.bin</c>; else the FireGraft project's five sections, imported
+    /// and unsaved; else vanilla. A damaged file is reported, and the tables shown are what an
+    /// exe without it opens as, read-only until the user replaces the file.
+    /// </summary>
+    public static RequirementSet OpenRequirements(IArchive modExe, string fgpPath, Requirements vanilla, List<string> status)
+    {
+        string? problem = null;
+        if (modExe.TryRead(RequirementsFile.ArchivePath) is { } file)
+        {
+            var notes = new List<string>();
+            try
+            {
+                var read = RequirementsFile.Read(file, vanilla, notes);
+                status.Add($"Requirements from {RequirementsFile.ArchivePath}");
+                status.AddRange(notes);
+                return new RequirementSet(read, read, vanilla, null);
+            }
+            catch (InvalidDataException e)
+            {
+                problem = e.Message;
+                status.Add($"{RequirementsFile.ArchivePath}: {e.Message}; the Requirements page is read-only until it is replaced");
+            }
+        }
+        if (modExe.TryRead(fgpPath) is { } fgp)
+        {
+            var notes = new List<string>();
+            try
+            {
+                var imported = RequirementsImport.FromProject(FgpProject.Parse(fgp), vanilla, notes);
+                status.Add($"Imported FireGraft's requirements from {fgpPath}");
+                status.AddRange(notes);
+                return new RequirementSet(imported, null, vanilla, problem);
+            }
+            catch (InvalidDataException e)
+            {
+                status.Add($"{fgpPath}: {e.Message}; vanilla requirements");
+            }
+        }
+        return new RequirementSet(vanilla, problem is null ? vanilla : null, vanilla, problem);
     }
 
     /// <summary>
@@ -134,6 +178,11 @@ public static class EditorSession
             // Only the files whose overrides changed; emptied ones are written empty (an MPQ file can't be removed here).
             if (document.OverridesDirty(format.Id))
                 files.Add((NameOverrides.ArchivePath(format.Id), document.Overrides(format.Id).ToBytes()));
+        }
+        if (document.RequirementsDirty)
+        {
+            try { files.Add((RequirementsFile.ArchivePath, RequirementsFile.Write(document.Requirements!))); }
+            catch (InvalidOperationException e) { table = null; dats = []; return $"{RequirementsFile.ArchivePath}: {e.Message}. Nothing was saved."; }
         }
         return null;
     }
