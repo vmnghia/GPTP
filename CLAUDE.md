@@ -194,8 +194,10 @@ installed there, not only in `injectHudHooks`.
   `SCBW/fg_requirements*`, spec `docs/superpowers/specs/2026-10-29-fg-requirements-design.md`):
   FireGraft's own runtime never applies anything in Manifold (upstream's campaign fix at
   0x4100C4 bypasses its storm hook), so the plugin reads the five Dat Requirements tables
-  from the `.fgp` in the exe and points the exe's 39 references at its own copies, at the
-  first game start. FireGraft's Exe Edits still don't apply.
+  and points the exe's 39 references at its own copies, at the first game start. It reads
+  the Manifold Editor's `Manifold\requirements.bin` (the .fgp's layout, spec
+  `docs/superpowers/specs/2026-10-30-dat-requirements-design.md`) first, and the `.fgp` in
+  the exe only when that file is missing. FireGraft's Exe Edits still don't apply.
 
 Selection, smart-build, smart-casting, those two command changes, smart rally and smart
 larva are
