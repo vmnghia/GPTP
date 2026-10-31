@@ -27,13 +27,20 @@ Orders. A tab reads "Units ●" while its table differs from what the next Save 
 
 - **Groups** come from FireGraft's lists, shipped in the editor's `Data\firegraft\`
   (`unitlist.txt`, `upgradelist.txt`, `techlist.txt`, `orderlist.txt`, copied from FireGraft
-  0.93's `list\` folder into `fixtures/firegraft-lists/`). A line `<id>Entry=Group,Subgroup,
+  0.93's `list\` folder into `fixtures/firegraft-lists/` on 2026-10-31). A line `<id>Entry=Group,Subgroup,
   ...,Name` puts the id under that path; other lines (`<id>Set=`, ...) are ignored. A list
   whose lines have no groups (orders) gives a flat list.
 - **Leaves** are named by the editor ("[0] Marine": stat_txt and the name overrides, as on the
   Data page), not by FireGraft's list, and carry the page's marks: "(off)", "(none)", the
   vanilla • and the unsaved colour.
-- An id the list doesn't hold goes under "Unused", FireGraft's group for such ids.
+- An id the list doesn't hold goes under "Unused", FireGraft's group for such ids. Ids past
+  the table's count (the lists name up to 255: "Extended Order 189", units 228-249 as
+  Buttons) are not shown.
+- Groups nest as deep as a line goes (Terran > Buildings > Addons > Comsat Station), in the
+  order they first appear in the file; a group's leaves are in id order. A group of its own
+  with a leaf (All Races > Map Revealer) works the same.
+- The lists' group is FireGraft's, whatever the mod made of an id: unit 91 (the Viking in
+  Manifold) stays under Unused, named by the editor.
 - **Tree / ID**: two buttons under the list switch between the tree and a flat list by id,
   as FireGraft's; the choice is kept in the settings.
 - **Find** filters either view; in the tree, a match shows with its groups opened.
