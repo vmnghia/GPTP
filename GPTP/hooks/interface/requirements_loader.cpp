@@ -10,6 +10,9 @@
 namespace {
 
 const char* const DATALIST = "Firegraft\\datalist.txt";
+//The Manifold Editor's copy of the five tables, in the .fgp's layout (spec
+//docs/superpowers/specs/2026-10-30-dat-requirements-design.md §5): read first.
+const char* const EDITOR_FILE = "Manifold\\requirements.bin";
 
 //Where the exe holds each table's address (or the address + 2, the first
 //entry's id), found by scanning StarCraft.exe 1.16.1 for the five addresses:
@@ -49,10 +52,12 @@ const Table TABLES[fgreq::TABLE_COUNT] = {
 //The applied tables: the exe points into these for the rest of the run.
 std::vector<u16> applied[fgreq::TABLE_COUNT];
 bool tried;
+//Starts every line: which source the tables come from.
+const char* prefix = "FireGraft requirements: ";
 
 void report(const char* what, const char* reason) {
 	char line[160];
-	sprintf_s(line, sizeof(line), "FireGraft requirements: %s%s", what, reason);
+	sprintf_s(line, sizeof(line), "%s%s%s", prefix, what, reason);
 	scbw::printText(line, GameTextColor::Yellow);
 }
 
@@ -74,17 +79,32 @@ void applyOnce() {
 		return;
 	tried = true;
 
-	std::vector<u8> list;
-	if (!readOrReport(DATALIST, list))
-		return;
-	const std::string name = fgreq::fgpName((const char*)list.data(), (u32)list.size());
-	if (name.empty()) {
-		report(DATALIST, " names no .fgp");
+	//The editor's file first; FireGraft's project only when the exe has none. A
+	//file that can't be read is reported, not passed over for FireGraft's copy.
+	std::string name;
+	std::vector<u8> fgp;
+	const mpqread::Result own = mpqread::read(EDITOR_FILE, fgp);
+	if (own == mpqread::OK) {
+		prefix = "Requirements: ";
+		name = EDITOR_FILE;
+	}
+	else if (own != mpqread::MISSING) {
+		prefix = "Requirements: ";
+		report(EDITOR_FILE, own == mpqread::FAILED ? " could not be read" : ": storm.dll's file functions were not found");
 		return;
 	}
-	std::vector<u8> fgp;
-	if (!readOrReport(name.c_str(), fgp))
-		return;
+	else {
+		std::vector<u8> list;
+		if (!readOrReport(DATALIST, list))
+			return;
+		name = fgreq::fgpName((const char*)list.data(), (u32)list.size());
+		if (name.empty()) {
+			report(DATALIST, " names no .fgp");
+			return;
+		}
+		if (!readOrReport(name.c_str(), fgp))
+			return;
+	}
 
 	//Everything is built and checked before the exe is touched.
 	std::vector<u16> built[fgreq::TABLE_COUNT];
@@ -137,7 +157,7 @@ void applyOnce() {
 		count++;
 	}
 	char line[160];
-	sprintf_s(line, sizeof(line), "FireGraft requirements: %u tables from %s", count, name.c_str());
+	sprintf_s(line, sizeof(line), "%s%u tables from %s", prefix, count, name.c_str());
 	scbw::printText(line);
 	//Blank items (fgreq::BLANK) were left out; name where, so they can be
 	//cleaned up in FireGraft.

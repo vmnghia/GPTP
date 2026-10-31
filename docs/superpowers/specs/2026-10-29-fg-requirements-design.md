@@ -28,6 +28,11 @@ Editor's `buttonsets.bin` loader replaced those), and its Exe Edits.
 `hooks/interface/requirements_loader.cpp`, called at game start (0x4EED10, the same wrapper
 as the button set loader), once per run:
 
+0. [BUILT] 2026-10-31, not yet run in game: `Manifold\requirements.bin`, the Manifold
+   Editor's copy of the five sections in the .fgp's layout
+   (`2026-10-30-dat-requirements-design.md` §5), is read first. Present: its tables are
+   applied the same way and the lines start "Requirements: ". Present but unreadable or
+   bad: one yellow line, every table vanilla, no fallback. Missing: steps 1-4 as before.
 1. `Firegraft\datalist.txt` (FireGraft's own list) names the project; read it from the MPQ.
 2. Build each table from its section (`UntR`, `UpgR`, `TecR`, `TecU`, `OrdR`), as FireGraft
    does (0x10008910 in its DLL): word 0, then each record whose "Used" byte is set, its id

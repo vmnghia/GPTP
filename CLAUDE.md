@@ -136,7 +136,11 @@ installed there, not only in `injectHudHooks`.
   playback; spec `docs/superpowers/specs/2026-10-26-dat-previews-design.md`), passed on
   Windows 2026-10-26; part 4, entry counts (Add Entry, Set Entry Count; spec
   `docs/superpowers/specs/2026-10-26-dat-counts-design.md`) and rows coloured when unsaved, passed
-  on Windows 2026-10-27; part 5, improvements, is not built; `MANIFOLD_ARR_DIR` runs the tests on the real files). Unlike the plugin,
+  on Windows 2026-10-27; what was part 5, improvements, is a TODO list in
+  `docs/resolution.md` §6; `MANIFOLD_ARR_DIR` runs the tests on the real files); part 5, the
+  Dat Requirements on their own page, saved as `Manifold\requirements.bin` and read by the
+  plugin's requirements loader (spec `docs/superpowers/specs/2026-10-30-dat-requirements-design.md`,
+  built 2026-10-31, not yet run on Windows). Unlike the plugin,
   most of it **can** be checked in the Linux session: `dotnet test
   tools/ManifoldEditor/Manifold.Core.Tests` (after `apt-get install -y dotnet-sdk-8.0`),
   and the WinUI window compiles with `dotnet msbuild -restore -t:Compile
@@ -193,8 +197,10 @@ installed there, not only in `injectHudHooks`.
   `SCBW/fg_requirements*`, spec `docs/superpowers/specs/2026-10-29-fg-requirements-design.md`):
   FireGraft's own runtime never applies anything in Manifold (upstream's campaign fix at
   0x4100C4 bypasses its storm hook), so the plugin reads the five Dat Requirements tables
-  from the `.fgp` in the exe and points the exe's 39 references at its own copies, at the
-  first game start. FireGraft's Exe Edits still don't apply.
+  and points the exe's 39 references at its own copies, at the first game start. It reads
+  the Manifold Editor's `Manifold\requirements.bin` (the .fgp's layout, spec
+  `docs/superpowers/specs/2026-10-30-dat-requirements-design.md`) first, and the `.fgp` in
+  the exe only when that file is missing. FireGraft's Exe Edits still don't apply.
 
 Selection, smart-build, smart-casting, those two command changes, smart rally and smart
 larva are

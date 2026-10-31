@@ -102,9 +102,11 @@ public sealed class MainWindow : Window
     readonly SelectorBarItem setsPageItem = new() { Text = "Button sets", IsSelected = true };
     readonly SelectorBarItem stringsPageItem = new() { Text = "Strings" };
     readonly SelectorBarItem dataPageItem = new() { Text = "Data" };
+    readonly SelectorBarItem requirementsPageItem = new() { Text = "Requirements" };
     Grid setsPage = null!;
     StringsPage stringsPage = null!;
     DataPage dataPage = null!;
+    RequirementsPage requirementsPage = null!;
     /// <summary>What the set catalog was built from: the names (strings) and the race and kind (units.dat).</summary>
     StringTable? catalogStrings;
     DatFile? catalogUnits;
@@ -138,6 +140,7 @@ public sealed class MainWindow : Window
             }
             if (lastPage == "strings") pages.SelectedItem = stringsPageItem;
             else if (lastPage == "data") pages.SelectedItem = dataPageItem;
+            else if (lastPage == "requirements") pages.SelectedItem = requirementsPageItem;
         };
     }
 
@@ -178,7 +181,8 @@ public sealed class MainWindow : Window
         {
             Window = restoredBounds ?? settings.Window,
             WindowMaximized = AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Maximized },
-            LastPage = pages.SelectedItem == stringsPageItem ? "strings" : pages.SelectedItem == dataPageItem ? "data" : null,
+            LastPage = pages.SelectedItem == stringsPageItem ? "strings" : pages.SelectedItem == dataPageItem ? "data"
+                : pages.SelectedItem == requirementsPageItem ? "requirements" : null,
             LastSetId = opened?.State.SelectedSetId ?? settings.LastSetId,
         };
         try { settings.Save(Workspace.SettingsPath); }
@@ -252,6 +256,7 @@ public sealed class MainWindow : Window
         pages.Items.Add(setsPageItem);
         pages.Items.Add(stringsPageItem);
         pages.Items.Add(dataPageItem);
+        pages.Items.Add(requirementsPageItem);
         pages.SelectionChanged += (_, _) => ShowPage();
         pages.Margin = new Thickness(0, 0, 0, 8);
         Grid.SetRow(pages, 1);
@@ -269,6 +274,12 @@ public sealed class MainWindow : Window
         Grid.SetRow(dataPage.Root, 2);
         dataPage.Root.Visibility = Visibility.Collapsed;
         root.Children.Add(dataPage.Root);
+
+        // Named as on the Data page (its names settings and overrides).
+        requirementsPage = new RequirementsPage(() => opened, Refresh, dataPage.Names, (title, text) => Message(title, text));
+        Grid.SetRow(requirementsPage.Root, 2);
+        requirementsPage.Root.Visibility = Visibility.Collapsed;
+        root.Children.Add(requirementsPage.Root);
 
         var body = new Grid { ColumnSpacing = 16 };
         setsPage = body;
@@ -505,14 +516,16 @@ public sealed class MainWindow : Window
 
     void ShowPage()
     {
-        if (setsPage is null || stringsPage is null || dataPage is null) return;   // a selection event while the layout is built
+        if (setsPage is null || stringsPage is null || dataPage is null || requirementsPage is null) return;   // a selection event while the layout is built
         bool strings = pages.SelectedItem == stringsPageItem;
         bool data = pages.SelectedItem == dataPageItem;
+        bool requirements = pages.SelectedItem == requirementsPageItem;
         // What the page being left holds in its boxes is kept (its boxes commit on losing focus, which comes later).
         if (!data) dataPage.CommitPending();
-        setsPage.Visibility = strings || data ? Visibility.Collapsed : Visibility.Visible;
+        setsPage.Visibility = strings || data || requirements ? Visibility.Collapsed : Visibility.Visible;
         stringsPage.Root.Visibility = strings ? Visibility.Visible : Visibility.Collapsed;
         dataPage.Root.Visibility = data ? Visibility.Visible : Visibility.Collapsed;
+        requirementsPage.Root.Visibility = requirements ? Visibility.Visible : Visibility.Collapsed;
         if (strings) stringsPage.Refresh();
         else Refresh();
     }
@@ -1437,6 +1450,12 @@ public sealed class MainWindow : Window
             pages.SelectedItem = dataPageItem;
             dataPage.Show(place);
         }
+        // A requirements step: the Requirements page, the table and the record.
+        if (opened.State.LastReqPlace is ReqPlace req)
+        {
+            pages.SelectedItem = requirementsPageItem;
+            requirementsPage.Show(req);
+        }
         return true;
     }
 
@@ -1535,6 +1554,8 @@ public sealed class MainWindow : Window
         }
         if (stringsPage.Root.Visibility == Visibility.Visible) stringsPage.Refresh();
         if (dataPage.Root.Visibility == Visibility.Visible) dataPage.Refresh();
+        if (requirementsPage.Root.Visibility == Visibility.Visible) requirementsPage.Refresh();
+        requirementsPageItem.Text = state.Document.RequirementsDirty ? "Requirements ●" : "Requirements";
         foreach (var id in setItems.Keys) UpdateSetItem(id);
         var entry = opened.Catalog.Entries[state.SelectedSetId];
         setTitle.Text = $"{state.SelectedSetId}  {entry.Name}";

@@ -36,6 +36,9 @@ sealed class DataPage
 
     public Grid Root { get; } = new() { ColumnSpacing = 16 };
 
+    /// <summary>The names of a file's entries as this page shows them (for the Requirements page).</summary>
+    public IReadOnlyList<string> Names(DatId id) => context.Names(id);
+
     readonly Func<OpenedExe?> opened;
     readonly Action changed;
     readonly Func<string, string, Task> message;

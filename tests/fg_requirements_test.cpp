@@ -119,6 +119,39 @@ void testTable() {
 	CHECK(table.size() == sizeof(healed) / 2 && memcmp(table.data(), healed, sizeof(healed)) == 0);
 }
 
+//Manifold\requirements.bin, as the Manifold Editor writes it: the .fgp layout
+//with only the five requirement sections, one record each.
+void testRequirementsFile() {
+	const char* const tags[TABLE_COUNT] = { "UntR", "UpgR", "TecR", "TecU", "OrdR" };
+	std::vector<u8> file;
+	putBytes(file, "FgPa", 4);
+	put32(file, 7);
+	putBytes(file, "1.16.1", 7);
+	for (u32 t = 0; t < TABLE_COUNT; t++) {
+		std::vector<u8> section;
+		put16(section, 1);
+		putRecord(section, (u8)(t + 1), { 0xFF05, 0xFFFF }, 1);
+		putBytes(file, tags[t], 4);
+		put32(file, (u32)section.size());
+		file.insert(file.end(), section.begin(), section.end());
+	}
+	for (u32 t = 0; t < TABLE_COUNT; t++) {
+		u32 length = 0;
+		const char* error = "unset";
+		const u8* found = findSection(file.data(), (u32)file.size(), SECTION_TAGS[t], &length, &error);
+		CHECK(found != NULL && error == NULL);
+		if (found == NULL)
+			continue;
+		std::vector<u16> table;
+		u32 blanks = 99;
+		CHECK(buildTable(found, length, table, &blanks) == NULL && blanks == 0);
+		CHECK(table.size() == 5 && table[0] == 0 && table[1] == t + 1 && table[2] == 0xFF05 && table[3] == 0xFFFF && table[4] == 0xFFFF);
+	}
+	u32 length = 0;
+	const char* error = "unset";
+	CHECK(findSection(file.data(), (u32)file.size(), "Buts", &length, &error) == NULL && error == NULL);
+}
+
 void testDatalist() {
 	const char list[] = "Firegraft\\1161.fgd\r\nFiregraft\\SCManifold.fgp\r\n";
 	CHECK(fgpName(list, sizeof(list) - 1) == "Firegraft\\SCManifold.fgp");
@@ -133,6 +166,7 @@ void testDatalist() {
 int main() {
 	testSections();
 	testTable();
+	testRequirementsFile();
 	testDatalist();
 	if (failures != 0) {
 		printf("FAIL: %u checks, first at line %u\n", failures, firstLine);

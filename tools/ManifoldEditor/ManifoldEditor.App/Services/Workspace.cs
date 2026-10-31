@@ -121,21 +121,29 @@ public static class Workspace
         string starCraftExe = Path.Combine(starCraftDir, "StarCraft.exe");
         if (!File.Exists(starCraftExe))
             throw new FileNotFoundException($"StarCraft.exe was not found in {starCraftDir}. Set the StarCraft folder first.");
-        var vanilla = Step($"Reading the vanilla button sets from {starCraftExe}",
-            () => VanillaSets.Read(new PeImage(File.ReadAllBytes(starCraftExe))));
+        var starCraft = Step($"Reading {starCraftExe}", () => new PeImage(File.ReadAllBytes(starCraftExe)));
+        var vanilla = Step($"Reading the vanilla button sets from {starCraftExe}", () => VanillaSets.Read(starCraft));
+        // Unreadable vanilla tables cost only the vanilla marks and Revert to vanilla (requirements spec §3), not the open.
+        var requirementNotes = new List<string>();
+        Requirements? vanillaRequirements = null;
+        try { vanillaRequirements = VanillaRequirements.Read(starCraft); }
+        catch (InvalidDataException e) { requirementNotes.Add($"StarCraft.exe's requirement tables: {e.Message}; no vanilla marks"); }
 
         var conditions = Step("Reading Data\\FireGraftConFunc.txt", () => LoadTable("FireGraftConFunc.txt"));
         var actions = Step("Reading Data\\FireGraftActFunc.txt", () => LoadTable("FireGraftActFunc.txt"));
         string fgp = Step("Looking for the FireGraft project (Firegraft\\*.fgp)",
             () => EditorSession.FindFgp(exe, Path.GetFileName(exePath)));
+        var requirements = Step($"Reading the requirements ({RequirementsFile.ArchivePath} or {fgp})",
+            () => EditorSession.OpenRequirements(exe, fgp, vanillaRequirements, requirementNotes));
         var opened = Step($"Reading the button sets in {Path.GetFileName(exePath)} ({ButtonSetFile.ArchivePath} or {fgp})",
-            () => EditorSession.Open(exe, fgp, vanilla, conditions, actions, resources.Strings?.Table, dats: dats));
+            () => EditorSession.Open(exe, fgp, vanilla, conditions, actions, resources.Strings?.Table, dats: dats, requirements: requirements));
 
         var state = new EditorState(opened.Document, Path.GetFileName(exePath), conditions, actions);
         string plugin;
         try { plugin = Repack.PluginStatus(File.ReadAllBytes(exePath), exePath, pluginPath); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { plugin = $"Plugin: {e.Message}"; }
-        var status = opened.Status.Concat(resources.Sources).Concat(datSources).Concat(resources.Notes).Concat(datNotes).Concat(overrideNotes).ToArray();
+        var status = opened.Status.Concat(requirementNotes).Concat(resources.Sources).Concat(datSources).Concat(resources.Notes).Concat(datNotes)
+            .Concat(overrideNotes).ToArray();
         return new OpenedExe(exePath, exe, state, resources, Catalog(state), status, plugin, lists);
     }
 }

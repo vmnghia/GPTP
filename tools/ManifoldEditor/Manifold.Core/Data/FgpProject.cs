@@ -33,8 +33,10 @@ public sealed class FgpProject
         {
             if (at + 8 > bytes.Length) throw new InvalidDataException("section header cut short");
             string tag = Encoding.ASCII.GetString(bytes, at, 4);
-            int length = checked((int)BitConverter.ToUInt32(bytes, at + 4));
-            if (at + 8 + length > bytes.Length) throw new InvalidDataException($"section {tag} cut short");
+            uint declared = BitConverter.ToUInt32(bytes, at + 4);
+            // Compared without adding to it: a damaged length near 4 GB must read as cut short, not overflow.
+            if (declared > (uint)(bytes.Length - at - 8)) throw new InvalidDataException($"section {tag} cut short");
+            int length = (int)declared;
             sections[tag] = bytes[(at + 8)..(at + 8 + length)];
             at += 8 + length;
         }

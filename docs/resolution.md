@@ -554,8 +554,23 @@ starfield handled (§5). Features 1 and 2 below are done.
    and list rows coloured when changed since the last save `[BUILT 2026-10-26; tested on Windows
    and in game 2026-10-27]`: all of its §6 passed, the game loading a grown images.dat (the
    plugin's extension's first in-game run); spec
-   `docs/superpowers/specs/2026-10-26-dat-counts-design.md`. Remaining
-   part of the .dat port `[PROPOSED]`: 5 improvements.
+   `docs/superpowers/specs/2026-10-26-dat-counts-design.md`. The port of PyDAT ends there;
+   what was part 5, improvements, is now this TODO `[PROPOSED]`, taken up item by item:
+   - **sfxdata.dat is extended by the plugin now** (`GPTP/DatExtend/sfxdata_dat.cpp`,
+     merged 2026-10-30): `DatFormats.PluginExtends` still names only images, sprites and
+     flingy, so the editor wrongly flags an expanded sfxdata.dat as refused (check line,
+     growth question, Save's confirmation). Add it, after checking the plugin's expanded
+     sfxdata layout is PyMS's.
+   - Redo of a growth shows the new last entry, not the entry selected before.
+   - The Set Entry Count box is focused and selected when the dialog opens.
+   - Repainting the list after Save walks only the shown rows (a 65536-entry file calls
+     `ContainerFromIndex` for every row that changed colour).
+   - The preview and icon caches are kept per opened resources, not per `OpenedExe`
+     (`Refresh` makes a new one after units.dat and string edits).
+   - After Save as, the previews read the new exe, not the source.
+   - The Sound Effects tab reads the sound only on Play, not on every entry change.
+   - Messages: a missing images.tbl says "images.tbl not found", not "has no string N";
+     a late sound failure names the sound that failed, not the one shown.
 5. **Multiplayer host resolution** (§1): the host sends its view size as a command on the
    first game frame; every client applies it in the same frame; replays record it. This
    needs the view size switchable at game start. The buffers would be allocated for the

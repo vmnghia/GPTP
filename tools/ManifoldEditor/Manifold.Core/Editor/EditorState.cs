@@ -29,6 +29,8 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
     public int? LastStringId { get; private set; }
     /// <summary>The .dat entry the last undo or redo changed, for the window to show; null for a step elsewhere.</summary>
     public DatPlace? LastDatPlace { get; private set; }
+    /// <summary>The requirement record the last undo or redo changed; null when it changed none.</summary>
+    public ReqPlace? LastReqPlace { get; private set; }
     public ButtonSet SelectedSet => Document[SelectedSetId];
     public bool HasButtonClipboard => clipboardButton is not null;
     public bool HasSetClipboard => clipboardSet is not null;
@@ -174,8 +176,33 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
         if (p.SetId is int id) SelectedSetId = id;
         LastStringId = p.StringId;
         LastDatPlace = p.Dat;
+        LastReqPlace = p.Req;
         return true;
     }
+
+    // Requirements (spec 2026-10-30-dat-requirements §6). <paramref name="name"/> names the record in the step's label.
+
+    /// <summary>The record's lines edited, as one step. False when it has no record or nothing changes.</summary>
+    public bool EditRequirement(ReqTable table, int id, Func<ReqRecord, ReqRecord> edit, string name) =>
+        Document.ApplyRequirements(table, id, t => t.Find(id) is { } r ? t.With(edit(r)) : t, $"Edit {name}'s requirements");
+
+    public bool SetRequirementUsed(ReqTable table, int id, bool used, string name) =>
+        Document.ApplyRequirements(table, id, t => t.Find(id) is { } r ? t.With(r.WithUsed(used)) : t,
+            $"Turn {(used ? "on" : "off")} {name}'s requirements");
+
+    /// <summary>A record with no lines, used, for an id that has none.</summary>
+    public bool AddRequirementRecord(ReqTable table, int id, string name) =>
+        Document.ApplyRequirements(table, id, t => t.Find(id) is null ? t.With(new ReqRecord(id, true, [], [])) : t,
+            $"Add {name}'s requirements record");
+
+    public bool DeleteRequirementRecord(ReqTable table, int id, string name) =>
+        Document.ApplyRequirements(table, id, t => t.Without(id), $"Delete {name}'s requirements record");
+
+    /// <summary>The record as StarCraft's; deleted when StarCraft has none.</summary>
+    public bool RevertRequirementToVanilla(ReqTable table, int id, string name) =>
+        Document.VanillaRequirements is { } vanilla &&
+        Document.ApplyRequirements(table, id, t => vanilla[table].Find(id) is { } v ? t.With(v) : t.Without(id),
+            $"Revert {name}'s requirements to vanilla");
 
     // .dat files (spec 2026-10-24-dat-editor).
 
