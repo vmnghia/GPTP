@@ -137,7 +137,10 @@ installed there, not only in `injectHudHooks`.
   Windows 2026-10-26; part 4, entry counts (Add Entry, Set Entry Count; spec
   `docs/superpowers/specs/2026-10-26-dat-counts-design.md`) and rows coloured when unsaved, passed
   on Windows 2026-10-27; what was part 5, improvements, is a TODO list in
-  `docs/resolution.md` §6; `MANIFOLD_ARR_DIR` runs the tests on the real files). Unlike the plugin,
+  `docs/resolution.md` §6; `MANIFOLD_ARR_DIR` runs the tests on the real files); part 5, the
+  Dat Requirements on their own page, saved as `Manifold\requirements.bin` and read by the
+  plugin's requirements loader (spec `docs/superpowers/specs/2026-10-30-dat-requirements-design.md`,
+  built 2026-10-31, not yet run on Windows). Unlike the plugin,
   most of it **can** be checked in the Linux session: `dotnet test
   tools/ManifoldEditor/Manifold.Core.Tests` (after `apt-get install -y dotnet-sdk-8.0`),
   and the WinUI window compiles with `dotnet msbuild -restore -t:Compile

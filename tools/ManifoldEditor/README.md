@@ -269,3 +269,25 @@ more differences from PyDAT: its seconds boxes are editable, here they are read-
 box is limited to its property's type, not to PyDAT's tighter ranges. Part 1 (the fields) passed on Windows 2026-10-25. Parts 2 (the links) and 3 (the
 previews) passed on Windows 2026-10-26. After that run, PyMS's 2400-frame cap was dropped so a GRP with more frames (the Viking's assault mode) draws; checked on Windows 2026-10-26. Part 4 (entry counts and the coloured rows) passed
 on Windows 2026-10-27, with the game loading a grown images.dat.
+
+## The Requirements page
+
+The **Requirements** page (after Data; spec
+`docs/superpowers/specs/2026-10-30-dat-requirements-design.md`) edits FireGraft's Dat
+Requirements: the five tables the game checks before it shows or allows a unit, an upgrade,
+a tech's research, a tech's use or an order. The editor saves them as
+`Manifold\requirements.bin` in the exe; the plugin reads that file first, and FireGraft's
+project only when the exe has none. An exe without the file opens with FireGraft's project
+imported (unsaved until Save), or with StarCraft's own tables when it has no project either.
+
+Pick a table; the list shows every id, named as on the Data page: "(off)" when its record's
+Used is off, greyed "(none)" when it has no record (the game allows either nowhere), the
+vanilla • and the unsaved colour as on the Data page. The record's lines read in words
+("Current unit is Terran Barracks", "Must have Terran Academy", "or"); an upgrade's level
+blocks show as "Level 1"-"Level 3" headers. Add, Insert and Change open a dialog of the
+opcodes that table's parser reads, then a searchable unit or tech list; Remove, Move up and
+Move down work on the selected line (a level header can be removed only with the last level).
+Add record, Delete record and Revert to vanilla act on the whole record. Each change is one
+undo step. A damaged `requirements.bin` makes the page read-only until **Replace it**.
+
+Built 2026-10-31: the model is tested on Linux and the window compiles; not yet run on Windows.

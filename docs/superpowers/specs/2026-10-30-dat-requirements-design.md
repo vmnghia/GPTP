@@ -1,6 +1,8 @@
 # Manifold Editor: the Dat Requirements
 
-Status: [PROPOSED] Design 2026-10-30. A port of FireGraft's Dat Requirements editor: the
+Status: [BUILT] 2026-10-31 (plan `docs/superpowers/plans/2026-10-31-dat-requirements.md`):
+Core tested on Linux, the window compiles, the plugin's loader edited and its host test run
+under g++ (not yet built with MSVC); §8's Windows and in-game list not yet run. Design 2026-10-30. A port of FireGraft's Dat Requirements editor: the
 five requirement tables (units, upgrades, tech research, tech use, orders) edited on their
 own page, saved as `Manifold\requirements.bin` in the mod exe's MPQ, and applied by the
 plugin's requirements loader (`docs/superpowers/specs/2026-10-29-fg-requirements-design.md`,
