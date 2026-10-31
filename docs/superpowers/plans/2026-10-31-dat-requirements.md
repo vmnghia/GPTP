@@ -238,7 +238,7 @@ MSVC Win32 (the plugin).
   - `ProblemBlocksEdits`: with `Problem` set, `ApplyRequirements` returns false and
     `RequirementsDirty` is false; after `ReplaceBadRequirements` it's dirty and edits apply.
   - `OpenPrefersTheFile`, `OpenImportsTheProject`, `OpenWithNothingIsVanilla`,
-    `OpenBadFileSetsProblem`, `OpenBadProjectIsVanilla`: with fake archives (as SessionTests): the file wins with
+    `OpenBadFileSetsProblem`: with fake archives (as SessionTests): the file wins with
     Saved = Opened; without it the project is imported with Saved null and a status line
     "Imported FireGraft's requirements from Firegraft\SCManifold.fgp"; with neither, vanilla
     with Saved = Opened; a damaged file gives Problem and Saved null. `OpenBadProjectIsVanilla`:
