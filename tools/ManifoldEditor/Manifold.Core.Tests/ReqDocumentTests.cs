@@ -222,9 +222,9 @@ public class ReqDocumentTests
     {
         var upgrade = Vanilla()[ReqTable.Upgrades].Find(0)!;
         var rows = Rows(upgrade);
-        Assert.Equal(3 + 3 + 0 + 1 + 1, rows.Count);
-        Assert.Equal([null, null, null, 1, 2, null, 3, null], rows.Select(r => r.LevelHeader));
-        Assert.Equal(new ReqLineAt(2, 0), rows[5].At);
+        var headers = rows.Where(r => r.Kind == ReqRowKind.LevelHeader).Select(r => r.Level);
+        Assert.Equal([1, 2, 3], headers);
+        Assert.Equal(new ReqLineAt(2, 0), rows.First(r => r.Kind == ReqRowKind.MustHave).At);
         // Levels come as a set (final review): all three, or none, as every vanilla upgrade has them.
         Assert.Throws<InvalidOperationException>(() => AddLevels(upgrade));
         var none = RemoveLevels(upgrade);

@@ -125,6 +125,11 @@ public sealed class ButtonSetDocument
         return true;
     }
 
+    /// <summary>The table differs from what the exe holds (or it holds none): its tab's mark.</summary>
+    public bool RequirementTableDirty(ReqTable table) =>
+        Requirements is { } current && RequirementsProblem is null &&
+        (savedRequirements is null || !current[table].SameAs(savedRequirements[table]));
+
     static bool SameRecord(ReqRecord? a, ReqRecord? b) => a is null ? b is null : b is not null && a.SameAs(b);
 
     /// <summary>The record (or its absence) differs from StarCraft's own.</summary>
