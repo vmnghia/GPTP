@@ -53,6 +53,12 @@ sealed class RequirementsPage
     ReqLineAt? pendingInsert;
     bool updating;
     Brush? accent;
+    OpenedExe? shownExe;
+    readonly MenuFlyout entryMenu = new(), rowMenu = new();
+    readonly MenuFlyoutItem menuCopy = new() { Text = "Copy record", KeyboardAcceleratorTextOverride = "Ctrl+Shift+C" },
+        menuPaste = new() { Text = "Paste record", KeyboardAcceleratorTextOverride = "Ctrl+Shift+P" },
+        menuInsert = new() { Text = "Insert" }, menuDelete = new() { Text = "Delete" }, menuUp = new() { Text = "Move up" },
+        menuDown = new() { Text = "Move down" }, menuLevels = new() { Text = "Add levels" };
 
     int SelectedId { get => selected[table]; set => selected[table] = value; }
 
@@ -78,6 +84,7 @@ sealed class RequirementsPage
             if (updating || tabs.SelectedItem is not SelectorBarItem item) return;
             table = ReqTables.All[Array.IndexOf(tabItems, item)];
             pendingInsert = null;
+            RevealSelected();
             Refresh();
         };
         Grid.SetColumnSpan(tabs, 2);
@@ -97,31 +104,32 @@ sealed class RequirementsPage
         Grid.SetRow(left, 1);
         Root.Children.Add(left);
 
-        find.TextChanged += (_, _) => FillEntries();
+        find.TextChanged += (_, _) =>
+        {
+            if (find.Text.Trim().Length == 0) RevealSelected();
+            FillEntries();
+        };
         treeView.Click += (_, _) => SetTreeView(true);
         idView.Click += (_, _) => SetTreeView(false);
+        // A leaf's selection shows its record; a group's row is opened or closed by a tap or Enter, not by selection,
+        // so the arrow keys pass over headers.
         entries.SelectionChanged += (_, _) =>
         {
-            if (updating || entries.SelectedItem is not ListViewItem { Tag: { } tag }) return;
-            if (tag is string group)
-            {
-                // A group's row opens or closes it; the selection stays on the record.
-                if (!openGroups.Remove(group)) openGroups.Add(group);
-                FillEntries();
-                return;
-            }
-            SelectedId = (int)tag;
+            if (updating || entries.SelectedItem is not ListViewItem { Tag: int id }) return;
+            SelectedId = id;
             pendingInsert = null;
             ShowRecord();
         };
-        var entryMenu = new MenuFlyout();
-        var copyItem = new MenuFlyoutItem { Text = "Copy record", KeyboardAcceleratorTextOverride = "Ctrl+Shift+C" };
-        var pasteItem = new MenuFlyoutItem { Text = "Paste record", KeyboardAcceleratorTextOverride = "Ctrl+Shift+P" };
-        copyItem.Click += (_, _) => CopyRecord();
-        pasteItem.Click += (_, _) => PasteRecord();
-        entryMenu.Items.Add(copyItem);
-        entryMenu.Items.Add(pasteItem);
-        entries.ContextFlyout = entryMenu;
+        menuCopy.Click += (_, _) => CopyRecord();
+        menuPaste.Click += (_, _) => PasteRecord();
+        entryMenu.Items.Add(menuCopy);
+        entryMenu.Items.Add(menuPaste);
+        entryMenu.Opening += (_, _) =>
+        {
+            EnableButtons();
+            menuCopy.IsEnabled = copy.IsEnabled;
+            menuPaste.IsEnabled = paste.IsEnabled;
+        };
 
         // The right: the record.
         var replace = new Button { Content = "Replace it" };
@@ -131,6 +139,21 @@ sealed class RequirementsPage
         ToolTipService.SetToolTip(used, "Off: the game leaves this record out and allows it nowhere");
         used.Click += (_, _) => Run((s, name) => s.SetRequirementUsed(table, SelectedId, used.IsChecked == true, name));
         rowList.SelectionChanged += (_, _) => { if (!updating) EnableButtons(); };
+        menuInsert.Click += (_, _) => InsertRow();
+        menuDelete.Click += (_, _) => DeleteRow();
+        menuUp.Click += (_, _) => MoveRow(-1);
+        menuDown.Click += (_, _) => MoveRow(+1);
+        menuLevels.Click += (_, _) => Edit(RequirementEdits.AddLevels);
+        foreach (var item in new[] { menuInsert, menuDelete, menuUp, menuDown, menuLevels }) rowMenu.Items.Add(item);
+        rowMenu.Opening += (_, _) =>
+        {
+            EnableButtons();
+            menuInsert.IsEnabled = insert.IsEnabled;
+            menuDelete.IsEnabled = delete.IsEnabled;
+            menuUp.IsEnabled = up.IsEnabled;
+            menuDown.IsEnabled = down.IsEnabled;
+            menuLevels.IsEnabled = addLevels.IsEnabled && addLevels.Visibility == Visibility.Visible;
+        };
         insert.Click += (_, _) => InsertRow();
         delete.Click += (_, _) => DeleteRow();
         up.Click += (_, _) => MoveRow(-1);
@@ -162,6 +185,7 @@ sealed class RequirementsPage
         table = place.Table;
         SelectedId = place.Id;
         pendingInsert = null;
+        RevealSelected();
         if (find.Text.Length > 0) find.Text = "";
         Refresh();
     }
@@ -170,6 +194,11 @@ sealed class RequirementsPage
     public void Refresh()
     {
         pendingInsert = null;
+        if (!ReferenceEquals(opened(), shownExe))
+        {
+            shownExe = opened();
+            RevealSelected();
+        }
         var doc = opened()?.State.Document;
         updating = true;
         foreach (var (item, t) in tabItems.Zip(ReqTables.All))
@@ -184,7 +213,7 @@ sealed class RequirementsPage
     public bool CopyRecord()
     {
         if (opened() is not { } exe) return false;
-        exe.State.CopyRequirement(table, SelectedId);
+        if (!exe.State.CopyRequirement(table, SelectedId)) _ = message("Not copied", $"{Name(SelectedId)} has no requirements record; the earlier copy stays.");
         EnableButtons();
         return true;
     }
@@ -242,9 +271,6 @@ sealed class RequirementsPage
             var groups = tree ? exe.ReqLists![table] : null;
             var nodes = ReqTree.Build(ReqTables.IdCount(table), groups, LeafTitle, find.Text);
             bool searching = find.Text.Trim().Length > 0;
-            // The selected record's groups open, so it shows.
-            var path = groups is not null && groups.TryGetValue(SelectedId, out var p) ? p : [];
-            for (int i = 1; i <= path.Count; i++) openGroups.Add(string.Join("/", path.Take(i)));
             ListViewItem? current = null;
             void Add(IReadOnlyList<ReqTreeNode> level, int depth, string prefix)
             {
@@ -256,7 +282,9 @@ sealed class RequirementsPage
                         text.Text = node.Title;
                         if (doc.RecordChangedSinceSave(table, id)) text.Foreground = Accent();
                         if (doc.Requirements[table].Find(id) is null) text.Opacity = 0.5;
-                        var item = new ListViewItem { Tag = id, Content = text };
+                        var item = new ListViewItem { Tag = id, Content = text, ContextFlyout = entryMenu };
+                        // A right-click selects the leaf first, so the menu acts on it.
+                        item.ContextRequested += (_, _) => { if (!ReferenceEquals(entries.SelectedItem, item)) entries.SelectedItem = item; };
                         entries.Items.Add(item);
                         if (id == SelectedId) current = item;
                         continue;
@@ -265,11 +293,19 @@ sealed class RequirementsPage
                     bool open = searching || openGroups.Contains(key);
                     text.Text = (open ? "▾ " : "▸ ") + node.Title;
                     text.FontWeight = FontWeights.SemiBold;
-                    entries.Items.Add(new ListViewItem { Tag = key, Content = text });
+                    var header = new ListViewItem { Tag = key, Content = text };
+                    header.Tapped += (_, _) => ToggleGroup(key);
+                    header.KeyDown += (_, args) =>
+                    {
+                        if (args.Key is not (Windows.System.VirtualKey.Enter or Windows.System.VirtualKey.Space)) return;
+                        args.Handled = true;
+                        ToggleGroup(key);
+                    };
+                    entries.Items.Add(header);
                     if (open) Add(node.Children, depth + 1, key + "/");
                 }
             }
-            Add(nodes, 0, "");
+            Add(nodes, 0, $"{table}/");
             if (current is not null)
             {
                 entries.SelectedItem = current;
@@ -277,6 +313,22 @@ sealed class RequirementsPage
             }
         }
         updating = false;
+    }
+
+    /// <summary>Opens or closes a group (not while Find shows every group open).</summary>
+    void ToggleGroup(string key)
+    {
+        if (find.Text.Trim().Length > 0) return;
+        if (!openGroups.Remove(key)) openGroups.Add(key);
+        Later(FillEntries);
+    }
+
+    /// <summary>Opens the selected record's groups: when the selection comes from outside (a tab, Undo, a cleared Find, an exe).</summary>
+    void RevealSelected()
+    {
+        if (opened()?.ReqLists is not { } lists || !lists.TryGetValue(table, out var groups) ||
+            !groups.TryGetValue(SelectedId, out var path)) return;
+        for (int i = 1; i <= path.Count; i++) openGroups.Add($"{table}/" + string.Join("/", path.Take(i)));
     }
 
     // -------- The record --------
@@ -332,6 +384,8 @@ sealed class RequirementsPage
     ListViewItem Selectable(ListViewItem item)
     {
         item.GotFocus += (_, _) => { if (!updating && !ReferenceEquals(rowList.SelectedItem, item)) rowList.SelectedItem = item; };
+        item.ContextFlyout = rowMenu;
+        item.ContextRequested += (_, _) => { if (!ReferenceEquals(rowList.SelectedItem, item)) rowList.SelectedItem = item; };
         return item;
     }
 
@@ -355,15 +409,15 @@ sealed class RequirementsPage
             panel.Margin = new Thickness(indent + 126, 0, 0, 0);
             bool tech = ReqTables.ParamOf(table, line.Word) == ReqParam.Tech;
             panel.Children.Add(ValueBox(tech ? TechItems : UnitItems, line.Param ?? 0, editable,
-                value => Edit(r => RequirementEdits.SetValue(r, at, (ushort)value))));
+                value => Edit(r => RequirementEdits.SetValue(r, at, (ushort)value), at)));
             return panel;
         }
         var kind = SwitchBox(row.Kind == ReqRowKind.MustHave, editable, parameter =>
-            Edit(r => parameter ? RequirementEdits.ToParameter(r, table, at) : RequirementEdits.ToOpcode(r, at)));
+            Edit(r => parameter ? RequirementEdits.ToParameter(r, table, at) : RequirementEdits.ToOpcode(r, at), at));
         panel.Children.Add(kind);
         if (row.Kind == ReqRowKind.MustHave)
         {
-            panel.Children.Add(ValueBox(UnitItems, line.Word, editable, value => Edit(r => RequirementEdits.SetValue(r, at, (ushort)value))));
+            panel.Children.Add(ValueBox(UnitItems, line.Word, editable, value => Edit(r => RequirementEdits.SetValue(r, at, (ushort)value), at)));
             return panel;
         }
         var opcodes = Opcodes.ToList();
@@ -376,7 +430,7 @@ sealed class RequirementsPage
         }
         panel.Children.Add(ValueBox(labels, index, editable, chosen =>
         {
-            if (chosen < opcodes.Count) Edit(r => RequirementEdits.SetOpcode(r, table, at, opcodes[chosen].Word));
+            if (chosen < opcodes.Count) Edit(r => RequirementEdits.SetOpcode(r, table, at, opcodes[chosen].Word), at);
         }));
         return panel;
     }
@@ -393,15 +447,14 @@ sealed class RequirementsPage
             foreach (var label in parameter ? UnitItems : opcodes.Select(o => o.Name)) values.Items.Add(label);
         });
         foreach (var o in opcodes) values.Items.Add(o.Name);
-        values.SelectionChanged += (_, _) =>
+        OnCommit(values, -1, index =>
         {
-            if (updating || values.SelectedIndex < 0) return;
             bool parameter = kind.SelectedIndex == 1;
-            ushort word = parameter ? (ushort)values.SelectedIndex : opcodes[values.SelectedIndex].Word;
+            ushort word = parameter ? (ushort)index : opcodes[index].Word;
             var line = RequirementEdits.NewLine(table, word, parameter);
             pendingInsert = null;
-            Later(() => Edit(r => RequirementEdits.Insert(r, at, line)));
-        };
+            Edit(r => RequirementEdits.Insert(r, at, line), at);
+        });
         panel.Children.Add(kind);
         panel.Children.Add(values);
         return panel;
@@ -411,7 +464,7 @@ sealed class RequirementsPage
     ComboBox SwitchBox(bool parameter, bool editable, Action<bool> switched)
     {
         var box = new ComboBox { Width = 120, IsEnabled = editable, Items = { "Opcode", "Parameter" }, SelectedIndex = parameter ? 1 : 0 };
-        box.SelectionChanged += (_, _) => { if (!updating && box.SelectedIndex >= 0) Later(() => switched(box.SelectedIndex == 1)); };
+        OnCommit(box, box.SelectedIndex, index => switched(index == 1));
         return box;
     }
 
@@ -420,8 +473,26 @@ sealed class RequirementsPage
         var box = new ComboBox { Width = 360, IsEnabled = editable, IsTextSearchEnabled = true };
         foreach (var item in items) box.Items.Add(item);
         if (selectedIndex >= 0 && selectedIndex < items.Count) box.SelectedIndex = selectedIndex;
-        box.SelectionChanged += (_, _) => { if (!updating && box.SelectedIndex >= 0) Later(() => chosen(box.SelectedIndex)); };
+        OnCommit(box, box.SelectedIndex, chosen);
         return box;
+    }
+
+    /// <summary>
+    /// A dropdown's choice is applied when it closes or loses focus, not on each selection change:
+    /// the arrow keys and type-ahead on a closed box would otherwise make an undo step per key.
+    /// </summary>
+    void OnCommit(ComboBox box, int initial, Action<int> chosen)
+    {
+        bool done = false;
+        void Commit()
+        {
+            if (done || updating || box.SelectedIndex < 0 || box.SelectedIndex == initial) return;
+            done = true;
+            int index = box.SelectedIndex;
+            Later(() => chosen(index));
+        }
+        box.DropDownClosed += (_, _) => Commit();
+        box.LostFocus += (_, _) => Commit();
     }
 
     /// <summary>Runs after the dropdown's own event: the edit redraws the rows, the dropdown with them.</summary>
@@ -456,11 +527,24 @@ sealed class RequirementsPage
         if (command(exe.State, Name(SelectedId))) changed();
     }
 
-    void Edit(Func<ReqRecord, ReqRecord> edit)
+    /// <summary>One edit of the record; afterwards the line at <paramref name="select"/> (or the one before it) is selected and its dropdown focused.</summary>
+    void Edit(Func<ReqRecord, ReqRecord> edit, ReqLineAt? select = null)
     {
         if (opened() is not { } exe) return;
         if (exe.State.EditRequirement(table, SelectedId, edit, Name(SelectedId))) changed();
-        else ShowRecord();   // nothing changed: drop a pending row, put the dropdowns back
+        else ShowRecord();   // nothing changed: put the dropdowns back
+        if (select is { } at) SelectLine(at);
+    }
+
+    void SelectLine(ReqLineAt at)
+    {
+        int index = rows.ToList().FindIndex(r => r.At == at && r.Kind != ReqRowKind.Param);
+        if (index < 0 && at.Index > 0) index = rows.ToList().FindIndex(r => r.At == at with { Index = at.Index - 1 } && r.Kind != ReqRowKind.Param);
+        if (index < 0 || index >= rowList.Items.Count) return;
+        rowList.SelectedIndex = index;
+        var item = rowList.Items[index] as ListViewItem;
+        rowList.ScrollIntoView(item);
+        Later(() => { if (item?.Content is Panel { Children.Count: > 0 } panel && panel.Children[^1] is ComboBox box) box.Focus(FocusState.Programmatic); });
     }
 
     void InsertRow()
@@ -473,13 +557,14 @@ sealed class RequirementsPage
     void DeleteRow()
     {
         if (SelectedRow is not { } row) return;
-        if (row.At is { } at) Edit(r => RequirementEdits.Remove(r, at));
+        if (row.At is { } at) Edit(r => RequirementEdits.Remove(r, at), at);
         else if (row.Kind == ReqRowKind.LevelHeader) Edit(RequirementEdits.RemoveLevels);
     }
 
     void MoveRow(int delta)
     {
-        if (SelectedRow is not { At: { } at }) return;
-        Edit(r => RequirementEdits.Move(r, at, delta));
+        if (SelectedRow is not { At: { } at } || Record is not { } record) return;
+        if (RequirementEdits.Move(record, at, delta).SameAs(record)) return;   // at an end: nothing to move
+        Edit(r => RequirementEdits.Move(r, at, delta), at with { Index = at.Index + delta });
     }
 }

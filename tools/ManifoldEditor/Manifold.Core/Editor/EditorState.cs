@@ -203,9 +203,13 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
     /// <summary>A record has been copied (Paste record has something to put).</summary>
     public bool HasCopiedRequirement => copiedRequirement is not null;
 
-    /// <summary>Keeps the record for Paste record; an id with no record leaves nothing copied.</summary>
-    public void CopyRequirement(ReqTable table, int id) =>
-        copiedRequirement = Document.Requirements?[table].Find(id) is { } record ? (record, table) : null;
+    /// <summary>Keeps the record for Paste record. An id with no record copies nothing and keeps the earlier copy (false).</summary>
+    public bool CopyRequirement(ReqTable table, int id)
+    {
+        if (Document.Requirements?[table].Find(id) is not { } record) return false;
+        copiedRequirement = (record, table);
+        return true;
+    }
 
     /// <summary>
     /// The copied record put on <paramref name="id"/> (replacing or adding its record), as one

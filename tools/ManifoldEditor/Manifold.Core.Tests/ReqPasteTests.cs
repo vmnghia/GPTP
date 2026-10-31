@@ -81,6 +81,31 @@ public class ReqPasteTests
     }
 
     [Fact]
+    public void CopyOfNothingKeepsTheCopy()
+    {
+        var (doc, state) = Open();
+        state.CopyRequirement(ReqTable.Units, 0);
+        Assert.False(state.CopyRequirement(ReqTable.Units, 91));   // no record: the Marine's copy stays
+        Assert.True(state.HasCopiedRequirement);
+        Assert.Null(state.PasteRequirement(ReqTable.Units, 32, "Firebat"));
+        Assert.Equal(doc.Requirements![ReqTable.Units].Find(0)!.ToWords(), doc.Requirements[ReqTable.Units].Find(32)!.ToWords());
+    }
+
+    [Fact]
+    public void WordReadDifferentlyRefused()
+    {
+        // FF04 is no opcode for orders (kept as an unknown word, no parameter); units read a unit after it.
+        var orders = new ReqRecord(0, true, [new ReqLine(0xFF04, null), new ReqLine(0xFF1E, null)], []);
+        Assert.Equal("Units would read FF04 as Has add-on", ReqPaste.Refusal(orders, ReqTable.Orders, ReqTable.Units));
+        // FF15 is unknown to units, "Can attack" to orders.
+        var units = new ReqRecord(0, true, [new ReqLine(0xFF15, null)], []);
+        Assert.Equal("Orders would read FF15 as Can attack", ReqPaste.Refusal(units, ReqTable.Units, ReqTable.Orders));
+        // An unknown word to both stays as it is.
+        var both = new ReqRecord(0, true, [new ReqLine(0xFF27, null)], []);
+        Assert.Null(ReqPaste.Refusal(both, ReqTable.Units, ReqTable.Orders));
+    }
+
+    [Fact]
     public void PasteAddsRecord()
     {
         var (doc, state) = Open();

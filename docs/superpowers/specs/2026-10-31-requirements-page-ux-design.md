@@ -4,6 +4,10 @@ Status: [BUILT] 2026-10-31 (plan `docs/superpowers/plans/2026-10-31-requirements
 Core tested on Linux, the window compiles; §6's Windows list not yet run. The tree is drawn as
 a list of indented, collapsible group rows (▸/▾) rather than WinUI's TreeView, which can't
 colour a leaf without a XAML template. A numeric Find matches that id only, as the set list's.
+After the final review: a dropdown's choice applies when it closes or loses focus; a group opens
+or closes on a tap or Enter, and the selected record's groups open only when the selection comes
+from outside (a tab, Undo, a cleared Find); the rows have their right-click menu; a paste is also
+refused for a word the target reads differently ("Units would read FF04 as Has add-on").
 Design 2026-10-31. Improvements the user asked for after the first
 Requirements page (`2026-10-30-dat-requirements-design.md`, merged 2026-10-31, not yet run on
 Windows), to work as FireGraft's Dat Requirements editor does: the tables as tabs, FireGraft's
@@ -132,6 +136,13 @@ The line dialog (`ReqLineDialog`) is removed.
 5. Insert (then leave empty), Delete and Move on an opcode with its parameter.
 6. Add levels on an upgrade without them; delete a level header.
 7. Copy the Marine, paste onto the Firebat; a paste into Orders refused with its reason.
+8. [VERIFY] Right-clicking a leaf (or a row) selects it before its menu opens, so Copy, Paste,
+   Delete and Move act on it.
+9. [VERIFY] On a closed row dropdown, the arrow keys and typing change nothing until it closes
+   or loses focus (one undo step, not one per key).
+10. [VERIFY] After an edit, the changed, moved or added line is selected and its dropdown has
+    the focus.
+11. A group holding the selected record closes when clicked, and Up/Down pass over group rows.
 
 ## 7. Out of this part
 
