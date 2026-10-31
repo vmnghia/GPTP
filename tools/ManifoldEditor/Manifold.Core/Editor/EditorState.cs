@@ -198,6 +198,28 @@ public sealed class EditorState(ButtonSetDocument document, string exeName,
     public bool DeleteRequirementRecord(ReqTable table, int id, string name) =>
         Document.ApplyRequirements(table, id, t => t.Without(id), $"Delete {name}'s requirements record");
 
+    (ReqRecord Record, ReqTable From)? copiedRequirement;
+
+    /// <summary>A record has been copied (Paste record has something to put).</summary>
+    public bool HasCopiedRequirement => copiedRequirement is not null;
+
+    /// <summary>Keeps the record for Paste record; an id with no record leaves nothing copied.</summary>
+    public void CopyRequirement(ReqTable table, int id) =>
+        copiedRequirement = Document.Requirements?[table].Find(id) is { } record ? (record, table) : null;
+
+    /// <summary>
+    /// The copied record put on <paramref name="id"/> (replacing or adding its record), as one
+    /// step. Null when done or when it changes nothing; else why not.
+    /// </summary>
+    public string? PasteRequirement(ReqTable table, int id, string name)
+    {
+        if (copiedRequirement is not { } copied) return "Nothing copied";
+        if (ReqPaste.Refusal(copied.Record, copied.From, table) is string refused) return refused;
+        var record = new ReqRecord(id, copied.Record.Used, copied.Record.Lines, copied.Record.Levels);
+        Document.ApplyRequirements(table, id, t => t.With(record), $"Paste onto {name}'s requirements");
+        return null;
+    }
+
     /// <summary>The record as StarCraft's; deleted when StarCraft has none.</summary>
     public bool RevertRequirementToVanilla(ReqTable table, int id, string name) =>
         Document.VanillaRequirements is { } vanilla &&
