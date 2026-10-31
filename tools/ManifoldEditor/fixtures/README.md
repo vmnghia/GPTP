@@ -14,6 +14,7 @@ Inputs the editor's tests read, copied here so a session without the user's
 | `palettes/*.pal` | PyMS `Palettes/` at bfc5d3a: `Units`, `Terrain`, `ofire`, `gfire`, `bfire` (768 bytes each, raw RGB), the palettes PyDAT draws images with. MIT, (c) Zach Zahos (poiuyqwert). |
 | `pydat/*.txt` | PyMS `PyMS/Data/*.txt` at bfc5d3a: PyDAT's name lists and `Hints.txt`. MIT, (c) Zach Zahos (poiuyqwert); `pydat/LICENSE.md`. |
 | `pydat-txt/` | random-byte .dat files (no Blizzard data) and PyMS bfc5d3a's TXT exports of them (`make_goldens.py`), the goldens for `DatText`. Seed 20261025; the boolean fields are set to 0 and 1 on two entries in three, as the script's header says. Nothing was patched: every PyMS class exports under this machine's Python 3.11 as is. Regenerate: `python3 -I make_goldens.py <PyMS clone>/src` (the 11 vanilla-size files, `units-expanded` with 252 entries and `images-expanded` with 1001). |
+| `requirement-tables.bin` | StarCraft.exe 1.16.1's five requirement tables, the 4260 bytes at 0x514178-0x51521C (units, upgrades, tech research, tech use, orders), rebuilt 2026-10-31 from a read-only probe's dump of the exe. The same data `SCManifold.fgp`'s UntR..OrdR sections hold, except tech use 24 and 34. The vanilla reference for `VanillaRequirements`; `RealExeMatchesFixture` checks it against the real exe when `MANIFOLD_SC_DIR` is set. |
 
 Not here, because they can't be shared: `StarCraft.exe` and the vanilla MPQs. Tests that
 need them skip when `MANIFOLD_SC_DIR` is unset.
